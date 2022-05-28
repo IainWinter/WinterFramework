@@ -26,6 +26,7 @@ struct CellLife
 
 struct SandSprite
 {
+	bool hasChanged = false;
 };
 
 struct event_SandCellCollision
@@ -53,8 +54,8 @@ struct SandWorld
 		screen = std::make_shared<Target>();
 
 		//spriteTarget->Add(Target::aDepth, w, h, 1);
-		screen->Add(Target::aColor, w, h, 4, false);
-		screen->Add(Target::aColor1, w, h, 4, false);
+		screen->Add(Target::aColor, w, h, Texture::uRGBA, false);
+		screen->Add(Target::aColor1, w, h, Texture::uINT_32, false);
 
 		display = entities().create()
 			.add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0)
@@ -115,13 +116,16 @@ private:
 				continue;
 			}
 
+			cell.pos = current;
+
 			if (CollidePixel(collisionInfo, raster))
 			{
-				Color spriteInfo = collisionInfo.At(raster.x, raster.y);
-				ivec2 positionInSprite = ivec2(spriteInfo.r, spriteInfo.g);
-				int tileIndex = spriteInfo.b;
+				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
+				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
+				int tileIndex = spriteInfo[2];
 
 				events().send(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
+				
 				break;
 			}
 
@@ -137,7 +141,7 @@ private:
 
 	bool CollidePixel(Texture& collisionInfo, ivec2 pos)
 	{
-		if (collisionInfo.At(pos.x, pos.y).a > 0)
+		if (collisionInfo.At<int>(pos.x, pos.y)[3] > 0)
 		{
 			return true;
 		}
@@ -168,8 +172,14 @@ struct Sand_System_RenderTiles : System
 		render.Clear(Color(0));
 
 		int spriteIndex = 0;
-		for (auto [e, transform, sprite] : entities().query<Transform2D, Sprite, SandSprite>().only<Transform2D, Sprite>().with_entity())
+		for (auto [e, transform, sprite, sandSprite] : entities().query<Transform2D, Sprite, SandSprite>().with_entity())
 		{
+			if (sandSprite.hasChanged)
+			{
+				sandSprite.hasChanged = false;
+				sprite.Get().SendToDevice();
+			}
+
 			render.m_shader.Set("spriteIndex", spriteIndex);
 			sand.tileCache.push_back(e);
 			spriteIndex += 1;
@@ -219,5 +229,8 @@ struct Sand_System_CollisionVel : System
 		vel.x += get_rand(400) - 200;
 		vel.y += get_rand(400) - 200;
 		vel = normalize(vel) * speed;
+
+		e.sprite.get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
+		e.sprite.get<SandSprite>().hasChanged = true;
 	}
 };

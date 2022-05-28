@@ -153,7 +153,7 @@ entity CreatePhysicsEntity(const Transform2D& transform = {})
 
 entity CreateTexturedBox(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
 {	
-	Texture sprite = Texture(_p(path));
+	Texture sprite = Texture(_p(path), false);
 	SandWorld& sand = app.Get<SandWorld>();
 	transform.sx = sprite.Width()  / sand.worldScale.x;
 	transform.sy = sprite.Height() / sand.worldScale.y;
@@ -188,7 +188,7 @@ entity CreateTexturedBox(const std::string& path, const std::string& collider_ma
 
 entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
 {
-	Texture sprite = Texture(_p(path));
+	Texture sprite = Texture(_p(path), false);
 	SandWorld& sand = app.Get<SandWorld>();
 	transform.sx = sprite.Width()  / sand.worldScale.x;
 	transform.sy = sprite.Height() / sand.worldScale.y;
@@ -480,7 +480,7 @@ void setup_systems()
 	app.AddSystem<CharacterController>();
 	
 	app.AddSystem<Sand_LifeUpdateSystem>();
-	app.AddSystem<Sand_VelUpdateSystem>();
+	//app.AddSystem<Sand_VelUpdateSystem>();
 
 	app.AddSystem<Sand_System_RenderTiles>();
 	app.AddSystem<SpriteRenderer2DSystem>();

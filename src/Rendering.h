@@ -165,22 +165,44 @@ protected:
 // can pass by value without much worry
 struct Texture : IDeviceObject
 {
-private:
-	SDL_Surface* m_host     = nullptr; // deafult construction
-	GLuint       m_device   = 0u;
+public:
 
-	int          m_width    = 0;       // cache so we don't need to read from host
-	int          m_height   = 0; 
-	int          m_channels = 0; 
+	// valid to cast an int representing a number of 8 bit channels to this enum to get r/rg/rgb/rgba
+	enum Usage
+	{
+		uR = 1,   // 8 bit
+		uRG,      // 16 bit
+		uRGB,     // 24 bit
+		uRGBA,    // 32 bit
+
+		uDEPTH,   // 32 bit? unclear
+		uSTENCIL, // 1 bit?
+
+		// for passing data between gpu and cpu
+
+		uINT_32,  // 128 bit
+		uFLOAT_32 // 128 bit
+	};
+private:
+	u8*          m_host            = nullptr; // deafult construction
+	GLuint       m_device          = 0u;
+
+	int          m_width           = 0;
+	int          m_height          = 0; 
+	int          m_channels        = 0;       // number of components
+	int          m_bytesPerChannel = 0;       // bytes per component
+	Usage        m_usage           = uR;
 
 // public texture specific functions
 
 public:
-	int Width()      const { return m_width; } 
-	int Height()     const { return m_height; } 
-	int Channels()   const { return m_channels; }
-	u8* Pixels()     const { return (u8*)m_host->pixels; }
-	int BufferSize() const { return Width() * Height() * Channels(); }
+	int Width()           const { return m_width; } 
+	int Height()          const { return m_height; } 
+	int Channels()        const { return m_channels; }
+	int BytesPerChannel() const { return m_bytesPerChannel; }
+	Usage UsageType()     const { return m_usage; }
+	u8* Pixels()          const { return (u8*)m_host; }
+	int BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
 
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
@@ -188,13 +210,16 @@ public:
 	// only rg -> Channels() = 2
 	// only rgb -> Channels() = 3
 	// full rgba -> Channels() = 4
-	      Color& At(int x, int y)       { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels); }
-	const Color& At(int x, int y) const { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels); }
+	      Color& At(int x, int y)       { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
+	const Color& At(int x, int y) const { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
+
+	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (_t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (_t*)&At(x, y).as_u32; }
 
 	void Clear()
 	{
 		assert_on_host();
-		memset(m_host->pixels, 0, m_width * m_height * m_channels);
+		memset(m_host, 0, m_width * m_height * m_channels);
 	}
 
 // interface
@@ -206,9 +231,7 @@ public:
 protected:
 	void _FreeHost()
 	{
-		void* pixels = m_host->pixels;
-		SDL_FreeSurface(m_host);
-		free_image_using_stb(pixels);
+		free(m_host);
 		m_host = nullptr;
 	}
 
@@ -224,17 +247,17 @@ protected:
 		gl(glBindTexture(GL_TEXTURE_2D, m_device));
 		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
 		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-		gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_format(), Width(), Height(), 0, gl_format(), GL_UNSIGNED_BYTE, Pixels()));
+		gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(), Width(), Height(), 0, gl_format(), gl_type(), Pixels()));
 	}
 
 	void _UpdateOnDevice() override
 	{
-		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), GL_UNSIGNED_BYTE, Pixels()));
+		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
 	}
 
 	void _UpdateFromDevice() override
 	{
-		gl(glGetTextureImage(m_device, 0, gl_format(), GL_UNSIGNED_BYTE, BufferSize(), Pixels()));
+		gl(glGetTextureImage(m_device, 0, gl_format(), gl_type(), BufferSize(), Pixels()));
 	}
 
 // construction
@@ -251,62 +274,131 @@ public:
 		: IDeviceObject (isStatic)
 	{
 		auto [pixels, width, height, channels] = load_image_using_stb(path);
-		init_texture_host_memory(pixels, width, height, channels);
+		assert(channels > 0 && channels <= 4 && "Invalid RGBA channel count created by stb");
+		init_texture_host_memory(pixels, width, height, (Usage)channels);
 	}
 
 	// creates pixel memory
 	Texture(
-		int width, int height, int channels,
+		int width, int height, Usage usage,
 		bool isStatic = true
 	)
 		: IDeviceObject (isStatic)
 	{
-		void* pixels = malloc(width * height * channels);
-		init_texture_host_memory(pixels, width, height, channels);
+		void* pixels = malloc(width * height * num_channels(usage) * bytes_per_channel(usage));
+		init_texture_host_memory(pixels, width, height, usage);
 	}
 
 	Texture(
-		int width, int height, int channels,
+		int width, int height, Usage usage,
 		void* pixels
 	)
 		: IDeviceObject (false) // false dont delete
 	{
-		init_texture_host_memory(pixels, width, height, channels);
+		init_texture_host_memory(pixels, width, height, usage);
 	}
 private:
-	void init_texture_host_memory(void* pixels, int w, int h, int channels)
+	void init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	{
-		std::array<int, 4> masks = {0, 0, 0, 0};
-		switch (channels)
-		{
-			case 1:                                               masks[0] = 0x000000ff; break;
-			case 2:                        masks[0] = 0x0000ff00; masks[1] = 0x000000ff; break;
-			case 3: masks[0] = 0x00ff0000; masks[1] = 0x0000ff00; masks[2] = 0x000000ff; break;
-			case 4: masks[0] = 0x00ff0000; masks[1] = 0x0000ff00; masks[2] = 0x000000ff; masks[3] = 0xff000000; break;
-			default: assert(false && "no channels?"); break;
-		}
+		assert(pixels && "Sprite failed to load");
 
-		// pitch is the size in bytes of each row of image data
-		m_host = SDL_CreateRGBSurfaceFrom(pixels, w, h, channels * 8, w * channels, masks[0], masks[1], masks[2], masks[3]);
-		assert(m_host && "Sprite failed to load");
-
-		m_width = w; // cache values
+		m_host = (u8*)pixels;
+		m_width = w;
 		m_height = h;
-		m_channels = channels;
+		m_usage = usage;
+		m_channels = num_channels(usage);
+		m_bytesPerChannel = bytes_per_channel(usage);
 	}
 
 	GLenum gl_format() const // doesnt need to be here
 	{
-		switch (m_host->format->BytesPerPixel)			
+		switch (m_usage)			
 		{
-			case 1: return GL_R;
-			case 2: return GL_RG;
-			case 3: return GL_RGB;
-			case 4: return GL_RGBA;
+			case uR:        return GL_RED;
+			case uRG:       return GL_RG;
+			case uRGB:      return GL_RGB;
+			case uRGBA:     return GL_RGBA;
+			case uDEPTH:    return GL_DEPTH_COMPONENT;
+			case uSTENCIL:  return GL_STENCIL_INDEX;
+			case uINT_32:   return GL_RGBA_INTEGER;
+			case uFLOAT_32: return GL_RGBA; // this doesnt have to specify float???
 		}
 
 		assert(false);
 		return -1;
+	}
+
+	GLenum gl_iformat() const
+	{
+		switch (m_usage)
+		{
+			case uR:        return GL_R8;
+			case uRG:       return GL_RG8;
+			case uRGB:      return GL_RGB8;
+			case uRGBA:     return GL_RGBA8;
+			case uDEPTH:    return GL_DEPTH_COMPONENT32;
+			case uSTENCIL:  return GL_STENCIL_INDEX8;
+			case uINT_32:   return GL_RGBA32I;
+			case uFLOAT_32: return GL_RGBA32F;
+		}
+
+		assert(false);
+		return -1;
+	}
+
+	GLenum gl_type() const
+	{
+		switch (m_usage)
+		{
+			case uR:        return GL_UNSIGNED_BYTE;
+			case uRG:       return GL_UNSIGNED_BYTE;
+			case uRGB:      return GL_UNSIGNED_BYTE;
+			case uRGBA:     return GL_UNSIGNED_BYTE;
+			case uDEPTH:    return GL_FLOAT;
+			case uSTENCIL:  return GL_UNSIGNED_BYTE;
+			case uINT_32:   return GL_INT;
+			case uFLOAT_32: return GL_FLOAT;
+		}
+
+		assert(false);
+		return -1;
+	}
+
+	int num_channels(Usage usage) const
+	{
+		switch (usage)
+		{
+			case uR:         return 1;
+			case uRG:        return 2;
+			case uRGB:       return 3;
+			case uRGBA:      return 4;
+			case uDEPTH:     return 1;
+			case uSTENCIL:   return 1;
+			case uINT_32:    return 4;
+			case uFLOAT_32:  return 4;
+		}
+
+		assert(false);
+		return -1;
+	}
+
+	int bytes_per_channel(Usage usage) const
+	{
+		switch (usage)
+		{
+			case uR:         return sizeof(u8);
+			case uRG:        return sizeof(u8);
+			case uRGB:       return sizeof(u8);
+			case uRGBA:      return sizeof(u8);
+			case uDEPTH:     return sizeof(f32);
+			case uSTENCIL:   return sizeof(u8);
+			case uINT_32:    return sizeof(u32);
+			case uFLOAT_32:  return sizeof(f32);
+		}
+
+		assert(false);
+		return -1;
+
 	}
 };
 
@@ -350,9 +442,9 @@ public:
 	}
 
 	// creates an empty texture that is not static
-	r<Texture> Add(AttachmentName name, int width, int height, int channels, bool isStatic = true)
+	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, bool isStatic = true)
 	{
-		r<Texture> texture = std::make_shared<Texture>(width, height, channels, isStatic);
+		r<Texture> texture = std::make_shared<Texture>(width, height, usage, isStatic);
 		Add(name, texture);
 
 		return texture;
@@ -1113,7 +1205,7 @@ struct SpriteRenderer2D
 									"vec4 spriteColor = texture(sprite, TexCoords);"
 									"if (spriteColor.a > .7) spriteColor.a = 1.f;" // round up for health thing
 									"color = tint * spriteColor;"
-									"spriteId = ivec4(spriteSize * TexCoords, spriteIndex, spriteColor.a);" // this is going to be an index to an array on the cpu or something like that
+									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, spriteColor.a > 0);" // this is going to be an index to an array on the cpu or something like that
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
