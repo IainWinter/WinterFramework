@@ -1,7 +1,0 @@
-﻿  imgui.cpp
-  imgui_demo.cpp
-  imgui_draw.cpp
-  imgui_tables.cpp
-  imgui_widgets.cpp
-  Generating Code...
-  ImGui.vcxproj -> C:\dev\IwEngine\WinterFramework\vendor\imgui\lib\ImGui.lib
