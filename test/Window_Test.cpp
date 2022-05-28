@@ -11,7 +11,7 @@
 
 std::string _p(const std::string& filename)
 {
-	return "C:/dev/IwEngine/_assets/textures/SpaceGame/" + filename;
+	return "../assets/" + filename;
 }
 
 using Order = void*;
