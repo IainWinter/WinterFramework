@@ -1,0 +1,28 @@
+﻿  Hitbox.cpp
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(41,35): warning C4244: '+=': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(151,59): warning C4805: '|': unsafe mix of type 'bool' and type 'int' in operation
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(164,25): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(164,19): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(173,25): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+C:\dev\IwEngine\WinterFramework\vendor\hitbox\src\Hitbox.cpp(173,19): warning C4244: 'argument': conversion from 'T' to 'int', possible loss of data
+          with
+          [
+              T=float
+          ]
+  Hitbox.vcxproj -> C:\dev\IwEngine\WinterFramework\vendor\hitbox\lib\Hitbox.lib

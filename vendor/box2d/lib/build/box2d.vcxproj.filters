@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="collision">
+      <UniqueIdentifier>{D13AF3EB-3DA5-A762-86E3-5808F28C85B7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="common">
+      <UniqueIdentifier>{AEFEE3F6-9AA0-0ECD-835B-22216F9C951D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="dynamics">
+      <UniqueIdentifier>{5D78612F-4945-BC3A-725E-AAE25E8AF1C8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out">
+      <UniqueIdentifier>{9D9A880B-09A4-887C-921F-9F7CFE27947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out\build">
+      <UniqueIdentifier>{9C285DC4-0893-113B-51D1-C2E0BD7AEF8F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out\build\x64-Debug">
+      <UniqueIdentifier>{01316A9C-6D92-47AA-F6FF-8D5C62607E69}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out\build\x64-Debug\CMakeFiles">
+      <UniqueIdentifier>{A46384C2-9089-4E29-79CF-D3F4659473F5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out\build\x64-Debug\CMakeFiles\3.20.21032501-MSVC_2">
+      <UniqueIdentifier>{E9EBD634-55FD-7EDB-DE4E-111B4A5F0815}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="out\build\x64-Debug\CMakeFiles\3.20.21032501-MSVC_2\CompilerIdCXX">
+      <UniqueIdentifier>{B37C386F-1F9B-4C3C-6868-524ED4C58745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="rope">
+      <UniqueIdentifier>{BB799D7C-A7B0-9E0D-509D-84103CB31A0F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\collision\b2_broad_phase.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_chain_shape.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_circle_shape.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_collide_circle.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_collide_edge.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_collide_polygon.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_collision.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_distance.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_dynamic_tree.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_edge_shape.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_polygon_shape.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\collision\b2_time_of_impact.cpp">
+      <Filter>collision</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_block_allocator.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_draw.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_math.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_settings.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_stack_allocator.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\b2_timer.cpp">
+      <Filter>common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_body.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_chain_circle_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_chain_polygon_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_circle_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_contact_manager.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_contact_solver.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_distance_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_edge_circle_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_edge_polygon_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_fixture.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_friction_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_gear_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_island.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_motor_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_mouse_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_polygon_circle_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_polygon_contact.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_prismatic_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_pulley_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_revolute_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_weld_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_wheel_joint.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_world.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dynamics\b2_world_callbacks.cpp">
+      <Filter>dynamics</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\out\build\x64-Debug\CMakeFiles\3.20.21032501-MSVC_2\CompilerIdCXX\CMakeCXXCompilerId.cpp">
+      <Filter>out\build\x64-Debug\CMakeFiles\3.20.21032501-MSVC_2\CompilerIdCXX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\rope\b2_rope.cpp">
+      <Filter>rope</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
