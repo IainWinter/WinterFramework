@@ -23,7 +23,9 @@ project "Framework"
 		"vendor/imgui//backends/imgui_impl_opengl3.cpp",
 
 		"src/ext/cpp/Time.cpp",
-		"test/Window_Test.cpp"
+	
+		"game/**.h",
+		"game/**.cpp"
 	}
 
 	includedirs {
@@ -72,3 +74,4 @@ project "Framework"
 	filter "configurations:Release"
 		defines { "NDEBUG" }
 		optimize "On"
+

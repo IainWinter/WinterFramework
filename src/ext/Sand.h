@@ -136,12 +136,7 @@ private:
 
 	bool CollidePixel(Texture& collisionInfo, ivec2 pos)
 	{
-		if (collisionInfo.At<int>(pos.x, pos.y)[3] > 0)
-		{
-			return true;
-		}
-
-		return false;
+		return collisionInfo.At<int>(pos.x, pos.y)[3] > 0;
 	}
 
 	bool OnScreen(ivec2 pos)
@@ -160,12 +155,9 @@ struct Sand_System_RenderTiles : System
 	void Update()
 	{
 		auto [render, camera, sand, window] = Get<SpriteRenderer2D, Camera, SandWorld, Window>();
-		
-		//vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);
-		//sand.display.get<Transform2D>().sx = reverseCamScale.x;
-		//sand.display.get<Transform2D>().sy = reverseCamScale.y;
-
-		sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
+			
+		//vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);/s		//sand.display.get<Transform2D>().sx = reverseCamScale.x;
+		//display.get<Tran<Transform2D>().sy = reverseCamScale.y;	sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
 
 		render.Begin(camera, sand.screen);
 		render.Clear(Color(0));
