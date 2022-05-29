@@ -95,12 +95,12 @@ struct Application
 			world.Step(Time::FixedTime());
 		}
 
-		Window& window = m_modules.get<Window>();
-
 		for (System* system : m_systems)
 		{
 			system->Update();
 		}
+
+		Window& window = m_modules.get<Window>();
 
 		window.BeginImgui();
 		for (System* system : m_systems)
