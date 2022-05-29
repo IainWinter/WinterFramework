@@ -371,6 +371,7 @@ struct CharacterController : System
 	float vy = 0;
 	float speed = 0;
 	bool mouseDown = false;
+	float fireTime = .4f;
 
 	float mouseX, mouseY; // temp
 
@@ -388,12 +389,19 @@ struct CharacterController : System
 	void Update() override
 	{
 		auto [sand] = entities().query<SandWorld>().first();
-
 		auto [player, transform] = entities().query<Player, Transform2D>().first();
 
-		if (mouseDown)
+		fireTime -= Time::DeltaTime();
+		if (mouseDown && fireTime < 0.f)
 		{
-			sand.CreateCell(transform.x, transform.y + 5, Color(255, 255, 19), x * 700 + get_rand(200) - 10, y * 700 + get_rand(020) - 10, 100.f)
+			fireTime = .4f;
+
+			sand.CreateCell(
+				transform.x,
+				transform.y + 5, 
+				Color(255, 255, 19), 
+				x * 1500 + get_rand(200) - 10, 
+				y * 1500 + get_rand(020) - 10, 1)
 				.add<CellLife>(5.f);
 		}
 		
@@ -416,7 +424,7 @@ struct CharacterController : System
 		ImGui::SliderFloat2("pos", (float*)&body.m_instance->GetPosition(), -10, 10);
 		ImGui::SliderFloat("speed", &speed, 0, 1000);
 		ImGui::SliderFloat("time", &ts, 0, 2);
-		ImGui::Text("Deltatime: %f", Time::DeltaTime());
+		ImGui::Text("Deltatime: %f", Time::RawDeltaTime());
 		ImGui::End();
 
 		if (ts != Time::TimeScale())

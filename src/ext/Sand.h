@@ -6,11 +6,6 @@
 #include <vector>
 #include <functional>
 
-enum class CellMovement
-{
-	MOVE_FORWARD
-};
-
 struct Cell
 {
 	vec2 pos;
@@ -100,7 +95,7 @@ struct SandWorld
 private:
 	void DrawLine(Texture& display, Texture& collisionInfo, entity e, Cell& cell)
 	{
-		vec2 delta = cell.vel / cell.dampen;
+		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
 		vec2 current = cell.pos;
 
 		float distance = glm::length(delta);
@@ -116,10 +111,9 @@ private:
 				continue;
 			}
 
-			cell.pos = current;
-
 			if (CollidePixel(collisionInfo, raster))
 			{
+
 				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
@@ -131,6 +125,7 @@ private:
 
 			DrawPixel(display, floor(current + screenOffset), cell.color);
 			current += delta;
+			cell.pos = current;
 		}
 	}
 
@@ -164,7 +159,11 @@ struct Sand_System_RenderTiles : System
 {
 	void Update()
 	{
-		auto [render, camera, sand] = Get<SpriteRenderer2D, Camera, SandWorld>();
+		auto [render, camera, sand, window] = Get<SpriteRenderer2D, Camera, SandWorld, Window>();
+		
+		vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);
+		sand.display.get<Transform2D>().sx = reverseCamScale.x;
+		sand.display.get<Transform2D>().sy = reverseCamScale.y;
 
 		sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
 
@@ -202,17 +201,6 @@ struct Sand_LifeUpdateSystem : System
 			{
 				entities_defer().destroy(e);
 			}
-		}
-	}
-};
-
-struct Sand_VelUpdateSystem : System
-{
-	void Update() override
-	{
-		for (auto [cell] : entities().query<Cell>())
-		{
-			cell.pos += cell.vel * Time::DeltaTime();
 		}
 	}
 };

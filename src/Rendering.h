@@ -257,6 +257,8 @@ protected:
 
 	void _UpdateFromDevice() override
 	{
+		// real slow...
+
 		gl(glGetTextureImage(m_device, 0, gl_format(), gl_type(), BufferSize(), Pixels()));
 	}
 
