@@ -2,9 +2,12 @@
 
 #include "Rendering.h"
 #include "Entity.h"
+#include "Physics.h"
 #include "ext/Time.h"
+#include "ext/flood_fill.h"
 #include <vector>
 #include <functional>
+#include <unordered_set>
 
 struct Cell
 {
@@ -22,6 +25,9 @@ struct CellLife
 struct SandSprite
 {
 	bool hasChanged = false;
+	Texture colliderMask;
+	SandSprite() = default;
+	SandSprite(const Texture& collider) : colliderMask(collider) {}
 };
 
 struct event_SandCellCollision
@@ -29,6 +35,11 @@ struct event_SandCellCollision
 	entity projectile;
 	entity sprite;
 	ivec2 hitPosInSprite;
+};
+
+struct event_SandAddSprite
+{
+	entity entity;
 };
 
 struct SandWorld
@@ -40,7 +51,7 @@ struct SandWorld
 	vec2 screenOffset;
 
 	r<Target> screen;
-	std::vector<entity> tileCache;
+	std::vector<entity> tileCache; // for the sprite index in the shader, indexes into this array
 
 	SandWorld() = default;
 
@@ -76,23 +87,6 @@ struct SandWorld
 		return entities().create().add<Cell>(vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color);
 	}
 
-	void Update()
-	{
-		Texture& color = *screen->Get(Target::aColor);
-		Texture& sInfo = *screen->Get(Target::aColor1); // sprite info / collision info, probally an index (or entity index) to an array of structs
-
-		color.SendToHost();
-		sInfo.SendToHost();
-
-		for (auto [e, cell] : entities().query<Cell>().with_entity())
-		{
-			DrawLine(color, sInfo, e, cell);
-		}
-
-		color.SendToDevice();
-	}
-
-private:
 	void DrawLine(Texture& display, Texture& collisionInfo, entity e, Cell& cell)
 	{
 		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
@@ -118,9 +112,9 @@ private:
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
 
+				// should defer
 				events().send(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
-				
-				break;
+				//entities_defer().destroy(e);
 			}
 
 			DrawPixel(display, floor(current + screenOffset), cell.color);
@@ -150,14 +144,199 @@ private:
 // render all the tiles to a texture, could chunk but regolith is a single screen game so dont worry about this for now
 // render bullets
 
-struct Sand_System_RenderTiles : System
+struct Sand_System_Update : System
 {
+	std::unordered_set<entity> toSplit;
+
+	 Sand_System_Update()
+	 { 
+		 events().attach<event_SandCellCollision>(this);
+		 events().attach<event_SandAddSprite>(this);
+	 }
+	~Sand_System_Update() { events().detach(this); }
+
+	void on(event_SandCellCollision& e)
+	{
+		vec2& vel = e.projectile.get<Cell>().vel;
+		float speed = length(vel);
+		vel.x += get_rand(400) - 200;
+		vel.y += get_rand(400) - 200;
+		vel = normalize(vel) * speed;
+
+		e.sprite.get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
+		e.sprite.get<SandSprite>().hasChanged = true;
+
+		if (toSplit.find(e.sprite) == toSplit.end())
+		{
+			toSplit.insert(e.sprite);
+		}
+	}
+
+	void on(event_SandAddSprite& e)
+	{
+		Texture& sprite = e.entity.get<Sprite>().Get();
+		Transform2D& transform = e.entity.get<Transform2D>();
+		transform.sx = sprite.Width()  / Get<SandWorld>().worldScale.x;
+		transform.sy = sprite.Height() / Get<SandWorld>().worldScale.y;
+
+		// setup collider
+
+		SandSprite& sandSprite = e.entity.get<SandSprite>();
+
+		assert(sandSprite.colliderMask.Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
+
+		auto polygons = MakePolygonFromField<u32>(
+			(u32*)sandSprite.colliderMask.Pixels(),
+			sandSprite.colliderMask.Width(),
+			sandSprite.colliderMask.Height(),
+			[](const u32& color) { return (color & 0xff000000) > 0; }
+		);
+
+		Rigidbody2D& body = Get<PhysicsWorld>().AddEntity(e.entity);
+
+		vec2 scale = vec2(transform.sx, transform.sy);
+
+		for (const std::vector<vec2>& polygon : polygons.first)
+		{
+			b2PolygonShape shape;
+			for (int i = 0; i < polygon.size(); i++)
+			{
+				shape.m_vertices[i] = _tb(polygon.at(i) * scale);
+			}
+			shape.Set(shape.m_vertices, polygon.size());
+
+			body.AddCollider(shape);
+		}
+
+		// debug
+		std::vector<vec2> debug_mesh; 
+		for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) debug_mesh.push_back(v);
+		e.entity.add<Mesh>();
+		Mesh& mesh = e.entity.get<Mesh>();
+		mesh.Add(Mesh::aPosition, debug_mesh);
+	}
+
 	void Update()
 	{
 		auto [render, camera, sand, window] = Get<SpriteRenderer2D, Camera, SandWorld, Window>();
-			
+
+		// Sprite update
+
+		// split sprites that needed it
+		// this about multi-threading
+
+		for (entity splitMe : toSplit)
+		{
+			Texture& sprite = splitMe.get<Sprite>().Get();
+			int length = sprite.Width() * sprite.Height();
+
+			printf("splitting sprite with length %d\n", length);
+
+			std::vector<flood_fill_cell_state> state = flood_fill_get_states_from_array<u32>(
+				(u32*)sprite.Pixels(), length, [](const u32& x) { return (x & 0xff000000) > 0; }
+			);
+
+			//for (int i = 0; i < sprite.Width(); i++)
+			//{
+			//	for (int j = 0; j < sprite.Height(); j++)
+			//	{
+			//		printf(state.at(i + j * sprite.Width()) == flood_fill_cell_state::FILLED ? "." : " ");
+			//	}
+			//	printf("\n");
+			//}
+			//printf("\n");
+
+			std::vector<std::vector<int>> islands;
+
+			for (int seed = 0; seed < length; seed++) // slow could use 'active pixels' cached list
+			{
+				std::vector<int> island = flood_fill(seed, sprite.Width(), sprite.Height(), state);
+				if (island.size() > 0)
+				{
+					islands.emplace_back(std::move(island));
+				}
+			}
+
+			if (islands.size() > 1)
+			{
+				for (const std::vector<int>& island : islands)
+				{
+					if (island.size() < 25)
+					{
+						// explode sprite
+						continue;
+					}
+
+					// copy old data to new texture
+
+					int minX =  INT_MAX;
+					int minY =  INT_MAX;
+					int maxX = -INT_MAX;
+					int maxY = -INT_MAX;
+
+					for (const int& index : island)
+					{
+						auto [x, y] = get_xy(index, sprite.Width());
+						if (x < minX) minX = x;
+						if (y < minY) minY = y;
+						if (x > maxX) maxX = x;
+						if (y > maxY) maxY = y;
+					}
+
+					Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
+					splitTexture.Clear();
+
+					for (const int& index : island)
+					{
+						auto [x, y] = get_xy(index, sprite.Width()); // this math doesnt need to transform to xy
+																	 // simplify index = (x - minX) + (y - minY) * width
+						
+						Color& to = splitTexture.At(x - minX, y - minY);
+						Color& from = sprite.At(x, y);
+
+						to = from;
+						from = Color(0, 0, 0, 0);
+					}
+
+					// create new tile
+					// this only works for the new tile, not if the orignaldis is remade...
+
+					// place the new sprites in their relitive locations
+
+					Transform2D splitTransform = splitMe.get<Transform2D>();
+
+					vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f;    // width/height because it's 0-width/height
+					vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;   // avergae of min and max bc min might not be 0, +1 because maxY is index not size
+					vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.r);
+					
+					splitTransform.x += offset.x / sand.worldScale.x;
+					splitTransform.y += offset.y / sand.worldScale.y;
+
+					entity splitOff = entities().create<Transform2D, Sprite, SandSprite>()
+						.set<Transform2D>(splitTransform)
+						.set<Sprite>(splitTexture)
+						.set<SandSprite>(splitTexture);
+
+					events().send(event_SandAddSprite {splitOff});
+
+					// this has some memory issue
+				}
+
+				sprite.Cleanup();
+				Get<PhysicsWorld>().Remove(splitMe.get<Rigidbody2D>()); // todo: add listener to physics obj
+				splitMe.destroy();
+			}
+		}
+
+		toSplit.clear();
+		sand.tileCache.clear();
+
+		// Sand Update
+
 		//vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);/s		//sand.display.get<Transform2D>().sx = reverseCamScale.x;
 		//display.get<Tran<Transform2D>().sy = reverseCamScale.y;	sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
+
+		// Render tiles to hidden target
 
 		render.Begin(camera, sand.screen);
 		render.Clear(Color(0));
@@ -178,7 +357,20 @@ struct Sand_System_RenderTiles : System
 			render.DrawSprite(transform, sprite.Get());
 		}
 
-		sand.Update();
+		// Cell update
+
+		Texture& color = *sand.screen->Get(Target::aColor);
+		Texture& sInfo = *sand.screen->Get(Target::aColor1); // sprite info / collision info, probally an index (or entity index) to an array of structs
+
+		color.SendToHost();
+		sInfo.SendToHost();
+
+		for (auto [e, cell] : entities().query<Cell>().with_entity())
+		{
+			sand.DrawLine(color, sInfo, e, cell);
+		}
+
+		color.SendToDevice();
 	}
 };
 
@@ -194,23 +386,5 @@ struct Sand_LifeUpdateSystem : System
 				entities_defer().destroy(e);
 			}
 		}
-	}
-};
-
-struct Sand_System_CollisionVel : System
-{
-	 Sand_System_CollisionVel() { events().attach<event_SandCellCollision>(this); }
-	~Sand_System_CollisionVel() { events().detach(this); }
-
-	void on(event_SandCellCollision& e)
-	{
-		vec2& vel = e.projectile.get<Cell>().vel;
-		float speed = length(vel);
-		vel.x += get_rand(400) - 200;
-		vel.y += get_rand(400) - 200;
-		vel = normalize(vel) * speed;
-
-		e.sprite.get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
-		e.sprite.get<SandSprite>().hasChanged = true;
 	}
 };

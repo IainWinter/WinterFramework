@@ -3,8 +3,11 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include "glm/gtx/rotate_vector.hpp"
 
 #include <memory>
+#include <utility>
+
 template<typename _t>
 using r = std::shared_ptr<_t>;
 
@@ -66,8 +69,8 @@ struct Transform2D
 	{
 		glm::mat4 world = glm::mat4(1.f);
 		world = glm::translate(world, glm::vec3(x, y, z));
-		world = glm::scale(world, glm::vec3(sx, sy, 1.f));
 		world = glm::rotate(world, r, glm::vec3(0, 0, 1.f));
+		world = glm::scale(world, glm::vec3(sx, sy, 1.f));
 
 		return world;
 	}
@@ -83,4 +86,17 @@ float clamp(float x, float min, float max)
 	     if (x < min) x = min;
 	else if (x > max) x = max;
 	return x; 
+}
+
+template<typename _t>
+std::pair<_t, _t> get_xy(const _t& index, const _t& width)
+{
+	return { index % width, index / width };
+}
+
+// map asset path
+
+std::string _p(const std::string& filename)
+{
+	return "../assets/" + filename;
 }

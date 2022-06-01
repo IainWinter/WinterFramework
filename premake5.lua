@@ -20,12 +20,12 @@ project "Framework"
 
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
-		"vendor/imgui//backends/imgui_impl_opengl3.cpp",
+		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
 		"src/ext/cpp/Time.cpp",
-	
-		"game/**.h",
-		"game/**.cpp"
+		"test/Window_Test.cpp"
+		--"game/**.h",
+		--"game/**.cpp"
 	}
 
 	includedirs {

@@ -85,6 +85,18 @@ bool is_polygon_convex(const std::vector<vec2>& polygon)
 	return i == polygonSize;
 }
 
+float polygon_area(const std::vector<vec2>& polygon)
+{
+	float area = 0.f;
+	for (int i = 0; i < polygon.size(); i++)
+	{
+		int j = (i + 1) % polygon.size();
+		area += (polygon.at(j).y + polygon.at(i).y) * (polygon.at(j).x - polygon.at(i).x);
+	}
+
+	return abs(area) / 2.f;
+}
+
 enum class StepDirection { None, N, W, S, E };
 
 const std::array<StepDirection, 16> g_directions =
@@ -506,8 +518,18 @@ std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* 
 	float w = bounds.Width()  / 2;
 	float h = bounds.Height() / 2;
 
-	for (std::vector<vec2>& polygon : polygons)
+	for (int i = 0; i < polygons.size(); i++)
 	{
+		std::vector<vec2>& polygon = polygons.at(i);
+
+		if (polygon_area(polygon) < .001f)
+		{
+			polygons.at(i) = std::move(polygons.back());
+			polygons.pop_back();
+			i--;
+			continue;
+		}
+
 		if (is_clockwise(polygon))
 		{
 			std::reverse(polygon.begin(), polygon.end());
