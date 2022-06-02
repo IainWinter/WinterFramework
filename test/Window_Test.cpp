@@ -13,8 +13,7 @@ using Order = void*;
 
 struct Application
 {
-	entity m_modules;
-	std::vector<System*> m_systems;
+	Entity m_modules;
 
 	float m_fixedTimeStepAcc;
 	bool m_running;
@@ -24,62 +23,30 @@ struct Application
 		events().attach<event_Shutdown>(this);
 		m_fixedTimeStepAcc = 0.f;
 		m_running = true;
-		m_modules = entities().create();
+		m_modules = GetWorld().Create();
 	}
 
 	~Application()
 	{
 		events().detach(this);
-		for (System* system : m_systems)
-		{
-			delete system;
-		}
-		m_modules.destroy();
+		m_modules.Destroy();
 	}
 
 	template<typename _t>
 	_t& Get()
 	{
-		return m_modules.get<_t>();
-	}
-
-	template<typename _t, typename... _args>
-	_t* AddSystem(_args&&... args) // need to be able to queue in an order
-	{
-		_t* system = new _t(args...);
-		m_systems.push_back(system);
-		return system;
-	}
-
-	template<typename _t, typename... _args>
-	_t* AddSystemAfter(Order after, _args&&... args) // need to be able to queue in an order
-	{
-		auto itr = m_systems.begin();
-		for (; itr != m_systems.end(); ++itr) if (*itr == after) break;
-		
-		_t* system = new _t(args...);
-		m_systems.insert(itr, system);
-		return system;
+		return m_modules.Get<_t>();
 	}
 
 	bool Step(float deltaTime)
 	{
-		for (System* system : m_systems)
-		{
-			if (!system->app)
-			{
-				system->app = &m_modules;
-				system->Setup();
-			}
-		}
-
-		PhysicsWorld& world = m_modules.get<PhysicsWorld>();
+		PhysicsWorld& world = m_modules.Get<PhysicsWorld>();
 
 		m_fixedTimeStepAcc += deltaTime;
 		if (m_fixedTimeStepAcc > Time::FixedTime())
 		{
 			m_fixedTimeStepAcc = 0;
-			for (System* system : m_systems)
+			for (System* system : GetWorld().GetSystems())
 			{
 				system->FixedUpdate();
 			}
@@ -90,15 +57,15 @@ struct Application
 			world.Step(Time::FixedTime());
 		}
 
-		for (System* system : m_systems)
+		for (System* system : GetWorld().GetSystems())
 		{
 			system->Update();
 		}
 
-		Window& window = m_modules.get<Window>();
+		Window& window = m_modules.Get<Window>();
 
 		window.BeginImgui();
-		for (System* system : m_systems)
+		for (System* system : GetWorld().GetSystems())
 		{
 			system->UI();
 		}
@@ -107,9 +74,7 @@ struct Application
 		window.EndFrame();
 		window.PumpEvents();
 
-		entities_defer().execute();
 		events_defer().execute();
-		entities().clean_storage();
 		
 		return m_running;
 	}
@@ -128,7 +93,7 @@ struct Application
 
 Application app; // for this simple test use global
 
-entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
+Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
 {
 	Texture sprite = Texture(_p(path), false);
 	SandWorld& sand = app.Get<SandWorld>();
@@ -137,29 +102,33 @@ entity CreateSandSprite(const std::string& path, const std::string& collider_mas
 
 	// collider should be 8 bit mask texture
 
-	entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform)
-		.add<SandSprite>(Texture(_p(collider_mask_path)))  
-		.add<Sprite>(sprite);
+	Entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform);
+	entity.Add<SandSprite>(Texture(_p(collider_mask_path)));
+	entity.Add<Sprite>(sprite);
+
+	//events().send(event_SandAddSprite{ entity });
 
 	return entity;
 }
 
-entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
+Entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
 {
 	Texture sprite = Texture(_p(path), false);
 	SandWorld& sand = app.Get<SandWorld>();
 	transform.sx = sprite.Width()  / sand.worldScale.x;
 	transform.sy = sprite.Height() / sand.worldScale.y;
 
-	entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform)
-		.add<SandSprite>()
-		.add<Sprite>(sprite);
+	Entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform);
+	entity.Add<SandSprite>();
+	entity.Add<Sprite>(sprite);
 
-	Rigidbody2D& body = entity.get<Rigidbody2D>();
+	Rigidbody2D& body = entity.Get<Rigidbody2D>();
 
 	b2CircleShape shape;
 	shape.m_radius = std::max(transform.sx, transform.sy);
 	body.AddCollider(shape);
+
+	//events().send(event_SandAddSprite{ entity });
 
 	return entity;
 }
@@ -254,7 +223,7 @@ struct PhysicsInterpolationSystem : System
 		m_acc += Time::DeltaTime();
 		float ratio = clamp(m_acc / Time::RawFixedTime(), 0.f, 1.f);
 
-		for (auto [transform, body] : entities().query<Transform2D, Rigidbody2D>())
+		for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
 		{
 			if (!body.InWorld()) continue;
 
@@ -268,7 +237,7 @@ struct PhysicsInterpolationSystem : System
 	{
 		m_acc = 0;
 
-		for (auto [transform, body] : entities().query<Transform2D, Rigidbody2D>())
+		for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
 		{
 			if (!body.InWorld()) continue;
 
@@ -285,7 +254,7 @@ struct ForceTwoardwsMouseSystem : System
 	{
 		const Uint8* keystate = SDL_GetKeyboardState(nullptr);
 
-		for (auto [transform, body] : entities().query<Transform2D, Rigidbody2D>())
+		for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
 		{
 			if (!body.InWorld()) continue;
 
@@ -301,11 +270,11 @@ struct SpriteRenderer2DSystem : System
 {
 	void Update() override
 	{
-		auto [camera, render] = entities().query<Camera, SpriteRenderer2D>().first();
+		auto [camera, render] = *Query<Camera, SpriteRenderer2D>().begin();
 
 		render.Begin(camera);
 		render.Clear();
-		for (auto [transform, sprite] : entities().query<Transform2D, Sprite, Renderable>().only<Transform2D, Sprite>())
+		for (auto [transform, sprite, _] : Query<Transform2D, Sprite, Renderable>())
 		{
 			render.DrawSprite(transform, sprite);
 		}
@@ -316,10 +285,10 @@ struct TriangleRenderer2DSystem : System
 {
 	void Update() override
 	{
-		auto [camera, render] = entities().query<Camera, TriangleRenderer2D>().first();
+		auto [camera, render] = *Query<Camera, TriangleRenderer2D>().begin();
 
 		render.Begin(camera, false);
-		for (auto [transform, mesh] : entities().query<Transform2D, Mesh>())
+		for (auto [transform, mesh] : Query<Transform2D, Mesh>())
 		{
 			render.DrawMesh(transform, mesh);
 		}
@@ -351,21 +320,16 @@ struct CharacterController : System
 
 	void Update() override
 	{
-		auto [sand] = entities().query<SandWorld>().first();
-		auto [player, transform] = entities().query<Player, Transform2D>().first();
+		auto [sand] = *Query<SandWorld>().begin();
+		auto [player, transform] = *Query<Player, Transform2D>().begin();
 
 		fireTime -= Time::DeltaTime();
 		if (mouseDown && fireTime < 0.f)
 		{
 			fireTime = .05f;
 
-			sand.CreateCell(
-				transform.x,
-				transform.y + 5, 
-				Color(255, 255, 19), 
-				x * 1500 + get_rand(200) - 10, 
-				y * 1500 + get_rand(020) - 10, 1)
-				.add<CellLife>(5.f);
+			sand.CreateCell(transform.x, transform.y + 5, Color(255, 255, 19), 
+				x * 1500 + get_rand(200) - 10, y * 1500 + get_rand(020) - 10, 1).Add<CellLife>(5.f);
 		}
 		
 		//sand.CreateCell(mouseX, mouseY, Color(255, 100, 100));
@@ -373,13 +337,13 @@ struct CharacterController : System
 
 	void FixedUpdate() override
 	{
-		auto [body] = entities().query<Player, Rigidbody2D>().only<Rigidbody2D>().first();
+		auto [_, body] = *Query<Player, Rigidbody2D>().begin();
 		body.ApplyForce(vec2(vx * speed, vy * speed));
 	}
 
 	void UI() override
 	{
-		auto [body] = entities().query<Rigidbody2D>().first();
+		auto [body] = *Query<Rigidbody2D>().begin();
 
 		float ts = Time::TimeScale();
 
@@ -394,13 +358,6 @@ struct CharacterController : System
 		{
 			Time::SetTimeScale(ts);
 		}
-
-		ImGui::Begin("Archetypes");
-		for (auto& [_, storage] : entities().m_storage)
-		{
-			ImGui::Text("%zd Count: %d", storage.m_archetype.m_hash, storage.m_count);
-		}
-		ImGui::End();
 	}
 
 	void on(event_Input& e)
@@ -435,29 +392,23 @@ void setup_modules()
 		"Winter Framework Testbed", 1280, 720
 	};
 
-	app.m_modules
-		.add<Window>(windowConfig, &events())
-		.add<SpriteRenderer2D>()
-		.add<TriangleRenderer2D>()
-		.add<PhysicsWorld>()
-		.add<SandWorld>(1280, 720, 32, 18)
-		.add<Camera>(0, 0, 32, 18);
+	app.m_modules.Add<Window>(windowConfig, &events());
+	app.m_modules.Add<SpriteRenderer2D>();
+	app.m_modules.Add<TriangleRenderer2D>();
+	app.m_modules.Add<PhysicsWorld>();
+	app.m_modules.Add<SandWorld>(1280, 720, 32, 18);
+	app.m_modules.Add<Camera>(0, 0, 32, 18);
 }
 
 void setup_systems()
 {
-	app.AddSystem<PhysicsInterpolationSystem>();
-	//app.AddSystem<ForceTwoardwsMouseSystem>();
-	app.AddSystem<CharacterController>();
+	GetWorld().AddSystem(PhysicsInterpolationSystem());
+	GetWorld().AddSystem(CharacterController());
 	
-	app.AddSystem<Sand_LifeUpdateSystem>();
-	app.AddSystem<Sand_System_Update>();
+	GetWorld().AddSystem(Sand_LifeUpdateSystem());
+	GetWorld().AddSystem(Sand_System_Update());
 
-	app.AddSystem<SpriteRenderer2DSystem>();
-	//app.AddSystem<TriangleRenderer2DSystem>();
-
-	//app.AddSystem<AddSandToWorldSystem>();
-	//app.AddSystem<EventLoggingSystem>();
+	GetWorld().AddSystem(SpriteRenderer2DSystem());
 }
 
 void setup_inputmapping()
@@ -498,7 +449,7 @@ void setup()
 	//CreateTexturedCircle("enemy_bomb.png", t);
 	//CreateTexturedCircle("enemy_bomb.png", t);
 	//CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t).add<Player>();
+	CreateTexturedCircle("enemy_bomb.png", t).Add<Player>();
 }
 
 bool loop()

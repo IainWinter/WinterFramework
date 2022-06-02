@@ -24,6 +24,7 @@ project "Framework"
 
 		"src/ext/cpp/Time.cpp",
 		"test/Window_Test.cpp"
+		--"test/Entity.Entt_test.cpp"
 		--"game/**.h",
 		--"game/**.cpp"
 	}

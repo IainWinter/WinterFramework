@@ -41,36 +41,24 @@ public:
 	
 	// functions for setting properties for box2d...
 
-	bool InWorld() const
-	{
-		return !!m_instance;
-	}
+	bool InWorld() const { return !!m_instance; }
+	
+	vec2 GetPosition() const { assert_in_world(); return _fb(m_instance->GetPosition()); }
+	vec2 GetVelocity() const { assert_in_world(); return _fb(m_instance->GetLinearVelocity()); }
+	float GetAngle()           const { assert_in_world(); return m_instance->GetAngle(); }
+	float GetAngularVelocity() const { assert_in_world(); return m_instance->GetAngularVelocity(); }
 
-	vec2 GetPosition() const
-	{
-		assert_in_world();
-		return _fb(m_instance->GetPosition());
-	}
+	void SetPosition(vec2 pos) const { assert_in_world(); return m_instance->SetTransform(_tb(pos), m_instance->GetAngle()); }
+	void SetVelocity(vec2 vel) const { assert_in_world(); return m_instance->SetLinearVelocity(_tb(vel)); }
+	void SetAngle(float angle) const { assert_in_world(); return m_instance->SetTransform(m_instance->GetPosition(), angle); }
+	void SetAngularVelocity(float avel) const { assert_in_world(); return m_instance->SetAngularVelocity(avel); }
 
-	float GetAngle() const
-	{
-		assert_in_world();
-		return m_instance->GetAngle();
-	}
-
-	void ApplyForce(vec2 force)
-	{
-		assert_in_world();
-		m_instance->ApplyForceToCenter(_tb(force), true);
-	}
+	void ApplyForce(vec2 force) { assert_in_world(); m_instance->ApplyForceToCenter(_tb(force), true); }
 
 	// functions that should hide the box2d api, but dont right now
+	// could add density...
 
-	void AddCollider(const b2Shape& shape) // could add density...
-	{
-		assert_in_world();
-		m_instance->CreateFixture(&shape, 1.f);
-	}
+	void AddCollider(const b2Shape& shape) { assert_in_world(); m_instance->CreateFixture(&shape, 1.f); }
 
 private:
 	void assert_in_world() const

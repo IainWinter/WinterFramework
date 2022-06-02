@@ -32,26 +32,28 @@ struct SandSprite
 
 struct event_SandCellCollision
 {
-	entity projectile;
-	entity sprite;
+	Entity projectile;
+	Entity sprite;
 	ivec2 hitPosInSprite;
 };
 
 struct event_SandAddSprite
 {
-	entity entity;
+	Entity entity;
+	vec2 velocity = vec2(0.f, 0.f);
+	float aVelocity = 0.f;
 };
 
 struct SandWorld
 {
-	entity display;
+	Entity display;
 
 	vec2 worldScale; // scale of meters to cells
 	ivec2 screenSize;
 	vec2 screenOffset;
 
 	r<Target> screen;
-	std::vector<entity> tileCache; // for the sprite index in the shader, indexes into this array
+	std::vector<Entity> tileCache; // for the sprite index in the shader, indexes into this array
 
 	SandWorld() = default;
 
@@ -63,10 +65,10 @@ struct SandWorld
 		screen->Add(Target::aColor, w, h, Texture::uRGBA, false);
 		screen->Add(Target::aColor1, w, h, Texture::uINT_32, false);
 
-		display = entities().create()
-			.add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0)
-			.add<Sprite>(screen->Get(Target::aColor))
-			.add<Renderable>();
+		display = GetWorld().Create();
+		display.Add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0);
+		display.Add<Sprite>(screen->Get(Target::aColor));
+		display.Add<Renderable>();
 
 		worldScale.x = w / camScaleX / 2; // by 2 bc mesh does from -1 to 1
 		worldScale.y = h / camScaleY / 2;
@@ -79,15 +81,15 @@ struct SandWorld
 
 	~SandWorld()
 	{
-		display.destroy();
+		display.Destroy();
 	}
 
-	entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
+	Entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
 	{
-		return entities().create().add<Cell>(vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color);
+		return GetWorld().Create().AddAll(Cell{ vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color });
 	}
 
-	void DrawLine(Texture& display, Texture& collisionInfo, entity e, Cell& cell)
+	void DrawLine(Texture& display, Texture& collisionInfo, Entity e, Cell& cell)
 	{
 		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
 		vec2 current = cell.pos;
@@ -146,7 +148,7 @@ struct SandWorld
 
 struct Sand_System_Update : System
 {
-	std::unordered_set<entity> toSplit;
+	std::unordered_set<Entity > toSplit;
 
 	 Sand_System_Update()
 	 { 
@@ -157,14 +159,14 @@ struct Sand_System_Update : System
 
 	void on(event_SandCellCollision& e)
 	{
-		vec2& vel = e.projectile.get<Cell>().vel;
+		vec2& vel = e.projectile.Get<Cell>().vel;
 		float speed = length(vel);
 		vel.x += get_rand(400) - 200;
 		vel.y += get_rand(400) - 200;
 		vel = normalize(vel) * speed;
 
-		e.sprite.get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
-		e.sprite.get<SandSprite>().hasChanged = true;
+		e.sprite.Get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
+		e.sprite.Get<SandSprite>().hasChanged = true;
 
 		if (toSplit.find(e.sprite) == toSplit.end())
 		{
@@ -174,14 +176,14 @@ struct Sand_System_Update : System
 
 	void on(event_SandAddSprite& e)
 	{
-		Texture& sprite = e.entity.get<Sprite>().Get();
-		Transform2D& transform = e.entity.get<Transform2D>();
+		Texture& sprite = e.entity.Get<Sprite>().Get();
+		Transform2D& transform = e.entity.Get<Transform2D>();
 		transform.sx = sprite.Width()  / Get<SandWorld>().worldScale.x;
 		transform.sy = sprite.Height() / Get<SandWorld>().worldScale.y;
 
 		// setup collider
 
-		SandSprite& sandSprite = e.entity.get<SandSprite>();
+		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
 		assert(sandSprite.colliderMask.Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
 
@@ -193,6 +195,8 @@ struct Sand_System_Update : System
 		);
 
 		Rigidbody2D& body = Get<PhysicsWorld>().AddEntity(e.entity);
+		body.SetVelocity(e.velocity);
+		body.SetAngularVelocity(e.aVelocity);
 
 		vec2 scale = vec2(transform.sx, transform.sy);
 
@@ -211,8 +215,8 @@ struct Sand_System_Update : System
 		// debug
 		std::vector<vec2> debug_mesh; 
 		for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) debug_mesh.push_back(v);
-		e.entity.add<Mesh>();
-		Mesh& mesh = e.entity.get<Mesh>();
+		e.entity.Add<Mesh>();
+		Mesh& mesh = e.entity.Get<Mesh>();
 		mesh.Add(Mesh::aPosition, debug_mesh);
 	}
 
@@ -225,9 +229,9 @@ struct Sand_System_Update : System
 		// split sprites that needed it
 		// this about multi-threading
 
-		for (entity splitMe : toSplit)
+		for (Entity splitMe : toSplit)
 		{
-			Texture& sprite = splitMe.get<Sprite>().Get();
+			Texture& sprite = splitMe.Get<Sprite>().Get();
 			int length = sprite.Width() * sprite.Height();
 
 			printf("splitting sprite with length %d\n", length);
@@ -303,7 +307,7 @@ struct Sand_System_Update : System
 
 					// place the new sprites in their relitive locations
 
-					Transform2D splitTransform = splitMe.get<Transform2D>();
+					Transform2D splitTransform = splitMe.Get<Transform2D>();
 
 					vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f;    // width/height because it's 0-width/height
 					vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;   // avergae of min and max bc min might not be 0, +1 because maxY is index not size
@@ -312,19 +316,28 @@ struct Sand_System_Update : System
 					splitTransform.x += offset.x / sand.worldScale.x;
 					splitTransform.y += offset.y / sand.worldScale.y;
 
-					entity splitOff = entities().create<Transform2D, Sprite, SandSprite>()
-						.set<Transform2D>(splitTransform)
-						.set<Sprite>(splitTexture)
-						.set<SandSprite>(splitTexture);
+					Entity splitOff = GetWorld().Create().AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
 
-					events().send(event_SandAddSprite {splitOff});
+					vec3 vel;
+					if (splitMe.Has<Rigidbody2D>())
+					{
+						vel.x = splitMe.Get<Rigidbody2D>().GetVelocity().x;
+						vel.y = splitMe.Get<Rigidbody2D>().GetVelocity().y;
+						vel.z = splitMe.Get<Rigidbody2D>().GetAngularVelocity();
+					}
+
+					//vel.x += get_rand(.1f) - .05f;
+					//vel.y += get_rand(.1f) - .05f;
+					//vel.z += get_rand(.5f) - .025f;
+
+					events().send(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
 
 					// this has some memory issue
 				}
 
 				sprite.Cleanup();
-				Get<PhysicsWorld>().Remove(splitMe.get<Rigidbody2D>()); // todo: add listener to physics obj
-				splitMe.destroy();
+				Get<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
+				splitMe.Destroy();
 			}
 		}
 
@@ -333,8 +346,8 @@ struct Sand_System_Update : System
 
 		// Sand Update
 
-		//vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);/s		//sand.display.get<Transform2D>().sx = reverseCamScale.x;
-		//display.get<Tran<Transform2D>().sy = reverseCamScale.y;	sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
+		//vec2 reverseCamScale = sand.worldScale / vec2(window.m_config.Width, window.m_config.Height);/s		//sand.display.Get<Transform2D>().sx = reverseCamScale.x;
+		//display.Get<Tran<Transform2D>().sy = reverseCamScale.y;	sand.tileCache.clear(); // bad for a system to touch state like this... kinda a hack only because entity handle cant turn into a u32
 
 		// Render tiles to hidden target
 
@@ -342,7 +355,7 @@ struct Sand_System_Update : System
 		render.Clear(Color(0));
 
 		int spriteIndex = 0;
-		for (auto [e, transform, sprite, sandSprite] : entities().query<Transform2D, Sprite, SandSprite>().with_entity())
+		for (auto [e, transform, sprite, sandSprite] : QueryWithEntity<Transform2D, Sprite, SandSprite>())
 		{
 			if (sandSprite.hasChanged)
 			{
@@ -365,7 +378,7 @@ struct Sand_System_Update : System
 		color.SendToHost();
 		sInfo.SendToHost();
 
-		for (auto [e, cell] : entities().query<Cell>().with_entity())
+		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
 			sand.DrawLine(color, sInfo, e, cell);
 		}
@@ -378,12 +391,12 @@ struct Sand_LifeUpdateSystem : System
 {
 	void Update()
 	{
-		for (auto [e, time] : entities().query<CellLife>().with_entity())
+		for (auto [e, time] : QueryWithEntity<CellLife>())
 		{
 			time.life -= Time::DeltaTime();
 			if (time.life <= 0.f)
 			{
-				entities_defer().destroy(e);
+				e.Destroy();
 			}
 		}
 	}

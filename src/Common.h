@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Defines.h"
+
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
@@ -18,10 +20,6 @@ using namespace glm;
 
 float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
 int get_rand(int x) { return rand() % x; }
-
-using u32 = uint32_t; // redundant with glm
-using u8 = uint8_t;
-using f32 = float;
 
 struct Color
 {
