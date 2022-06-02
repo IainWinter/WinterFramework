@@ -11,6 +11,12 @@
 #include <stdint.h>
 #include <array>
 
+// todo:
+//
+// listeners dont work properly because moved entities dont move the listeners
+// the fix is prolly to keep events out of this and make a wrapper, for now dont use...
+//
+
 #define ENTITY_USE_SERIAL
 
 #ifdef ENTITY_USE_SERIAL
@@ -1295,6 +1301,11 @@ inline entity& entity::on_add    (const std::function<void(entity, const compone
 inline entity& entity::on_remove (const std::function<void(entity)>                  & func) { assert(m_manager && "entity::on_remove failed, no manager");  m_manager->on_remove (m_handle, func); return *this; }
 inline entity& entity::on_remove (const std::function<void(entity, const component&)>& func) { assert(m_manager && "entity::on_remove failed, no manager");  m_manager->on_remove (m_handle, func); return *this; }
 
+namespace std {
+	template<> struct hash<entity>        { size_t operator()(const entity&        x) const { return x.m_handle.hash(); } };
+	template<> struct hash<entity_handle> { size_t operator()(const entity_handle& x) const { return x.hash(); }};
+}
+
 /*
 	If you want to use singletons, note dll bounds
 */
@@ -1336,14 +1347,14 @@ using tuple_or_single = typename std::conditional<
 
 struct System
 {
-	entity* app;
+	entity* app = nullptr;
 
 	template<typename... _t>
 	tuple_or_single<_t&...> Get()
 	{
 		if constexpr (sizeof...(_t) == 1)
 		{
-			return app->get<_t>();
+			return app->get<_t...>();
 		}
 
 		return { app->get<_t>()... };

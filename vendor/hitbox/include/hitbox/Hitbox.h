@@ -27,6 +27,7 @@ struct HitboxBounds
 };
 
 bool is_polygon_convex(const std::vector<vec2>& polygon);
+float polygon_area(const std::vector<vec2>& polygon);
 HitboxBounds make_bounds(const std::vector<vec2>& points);
 
 std::vector<vec2> make_contour(const bool* mask_grid, int width, int height);

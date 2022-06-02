@@ -212,19 +212,13 @@ struct event_queue
 	{}
 
 	template<typename _e>
-	void queue(_e&& event)
+	void send(_e&& event)
 	{
-		queued_event<_e>* qe = new queued_event<_e>();
+		queued_event<_e>* qe = new queued_event<_e>(); // could use pool...
 		qe->m_type = make_event<_e>();
 		qe->m_event = std::forward<_e>(event);
 		qe->m_where = m_where_current;
 		m_queue.push_back(qe);
-	}
-
-	template<typename _e>
-	void send(_e&& event)
-	{
-		m_manager->send<_e>(std::forward<_e>(event));
 	}
 
 	void execute()

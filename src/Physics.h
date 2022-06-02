@@ -3,17 +3,31 @@
 #include "Common.h"
 #include "box2d/box2d.h"
 
+b2Vec2 _tb(const vec2& v)
+{
+	return b2Vec2(v.x, v.y);
+}
+
+vec2 _fb(const b2Vec2& v)
+{
+	return vec2(v.x, v.y);
+}
+
 struct Rigidbody2D
 {
+public:
 	Transform2D LastTransform;
 	
+private:
+	friend class PhysicsWorld;
+
 	// Init values for Physics Add
 	b2BodyDef m_body;
-	b2FixtureDef m_collider;
 
 	// If null, not in physics world
 	b2Body* m_instance;
 
+public:
 	Rigidbody2D(
 		Transform2D transform = {}
 	)
@@ -25,9 +39,43 @@ struct Rigidbody2D
 		m_body.angle = transform.r;
 	}
 	
+	// functions for setting properties for box2d...
+
 	bool InWorld() const
 	{
 		return !!m_instance;
+	}
+
+	vec2 GetPosition() const
+	{
+		assert_in_world();
+		return _fb(m_instance->GetPosition());
+	}
+
+	float GetAngle() const
+	{
+		assert_in_world();
+		return m_instance->GetAngle();
+	}
+
+	void ApplyForce(vec2 force)
+	{
+		assert_in_world();
+		m_instance->ApplyForceToCenter(_tb(force), true);
+	}
+
+	// functions that should hide the box2d api, but dont right now
+
+	void AddCollider(const b2Shape& shape) // could add density...
+	{
+		assert_in_world();
+		m_instance->CreateFixture(&shape, 1.f);
+	}
+
+private:
+	void assert_in_world() const
+	{
+		assert(InWorld() && "Physics object has not been added to the world");
 	}
 };
 
@@ -45,13 +93,20 @@ struct PhysicsWorld
 		delete m_world;
 	}
 
+	// adds a Rigdbody2D and an on_destroy to remove from physics at eol
+	Rigidbody2D& AddEntity(entity& e)
+	{
+		e.add<Rigidbody2D>(e.get<Transform2D>());
+		e.on_destroy([this](entity e) { Remove(e.get<Rigidbody2D>()); });
+
+		Rigidbody2D& body = e.get<Rigidbody2D>();
+		Add(body);
+		return body;
+	}
+
 	void Add(Rigidbody2D& body)
 	{
 		body.m_instance = m_world->CreateBody(&body.m_body);
-		if (body.m_collider.density > 0)
-		{
-			body.m_instance->CreateFixture(&body.m_collider);
-		}
 	}
 	
 	void Remove(Rigidbody2D& body)
@@ -65,14 +120,21 @@ struct PhysicsWorld
 		m_world->Step(dt, 8, 3);
 	}
 
+	entity CreatePhysicsEntity(const Transform2D& transform = {})
+	{
+		entity e = entities().create().add<Transform2D>(transform).add<Rigidbody2D>(transform);
+		Add(e.get<Rigidbody2D>());
+		return e;
+	}
+
 	// yes moves
 	//  no copys
-	PhysicsWorld(PhysicsWorld&& move)
+	PhysicsWorld(PhysicsWorld&& move) noexcept
 		: m_world (move.m_world)
 	{
 		move.m_world = nullptr;
 	}
-	PhysicsWorld& operator=(PhysicsWorld&& move)
+	PhysicsWorld& operator=(PhysicsWorld&& move) noexcept
 	{
 		m_world = move.m_world;
 		move.m_world = nullptr;
@@ -81,3 +143,4 @@ struct PhysicsWorld
 	PhysicsWorld(const PhysicsWorld& move) = delete;
 	PhysicsWorld& operator=(const PhysicsWorld& move) = delete;
 };
+

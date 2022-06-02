@@ -216,10 +216,10 @@ public:
 	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (_t*)&At(x, y).as_u32; }
 	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (_t*)&At(x, y).as_u32; }
 
-	void Clear()
+	void Clear(Color color = Color(0, 0, 0, 0))
 	{
 		assert_on_host();
-		memset(m_host, 0, m_width * m_height * m_channels);
+		memset(m_host, color.as_u32, BufferSize());
 	}
 
 // interface
@@ -252,6 +252,9 @@ protected:
 
 	void _UpdateOnDevice() override
 	{
+		// really slow find fix
+		// is it the data or the point in time this function is getting called?
+
 		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
 	}
 

@@ -9,11 +9,6 @@
 
 #include <iostream>
 
-std::string _p(const std::string& filename)
-{
-	return "../assets/" + filename;
-}
-
 using Order = void*;
 
 struct Application
@@ -113,6 +108,7 @@ struct Application
 		window.PumpEvents();
 
 		entities_defer().execute();
+		events_defer().execute();
 		entities().clean_storage();
 		
 		return m_running;
@@ -132,56 +128,18 @@ struct Application
 
 Application app; // for this simple test use global
 
-struct Player
+entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
 {
-	float speed = 300;
-};
-
-// temp globals
-
-entity CreatePhysicsEntity(const Transform2D& transform = {})
-{
-	PhysicsWorld& world = app.Get<PhysicsWorld>();
-
-	entity e = entities().create();
-	e.add<Transform2D>(transform)
-	 .add<Rigidbody2D>(transform);
-
-	world.Add(e.get<Rigidbody2D>());
-	return e;
-}
-
-entity CreateTexturedBox(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
-{	
 	Texture sprite = Texture(_p(path), false);
 	SandWorld& sand = app.Get<SandWorld>();
 	transform.sx = sprite.Width()  / sand.worldScale.x;
 	transform.sy = sprite.Height() / sand.worldScale.y;
 
-	entity entity = CreatePhysicsEntity(transform)
-		.add<SandSprite>()
+	// collider should be 8 bit mask texture
+
+	entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform)
+		.add<SandSprite>(Texture(_p(collider_mask_path)))  
 		.add<Sprite>(sprite);
-
-	Texture collider_mask = Texture(_p(collider_mask_path));
-	auto polygons = MakePolygonFromField<u32>(
-		(u32*)collider_mask.Pixels(), 
-		collider_mask.Width(), 
-		collider_mask.Height(),
-		[](const u32& color) { return (color & ~0xff000000) == 0; }
-	);
-
-	Rigidbody2D& body = entity.get<Rigidbody2D>();
-	vec2 scale = vec2(transform.sx, transform.sy);
-	for (const std::vector<glm::vec2>& polygon : polygons.first)
-	{
-		b2PolygonShape shape;
-		for (int i = 0; i < polygon.size(); i++)
-		{
-			shape.m_vertices[i] = b2Vec2(polygon.at(i).x * scale.x, polygon.at(i).y * scale.y);
-		}
-		shape.Set(shape.m_vertices, polygon.size());
-		body.m_instance->CreateFixture(&shape, 1.f);
-	}
 
 	return entity;
 }
@@ -193,7 +151,7 @@ entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
 	transform.sx = sprite.Width()  / sand.worldScale.x;
 	transform.sy = sprite.Height() / sand.worldScale.y;
 
-	entity entity = CreatePhysicsEntity(transform)
+	entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform)
 		.add<SandSprite>()
 		.add<Sprite>(sprite);
 
@@ -201,10 +159,15 @@ entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
 
 	b2CircleShape shape;
 	shape.m_radius = std::max(transform.sx, transform.sy);
-	body.m_instance->CreateFixture(&shape, 1.f);
+	body.AddCollider(shape);
 
 	return entity;
 }
+
+struct Player
+{
+	float speed = 300;
+};
 
 // I wonder if you could just declspec a templated type to
 // test if it contained these functions and store their func pointers if
@@ -276,7 +239,7 @@ struct EventLoggingSystem : System
 
 		printf(
 			"[Event] Recieved: event_Input {"
-			"\n\tname %d"
+			"\n\tname %s"
 			"\n\tstate %f"
 			"\n}\n", names.at(e.name), e.state);
 	}
@@ -295,9 +258,9 @@ struct PhysicsInterpolationSystem : System
 		{
 			if (!body.InWorld()) continue;
 
-			transform.x = lerp(body.LastTransform.x, body.m_instance->GetPosition().x, ratio);
-			transform.y = lerp(body.LastTransform.y, body.m_instance->GetPosition().y, ratio);
-			transform.r = lerp(body.LastTransform.r, body.m_instance->GetAngle(),      ratio);
+			transform.x = lerp(body.LastTransform.x, body.GetPosition().x, ratio);
+			transform.y = lerp(body.LastTransform.y, body.GetPosition().y, ratio);
+			transform.r = lerp(body.LastTransform.r, body.GetAngle(),      ratio);
 		}
 	}
 
@@ -309,9 +272,9 @@ struct PhysicsInterpolationSystem : System
 		{
 			if (!body.InWorld()) continue;
 
-			body.LastTransform.x = body.m_instance->GetPosition().x;
-			body.LastTransform.y = body.m_instance->GetPosition().y;
-			body.LastTransform.r = body.m_instance->GetAngle();
+			body.LastTransform.x = body.GetPosition().x;
+			body.LastTransform.y = body.GetPosition().y;
+			body.LastTransform.r = body.GetAngle();
 		}
 	}
 };
@@ -329,7 +292,7 @@ struct ForceTwoardwsMouseSystem : System
 			float fx = 0 - transform.x;
 			float fy = 0 - transform.y;
 
-			body.m_instance->ApplyForceToCenter(b2Vec2(fx, fy), true);
+			body.ApplyForce(vec2(fx, fy));
 		}
 	}
 };
@@ -369,9 +332,9 @@ struct CharacterController : System
 	float y = 0;
 	float vx = 0;
 	float vy = 0;
-	float speed = 0;
+	float speed = 200;
 	bool mouseDown = false;
-	float fireTime = .4f;
+	float fireTime = .05f;
 
 	float mouseX, mouseY; // temp
 
@@ -394,7 +357,7 @@ struct CharacterController : System
 		fireTime -= Time::DeltaTime();
 		if (mouseDown && fireTime < 0.f)
 		{
-			fireTime = .4f;
+			fireTime = .05f;
 
 			sand.CreateCell(
 				transform.x,
@@ -411,7 +374,7 @@ struct CharacterController : System
 	void FixedUpdate() override
 	{
 		auto [body] = entities().query<Player, Rigidbody2D>().only<Rigidbody2D>().first();
-		body.m_instance->ApplyForceToCenter(b2Vec2(vx * speed, vy * speed), true);
+		body.ApplyForce(vec2(vx * speed, vy * speed));
 	}
 
 	void UI() override
@@ -421,7 +384,7 @@ struct CharacterController : System
 		float ts = Time::TimeScale();
 
 		ImGui::Begin("#");
-		ImGui::SliderFloat2("pos", (float*)&body.m_instance->GetPosition(), -10, 10);
+		ImGui::SliderFloat2("pos", (float*)&body.GetPosition(), -10, 10);
 		ImGui::SliderFloat("speed", &speed, 0, 1000);
 		ImGui::SliderFloat("time", &ts, 0, 2);
 		ImGui::Text("Deltatime: %f", Time::RawDeltaTime());
@@ -475,7 +438,7 @@ void setup_modules()
 	app.m_modules
 		.add<Window>(windowConfig, &events())
 		.add<SpriteRenderer2D>()
-		//.add<TriangleRenderer2D>()
+		.add<TriangleRenderer2D>()
 		.add<PhysicsWorld>()
 		.add<SandWorld>(1280, 720, 32, 18)
 		.add<Camera>(0, 0, 32, 18);
@@ -484,18 +447,15 @@ void setup_modules()
 void setup_systems()
 {
 	app.AddSystem<PhysicsInterpolationSystem>();
-	app.AddSystem<ForceTwoardwsMouseSystem>();
+	//app.AddSystem<ForceTwoardwsMouseSystem>();
 	app.AddSystem<CharacterController>();
 	
 	app.AddSystem<Sand_LifeUpdateSystem>();
-	//app.AddSystem<Sand_VelUpdateSystem>();
+	app.AddSystem<Sand_System_Update>();
 
-	app.AddSystem<Sand_System_RenderTiles>();
 	app.AddSystem<SpriteRenderer2DSystem>();
-
-	app.AddSystem<Sand_System_CollisionVel>();
-	
 	//app.AddSystem<TriangleRenderer2DSystem>();
+
 	//app.AddSystem<AddSandToWorldSystem>();
 	//app.AddSystem<EventLoggingSystem>();
 }
@@ -516,25 +476,28 @@ void setup()
 	setup_systems();
 	setup_inputmapping();
 
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		Transform2D t;
 		t.x = 10 + i * 10;
-		CreateTexturedBox("enemy_station.png", "enemy_station_mask.png", t);
+		CreateSandSprite("enemy_station.png", "enemy_station_mask.png", t);
 	}
 
 	Transform2D t;
 
-	CreateTexturedBox("enemy_base.png", "enemy_base_mask.png", t);
+	t.y = 10;
+	CreateSandSprite("test_line.png", "test_line.png", t);
+	t.y = 0;
+	//CreateSandSprite("enemy_base.png", "enemy_base_mask.png", t);
 	
 	t.x = -10;
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
+	//CreateTexturedCircle("enemy_bomb.png", t);
 	CreateTexturedCircle("enemy_bomb.png", t).add<Player>();
 }
 
