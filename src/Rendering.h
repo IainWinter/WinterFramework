@@ -1139,6 +1139,7 @@ struct Camera
 
  struct Renderable
  {
+	 int pad;
 	// Owning scene
  };
 

@@ -10,8 +10,7 @@
 #include <memory>
 #include <utility>
 
-template<typename _t>
-using r = std::shared_ptr<_t>;
+template<typename _t> using r = std::shared_ptr<_t>;
 
 // make glm the deafult math library
 // no need to think about if something is glm or not because it should

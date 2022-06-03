@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "Event.h"
+#include "util/error_check.h"
 
 /*
 
@@ -135,9 +136,12 @@ public:
 
 	~Window()
 	{
+		if (!m_window) return;
+		
 		Dnit_Imgui();
 		SDL_GL_DeleteContext(m_opengl);
 		SDL_DestroyWindow(m_window);
+		m_window = nullptr;
 	}
 
 	void PumpEvents()

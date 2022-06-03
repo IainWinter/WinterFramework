@@ -82,12 +82,12 @@ struct PhysicsWorld
 	}
 
 	// adds a Rigdbody2D and an on_destroy to remove from physics at eol
-	Rigidbody2D& AddEntity(entity& e)
+	Rigidbody2D& AddEntity(Entity& e)
 	{
-		e.add<Rigidbody2D>(e.get<Transform2D>());
-		e.on_destroy([this](entity e) { Remove(e.get<Rigidbody2D>()); });
+		e.Add<Rigidbody2D>(e.Get<Transform2D>());
+		//e.on_destroy([this](Entity e) { Remove(e.Get<Rigidbody2D>()); });
 
-		Rigidbody2D& body = e.get<Rigidbody2D>();
+		Rigidbody2D& body = e.Get<Rigidbody2D>();
 		Add(body);
 		return body;
 	}
@@ -108,10 +108,10 @@ struct PhysicsWorld
 		m_world->Step(dt, 8, 3);
 	}
 
-	entity CreatePhysicsEntity(const Transform2D& transform = {})
+	Entity CreatePhysicsEntity(const Transform2D& transform = {})
 	{
-		entity e = entities().create().add<Transform2D>(transform).add<Rigidbody2D>(transform);
-		Add(e.get<Rigidbody2D>());
+		Entity e = GetWorld().Create().AddAll(transform, Rigidbody2D(transform));
+		Add(e.Get<Rigidbody2D>());
 		return e;
 	}
 

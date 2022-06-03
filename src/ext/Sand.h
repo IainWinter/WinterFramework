@@ -222,7 +222,7 @@ struct Sand_System_Update : System
 
 	void Update()
 	{
-		auto [render, camera, sand, window] = Get<SpriteRenderer2D, Camera, SandWorld, Window>();
+		auto [render, camera, sand, window] = GetAll<SpriteRenderer2D, Camera, SandWorld, Window>();
 
 		// Sprite update
 

@@ -23,8 +23,8 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
 		"src/ext/cpp/Time.cpp",
-		"test/Window_Test.cpp"
-		--"test/Entity.Entt_test.cpp"
+		--"test/Window_Test.cpp"
+		"test/Leveling_Test.cpp"
 		--"game/**.h",
 		--"game/**.cpp"
 	}

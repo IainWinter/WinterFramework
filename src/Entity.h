@@ -55,7 +55,7 @@ public:
 		std::tuple<_t&...> operator*() { return tuple_helpers::pop_front(*m_itr); }
 	};
 
-	EntityQuery(const entt_view& view, EntityWorld* owning) : m_view(view) {}
+	EntityQuery(const entt_view& view) : m_view(view) {}
 	Iterator begin() { return Iterator(m_view.begin()); }
 	Iterator end() { return Iterator(m_view.end()); }
 };
@@ -101,41 +101,12 @@ struct EntityWorld
 {
 private:
 	entt::registry m_registry;
-	std::vector<System*> m_systems; // updater functions
-	
+
 	friend struct Entity;
 	friend struct System;
 
 public:
 	Entity Create();
-
-	const std::vector<System*>& GetSystems() const
-	{
-		return m_systems;
-	}
-
-	// adding systems
-	// system constructors should be only default init of values
-	// wait until Start to do any work
-
-	template<typename _t>
-	Order AddSystem(const _t& system_toCopy)
-	{
-		System* system = new _t(system_toCopy);
-		system->m_owning = this;
-		return (Order)m_systems.emplace_back(system);
-	}
-
-	template<typename _t>
-	Order AddSystemAfter(Order after, const _t& system_toCopy)
-	{
-		auto itr = m_systems.begin();
-		for (; itr != m_systems.end(); ++itr) if (*itr == after) break;
-		
-		System* system = new _t(system_toCopy);
-		system->m_owning = this;
-		return (Order)*m_systems.emplace(itr, system);
-	}
 
 	template<typename... _t>
 	EntityQuery<_t...> Query()
@@ -166,6 +137,9 @@ public:
 		: m_handle (handle)
 		, m_owning (owning)
 	{}
+
+	bool operator==(const Entity& other) const { return Id() == other.Id(); }
+	bool operator!=(const Entity& other) const { return Id() != other.Id(); }
 
 	u32 Id() const
 	{
@@ -243,32 +217,13 @@ public:
 	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contains one of these components"); }
 };
 
-struct System
-{
-private:
-	EntityWorld* m_owning;
-	friend struct EntityWorld;
-
-protected:
-	template<typename... _t> EntityQuery<_t...>           Query()           { return m_owning->Query<_t...>(); }
-	template<typename... _t> EntityQueryWithEntity<_t...> QueryWithEntity() { return m_owning->QueryWithEntity<_t...>(); }
-
-public:
-	virtual void Update() {}
-	virtual void FixedUpdate() {}
-	virtual void UI() {}
-};
+namespace std {
+	template<> struct hash<Entity> { size_t operator()(const Entity& x) const { return x.Id(); } };
+}
 
 // impl, could go into cpp but these funcs are tiny
 
 inline Entity EntityWorld::Create()
 {
 	return Entity(m_registry.create(), this);
-}
-
-// remove this, or put in an engine file with a bunch of globals...
-inline static EntityWorld& GetWorld()
-{
-	static EntityWorld world;
-	return world;
 }
