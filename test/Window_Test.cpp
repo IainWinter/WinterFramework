@@ -274,7 +274,9 @@ struct WindowTest : EngineLoop
 		level->AddSystem(Sand_LifeUpdateSystem());
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SpriteRenderer2DSystem());
-		level->AddSystem(EventLoggingSystem());
+		//level->AddSystem(EventLoggingSystem());
+
+		level->AddSystem(ForceTwoardwsMouseSystem());
 
 		m_app.GetModule<LevelManager>().InitLevel(level);
 	}

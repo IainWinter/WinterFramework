@@ -57,7 +57,6 @@ struct SandWorld
 	vec2 screenOffset;
 
 	r<Target> screen;
-	std::vector<Entity> tileCache; // for the sprite index in the shader, indexes into this array
 
 	SandWorld() = default;
 
@@ -94,44 +93,6 @@ struct SandWorld
 		return LevelManager::CurrentLevel()->CreateEntity().AddAll(Cell{ vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color });
 	}
 
-	void DrawLine(Texture& display, Texture& collisionInfo, Entity e, Cell& cell)
-	{
-		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
-		vec2 current = cell.pos;
-
-		float distance = glm::length(delta);
-		delta /= distance;
-
-		for (int i = 0; i < ceil(distance); i++)
-		{
-			ivec2 raster = floor(current + screenOffset);
-
-			if (!OnScreen(raster))
-			{
-				// break if going offscreen
-				continue;
-			}
-
-			if (CollidePixel(collisionInfo, raster))
-			{
-
-				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
-				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
-				int tileIndex = spriteInfo[2];
-
-				// put this in a system
-
-				// should defer
-				//Send(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
-				//entities_defer().destroy(e);
-			}
-
-			DrawPixel(display, floor(current + screenOffset), cell.color);
-			current += delta;
-			cell.pos = current;
-		}
-	}
-
 	void DrawPixel(Texture& display, ivec2 pos, Color c)
 	{
 		display.At(pos.x, pos.y) = c;
@@ -163,6 +124,7 @@ struct SandWorld
 struct Sand_System_Update : System<Sand_System_Update>
 {
 	std::unordered_set<Entity > toSplit;
+	std::vector<Entity> tileCache; // for the sprite index in the shader, indexes into this array
 
 	void Init()
 	{ 
@@ -344,7 +306,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 					//vel.y += get_rand(.1f) - .05f;
 					//vel.z += get_rand(.5f) - .025f;
 
-					Send(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
+					SendNow(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
 
 					// this has some memory issue
 				}
@@ -356,7 +318,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		}
 
 		toSplit.clear();
-		sand.tileCache.clear();
+		tileCache.clear();
 
 		// Sand Update
 
@@ -378,10 +340,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 			}
 
 			render.m_shader.Set("spriteIndex", spriteIndex);
-			sand.tileCache.push_back(e);
+			render.DrawSprite(transform, sprite.Get());
 			spriteIndex += 1;
 
-			render.DrawSprite(transform, sprite.Get());
+			tileCache.push_back(e);
 		}
 
 		// Cell update
@@ -394,10 +356,46 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
-			sand.DrawLine(color, sInfo, e, cell);
+			DrawLine(sand, color, sInfo, e, cell);
 		}
 
 		color.SendToDevice();
+	}
+
+	void DrawLine(SandWorld& sand, Texture& display, Texture& collisionInfo, Entity e, Cell& cell)
+	{
+		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
+		vec2 current = cell.pos;
+
+		float distance = glm::length(delta);
+		delta /= distance;
+
+		for (int i = 0; i < ceil(distance); i++)
+		{
+			ivec2 raster = floor(current + sand.screenOffset);
+
+			if (!sand.OnScreen(raster))
+			{
+				// break if going offscreen
+				continue;
+			}
+
+			if (sand.CollidePixel(collisionInfo, raster))
+			{
+				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
+				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
+				int tileIndex = spriteInfo[2];
+
+				// put this in a system
+
+				// should defer
+				SendNow(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
+			}
+
+			sand.DrawPixel(display, floor(current + sand.screenOffset), cell.color);
+			current += delta;
+			cell.pos = current;
+		}
 	}
 };
 
