@@ -53,7 +53,9 @@ public:
 	void SetAngle(float angle) const { assert_in_world(); return m_instance->SetTransform(m_instance->GetPosition(), angle); }
 	void SetAngularVelocity(float avel) const { assert_in_world(); return m_instance->SetAngularVelocity(avel); }
 
-	void ApplyForce(vec2 force) { assert_in_world(); m_instance->ApplyForceToCenter(_tb(force), true); }
+	void ApplyForce(vec2 force)                        { assert_in_world(); m_instance->ApplyForceToCenter(_tb(force), true); }
+	void ApplyForce(vec2 force, vec2 offsetFromCenter) { assert_in_world(); m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }
+	void ApplyTorque(float force)                      { assert_in_world(); m_instance->ApplyTorque(force, true); }
 
 	// functions that should hide the box2d api, but dont right now
 	// could add density...

@@ -185,8 +185,14 @@ struct CharacterController : System<CharacterController>
 		{
 			fireTime = .05f;
 
-			sand.CreateCell(transform.x, transform.y + 5, Color(255, 255, 19), 
-				x * 1500 + get_rand(200) - 10, y * 1500 + get_rand(020) - 10, 1).Add<CellLife>(5.f);
+			sand.CreateCell(
+				transform.x,
+				transform.y + 5,
+				Color(255, 255, 19),
+				x * 1500 + get_rand(200) - 10,
+				y * 1500 + get_rand(200) - 10, 1
+			)
+				.AddAll(CellLife{ 5.f }, CellProjectile {0});
 		}
 		
 		//sand.CreateCell(mouseX, mouseY, Color(255, 100, 100));
@@ -271,12 +277,11 @@ struct WindowTest : EngineLoop
 
 		level->AddSystem(PhysicsInterpolationSystem());
 		level->AddSystem(CharacterController());
-		level->AddSystem(Sand_LifeUpdateSystem());
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SpriteRenderer2DSystem());
 		//level->AddSystem(EventLoggingSystem());
 
-		level->AddSystem(ForceTwoardwsMouseSystem());
+		//level->AddSystem(ForceTwoardwsMouseSystem());
 
 		m_app.GetModule<LevelManager>().InitLevel(level);
 	}

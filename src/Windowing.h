@@ -126,8 +126,12 @@ public:
 		Init_Imgui(first_glsl_version);
 
 		Resize(config.Width, config.Height);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		// sand breaks because this isnt setup
+		//glEnable(GL_DEPTH_TEST);
+		//glDepthFunc(GL_GREATER);
 
 		// vsync
 

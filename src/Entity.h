@@ -220,7 +220,7 @@ public:
 	// Asserts
 	                         void assert_is_valid()       const { assert(IsAlive()        && "Entity is not valid"); }
 	template<typename... _t> void assert_no_components()  const { assert(!HasAny<_t...>() && "Entity already contains one of these components"); }
-	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contains one of these components"); }
+	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contain one of these components"); }
 
 	// Copy and Move
 

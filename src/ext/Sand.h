@@ -17,6 +17,11 @@ struct Cell
 	Color color;
 };
 
+struct CellProjectile
+{
+	int owner; // for no damage to who fired
+};
+
 struct CellLife
 {
 	float life;
@@ -32,8 +37,8 @@ struct SandSprite
 
 struct event_SandCellCollision
 {
-	Entity projectile;
 	Entity sprite;
+	Entity projectile;
 	ivec2 hitPosInSprite;
 };
 
@@ -67,6 +72,9 @@ struct SandWorld
 		//spriteTarget->Add(Target::aDepth, w, h, 1);
 		screen->Add(Target::aColor, w, h, Texture::uRGBA, false);
 		screen->Add(Target::aColor1, w, h, Texture::uINT_32, false);
+		
+		// see Windowing.h
+		//screen->Add(Target::aDepth, w, h, Texture::uDEPTH, true);
 
 		display = LevelManager::CurrentLevel()->CreateEntity();
 		display.Add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0);
@@ -90,20 +98,27 @@ struct SandWorld
 
 	Entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
 	{
-		return LevelManager::CurrentLevel()->CreateEntity().AddAll(Cell{ vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color });
+		return LevelManager::CurrentLevel()->CreateEntity()
+			.AddAll(Cell { ToScreenPos(vec2(x, y)), vec2(vx, vy), dampen, color });
 	}
+
 
 	void DrawPixel(Texture& display, ivec2 pos, Color c)
 	{
 		display.At(pos.x, pos.y) = c;
 	}
 
-	bool CollidePixel(Texture& collisionInfo, ivec2 pos)
+	bool CollidePixel(Texture& collisionInfo, ivec2 pos) const
 	{
 		return collisionInfo.At<int>(pos.x, pos.y)[3] > 0;
 	}
 
-	bool OnScreen(ivec2 pos)
+	vec2 ToScreenPos(const vec2& pos) const
+	{
+		return pos * worldScale;
+	}
+
+	bool OnScreen(ivec2 pos) const
 	{
 		return pos.x > 0 && pos.y > 0 && pos.x < screenSize.x && pos.y < screenSize.y;
 	}
@@ -123,7 +138,7 @@ struct SandWorld
 
 struct Sand_System_Update : System<Sand_System_Update>
 {
-	std::unordered_set<Entity > toSplit;
+	std::vector<event_SandCellCollision> toSplit; // queue events to not exe a split on every collision, could be multiple per frame on same obj
 	std::vector<Entity> tileCache; // for the sprite index in the shader, indexes into this array
 
 	void Init()
@@ -143,9 +158,19 @@ struct Sand_System_Update : System<Sand_System_Update>
 		e.sprite.Get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
 		e.sprite.Get<SandSprite>().hasChanged = true;
 
-		if (toSplit.find(e.sprite) == toSplit.end())
+		bool alreadyHit = false;
+		for (event_SandCellCollision& E : toSplit)
 		{
-			toSplit.insert(e.sprite);
+			if (E.sprite == e.sprite)
+			{
+				alreadyHit = true;
+				break;
+			}
+		}
+
+		if (!alreadyHit)
+		{
+			toSplit.push_back(e);
 		}
 	}
 
@@ -184,6 +209,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			}
 			shape.Set(shape.m_vertices, polygon.size());
 
+			assert(polygon.size() < 9);
 			body.AddCollider(shape);
 		}
 
@@ -204,7 +230,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		// split sprites that needed it
 		// this about multi-threading
 
-		for (Entity splitMe : toSplit)
+		for (auto [splitMe, projectile, projectileLocation] : toSplit)
 		{
 			Texture& sprite = splitMe.Get<Sprite>().Get();
 			int length = sprite.Width() * sprite.Height();
@@ -236,18 +262,16 @@ struct Sand_System_Update : System<Sand_System_Update>
 				}
 			}
 
+			Rigidbody2D& body = splitMe.Get<Rigidbody2D>();
+			vec2 projectileVel = projectile.Get<Cell>().vel;
+			vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f; // width/height because it's 0-width/height
+
+			body.ApplyForce(projectileVel / 10.f, (midOld - vec2(projectileLocation)) / sand.worldScale);
+
 			if (islands.size() > 1)
 			{
 				for (const std::vector<int>& island : islands)
 				{
-					if (island.size() < 25)
-					{
-						// explode sprite
-						continue;
-					}
-
-					// copy old data to new texture
-
 					int minX =  INT_MAX;
 					int minY =  INT_MAX;
 					int maxX = -INT_MAX;
@@ -261,6 +285,52 @@ struct Sand_System_Update : System<Sand_System_Update>
 						if (x > maxX) maxX = x;
 						if (y > maxY) maxY = y;
 					}
+
+					Transform2D splitTransform = splitMe.Get<Transform2D>();
+
+					if (island.size() < 15)
+					{
+						for (const int& index : island)
+						{
+							auto [x, y] = get_xy(index, sprite.Width());
+
+							vec2 pos = (vec2(x, y) - midOld) / 10.f;
+							rotate(pos, splitTransform.r);
+							pos += vec2(splitTransform.x, splitTransform.y);
+
+							Color color = sprite.At(x, y);
+							vec2 offset = 1.f / sand.worldScale;
+
+							auto get_vel = [projectileVel]()
+							{
+								//float r = 100.f;
+								//vec2 v = vec2(get_randc(r), get_randc(r));
+								vec2 v = projectileVel;
+
+								return v*.1f; // x .1 makes this faster??
+							};
+
+							vec2 vels[4] = {
+								get_vel() + get_randc(50, 50),
+								get_vel() + get_randc(50, 50),
+								get_vel() + get_randc(50, 50),
+								get_vel() + get_randc(50, 50)
+							};
+
+							sand.CreateCell(pos.x,            pos.y,            color, vels[0].x, vels[0].y, 1).Add<CellLife>(get_randc(1.f));
+							sand.CreateCell(pos.x + offset.x, pos.y,            color, vels[1].x, vels[1].y, 1).Add<CellLife>(get_randc(1.f));
+							sand.CreateCell(pos.x,            pos.y + offset.y, color, vels[2].x, vels[2].y, 1).Add<CellLife>(get_randc(1.f));
+							sand.CreateCell(pos.x + offset.x, pos.y + offset.y, color, vels[3].x, vels[3].y, 1).Add<CellLife>(get_randc(1.f));
+						}
+
+						// need to find location in sand world of every pixel
+						// a clean way to do this would be to find the minx, miny pixel and vec2 offset per pixel in sandworld for rotation
+
+						// explode sprite
+						continue;
+					}
+
+					// copy old data to new texture
 
 					Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
 					splitTexture.Clear();
@@ -282,10 +352,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 					// place the new sprites in their relitive locations
 
-					Transform2D splitTransform = splitMe.Get<Transform2D>();
-
-					vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f;    // width/height because it's 0-width/height
-					vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;   // avergae of min and max bc min might not be 0, +1 because maxY is index not size
+					vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
 					vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.r);
 					
 					splitTransform.x += offset.x / sand.worldScale.x;
@@ -302,9 +369,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 						vel.z = splitMe.Get<Rigidbody2D>().GetAngularVelocity();
 					}
 
-					//vel.x += get_rand(.1f) - .05f;
-					//vel.y += get_rand(.1f) - .05f;
-					//vel.z += get_rand(.5f) - .025f;
+					vel.x += get_randc(.1f) + projectileVel.x / 1000.f;
+					vel.y += get_randc(.1f) + projectileVel.y / 1000.f;
+					vel.z += get_randc(.5f);
 
 					SendNow(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
 
@@ -348,6 +415,15 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Cell update
 
+		for (auto [e, time] : QueryWithEntity<CellLife>())
+		{
+			time.life -= Time::DeltaTime();
+			if (time.life <= 0.f)
+			{
+				e.Destroy();
+			}
+		}
+
 		Texture& color = *sand.screen->Get(Target::aColor);
 		Texture& sInfo = *sand.screen->Get(Target::aColor1); // sprite info / collision info, probally an index (or entity index) to an array of structs
 
@@ -356,7 +432,20 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
-			DrawLine(sand, color, sInfo, e, cell);
+			if (length(cell.vel / cell.dampen * Time::DeltaTime()) > 1)
+			{
+				DrawLine(sand, color, sInfo, e, cell);
+			}
+
+			else
+			{
+				if (sand.OnScreen(cell.pos + sand.screenOffset))
+				{
+					sand.DrawPixel(color, cell.pos + sand.screenOffset, cell.color);
+				}
+
+				cell.pos += cell.vel * Time::DeltaTime();
+			}
 		}
 
 		color.SendToDevice();
@@ -370,6 +459,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 		float distance = glm::length(delta);
 		delta /= distance;
 
+		bool isProjectile = e.Has<CellProjectile>();
+
 		for (int i = 0; i < ceil(distance); i++)
 		{
 			ivec2 raster = floor(current + sand.screenOffset);
@@ -380,36 +471,19 @@ struct Sand_System_Update : System<Sand_System_Update>
 				continue;
 			}
 
-			if (sand.CollidePixel(collisionInfo, raster))
+			if (isProjectile && sand.CollidePixel(collisionInfo, raster))
 			{
 				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
 
-				// put this in a system
-
 				// should defer
-				SendNow(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
+				SendNow(event_SandCellCollision{ tileCache.at(tileIndex), e, positionInSprite });
 			}
 
-			sand.DrawPixel(display, floor(current + sand.screenOffset), cell.color);
+			sand.DrawPixel(display, raster, cell.color);
 			current += delta;
 			cell.pos = current;
-		}
-	}
-};
-
-struct Sand_LifeUpdateSystem : SystemBase
-{
-	void Update()
-	{
-		for (auto [e, time] : QueryWithEntity<CellLife>())
-		{
-			time.life -= Time::DeltaTime();
-			if (time.life <= 0.f)
-			{
-				e.Destroy();
-			}
 		}
 	}
 };

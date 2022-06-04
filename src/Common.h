@@ -17,8 +17,17 @@ template<typename _t> using r = std::shared_ptr<_t>;
 // be ingrained into the framework at a core level
 using namespace glm;
 
+// return a random number between (0, x)
 inline float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
+
+// return a random number between (-x/2, x/2)
+inline float get_randc(float x) { return x * rand() / (float)RAND_MAX - x / 2.f; }
+
+// return a random integer between (0, x)
 inline int get_rand(int x) { return rand() % x; }
+
+inline vec2 get_rand (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
+inline vec2 get_randc(float x, float y) { return vec2(get_randc(x), get_randc(y)); }
 
 struct Color
 {
