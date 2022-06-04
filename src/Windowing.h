@@ -89,7 +89,7 @@ struct Window
 public:
 	SDL_Window* m_window;
 	SDL_GLContext m_opengl;
-	event_manager* m_events;
+	event_queue* m_events;
 
 	WindowConfig m_config;
 	InputMapping m_input;
@@ -106,7 +106,7 @@ public:
 
 	Window(
 		const WindowConfig& config,
-		event_manager* events = nullptr
+		event_queue* events = nullptr
 	)
 		: m_events (events)
 		, m_config (config)
@@ -211,7 +211,10 @@ public:
 					{
 						case SDL_WINDOWEVENT_RESIZED:
 						{
-							Resize(event.window.data1, event.window.data2);
+							ResizeViewport(event.window.data1, event.window.data2);
+							m_config.Width  = event.window.data1;
+							m_config.Height = event.window.data2;
+
 							m_events->send(event_WindowResize { m_config.Width, m_config.Height });
 							break;
 						}
@@ -234,18 +237,33 @@ public:
 		}
 	}
 
-	void Resize(int width, int height)
+	// for now this works, but shouldnt be here
+	// dont call this func to make removing it ezpz
+	void ResizeViewport(int width, int height)
 	{
 		m_config.Width = width;
 		m_config.Height = height;
-		gl(glViewport(0, 0, m_config.Width, m_config.Height)); // for now this works, but shouldnt be here
+		gl(glViewport(0, 0, m_config.Width, m_config.Height));
+	}
+
+	void Resize(int width, int height, bool center = true)
+	{
+		SDL_SetWindowSize(m_window, width, height); // high DPI screens need some other functions?
+		if (center) SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		ResizeViewport(width, height);
+	}
+
+	void SetTitle(const std::string& title)
+	{
+		SDL_SetWindowTitle(m_window, title.c_str());
 	}
 
 	void EndFrame() 
 	{
 		SDL_GL_SwapWindow(m_window);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
-
+	
 	// imgui renderer
 
 	void BeginImgui()
@@ -263,7 +281,7 @@ public:
 
 	// yes moves
 	//  no copys
-	Window(Window&& move)
+	Window(Window&& move) noexcept
 		: m_window (move.m_window)
 		, m_opengl (move.m_opengl)
 		, m_events (move.m_events)
@@ -274,7 +292,7 @@ public:
 		move.m_opengl = nullptr;
 		move.m_events = nullptr;
 	}
-	Window& operator=(Window&& move)
+	Window& operator=(Window&& move) noexcept
 	{
 		m_window = move.m_window;
 		m_opengl = move.m_opengl;

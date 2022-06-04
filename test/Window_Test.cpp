@@ -1,162 +1,24 @@
-#include "Entry.h"
-#include "Entity.h"
+#include "EngineLoop.h"
+
 #include "Rendering.h"
-#include "Windowing.h"
-#include "Physics.h"
-#include "ext/Time.h"
 #include "ext/marching_cubes.h"
 #include "ext/Sand.h"
 
 #include <iostream>
-
-using Order = void*;
-
-struct Application
-{
-	Entity m_modules;
-
-	float m_fixedTimeStepAcc;
-	bool m_running;
-
-	Application()
-	{
-		events().attach<event_Shutdown>(this);
-		m_fixedTimeStepAcc = 0.f;
-		m_running = true;
-		m_modules = GetWorld().Create();
-	}
-
-	~Application()
-	{
-		events().detach(this);
-		m_modules.Destroy();
-	}
-
-	template<typename _t>
-	_t& Get()
-	{
-		return m_modules.Get<_t>();
-	}
-
-	bool Step(float deltaTime)
-	{
-		PhysicsWorld& world = m_modules.Get<PhysicsWorld>();
-
-		m_fixedTimeStepAcc += deltaTime;
-		if (m_fixedTimeStepAcc > Time::FixedTime())
-		{
-			m_fixedTimeStepAcc = 0;
-			for (System* system : GetWorld().GetSystems())
-			{
-				system->FixedUpdate();
-			}
-
-			// This needs to be under here for the last transform loop
-			// to interpolate correctly
-
-			world.Step(Time::FixedTime());
-		}
-
-		for (System* system : GetWorld().GetSystems())
-		{
-			system->Update();
-		}
-
-		Window& window = m_modules.Get<Window>();
-
-		window.BeginImgui();
-		for (System* system : GetWorld().GetSystems())
-		{
-			system->UI();
-		}
-		window.EndImgui();
-
-		window.EndFrame();
-		window.PumpEvents();
-
-		events_defer().execute();
-		
-		return m_running;
-	}
-
-	// these cant be in the ecs because they need an order of execution
-	// this is where a jobs system comes in I think, I guess you make a strand
-	// and at each level it can be multithreaded?
-	// I guess each loop through the entities actually could queue work in a thread pool
-	// and then exeacute all 100000 work items
-
-	void on(event_Shutdown& e)
-	{
-		m_running = false;
-	}
-};
-
-Application app; // for this simple test use global
-
-Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
-{
-	Texture sprite = Texture(_p(path), false);
-	SandWorld& sand = app.Get<SandWorld>();
-	transform.sx = sprite.Width()  / sand.worldScale.x;
-	transform.sy = sprite.Height() / sand.worldScale.y;
-
-	// collider should be 8 bit mask texture
-
-	Entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform);
-	entity.Add<SandSprite>(Texture(_p(collider_mask_path)));
-	entity.Add<Sprite>(sprite);
-
-	//events().send(event_SandAddSprite{ entity });
-
-	return entity;
-}
-
-Entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
-{
-	Texture sprite = Texture(_p(path), false);
-	SandWorld& sand = app.Get<SandWorld>();
-	transform.sx = sprite.Width()  / sand.worldScale.x;
-	transform.sy = sprite.Height() / sand.worldScale.y;
-
-	Entity entity = app.Get<PhysicsWorld>().CreatePhysicsEntity(transform);
-	entity.Add<SandSprite>();
-	entity.Add<Sprite>(sprite);
-
-	Rigidbody2D& body = entity.Get<Rigidbody2D>();
-
-	b2CircleShape shape;
-	shape.m_radius = std::max(transform.sx, transform.sy);
-	body.AddCollider(shape);
-
-	//events().send(event_SandAddSprite{ entity });
-
-	return entity;
-}
 
 struct Player
 {
 	float speed = 300;
 };
 
-// I wonder if you could just declspec a templated type to
-// test if it contained these functions and store their func pointers if
-// they do
-// system shsould never inherit so this should work
-// the last engine got bogged down with excessive empty virtual functions
-
-struct EventLoggingSystem : System
+struct EventLoggingSystem : System<EventLoggingSystem>
 {
-	EventLoggingSystem()
+	void Init()
 	{
-		events().attach<event_Shutdown>(this);
-		events().attach<event_WindowResize>(this);
-		events().attach<event_Mouse>(this);
-		events().attach<event_Input>(this);
-	}
-
-	~EventLoggingSystem()
-	{
-		events().detach(this);
+		Attach<event_Shutdown>();
+		Attach<event_WindowResize>();
+		Attach<event_Mouse>();
+		Attach<event_Input>();
 	}
 
 	void on(event_Shutdown& e)
@@ -214,7 +76,7 @@ struct EventLoggingSystem : System
 	}
 };
 
-struct PhysicsInterpolationSystem : System
+struct PhysicsInterpolationSystem : SystemBase
 {
 	float m_acc = 0.f;
 
@@ -248,7 +110,7 @@ struct PhysicsInterpolationSystem : System
 	}
 };
 
-struct ForceTwoardwsMouseSystem : System
+struct ForceTwoardwsMouseSystem : SystemBase
 {
 	void FixedUpdate() override
 	{
@@ -266,11 +128,11 @@ struct ForceTwoardwsMouseSystem : System
 	}
 };
 
-struct SpriteRenderer2DSystem : System
+struct SpriteRenderer2DSystem : SystemBase
 {
 	void Update() override
 	{
-		auto [camera, render] = *Query<Camera, SpriteRenderer2D>().begin();
+		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
 
 		render.Begin(camera);
 		render.Clear();
@@ -281,11 +143,11 @@ struct SpriteRenderer2DSystem : System
 	}
 };
 
-struct TriangleRenderer2DSystem : System
+struct TriangleRenderer2DSystem : SystemBase
 {
 	void Update() override
 	{
-		auto [camera, render] = *Query<Camera, TriangleRenderer2D>().begin();
+		auto [camera, render] = GetModules<Camera, TriangleRenderer2D>();
 
 		render.Begin(camera, false);
 		for (auto [transform, mesh] : Query<Transform2D, Mesh>())
@@ -295,7 +157,7 @@ struct TriangleRenderer2DSystem : System
 	}
 };
 
-struct CharacterController : System
+struct CharacterController : System<CharacterController>
 {
 	float x = 0;
 	float y = 0;
@@ -307,20 +169,15 @@ struct CharacterController : System
 
 	float mouseX, mouseY; // temp
 
-	CharacterController()
+	void Init()
 	{
-		events().attach<event_Input>(this);
-		events().attach<event_Mouse>(this);
-	}
-
-	~CharacterController()
-	{
-		events().detach(this);
+		Attach<event_Input>();
+		Attach<event_Mouse>();
 	}
 
 	void Update() override
 	{
-		auto [sand] = *Query<SandWorld>().begin();
+		auto [sand] = GetModules<SandWorld>();
 		auto [player, transform] = *Query<Player, Transform2D>().begin();
 
 		fireTime -= Time::DeltaTime();
@@ -386,74 +243,127 @@ struct CharacterController : System
 	}
 };
 
-void setup_modules()
+struct WindowTest : EngineLoop
 {
-	WindowConfig windowConfig = {
-		"Winter Framework Testbed", 1280, 720
-	};
+	void _Init()
+	{
+		ConfigureWindow();
+		ConfigureModules();
+		ConfigureLevel();
+		ConfigureInputMapping();
 
-	app.m_modules.Add<Window>(windowConfig, &events());
-	app.m_modules.Add<SpriteRenderer2D>();
-	app.m_modules.Add<TriangleRenderer2D>();
-	app.m_modules.Add<PhysicsWorld>();
-	app.m_modules.Add<SandWorld>(1280, 720, 32, 18);
-	app.m_modules.Add<Camera>(0, 0, 32, 18);
-}
+		CreateSomeTestEntities();
+	}
 
-void setup_systems()
-{
-	GetWorld().AddSystem(PhysicsInterpolationSystem());
-	GetWorld().AddSystem(CharacterController());
-	
-	GetWorld().AddSystem(Sand_LifeUpdateSystem());
-	GetWorld().AddSystem(Sand_System_Update());
+	// Init
 
-	GetWorld().AddSystem(SpriteRenderer2DSystem());
-}
+	void ConfigureWindow()
+	{
+		Window& window = m_app.GetModule<Window>();
 
-void setup_inputmapping()
-{
-	InputMapping& input = app.Get<Window>().m_input;
+		window.Resize(1280, 720);
+		window.SetTitle("Windowing Test");
+	}
 
-	input.m_keyboard[SDL_SCANCODE_W] = InputName::UP;
-	input.m_keyboard[SDL_SCANCODE_S] = InputName::DOWN;
-	input.m_keyboard[SDL_SCANCODE_D] = InputName::RIGHT;
-	input.m_keyboard[SDL_SCANCODE_A] = InputName::LEFT;
-}
+	void ConfigureLevel()
+	{
+		r<Level> level = LevelManager::CurrentLevel();
+
+		level->AddSystem(PhysicsInterpolationSystem());
+		level->AddSystem(CharacterController());
+		level->AddSystem(Sand_LifeUpdateSystem());
+		level->AddSystem(Sand_System_Update());
+		level->AddSystem(SpriteRenderer2DSystem());
+		level->AddSystem(EventLoggingSystem());
+
+		m_app.GetModule<LevelManager>().InitLevel(level);
+	}
+
+	void ConfigureModules()
+	{
+		m_app.AddModule<SpriteRenderer2D>();
+		m_app.AddModule<TriangleRenderer2D>();
+		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
+		m_app.AddModule<Camera>(0, 0, 32, 18); // remove this
+	}
+
+	void ConfigureInputMapping()
+	{
+		InputMapping& input = m_app.GetModule<Window>().m_input;
+
+		input.m_keyboard[SDL_SCANCODE_W] = InputName::UP;
+		input.m_keyboard[SDL_SCANCODE_S] = InputName::DOWN;
+		input.m_keyboard[SDL_SCANCODE_D] = InputName::RIGHT;
+		input.m_keyboard[SDL_SCANCODE_A] = InputName::LEFT;
+	}
+
+	// remove these
+	// should be called through events
+
+	void CreateSomeTestEntities()
+	{
+		for (int i = 0; i < 1; i++)
+		{
+			Transform2D t;
+			t.x = 10 + i * 10;
+			CreateSandSprite("enemy_station.png", "enemy_station_mask.png", t);
+		}
+
+		Transform2D t;
+
+		t.y = 10;
+		CreateSandSprite("test_line.png", "test_line.png", t);
+		t.y = 0;
+		//CreateSandSprite("enemy_base.png", "enemy_base_mask.png", t);
+
+		t.x = -10;
+		CreateTexturedCircle("enemy_bomb.png", t).Add<Player>();
+	}
+
+	Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path, Transform2D transform = {})
+	{
+		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
+
+		Texture sprite = Texture(_p(path), false);
+		transform.sx = sprite.Width() / sand.worldScale.x;
+		transform.sy = sprite.Height() / sand.worldScale.y;
+
+		// collider should be 8 bit mask texture
+
+		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
+		entity.Add<Transform2D>(transform);
+		entity.Add<SandSprite>(Texture(_p(collider_mask_path)));
+		entity.Add<Sprite>(sprite);
+
+		physics.AddEntity(entity);
+
+		return entity;
+	}
+
+	Entity CreateTexturedCircle(const std::string& path, Transform2D transform = {})
+	{
+		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
+
+		Texture sprite = Texture(_p(path), false);
+		transform.sx = sprite.Width() / sand.worldScale.x;
+		transform.sy = sprite.Height() / sand.worldScale.y;
+
+		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
+		entity.Add<Transform2D>(transform);
+		entity.Add<SandSprite>();
+		entity.Add<Sprite>(sprite);
+
+		Rigidbody2D& body = physics.AddEntity(entity);
+
+		b2CircleShape shape;
+		shape.m_radius = std::max(transform.sx, transform.sy);
+		body.AddCollider(shape);
+
+		return entity;
+	}
+};
 
 void setup()
 {
-	setup_modules();
-	setup_systems();
-	setup_inputmapping();
-
-	for (int i = 0; i < 1; i++)
-	{
-		Transform2D t;
-		t.x = 10 + i * 10;
-		CreateSandSprite("enemy_station.png", "enemy_station_mask.png", t);
-	}
-
-	Transform2D t;
-
-	t.y = 10;
-	CreateSandSprite("test_line.png", "test_line.png", t);
-	t.y = 0;
-	//CreateSandSprite("enemy_base.png", "enemy_base_mask.png", t);
-	
-	t.x = -10;
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	//CreateTexturedCircle("enemy_bomb.png", t);
-	CreateTexturedCircle("enemy_bomb.png", t).Add<Player>();
-}
-
-bool loop()
-{
-	Time::UpdateTime();
-	return app.Step(Time::DeltaTime());
+	RunEngineLoop<WindowTest>();
 }

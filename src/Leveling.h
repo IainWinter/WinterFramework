@@ -24,80 +24,78 @@ private:
 	Entity m_modules;
 	EntityWorld m_root;
 
+	event_manager m_rootBus; // all engine events + inter level comms
+	event_queue m_rootQueue;
+
 public:
-	 Application() { m_modules = m_root.Create(); }
-	~Application() { m_modules.Destroy(); }
+	Application()
+		: m_rootQueue (&m_rootBus)
+	{
+		 m_modules = m_root.Create(); 
+	}
+
+	~Application()
+	{
+		m_modules.Destroy();
+	}
 
 	template<typename    _t> _t&                    GetModule()                { return m_modules.Get<_t>(); }
 	template<typename... _t> std::tuple<_t&...>     GetModules()               { return m_modules.GetAll<_t...>(); }
 	template<typename    _t> void                   RemoveModule()             { m_modules.Remove<_t>(); }
 	template<typename    _t, typename... _args> _t& AddModule(_args&&... args) { return m_modules.Add<_t>(std::forward<_args>(args)...); }
+
+	event_queue* GetRootEventQueue() // window needs this, but annoying to have to expose like this
+	{
+		return &m_rootQueue;
+	}
+
+	template<typename _t, typename _h> void Attach (_h*   handler) { m_rootBus.attach<_t, _h>(handler); }
+	template<typename _t>              void Detach (void* handler) { m_rootBus.detach<_t>(handler); }
+	                                   void Detach (void* handler) { m_rootBus.detach(handler); }
+	template<typename _t>              void Send   (_t&& event)    { m_rootQueue.send(event); }
+	template<typename _t>              void SendNow(_t&& event)    { m_rootBus.send(event); }
 };
 
 struct Level;
-
-struct System
-{
-private:
-	EntityWorld* m_world;  // get set in Level::NewSystem
-	Application* m_owning;
-	friend struct Level;
-
-protected:
-	template<typename... _t> EntityQuery<_t...>           Query()           { return m_world->Query<_t...>(); }
-	template<typename... _t> EntityQueryWithEntity<_t...> QueryWithEntity() { return m_world->QueryWithEntity<_t...>(); }
-	template<typename    _t> _t&                          GetModule()       { return m_owning->GetModule<_t>(); }
-	template<typename... _t> std::tuple<_t&...>           GetModules()      { return m_owning->GetModules<_t...>(); }
-
-public:
-	virtual void Update() {}
-	virtual void FixedUpdate() {}
-	virtual void UI() {}
-};
+struct SystemBase;
+template<typename _me>
+struct System;
 
 struct Level
 {
 private:
 	int m_levelId; // not really needed was for global ecs to mark entities
-	Application* m_owning;
+	Application* m_app;
 
 	EntityWorld m_world;
-	std::vector<System*> m_systems; // updater functions
+	event_manager m_levelBus; // intra level comms
+	event_queue m_levelQueue; // intra level comms
+
+	std::vector<SystemBase*> m_systems; // updater functions
+
+	template<typename _t> friend struct System;
+	                      friend struct SystemBase;
 
 public:
 	Level(int levelId, Application* owning)
-		: m_levelId (levelId)
-		, m_owning  (owning)
+		: m_levelId    (levelId)
+		, m_app        (owning)
+		, m_levelQueue (&m_levelBus)
 	{}
 	
 	~Level()
 	{
 		// delete all systems, we made copies so this is always valid
-		for (System* system : m_systems) delete system;
+		for (SystemBase* system : m_systems) delete system;
 	}
 
-	int Id() const
-	{
-		return m_levelId;
-	}
+	// EngineLoop needs GetLevelEventQueue, but annoying to have to expose like this
 
-	Application* App() const
-	{
-		return m_owning;
-	}
-
-	Entity CreateEntity()
-	{
-		return m_world.Create();
-	}
-
-	// Systems
-
-	const std::vector<System*>& GetSystems() const
-	{
-		return m_systems;
-	}
-
+	int                             Id()                const { return m_levelId; }
+	const std::vector<SystemBase*>& GetSystems()        const { return m_systems; }
+	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
+	Entity                          CreateEntity()            { return m_world.Create(); }
+	
 	// system constructors should be only default init of values
 	// wait until Start to do any work
 
@@ -112,19 +110,72 @@ public:
 	{
 		auto itr = m_systems.begin();
 		for (; itr != m_systems.end(); ++itr) if (*itr == after) break;
-
 		return (Order)*m_systems.emplace(itr, NewSystem(system_toCopy));
 	}
 
 private:
 	template<typename _t>
-	System* NewSystem(const _t& system_toCopy)
+	SystemBase* NewSystem(const _t& system_toCopy)
 	{
-		System* system = new _t(system_toCopy);
-		system->m_world = &m_world;
-		system->m_owning = m_owning;
+		SystemBase* system = new _t(system_toCopy);
+		system->m_level = this;
 		return system;
 	}
+};
+
+struct SystemBase
+{
+private:
+	Level* m_level = nullptr; // get set in Level::NewSystem
+	
+	template<typename _t> friend struct System;
+	                      friend struct Level;
+
+protected:
+	template<typename... _t> EntityQuery<_t...>           Query()           { assert_init(); return m_level->m_world.Query<_t...>(); }
+	template<typename... _t> EntityQueryWithEntity<_t...> QueryWithEntity() { assert_init(); return m_level->m_world.QueryWithEntity<_t...>(); }
+	template<typename    _t> _t&                          GetModule()       { assert_init(); return m_level->m_app->GetModule<_t>(); }
+	template<typename... _t> std::tuple<_t&...>           GetModules()      { assert_init(); return m_level->m_app->GetModules<_t...>(); }
+
+	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
+	template<typename _t> void SendNow      (_t&& event) { assert_init(); m_level->m_levelBus.send(event); }
+	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->m_rootQueue.send(event); }
+	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->m_rootBus.send(event); }
+
+public:
+	virtual ~SystemBase()
+	{
+		if (!m_level) return; // if temp
+		m_level->m_levelBus.detach(this);
+	}
+
+	// I wonder if you could just declspec a templated type to
+	// test if it contained these functions and store their func pointers if they do
+	// the last engine got bogged down with excessive empty virtual functions
+
+	virtual void Init() {}
+	virtual void Dnit() {}
+
+	virtual void Update() {}
+	virtual void FixedUpdate() {}
+	virtual void UI() {}
+
+private:
+	void assert_init()
+	{
+		assert(m_level && "System has not been assigned a level. Make sure to use the Init function, not the constructor");
+	}
+};
+
+// attach needs to know the concrete type
+// this also allows for the above to happen with decl
+
+// allows for attaching events
+template<typename _me>
+struct System : SystemBase
+{
+	template<typename _t> void Attach() { assert_init(); m_level->m_levelBus.attach<_t, _me>((_me*)this); }
+	template<typename _t> void Detach() { assert_init(); m_level->m_levelBus.detach<_t>(this); }
 };
 
 // manages subletting the ECS for moving between levels
@@ -134,7 +185,7 @@ struct LevelManager
 {
 private:
 	int m_nextLevelId;
-	Application* m_owning;
+	Application* m_app;
 
 	std::unordered_map<int, r<Level>> m_levels;
 	inline static r<Level> m_current;
@@ -142,21 +193,48 @@ private:
 public:
 	LevelManager(Application& owning)
 		: m_nextLevelId (1)
-		, m_owning      (&owning)
+		, m_app         (&owning)
 	{}
 
 	// Creating levels
 	// this is where they would be loaded form file
+	// that would call CreateLevel and add all its Systems then call InitLevel
+	// for now we can do that manually
 
 	r<Level> CreateLevel()
 	{
-		r<Level> level = std::make_shared<Level>(m_nextLevelId, m_owning);
+		r<Level> level = std::make_shared<Level>(m_nextLevelId, m_app);
 		m_levels.emplace(m_nextLevelId, level);
 		m_nextLevelId += 1;
 
 		if (!m_current) m_current = level;
 
+		m_app->GetRootEventQueue()->m_manager->attach_child(level->GetLevelEventQueue()->m_manager);
+
 		return level;
+	}
+
+	void DestroyLevel(int levelId)
+	{
+		r<Level> level = m_levels.at(levelId);
+		m_levels.erase(levelId);
+		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
+	}
+
+	void InitLevel(r<Level>& level)
+	{
+		for (SystemBase* system : level->GetSystems())
+		{
+			system->Init();
+		}
+	}
+
+	void DnitLevel(r<Level>& level)
+	{
+		for (SystemBase* system : level->GetSystems())
+		{
+			system->Dnit();
+		}
 	}
 
 	static r<Level> CurrentLevel()
@@ -165,4 +243,4 @@ public:
 	}
 };
 
-inline static r<Level> m_current = {};
+inline static r<Level> m_current = nullptr;

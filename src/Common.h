@@ -17,8 +17,8 @@ template<typename _t> using r = std::shared_ptr<_t>;
 // be ingrained into the framework at a core level
 using namespace glm;
 
-float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
-int get_rand(int x) { return rand() % x; }
+inline float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
+inline int get_rand(int x) { return rand() % x; }
 
 struct Color
 {
@@ -73,12 +73,12 @@ struct Transform2D
 	}
 };
 
-float lerp(float a, float b, float w)
+inline float lerp(float a, float b, float w)
 {
 	return a + w * (b - a);
 }
 
-float clamp(float x, float min, float max)
+inline float clamp(float x, float min, float max)
 {
 	     if (x < min) x = min;
 	else if (x > max) x = max;
@@ -93,7 +93,7 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 
 // map asset path
 
-std::string _p(const std::string& filename)
+inline std::string _p(const std::string& filename)
 {
 	return "../assets/" + filename;
 }

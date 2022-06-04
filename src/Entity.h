@@ -5,7 +5,6 @@
 
 struct Entity;
 struct EntityWorld;
-struct System;
 using Order = void*;
 
 namespace tuple_helpers
@@ -13,6 +12,8 @@ namespace tuple_helpers
 	// these cant be generic because with refs we need to use tie, but anything else would want
 	// to use make_tuple, so keep these as private instead of global helper functions...
 	// https://stackoverflow.com/a/39101723/6772365
+
+	// splitting EntityQuery made these now have to be free, so I'll just put them in a namespace :)
 
 	template <typename T, typename Tuple>
 	auto push_front(const T& t, const Tuple& tuple)
@@ -103,7 +104,6 @@ private:
 	entt::registry m_registry;
 
 	friend struct Entity;
-	friend struct System;
 
 public:
 	Entity Create();
@@ -138,6 +138,12 @@ public:
 		, m_owning (owning)
 	{}
 
+	~Entity() // not needed but will causes proper assert to be called if used after delete
+	{
+		m_owning = nullptr;
+		m_handle = entt::null;
+	}
+
 	bool operator==(const Entity& other) const { return Id() == other.Id(); }
 	bool operator!=(const Entity& other) const { return Id() != other.Id(); }
 
@@ -152,7 +158,7 @@ public:
 		assert_is_valid();
 		m_owning->m_registry.destroy(m_handle);
 		m_owning = nullptr;
-		m_handle = {};
+		m_handle = entt::null;
 	}
 
 	bool IsAlive() const
@@ -215,6 +221,34 @@ public:
 	                         void assert_is_valid()       const { assert(IsAlive()        && "Entity is not valid"); }
 	template<typename... _t> void assert_no_components()  const { assert(!HasAny<_t...>() && "Entity already contains one of these components"); }
 	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contains one of these components"); }
+
+	// Copy and Move
+
+	Entity(Entity&& move) noexcept
+		: m_handle (move.m_handle)
+		, m_owning (move.m_owning)
+	{
+		move.m_handle = entt::null;
+		move.m_owning = nullptr;
+	}
+	Entity& operator=(Entity&& move) noexcept
+	{
+		m_handle = move.m_handle;
+		m_owning = move.m_owning;
+		move.m_handle = entt::null;
+		move.m_owning = nullptr;
+		return *this;
+	}
+	Entity(const Entity& move)
+		: m_handle(move.m_handle)
+		, m_owning(move.m_owning)
+	{}
+	Entity& operator=(const Entity& move)
+	{
+		m_handle = move.m_handle;
+		m_owning = move.m_owning;
+		return *this;
+	}
 };
 
 namespace std {

@@ -3,12 +3,12 @@
 #include "Common.h"
 #include "box2d/box2d.h"
 
-b2Vec2 _tb(const vec2& v)
+inline b2Vec2 _tb(const vec2& v)
 {
 	return b2Vec2(v.x, v.y);
 }
 
-vec2 _fb(const b2Vec2& v)
+inline vec2 _fb(const b2Vec2& v)
 {
 	return vec2(v.x, v.y);
 }
@@ -81,10 +81,13 @@ struct PhysicsWorld
 		delete m_world;
 	}
 
-	// adds a Rigdbody2D and an on_destroy to remove from physics at eol
 	Rigidbody2D& AddEntity(Entity& e)
 	{
-		e.Add<Rigidbody2D>(e.Get<Transform2D>());
+		if (!e.Has<Rigidbody2D>())
+		{
+			e.Add<Rigidbody2D>(e.Get<Transform2D>());
+		}
+
 		//e.on_destroy([this](Entity e) { Remove(e.Get<Rigidbody2D>()); });
 
 		Rigidbody2D& body = e.Get<Rigidbody2D>();
@@ -106,13 +109,6 @@ struct PhysicsWorld
 	void Step(float dt)
 	{
 		m_world->Step(dt, 8, 3);
-	}
-
-	Entity CreatePhysicsEntity(const Transform2D& transform = {})
-	{
-		Entity e = GetWorld().Create().AddAll(transform, Rigidbody2D(transform));
-		Add(e.Get<Rigidbody2D>());
-		return e;
 	}
 
 	// yes moves

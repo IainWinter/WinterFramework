@@ -116,6 +116,7 @@ struct event_sink
 struct event_manager
 {
 	std::unordered_map<hash_t, event_sink> m_sinks;
+	std::vector<event_manager*> m_children; // doesnt own
 
 	// needs to be template
 
@@ -162,20 +163,55 @@ struct event_manager
 		{
 			itr->second.send(event);
 		}
+
+		for (event_manager* child : m_children)
+		{
+			child->send(type, event);
+		}
 	}
 
 	// template headers
 
-	template<typename _t, typename _h>
-	void detach(_h* handler_ptr)
+	template<typename _t>
+	void detach(void* handler_ptr)
 	{
-		unattach(make_event<_t>(), handler_ptr);
+		detach(make_event<_t>(), handler_ptr);
 	}
 
 	template<typename _t>
 	void send(_t&& event)
 	{
 		send(make_event<_t>(), (void*)&event);
+	}
+
+	// adding / remove child event_managers
+
+	void attach_child(event_manager* child)
+	{
+		for (event_manager* c : m_children)
+		{
+			if (child == c)
+			{
+				assert(false && "Child already added");
+				return;
+			}
+		}
+
+		m_children.push_back(child);
+	}
+
+	void detach_child(event_manager* child)
+	{
+		for (auto itr = m_children.begin(); itr != m_children.end(); ++itr)
+		{
+			if (*itr == child)
+			{
+				m_children.erase(itr);
+				return;
+			}
+		}
+
+		assert(false && "Child not in manager");
 	}
 };
 
@@ -193,6 +229,12 @@ struct event_queue
 		const char* m_where;
 		event_type m_type;
 		_e m_event;
+
+		queued_event(event_type type, const char* where, _e&& e)
+			: m_where(where)
+			, m_type(type)
+			, m_event(e)
+		{}
 
 		void send(event_manager* manager)
 		{
@@ -214,10 +256,7 @@ struct event_queue
 	template<typename _e>
 	void send(_e&& event)
 	{
-		queued_event<_e>* qe = new queued_event<_e>(); // could use pool...
-		qe->m_type = make_event<_e>();
-		qe->m_event = std::forward<_e>(event);
-		qe->m_where = m_where_current;
+		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, std::forward<_e>(event)); // could use pool...
 		m_queue.push_back(qe);
 	}
 
@@ -233,33 +272,33 @@ struct event_queue
 	}
 };
 
-/*
-	If you want to use singletons, note dll bounds
-*/
-#define USE_SINGLETONS
-
-#ifdef USE_SINGLETONS
-	inline
-	event_manager& events()
-	{
-		static event_manager manager;
-		return manager;
-	}
-
-	inline
-	event_queue& events_defer(const char* where_from)
-	{
-		static event_queue queue(&events());
-		queue.m_where_current = where_from;
-		return queue;
-	}
-
-	/*
-		If you want to log the location of the dispatcher
-	*/
-#	define LOG_DEFER
-#	ifdef LOG_DEFER
-#		include "Macros.h"
-#		define events_defer() events_defer(__LOCATION)
-#	endif
-#endif
+///*
+//	If you want to use singletons, note dll bounds
+//*/
+//#define USE_SINGLETONS
+//
+//#ifdef USE_SINGLETONS
+//	inline
+//	event_manager& events()
+//	{
+//		static event_manager manager;
+//		return manager;
+//	}
+//
+//	inline
+//	event_queue& events_defer(const char* where_from)
+//	{
+//		static event_queue queue(&events());
+//		queue.m_where_current = where_from;
+//		return queue;
+//	}
+//
+//	/*
+//		If you want to log the location of the dispatcher
+//	*/
+//#	define LOG_DEFER
+//#	ifdef LOG_DEFER
+//#		include "Macros.h"
+//#		define events_defer() events_defer(__LOCATION)
+//#	endif
+//#endif

@@ -44,6 +44,10 @@ struct event_SandAddSprite
 	float aVelocity = 0.f;
 };
 
+// everywhere LevelManager is needed should be inside of a System
+// because Systems are owned by whatever level, so it's more contained
+// will result in less bugs
+
 struct SandWorld
 {
 	Entity display;
@@ -65,7 +69,7 @@ struct SandWorld
 		screen->Add(Target::aColor, w, h, Texture::uRGBA, false);
 		screen->Add(Target::aColor1, w, h, Texture::uINT_32, false);
 
-		display = GetWorld().Create();
+		display = LevelManager::CurrentLevel()->CreateEntity();
 		display.Add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0);
 		display.Add<Sprite>(screen->Get(Target::aColor));
 		display.Add<Renderable>();
@@ -81,12 +85,13 @@ struct SandWorld
 
 	~SandWorld()
 	{
+		if (!display.IsAlive()) return; // moved
 		display.Destroy();
 	}
 
 	Entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
 	{
-		return GetWorld().Create().AddAll(Cell{ vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color });
+		return LevelManager::CurrentLevel()->CreateEntity().AddAll(Cell{ vec2(x * worldScale.x, y * worldScale.y), vec2(vx, vy), dampen, color });
 	}
 
 	void DrawLine(Texture& display, Texture& collisionInfo, Entity e, Cell& cell)
@@ -114,8 +119,10 @@ struct SandWorld
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
 
+				// put this in a system
+
 				// should defer
-				events().send(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
+				//Send(event_SandCellCollision { e, tileCache.at(tileIndex), positionInSprite });
 				//entities_defer().destroy(e);
 			}
 
@@ -139,6 +146,13 @@ struct SandWorld
 	{
 		return pos.x > 0 && pos.y > 0 && pos.x < screenSize.x && pos.y < screenSize.y;
 	}
+
+	// yes moves
+	//  no copys
+	SandWorld(SandWorld&& move) = default;
+	SandWorld& operator=(SandWorld&& move) = default;
+	SandWorld(const SandWorld& copy) = delete;
+	SandWorld& operator=(const SandWorld& copy) = delete;
 };
 
 // sand update
@@ -146,16 +160,15 @@ struct SandWorld
 // render all the tiles to a texture, could chunk but regolith is a single screen game so dont worry about this for now
 // render bullets
 
-struct Sand_System_Update : System
+struct Sand_System_Update : System<Sand_System_Update>
 {
 	std::unordered_set<Entity > toSplit;
 
-	 Sand_System_Update()
-	 { 
-		 events().attach<event_SandCellCollision>(this);
-		 events().attach<event_SandAddSprite>(this);
-	 }
-	~Sand_System_Update() { events().detach(this); }
+	void Init()
+	{ 
+		Attach<event_SandCellCollision>();
+		Attach<event_SandAddSprite>();
+	}
 
 	void on(event_SandCellCollision& e)
 	{
@@ -178,8 +191,8 @@ struct Sand_System_Update : System
 	{
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
-		transform.sx = sprite.Width()  / Get<SandWorld>().worldScale.x;
-		transform.sy = sprite.Height() / Get<SandWorld>().worldScale.y;
+		transform.sx = sprite.Width()  / GetModule<SandWorld>().worldScale.x;
+		transform.sy = sprite.Height() / GetModule<SandWorld>().worldScale.y;
 
 		// setup collider
 
@@ -194,7 +207,7 @@ struct Sand_System_Update : System
 			[](const u32& color) { return (color & 0xff000000) > 0; }
 		);
 
-		Rigidbody2D& body = Get<PhysicsWorld>().AddEntity(e.entity);
+		Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
 		body.SetVelocity(e.velocity);
 		body.SetAngularVelocity(e.aVelocity);
 
@@ -222,7 +235,7 @@ struct Sand_System_Update : System
 
 	void Update()
 	{
-		auto [render, camera, sand, window] = GetAll<SpriteRenderer2D, Camera, SandWorld, Window>();
+		auto [render, camera, sand, window] = GetModules<SpriteRenderer2D, Camera, SandWorld, Window>();
 
 		// Sprite update
 
@@ -316,7 +329,8 @@ struct Sand_System_Update : System
 					splitTransform.x += offset.x / sand.worldScale.x;
 					splitTransform.y += offset.y / sand.worldScale.y;
 
-					Entity splitOff = GetWorld().Create().AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
+					Entity splitOff = LevelManager::CurrentLevel()->CreateEntity()
+						.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
 
 					vec3 vel;
 					if (splitMe.Has<Rigidbody2D>())
@@ -330,13 +344,13 @@ struct Sand_System_Update : System
 					//vel.y += get_rand(.1f) - .05f;
 					//vel.z += get_rand(.5f) - .025f;
 
-					events().send(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
+					Send(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
 
 					// this has some memory issue
 				}
 
 				sprite.Cleanup();
-				Get<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
+				GetModule<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
 				splitMe.Destroy();
 			}
 		}
@@ -387,7 +401,7 @@ struct Sand_System_Update : System
 	}
 };
 
-struct Sand_LifeUpdateSystem : System
+struct Sand_LifeUpdateSystem : SystemBase
 {
 	void Update()
 	{
