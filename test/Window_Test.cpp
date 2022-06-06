@@ -344,6 +344,8 @@ struct WindowTest : EngineLoop
 
 		physics.AddEntity(entity);
 
+		//m_app.Send(event_SandAddSprite{entity});
+
 		return entity;
 	}
 
