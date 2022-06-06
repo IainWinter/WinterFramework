@@ -271,34 +271,3 @@ struct event_queue
 		m_queue.clear();
 	}
 };
-
-///*
-//	If you want to use singletons, note dll bounds
-//*/
-//#define USE_SINGLETONS
-//
-//#ifdef USE_SINGLETONS
-//	inline
-//	event_manager& events()
-//	{
-//		static event_manager manager;
-//		return manager;
-//	}
-//
-//	inline
-//	event_queue& events_defer(const char* where_from)
-//	{
-//		static event_queue queue(&events());
-//		queue.m_where_current = where_from;
-//		return queue;
-//	}
-//
-//	/*
-//		If you want to log the location of the dispatcher
-//	*/
-//#	define LOG_DEFER
-//#	ifdef LOG_DEFER
-//#		include "Macros.h"
-//#		define events_defer() events_defer(__LOCATION)
-//#	endif
-//#endif
