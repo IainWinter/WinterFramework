@@ -3,8 +3,11 @@
 #include "Rendering.h"
 #include "Entity.h"
 #include "Physics.h"
+#include "Leveling.h"
+#include "Windowing.h"
 #include "ext/Time.h"
 #include "ext/flood_fill.h"
+#include "ext/marching_cubes.h"
 #include <vector>
 #include <functional>
 #include <unordered_set>
