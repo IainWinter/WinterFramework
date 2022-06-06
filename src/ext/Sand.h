@@ -274,7 +274,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			vec2 projectileVel = projectile.Get<Cell>().vel;
 			vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f; // width/height because it's 0-width/height
 
-			body.ApplyForce(projectileVel / 10.f, (midOld - vec2(projectileLocation)) / sand.worldScale);
+			body.ApplyForce(projectileVel / 100.f, (vec2(projectileLocation) - midOld) / sand.worldScale);
 
 			if (islands.size() > 1)
 			{
@@ -377,9 +377,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 						vel.z = splitMe.Get<Rigidbody2D>().GetAngularVelocity();
 					}
 
-					vel.x += get_randc(.1f) + projectileVel.x / 1000.f;
-					vel.y += get_randc(.1f) + projectileVel.y / 1000.f;
-					vel.z += get_randc(.5f);
+					//vec2 pveln = normalize(projectileVel);
+
+					//vel.x += get_randc(.1f) + pveln.x;
+					//vel.y += get_randc(.1f) + pveln.y;
+					//vel.z += get_randc(.5f);
 
 					SendNow(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
 

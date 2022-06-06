@@ -145,10 +145,11 @@ std::vector<vec2> make_contour(const bool* mask_grid, int width, int height)
 			}
 		}
 
-		//assert(false && "Found no starting point");
+		assert(false && "Found no starting point");
 		
-		start = ivec2(0, 0);
-		return;
+		// this causes inf loop sometimes...
+		//start = ivec2(0, 0);
+		//return;
 	}();
 
 	std::vector<vec2> contour; // out
