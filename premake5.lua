@@ -9,7 +9,7 @@ group "vendor"
 group ""
 
 project "Framework"
-	kind "ConsoleApp"
+	kind "StaticLib"
 	language "C++"
 	cppdialect "C++17"
 	location "_build"
@@ -18,15 +18,11 @@ project "Framework"
 	files { 
 		"src/**.h",
 
+		"src/ext/cpp/Time.cpp",
+
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
-		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
-
-		"src/ext/cpp/Time.cpp",
-		--"test/Window_Test.cpp",
-		--"test/Leveling_Test.cpp"
-		--"game/**.h",
-		--"game/**.cpp"
+		"vendor/imgui/backends/imgui_impl_opengl3.cpp"
 	}
 
 	includedirs {
