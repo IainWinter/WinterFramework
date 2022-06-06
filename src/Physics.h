@@ -48,9 +48,8 @@ public:
 	void ApplyTorque(float force)                      { assert_in_world(); m_instance->ApplyTorque(force, true); }
 
 	// functions that should hide the box2d api, but dont right now
-	// could add density...
 
-	void AddCollider(const b2Shape& shape) { assert_in_world(); m_instance->CreateFixture(&shape, 1.f); }
+	void AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); m_instance->CreateFixture(&shape, density); }
 
 private:
 	void assert_in_world() const

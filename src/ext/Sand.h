@@ -105,12 +105,19 @@ struct SandWorld
 
 	void DrawPixel(Texture& display, ivec2 pos, Color c)
 	{
+		pos += screenOffset;
 		display.At(pos.x, pos.y) = c;
 	}
 
-	bool CollidePixel(Texture& collisionInfo, ivec2 pos) const
+	bool CollidePixel(ivec2 pos) const
 	{
-		return collisionInfo.At<int>(pos.x, pos.y)[3] > 0;
+		return GetCollisionInfo(pos)[3] > 0;
+	}
+
+	const ivec4& GetCollisionInfo(ivec2 pos) const
+	{
+		pos += screenOffset;
+		return *(ivec4*)screen->Get(Target::aColor1)->At<int>(pos.x, pos.y);
 	}
 
 	vec2 ToScreenPos(const vec2& pos) const
@@ -120,6 +127,7 @@ struct SandWorld
 
 	bool OnScreen(ivec2 pos) const
 	{
+		pos += screenOffset; 
 		return pos.x > 0 && pos.y > 0 && pos.x < screenSize.x && pos.y < screenSize.y;
 	}
 
@@ -210,7 +218,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			shape.Set(shape.m_vertices, polygon.size());
 
 			assert(polygon.size() < 9);
-			body.AddCollider(shape);
+			body.AddCollider(shape, 1000.f);
 		}
 
 		// debug
@@ -441,9 +449,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 			else
 			{
-				if (sand.OnScreen(cell.pos + sand.screenOffset))
+				if (sand.OnScreen(cell.pos))
 				{
-					sand.DrawPixel(color, cell.pos + sand.screenOffset, cell.color);
+					sand.DrawPixel(color, cell.pos, cell.color);
 				}
 
 				cell.pos += cell.vel * Time::DeltaTime();
@@ -465,7 +473,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		for (int i = 0; i < ceil(distance); i++)
 		{
-			ivec2 raster = floor(current + sand.screenOffset);
+			ivec2 raster = floor(current);
 
 			if (!sand.OnScreen(raster))
 			{
@@ -473,9 +481,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 				continue;
 			}
 
-			if (isProjectile && sand.CollidePixel(collisionInfo, raster))
+			if (isProjectile && sand.CollidePixel(raster))
 			{
-				int* spriteInfo = collisionInfo.At<int>(raster.x, raster.y);
+				const ivec4& spriteInfo = sand.GetCollisionInfo(raster);
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
 
