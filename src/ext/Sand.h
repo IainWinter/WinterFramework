@@ -277,7 +277,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			vec2 projectileVel = projectile.Get<Cell>().vel;
 			vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f; // width/height because it's 0-width/height
 
-			body.ApplyForce(projectileVel / 100.f, (vec2(projectileLocation) - midOld) / sand.worldScale);
+			body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - midOld) / sand.worldScale);
 
 			if (islands.size() > 1)
 			{

@@ -9,7 +9,7 @@ group "vendor"
 group ""
 
 project "Framework"
-	kind "StaticLib"
+	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
 	location "_build"
@@ -22,7 +22,9 @@ project "Framework"
 
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
-		"vendor/imgui/backends/imgui_impl_opengl3.cpp"
+		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
+
+		"test/Window_Test.cpp"
 	}
 
 	includedirs {
