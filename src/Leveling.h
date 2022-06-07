@@ -83,11 +83,7 @@ public:
 		, m_levelQueue (&m_levelBus)
 	{}
 	
-	~Level()
-	{
-		// delete all systems, we made copies so this is always valid
-		for (SystemBase* system : m_systems) delete system;
-	}
+	~Level(); // calls SystemBase::~SystemBase
 
 	// EngineLoop needs GetLevelEventQueue, but annoying to have to expose like this
 
@@ -115,12 +111,7 @@ public:
 
 private:
 	template<typename _t>
-	SystemBase* NewSystem(const _t& system_toCopy)
-	{
-		SystemBase* system = new _t(system_toCopy);
-		system->m_level = this;
-		return system;
-	}
+	SystemBase* NewSystem(const _t& system_toCopy);
 };
 
 struct SystemBase
@@ -243,4 +234,21 @@ public:
 	}
 };
 
+// Level Manager
+
 inline static r<Level> m_current = nullptr;
+
+// Level
+
+inline Level::~Level()
+{
+	for (SystemBase* system : m_systems) delete system;
+}
+
+template<typename _t>
+inline SystemBase* Level::NewSystem(const _t& system_toCopy)
+{
+	SystemBase* system = new _t(system_toCopy);
+	system->m_level = this;
+	return system;
+}

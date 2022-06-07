@@ -7,10 +7,8 @@
 
 #include "EngineLoop.h"
 
-struct Regolith : EngineLoop
+struct SpawnerUpdateSystem : System<SpawnerUpdateSystem>
 {
-	// vars that arnt global
-
 	int score = 0;
 	float difficulty = 0;
 
@@ -24,14 +22,7 @@ struct Regolith : EngineLoop
 	float bomberspawnchance = 0.f;
 	float stationspawnchance = 0.f;
 
-	void _Init()
-	{
-		Window& window = m_app.GetModule<Window>();
-		window.SetTitle("Regolith");
-		window.Resize(1280, 720);
-	}
-
-	void _Tick()
+	void Update()
 	{
 		Time::UpdateTime();
 		acc += Time::DeltaTime();
@@ -132,6 +123,19 @@ struct Regolith : EngineLoop
 			// spawnchance = 0.1 + (0.9)difficulty ---> for each spawner
 
 		// implement chance values into spawnenemy functions
+	}
+};
+
+struct Regolith : EngineLoop
+{
+	void _Init()
+	{
+		Window& window = m_app.GetModule<Window>();
+		window.SetTitle("Regolith");
+		window.Resize(1280, 720);
+
+		r<Level> level = LevelManager::CurrentLevel();
+		level->AddSystem(SpawnerUpdateSystem());
 	}
 };
 

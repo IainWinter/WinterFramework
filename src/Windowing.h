@@ -6,6 +6,7 @@
 #include "sdl/SDL.h"
 #include "glad/glad.h"
 #include <unordered_map>
+#include <string>
 
 #include "Event.h"
 #include "util/error_check.h"

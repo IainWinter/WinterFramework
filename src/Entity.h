@@ -153,6 +153,11 @@ public:
 		return (u32)m_handle; // isnt there like a smuggle functions for this?
 	}
 
+	bool IsAlive() const
+	{
+		return !!m_owning;
+	}
+
 	void Destroy()
 	{
 		assert_is_valid();
@@ -161,10 +166,8 @@ public:
 		m_handle = entt::null;
 	}
 
-	bool IsAlive() const
-	{
-		return !!m_owning;
-	}
+	// could use template meta nonsense to remove Get/GetAll
+	// this api isnt the best :(s
 
 	// Testing components
 
@@ -184,20 +187,20 @@ public:
 
 	// Getting components
 
-	template<typename... _t>
-	std::tuple<_t&...> GetAll()
-	{
-		assert_is_valid();
-		assert_has_components<_t...>();
-		return m_owning->m_registry.get<_t...>(m_handle);
-	}
-
 	template<typename _t>
 	_t& Get()
 	{
 		assert_is_valid();
 		assert_has_components<_t>();
 		return std::get<0>(GetAll<_t>());
+	}
+
+	template<typename... _t>
+	std::tuple<_t&...> GetAll()
+	{
+		assert_is_valid();
+		assert_has_components<_t...>();
+		return m_owning->m_registry.get<_t...>(m_handle);
 	}
 
 	// Adding components
@@ -215,6 +218,15 @@ public:
 	{
 		(Add<_t>(_t(components)),...);
 		return *this;
+	}
+
+	// Removing compoennts
+
+	template<typename _t>
+	void Remove()
+	{
+		assert_has_components<_t...>();
+		m_owning->m_registry.remove<_t...>(m_handle);
 	}
 
 	// Asserts

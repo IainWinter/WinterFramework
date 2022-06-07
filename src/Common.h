@@ -67,7 +67,7 @@ struct Transform2D
 	{}
 
 	Transform2D(
-		int x, int y, int z, int sx, int sy, int r
+		float x, float y, float z, float sx, float sy, float r
 	)
 		:  x(x), y(y), z(z), sx(sx), sy(sy), r(r)
 	{}

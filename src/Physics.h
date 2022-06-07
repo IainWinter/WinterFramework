@@ -15,7 +15,7 @@ private:
 	b2BodyDef m_body; // Init values for Physics Add
 	b2Body* m_instance; // If null, not in physics world
 	
-	friend class PhysicsWorld;
+	friend struct PhysicsWorld;
 
 public:
 	Rigidbody2D(

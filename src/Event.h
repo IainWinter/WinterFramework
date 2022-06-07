@@ -37,7 +37,7 @@ event_type make_event()
 
 struct event_pipe
 {
-	void* m_destination; // bound with type info in lambdas
+	void* m_destination = nullptr; // bound with type info in lambdas
 	std::function<void(void*)> m_send;
 	std::function<bool(void*)> m_only_if;
 
