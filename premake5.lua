@@ -52,13 +52,7 @@ project "Framework"
 		"SDL2",
 		"box2d",
 		"ImGui", 
-		"hitbox",
-		"gdi32",
-		"ws2_32",
-		"wsock32",
-		"user32",
-		"kernel32",
-		"shell32"
+		"hitbox"
 	}
 
 	defines { 
@@ -72,6 +66,15 @@ project "Framework"
 
 		libdirs {
 			"vendor/sdl/lib"
+		}
+
+		links {
+			"gdi32",
+			"ws2_32",
+			"wsock32",
+			"user32",
+			"kernel32",
+			"shell32"
 		}
 
 	filter "configurations:Debug"
