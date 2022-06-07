@@ -24,7 +24,8 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
-		"test/Window_Test.cpp"
+		--"test/Window_Test.cpp",
+		"game/main.cpp"
 	}
 
 	includedirs {

@@ -9,6 +9,7 @@
 
 #include <memory>
 #include <utility>
+#include <string>
 
 template<typename _t> using r = std::shared_ptr<_t>;
 
