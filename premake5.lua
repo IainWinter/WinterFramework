@@ -1,6 +1,7 @@
 workspace "Winter Framework"
 	configurations { "Debug", "Release" }
 	platforms { "x64" }
+	system { "Windows", "Unix" }
 
 group "vendor"
 	include "vendor/box2d"
@@ -31,7 +32,6 @@ project "Framework"
 	includedirs {
 		"src",
 
-		"vendor/sdl/include",
 		"vendor/box2d/include",
 		"vendor/imgui/include",
 		"vendor/hitbox/include",
@@ -44,7 +44,6 @@ project "Framework"
 	}
 
 	libdirs {
-		"vendor/sdl/lib",
 		"vendor/box2d/lib",
 		"vendor/imgui/lib",
 		"vendor/hitbox/lib" 
@@ -66,6 +65,15 @@ project "Framework"
 	defines { 
 		"IW_DEBUG"
 	}
+
+	filter "system:Windows"
+		includedirs {
+			"vendor/sdl/include"
+		}
+
+		libdirs {
+			"vendor/sdl/lib"
+		}
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
