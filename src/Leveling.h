@@ -73,6 +73,8 @@ private:
 
 	std::vector<SystemBase*> m_systems; // updater functions
 
+	bool m_initialized = false;
+
 	template<typename _t> friend struct System;
 	                      friend struct SystemBase;
 

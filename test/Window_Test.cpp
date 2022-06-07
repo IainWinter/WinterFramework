@@ -353,8 +353,6 @@ struct WindowTest : EngineLoop
 		level->AddSystem(SpriteRenderer2DSystem());
 		//level->AddSystem(EventLoggingSystem());
 		//level->AddSystem(ForceTwoardwsMouseSystem());
-
-		m_app.GetModule<LevelManager>().InitLevel(level);
 	}
 
 	void ConfigureModules()

@@ -1,7 +1,6 @@
 workspace "Winter Framework"
 	configurations { "Debug", "Release" }
 	platforms { "x64" }
-	system { "Windows", "Unix" }
 
 group "vendor"
 	include "vendor/box2d"
@@ -25,8 +24,8 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
-		--"test/Window_Test.cpp",
-		"game/main.cpp"
+		"test/Window_Test.cpp",
+		--"game/main.cpp"
 	}
 
 	includedirs {
