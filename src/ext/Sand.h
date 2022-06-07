@@ -32,6 +32,7 @@ struct CellLife
 
 struct SandSprite
 {
+	float density = 100.f;
 	bool hasChanged = false;
 	Texture colliderMask;
 	SandSprite() = default;
@@ -50,6 +51,7 @@ struct event_SandAddSprite
 	Entity entity;
 	vec2 velocity = vec2(0.f, 0.f);
 	float aVelocity = 0.f;
+	float density = 0;
 };
 
 // everywhere LevelManager is needed should be inside of a System
@@ -195,6 +197,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		// setup collider
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
+		sandSprite.density = e.density;
 
 		assert(sandSprite.colliderMask.Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
 
@@ -221,7 +224,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			shape.Set(shape.m_vertices, polygon.size());
 
 			assert(polygon.size() < 9);
-			body.AddCollider(shape, 1000.f);
+			body.AddCollider(shape, 100.f);
 		}
 
 		// debug
@@ -238,9 +241,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Sprite update
 
-		// split sprites that needed it
-		// this about multi-threading
-
 		for (auto [splitMe, projectile, projectileLocation] : toSplit)
 		{
 			Texture& sprite = splitMe.Get<Sprite>().Get();
@@ -252,23 +252,15 @@ struct Sand_System_Update : System<Sand_System_Update>
 				(u32*)sprite.Pixels(), length, [](const u32& x) { return (x & 0xff000000) > 0; }
 			);
 
-			//for (int i = 0; i < sprite.Width(); i++)
-			//{
-			//	for (int j = 0; j < sprite.Height(); j++)
-			//	{
-			//		printf(state.at(i + j * sprite.Width()) == flood_fill_cell_state::FILLED ? "." : " ");
-			//	}
-			//	printf("\n");
-			//}
-			//printf("\n");
-
 			std::vector<std::vector<int>> islands;
+			int totalPixelCount = 0;
 
 			for (int seed = 0; seed < length; seed++) // slow could use 'active pixels' cached list
 			{
 				std::vector<int> island = flood_fill(seed, sprite.Width(), sprite.Height(), state);
 				if (island.size() > 0)
 				{
+					totalPixelCount += island.size();
 					islands.emplace_back(std::move(island));
 				}
 			}
@@ -333,62 +325,59 @@ struct Sand_System_Update : System<Sand_System_Update>
 							sand.CreateCell(pos.x,            pos.y + offset.y, color, vels[2].x, vels[2].y, 1).Add<CellLife>(get_randc(1.f));
 							sand.CreateCell(pos.x + offset.x, pos.y + offset.y, color, vels[3].x, vels[3].y, 1).Add<CellLife>(get_randc(1.f));
 						}
-
-						// need to find location in sand world of every pixel
-						// a clean way to do this would be to find the minx, miny pixel and vec2 offset per pixel in sandworld for rotation
-
-						// explode sprite
-						continue;
 					}
 
-					// copy old data to new texture
-
-					Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
-					splitTexture.Clear();
-
-					for (const int& index : island)
+					else
 					{
-						auto [x, y] = get_xy(index, sprite.Width()); // this math doesnt need to transform to xy
-																	 // simplify index = (x - minX) + (y - minY) * width
+						// copy old data to new texture
+
+						Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
+						splitTexture.Clear();
+
+						for (const int& index : island)
+						{
+							auto [x, y] = get_xy(index, sprite.Width()); // this math doesnt need to transform to xy
+																		 // simplify index = (x - minX) + (y - minY) * width
 						
-						Color& to = splitTexture.At(x - minX, y - minY);
-						Color& from = sprite.At(x, y);
+							Color& to = splitTexture.At(x - minX, y - minY);
+							Color& from = sprite.At(x, y);
 
-						to = from;
-						from = Color(0, 0, 0, 0);
-					}
+							to = from;
+							from = Color(0, 0, 0, 0);
+						}
 
-					// create new tile
-					// this only works for the new tile, not if the orignaldis is remade...
+						// create new tile
+						// this only works for the new tile, not if the orignaldis is remade...
 
-					// place the new sprites in their relitive locations
+						// place the new sprites in their relitive locations
 
-					vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
-					vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.r);
+						vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
+						vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.r);
 					
-					splitTransform.x += offset.x / sand.worldScale.x;
-					splitTransform.y += offset.y / sand.worldScale.y;
+						splitTransform.x += offset.x / sand.worldScale.x;
+						splitTransform.y += offset.y / sand.worldScale.y;
 
-					Entity splitOff = LevelManager::CurrentLevel()->CreateEntity()
-						.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
+						Entity splitOff = LevelManager::CurrentLevel()->CreateEntity()
+							.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
 
-					vec3 vel;
-					if (splitMe.Has<Rigidbody2D>())
-					{
-						vel.x = splitMe.Get<Rigidbody2D>().GetVelocity().x;
-						vel.y = splitMe.Get<Rigidbody2D>().GetVelocity().y;
-						vel.z = splitMe.Get<Rigidbody2D>().GetAngularVelocity();
+						vec3 vel;
+						if (splitMe.Has<Rigidbody2D>())
+						{
+							vel.x = splitMe.Get<Rigidbody2D>().GetVelocity().x;
+							vel.y = splitMe.Get<Rigidbody2D>().GetVelocity().y;
+							vel.z = splitMe.Get<Rigidbody2D>().GetAngularVelocity();
+						}
+
+						float density = (float)island.size() / totalPixelCount * splitMe.Get<SandSprite>().density;
+
+						//vec2 pveln = normalize(projectileVel);
+
+						//vel.x += get_randc(.1f) + pveln.x;
+						//vel.y += get_randc(.1f) + pveln.y;
+						//vel.z += get_randc(.5f);
+
+						SendNow(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z, density});
 					}
-
-					//vec2 pveln = normalize(projectileVel);
-
-					//vel.x += get_randc(.1f) + pveln.x;
-					//vel.y += get_randc(.1f) + pveln.y;
-					//vel.z += get_randc(.5f);
-
-					SendNow(event_SandAddSprite {splitOff, vec2(vel.x, vel.y), vel.z});
-
-					// this has some memory issue
 				}
 
 				sprite.Cleanup();

@@ -11,6 +11,78 @@ struct Player
 	float speed = 300;
 };
 
+//enum EnemyType
+//{
+//	FIGHTER,
+//	BOMB,
+//	STATION,
+//	BASE
+//};
+//
+//struct event_SpawnEnemy
+//{
+//	EnemyType enemyType;
+//};
+//
+//struct Enemy
+//{
+//
+//};
+//
+//struct EnemySpawnnerSystem : System<EnemySpawnnerSystem>
+//{
+//	void Init()
+//	{
+//		Attach<event_SpawnEnemy>();
+//	}
+//
+//	void Update()
+//	{
+//		// getDifficulty
+//	}
+//
+//	void on(event_SpawnEnemy& e)
+//	{
+//		std::string spritePath;
+//		Entity enemy = LevelManager::CurrentLevel()->CreateEntity().AddAll(Transform2D{}, Enemy{});
+//
+//		switch (e.enemyType)
+//		{
+//			case FIGHTER:
+//			{
+//				enemy.Add<Sprite>("enemy_fighter.png");
+//				break;
+//			}
+//			case BOMB:
+//			{
+//				spritePath = "enemy_bomb.png";
+//				break;
+//			}
+//			case STATION:
+//			{
+//				spritePath = "enemy_station.png";
+//				break;
+//			}
+//			case BASE:
+//			{
+//				spritePath = "enemy_base.png";
+//				break;
+//			}
+//		}
+//	}
+//};
+//
+//struct EnemyAISystem : SystemBase
+//{
+//	void Update()
+//	{
+//		for (auto [transform, enemy] : Query<Transform2D, Enemy>())
+//		{
+//
+//		}
+//	}
+//};
+
 struct EventLoggingSystem : System<EventLoggingSystem>
 {
 	void Init()
@@ -280,7 +352,6 @@ struct WindowTest : EngineLoop
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SpriteRenderer2DSystem());
 		//level->AddSystem(EventLoggingSystem());
-
 		//level->AddSystem(ForceTwoardwsMouseSystem());
 
 		m_app.GetModule<LevelManager>().InitLevel(level);
@@ -343,8 +414,6 @@ struct WindowTest : EngineLoop
 		entity.Add<Sprite>(sprite);
 
 		physics.AddEntity(entity);
-
-		//m_app.Send(event_SandAddSprite{entity});
 
 		return entity;
 	}
