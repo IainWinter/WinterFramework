@@ -1,7 +1,8 @@
 #include "Entry.h"
 #include "Common.h"
 #include "ext/Time.h"
-
+#include <math.h>
+#include <functional>
 #include "LevelSystem.h"
 #include <vector>
 
@@ -19,10 +20,11 @@ struct Phase
 		EndScore = endScore;
 	}
 
-	float GetDifficulty(int currentScore) 
+	float GetDifficulty(int relScore) 
 	{
 		// invalid deal with later ---> next step
-		float RelScore = currentScore;
+		// difficulty = (score < 0.5 ? 8 * score * score * score * score : 1 - pow(-2 * score + 2, 4) / 2);
+		float RelScore = relScore;
 		return lerp(StartDifficulty, EndDifficulty, RelScore);
 	}
 };
@@ -31,7 +33,6 @@ struct Level
 {
 	// startpoint and endpoint are difficulty measurements
 	std::vector<Phase> phases;
-
 
 public: 
 	void AddPhase(float startDifficulty, float endDifficulty, int scoreLength)
@@ -64,9 +65,7 @@ public:
 
 	void SpawnNext(int currentScore)
 	{
-
 		Phase& currentPhase = GetPhase(currentScore);
-
 	}
 
 	void SpawnFighter(float x, float y) {} 
@@ -97,7 +96,6 @@ void setup()
 	currentLevel.SpawnNext(100);
 	currentLevel.SpawnNext(1580);
 	currentLevel.SpawnNext(1000000);
-
 }
 
 int score = 0;
@@ -150,13 +148,12 @@ bool loop()
 		}
 		printf("Current Score %d\n", score);
 
-		difficulty = (score < 0.5 ? 8 * score * score * score * score : 1 - pow(-2 * score + 2, 4) / 2);
+		float difficulty = 0;
 
 		// Each enemy type spawn rate
 		fighterspawnchance = 0;
 		bomberspawnchance = 0;
 		stationspawnchance = 0;
-
 	}
 
 	if (playerstatus == 0)
@@ -167,6 +164,56 @@ bool loop()
 
 	// update level system based on score?
 
-	
 	return true;
+
+	// Outline
+
+	// Difficulty is only dependent on score value
+	// Difficulty = function(currentscore)
+	// getDifficulty(currentscore) is called to calculate difficulty -> returns number between 0 and 1
+	// Difficulty is between 0 and 1 ---> for score = 0, difficulty starts at 0 and goes up with score
+
+	std::function<float(int)> getfighterspawnchance = [](int difficulty) {return exp(1 - difficulty) / exp(1); };
+
+	// ARBITRARY VALUES
+
+	float fighterspawnchance = getfighterspawnchance(difficulty);
+	float bomberspawnchance = (1 - fighterspawnchance) * (0.4 / 0.6321);
+	float stationspawnchance = 1 - fighterspawnchance - bomberspawnchance;
+	// all 3 values should add up to 1
+
+	// weighted random number generator to determine which enemy spawns
+	float randnum = get_rand(1.f);
+	
+	if (randnum <= fighterspawnchance)
+	{
+		// spawn fighter
+	}
+		
+	if (randnum > fighterspawnchance && randnum <= fighterspawnchance + bomberspawnchance)
+	{
+		// spawn bomber
+	}
+		
+	if (randnum > fighterspawnchance + bomberspawnchance + stationspawnchance)
+	{
+		// spawn station
+	}
+		
+	int maxfighterspawn = 10;
+	int maxbomberspawn = 6;
+	int maxstationspawn = 3;
+	
+	// enemynumberchance
+	// if fighter selected (10 spawners)
+		// spawnchance = 0.3 + (0.7)difficulty ---> for each spawner
+
+	// if bomb selected (6 spawners)
+		// spawnchance = 0.2 + (0.8)difficulty ---> for each spawner
+
+	// if station selected (3 spawners)
+		// spawnchance = 0.1 + (0.9)difficulty ---> for each spawner
+
+	// implement chance values into spawnenemy functions
+
 }
