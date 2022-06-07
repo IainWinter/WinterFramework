@@ -22,7 +22,7 @@
 // so hard commit to tieing it up with the renderer
 
 #include "util/error_check.h" // gives gl
-#include "sdl/SDL_surface.h"
+#include "SDL2/SDL_surface.h"
 
 #define STB_IMAGE_IMPLEMENTATION // not great, I guess this should be in a cpp file
 #include "stb/stb_image.h"

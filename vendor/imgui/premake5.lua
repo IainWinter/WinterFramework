@@ -5,15 +5,15 @@ project "ImGui"
 	location "lib/build"
 	targetdir "lib"
 
-    files {
-        "src/*.cpp"
-    }
+	files {
+        	"src/*.cpp"
+	}
 
-    includedirs {
-        "include/imgui",
+	includedirs {
+		"include/imgui",
 		"src",
-		"../sdl/include/sdl"
-    }
+		"../sdl/include/SDL2"
+    	}
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
