@@ -13,7 +13,6 @@
 
 #include "Windowing.h"
 #include "Leveling.h"
-#include "Physics.h"
 #include "ext/Time.h" // Time shouldnt be an ext...
 
 // holds the application and has some
@@ -41,7 +40,6 @@ public:
 		// default app
 		m_app.AddModule<Window>(WindowConfig{ "Untitled", 400, 400 }, m_app.GetRootEventQueue());
 		m_app.AddModule<LevelManager>(m_app);
-		m_app.AddModule<PhysicsWorld>();
 
 		// default level
 		m_app.GetModule<LevelManager>().CreateLevel();
@@ -67,7 +65,6 @@ public:
 			m_fixedStepAcc = 0;
 			
 			TickLevelFixed();
-			TickPhysics();
 		}
 
 		TickLevel();
@@ -124,12 +121,6 @@ private:
 
 		window.EndFrame();
 		window.PumpEvents();
-	}
-
-	void TickPhysics()
-	{
-		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
-		physics.Step(Time::FixedTime());
 	}
 };
 
