@@ -38,6 +38,9 @@ public:
 
 	void Init()
 	{
+		// attach system events
+		m_app.Attach<event_Shutdown>(this);
+
 		// default app
 		m_app.AddModule<Window>(WindowConfig{ "Untitled", 400, 400 }, m_app.GetRootEventQueue());
 		m_app.AddModule<LevelManager>(m_app);
@@ -46,9 +49,11 @@ public:
 		// default level
 		m_app.GetModule<LevelManager>().CreateLevel();
 
-		m_app.Attach<event_Shutdown>(this);
-		
+		// init user code
 		_Init();
+
+		// init the default level
+		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
 	}
 
 	void Dnit()
