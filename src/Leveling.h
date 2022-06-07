@@ -214,7 +214,7 @@ public:
 		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
 	}
 
-	void InitLevel(r<Level>& level)
+	void InitLevel(r<Level> level)
 	{
 		for (SystemBase* system : level->GetSystems())
 		{
@@ -222,7 +222,7 @@ public:
 		}
 	}
 
-	void DnitLevel(r<Level>& level)
+	void DnitLevel(r<Level> level)
 	{
 		for (SystemBase* system : level->GetSystems())
 		{

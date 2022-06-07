@@ -222,7 +222,7 @@ public:
 
 	// Removing compoennts
 
-	template<typename _t>
+	template<typename... _t>
 	void Remove()
 	{
 		assert_has_components<_t...>();

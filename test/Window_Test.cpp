@@ -281,9 +281,10 @@ struct CharacterController : System<CharacterController>
 		auto [body] = *Query<Rigidbody2D>().begin();
 
 		float ts = Time::TimeScale();
+		vec2 pos = body.GetPosition();
 
 		ImGui::Begin("#");
-		ImGui::SliderFloat2("pos", (float*)&body.GetPosition(), -10, 10);
+		ImGui::SliderFloat2("pos", (float*)&pos, -10, 10);
 		ImGui::SliderFloat("speed", &speed, 0, 1000);
 		ImGui::SliderFloat("time", &ts, 0, 2);
 		ImGui::Text("Deltatime: %f", Time::RawDeltaTime());
