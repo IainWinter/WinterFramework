@@ -45,10 +45,18 @@ struct event_Mouse
 enum class InputName
 {
 	_NONE,
+	
+	// Movement
+
 	UP,
 	DOWN,
 	RIGHT,
 	LEFT,
+
+	// Aiming
+
+	AIM_X,
+	AIM_Y
 };
 
 struct InputMapping

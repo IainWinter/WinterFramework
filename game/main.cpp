@@ -1,141 +1,127 @@
-#include "Common.h"
-#include "ext/Time.h"
-#include <math.h>
-#include <functional>
-#include "LevelSystem.h"
-#include <vector>
-
 #include "EngineLoop.h"
 
-struct SpawnerUpdateSystem : System<SpawnerUpdateSystem>
-{
-	int score = 0;
-	float difficulty = 0;
+#include "Common.h"
+#include "Rendering.h"
+#include "ext/Sand.h"
+#include "ext/Time.h"
 
-	float acc = 0.f;
+// systems
 
-	float playerstatus = 0.f;
-	float enemystatus = 0.f;
-	float enemytype = 0.f;
-
-	float fighterspawnchance = 0.f;
-	float bomberspawnchance = 0.f;
-	float stationspawnchance = 0.f;
-
-	void Update()
-	{
-		Time::UpdateTime();
-		acc += Time::DeltaTime();
-		//return x < 0.5 ? 8 * x * x * x * x : 1 - pow(-2 * x + 2, 4) / 2; ---> implement function into score
-		playerstatus = 10;
-
-		if (playerstatus != 0)
-		{
-			// 3 enemy types (1 = easy, 2 = mid, 3 = hard)
-			enemytype = get_rand(3) + 1;
-
-			// if 0, destroyed    if 1, still alive
-			enemystatus = get_rand(2);
-
-			// if 0, dead       if 1-9 alive
-			playerstatus = get_rand(10);
-
-			if (enemystatus == 0)
-			{
-				if (enemytype == 1)
-				{
-					score += 10;
-				}
-
-				if (enemytype == 2)
-				{
-					score += 50;
-				}
-
-				if (enemytype == 3)
-				{
-					score += 100;
-				}
-			}
-			printf("Current Score %d\n", score);
-
-			float difficulty = 0;
-
-			// Each enemy type spawn rate
-			fighterspawnchance = 0;
-			bomberspawnchance = 0;
-			stationspawnchance = 0;
-		}
-
-		if (playerstatus == 0)
-		{
-			printf("Final Score %d\n", score);
-		}
-
-		// update level system based on score?
-
-		// Outline
-
-		// Difficulty is only dependent on score value
-		// Difficulty = function(currentscore)
-		// getDifficulty(currentscore) is called to calculate difficulty -> returns number between 0 and 1
-		// Difficulty is between 0 and 1 ---> for score = 0, difficulty starts at 0 and goes up with score
-
-		std::function<float(int)> getfighterspawnchance = [](int difficulty) {return exp(1 - difficulty) / exp(1); };
-
-		// ARBITRARY VALUES
-
-		float fighterspawnchance = getfighterspawnchance(difficulty);
-		float bomberspawnchance = (1 - fighterspawnchance) * (0.4 / 0.6321);
-		float stationspawnchance = 1 - fighterspawnchance - bomberspawnchance;
-		// all 3 values should add up to 1
-
-		// weighted random number generator to determine which enemy spawns
-		float randnum = get_rand(1.f);
-
-		if (randnum <= fighterspawnchance)
-		{
-			// spawn fighter
-		}
-
-		if (randnum > fighterspawnchance && randnum <= fighterspawnchance + bomberspawnchance)
-		{
-			// spawn bomber
-		}
-
-		if (randnum > fighterspawnchance + bomberspawnchance + stationspawnchance)
-		{
-			// spawn station
-		}
-
-		int maxfighterspawn = 10;
-		int maxbomberspawn = 6;
-		int maxstationspawn = 3;
-
-		// enemynumberchance
-		// if fighter selected (10 spawners)
-			// spawnchance = 0.3 + (0.7)difficulty ---> for each spawner
-
-		// if bomb selected (6 spawners)
-			// spawnchance = 0.2 + (0.8)difficulty ---> for each spawner
-
-		// if station selected (3 spawners)
-			// spawnchance = 0.1 + (0.9)difficulty ---> for each spawner
-
-		// implement chance values into spawnenemy functions
-	}
-};
+#include "Systems/PlayerController.h"
+#include "ext/systems/PhysicsInterpolation.h"
+#include "ext/systems/SimpleSpriteRender.h"
+#include "ext/systems/SimpleTriangleRender.h"
 
 struct Regolith : EngineLoop
 {
 	void _Init()
 	{
-		Window& window = m_app.GetModule<Window>();
-		window.SetTitle("Regolith");
-		window.Resize(1280, 720);
+		ConfigureWindow();
+		ConfigureModules();
+		ConfigureLevel();
+		ConfigureInputMapping();
 
+		ConfigureMainGameLevel();
+	}
+
+	// Init
+
+	void ConfigureWindow()
+	{
+		Window& window = m_app.GetModule<Window>();
+
+		window.Resize(1280, 720);
+		window.SetTitle("Windowing Test");
+	}
+
+	void ConfigureLevel()
+	{
 		r<Level> level = LevelManager::CurrentLevel();
-		level->AddSystem(SpawnerUpdateSystem());
+
+		level->AddSystem(PlayerController());
+		level->AddSystem(PhysicsInterpolation());
+		level->AddSystem(Sand_System_Update());
+		level->AddSystem(SimpleSpriteRenderer2D());
+		level->AddSystem(SimpleTriangleRenderer2D());
+	}
+
+	void ConfigureModules()
+	{
+		m_app.AddModule<SpriteRenderer2D>();
+		m_app.AddModule<TriangleRenderer2D>();
+		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
+		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
+	}
+
+	// this should load from a file that the user can configure in a settings menu...
+
+	void ConfigureInputMapping()
+	{
+		InputMapping& input = m_app.GetModule<Window>().m_input;
+
+		input.m_keyboard[SDL_SCANCODE_W] = InputName::UP;
+		input.m_keyboard[SDL_SCANCODE_S] = InputName::DOWN;
+		input.m_keyboard[SDL_SCANCODE_D] = InputName::RIGHT;
+		input.m_keyboard[SDL_SCANCODE_A] = InputName::LEFT;
+	}
+
+	void ConfigureMainGameLevel()
+	{
+		r<Level> level = LevelManager::CurrentLevel();
+
+		CreateSandSprite("player.png", "player_collider_mask.png").Add<Player>();
+	}
+
+	// should make sand cut the collider sprite as well, this will make the colliders much simopler
+	// I think, if this doesnt happen then the sprite will become incorrect on the first hit
+
+	Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path)
+	{
+		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
+
+		Texture sprite = Texture(_p(path), false);
+		
+		Transform2D transform;
+		transform.sx = sprite.Width() / sand.worldScale.x;
+		transform.sy = sprite.Height() / sand.worldScale.y;
+
+		// collider should be 8 bit mask texture
+		// if its not then the color texture can be used actually so maybe this is fine
+
+		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
+		entity.Add<Transform2D>(transform);
+		entity.Add<SandSprite>(Texture(_p(collider_mask_path)));
+		entity.Add<Sprite>(sprite);
+
+		physics.AddEntity(entity);
+
+		m_app.GetRootEventQueue()->send(event_SandAddSprite { entity });
+
+		return entity;
+	}
+
+	Entity CreateTexturedCircle(const std::string& path)
+	{
+		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
+
+		Texture sprite = Texture(_p(path), false);
+		
+		Transform2D transform;
+		transform.sx = sprite.Width() / sand.worldScale.x;
+		transform.sy = sprite.Height() / sand.worldScale.y;
+
+		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
+		entity.Add<Transform2D>(transform);
+		entity.Add<SandSprite>();
+		entity.Add<Sprite>(sprite);
+
+		Rigidbody2D& body = physics.AddEntity(entity);
+
+		b2CircleShape shape;
+		shape.m_radius = std::max(transform.sx, transform.sy);
+		body.AddCollider(shape);
+
+		return entity;
 	}
 };
 

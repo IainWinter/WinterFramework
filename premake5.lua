@@ -24,8 +24,11 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
-		"test/Window_Test.cpp",
-		--"game/main.cpp"
+		-- these are game files, remove for just framework
+
+		--"test/Window_Test.cpp",
+		"game/**.h",
+		"game/**.cpp"
 	}
 
 	includedirs {
@@ -39,7 +42,11 @@ project "Framework"
 		"vendor/glm/include",
 		"vendor/glad/include",
 		"vendor/asio/include",
-		"vendor/json/include"
+		"vendor/json/include",
+
+		-- these are game files, see above
+
+		"game"
 	}
 
 	libdirs {

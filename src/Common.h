@@ -83,16 +83,22 @@ struct Transform2D
 	}
 };
 
-inline float lerp(float a, float b, float w)
-{
-	return a + w * (b - a);
-}
+inline float lerp(float a, float b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec2  a, vec2  b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec3  a, vec3  b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec4  a, vec4  b, float w) { return a + w * (b - a); }
 
 inline float clamp(float x, float min, float max)
 {
 	     if (x < min) x = min;
 	else if (x > max) x = max;
 	return x; 
+}
+
+inline vec2 safe_normalize(const vec2& p)
+{
+	float n = sqrt((float)(p.x * p.x + p.y * p.y));
+	return (n == 0) ? vec2(0.f, 0.f) : vec2(p.x / n, p.y / n);
 }
 
 template<typename _t>

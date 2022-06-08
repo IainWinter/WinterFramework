@@ -130,6 +130,9 @@ protected:
 	template<typename    _t> _t&                          GetModule()       { assert_init(); return m_level->m_app->GetModule<_t>(); }
 	template<typename... _t> std::tuple<_t&...>           GetModules()      { assert_init(); return m_level->m_app->GetModules<_t...>(); }
 
+	// some helpers
+	template<typename... _t> Entity                       FirstEntityWith() { assert_init(); return std::get<0>(*m_level->m_world.QueryWithEntity<_t...>().begin()); }
+
 	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
 	template<typename _t> void SendNow      (_t&& event) { assert_init(); m_level->m_levelBus.send(event); }
 	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->m_rootQueue.send(event); }
