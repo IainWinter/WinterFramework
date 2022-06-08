@@ -56,7 +56,9 @@ enum class InputName
 	// Aiming
 
 	AIM_X,
-	AIM_Y
+	AIM_Y,
+
+	ATTACK
 };
 
 struct InputMapping

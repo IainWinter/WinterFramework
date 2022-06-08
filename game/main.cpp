@@ -8,6 +8,8 @@
 // systems
 
 #include "Systems/PlayerController.h"
+#include "Systems/FlockingMovement.h"
+
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/SimpleSpriteRender.h"
 #include "ext/systems/SimpleTriangleRender.h"
@@ -43,6 +45,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
 		level->AddSystem(SimpleTriangleRenderer2D());
+		level->AddSystem(FlockingMovement());
 	}
 
 	void ConfigureModules()
@@ -51,6 +54,11 @@ struct Regolith : EngineLoop
 		m_app.AddModule<TriangleRenderer2D>();
 		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
 		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
+
+		CoordTranslation coords;
+		coords.ScreenToWorld = vec2(32, 18);
+
+		m_app.AddModule<CoordTranslation>(coords);
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
@@ -70,6 +78,14 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		CreateSandSprite("player.png", "player_collider_mask.png").Add<Player>();
+
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
 	}
 
 	// should make sand cut the collider sprite as well, this will make the colliders much simopler

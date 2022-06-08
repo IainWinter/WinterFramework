@@ -7,4 +7,7 @@ struct Player
 	vec2 MovementInput;
 	float MovementAccelerationScaleFactor = 15.f;
 	float MovementSpeed = 40.f;
+
+	vec2 AttackDirectionInput;
+	bool AttackFireInput;
 };

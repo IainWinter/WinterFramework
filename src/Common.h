@@ -60,7 +60,26 @@ struct Color
 
 struct Transform2D
 {
-	float x, y, z, sx, sy, r;
+	union {
+		vec3 position3D;
+		struct
+		{
+			vec2 position;
+			float _z; // this is messy...
+		};
+		struct { float x, y, z; };
+	};
+
+	union {
+		vec2 scale;
+		struct { float sx, sy; };
+	};
+
+	union
+	{
+		float r;
+		float rotation;
+	};
 
 	Transform2D()
 		:  x(0), y(0), z(0), sx(1), sy(1), r(0)
@@ -90,9 +109,23 @@ inline vec2  lerp(vec4  a, vec4  b, float w) { return a + w * (b - a); }
 
 inline float clamp(float x, float min, float max)
 {
-	     if (x < min) x = min;
-	else if (x > max) x = max;
+	if (x < min) return min;
+	if (x > max) return max;
 	return x; 
+}
+
+inline vec2 clamp(const vec2& x, float max)
+{
+	float d = length(x);
+	if (d > max) return x / d * max;
+	return x;
+}
+
+inline vec2 clamp(vec2 x, const vec2& min, const vec2& max)
+{
+	x.x = clamp(x.x, min.x, max.x);
+	x.y = clamp(x.y, min.y, max.y);
+	return x;
 }
 
 inline vec2 safe_normalize(const vec2& p)

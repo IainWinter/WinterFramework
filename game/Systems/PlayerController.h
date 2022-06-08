@@ -11,6 +11,7 @@ struct PlayerController : System<PlayerController>
 	void Init()
 	{
 		Attach<event_Input>();
+		Attach<event_Mouse>();
 		playerEntity = FirstEntityWith<Player>();
 	}
 
@@ -24,29 +25,51 @@ struct PlayerController : System<PlayerController>
 			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
 
 		body.SetVelocity(vel);
+
+		Transform2D& transform = playerEntity.Get<Transform2D>();
+
+		vec2 direction = safe_normalize(player.AttackDirectionInput);
+		vec2 position = vec2(transform.x, transform.y) + direction * 1.f;
+		
+		direction *= 600.f;
+
+		if (player.AttackFireInput)
+		{
+			GetModule<SandWorld>()
+				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x, direction.y, 1.f)
+				.Add<CellLife>(5.f);
+		}
 	}
 
 	void on(event_Input& e)
 	{
 		Player& player = playerEntity.Get<Player>();
 
-		if (e.name == InputName::UP)    player.MovementInput.y += e.state;
-		if (e.name == InputName::DOWN)  player.MovementInput.y -= e.state;
-		if (e.name == InputName::RIGHT) player.MovementInput.x += e.state;
-		if (e.name == InputName::LEFT)  player.MovementInput.x -= e.state;
+		switch (e.name)
+		{
+			case InputName::UP:    player.MovementInput.y += e.state; break;
+			case InputName::DOWN:  player.MovementInput.y -= e.state; break;
+			case InputName::RIGHT: player.MovementInput.x += e.state; break;
+			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
+
+			case InputName::AIM_X:  player.AttackDirectionInput.x = e.state;        break;
+			case InputName::AIM_Y:  player.AttackDirectionInput.y = e.state;        break;
+			case InputName::ATTACK: player.AttackFireInput        = e.state != 0.f; break;
+		}
 	}
 
 	// translates mouse to controller
 
 	void on(event_Mouse& e)
 	{
-		Transform2D& t = playerEntity.Get<Transform2D>();
+		Transform2D& transform = playerEntity.Get<Transform2D>();
 
 		// calculate the direction from the player to the target
 		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
-		vec2 relitiveTarget = target - vec2(t.x, t.y);
+		vec2 relitiveTarget = target - vec2(transform.x, transform.y);
 
 		SendNow(event_Input{ InputName::AIM_X, relitiveTarget.x });
 		SendNow(event_Input{ InputName::AIM_Y, relitiveTarget.y });
+		SendNow(event_Input{ InputName::ATTACK, (float)e.button_left });
 	}
 };
