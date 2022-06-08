@@ -17,9 +17,9 @@ struct PhysicsInterpolation : SystemBase
 		{
 			if (!body.InWorld()) continue;
 
-			transform.x = lerp(body.LastTransform.x, body.GetPosition().x, ratio);
-			transform.y = lerp(body.LastTransform.y, body.GetPosition().y, ratio);
-			transform.r = lerp(body.LastTransform.r, body.GetAngle(), ratio);
+			transform.position.x = lerp(body.LastTransform.position.x, body.GetPosition().x, ratio);
+			transform.position.y = lerp(body.LastTransform.position.y, body.GetPosition().y, ratio);
+			transform.rotation   = lerp(body.LastTransform.rotation,   body.GetAngle(),      ratio);
 		}
 	}
 
@@ -31,9 +31,8 @@ struct PhysicsInterpolation : SystemBase
 		{
 			if (!body.InWorld()) continue;
 
-			body.LastTransform.x = body.GetPosition().x;
-			body.LastTransform.y = body.GetPosition().y;
-			body.LastTransform.r = body.GetAngle();
+			body.LastTransform.position = body.GetPosition();
+			body.LastTransform.rotation = body.GetAngle();
 		}
 	}
 };

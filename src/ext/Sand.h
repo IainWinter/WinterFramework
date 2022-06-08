@@ -191,8 +191,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 	{
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
-		transform.sx = sprite.Width()  / GetModule<SandWorld>().worldScale.x;
-		transform.sy = sprite.Height() / GetModule<SandWorld>().worldScale.y;
+		transform.scale.x = sprite.Width()  / GetModule<SandWorld>().worldScale.x;
+		transform.scale.y = sprite.Height() / GetModule<SandWorld>().worldScale.y;
 
 		// setup collider
 
@@ -212,14 +212,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 		body.SetVelocity(e.velocity);
 		body.SetAngularVelocity(e.aVelocity);
 
-		vec2 scale = vec2(transform.sx, transform.sy);
-
 		for (const std::vector<vec2>& polygon : polygons.first)
 		{
 			b2PolygonShape shape;
 			for (int i = 0; i < polygon.size(); i++)
 			{
-				shape.m_vertices[i] = _tb(polygon.at(i) * scale);
+				shape.m_vertices[i] = _tb(polygon.at(i) * transform.scale);
 			}
 			shape.Set(shape.m_vertices, polygon.size());
 
@@ -298,8 +296,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 							auto [x, y] = get_xy(index, sprite.Width());
 
 							vec2 pos = (vec2(x, y) - midOld) / 10.f;
-							rotate(pos, splitTransform.r);
-							pos += vec2(splitTransform.x, splitTransform.y);
+							rotate(pos, splitTransform.rotation);
+							pos += splitTransform.position;
 
 							Color color = sprite.At(x, y);
 							vec2 offset = 1.f / sand.worldScale;
@@ -352,10 +350,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 						// place the new sprites in their relitive locations
 
 						vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
-						vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.r);
+						vec2 offset = 2.f * rotate(midNew - midOld, splitTransform.rotation);
 					
-						splitTransform.x += offset.x / sand.worldScale.x;
-						splitTransform.y += offset.y / sand.worldScale.y;
+						splitTransform.position += offset / sand.worldScale;
 
 						Entity splitOff = LevelManager::CurrentLevel()->CreateEntity()
 							.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
