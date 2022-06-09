@@ -113,8 +113,8 @@ struct Regolith : EngineLoop
 		Texture sprite = Texture(_p(path), false);
 		Texture mask   = Texture(_p(collider_mask_path), false);
 		Transform2D transform;
-		transform.sx = sprite.Width() / sand.worldScale.x;
-		transform.sy = sprite.Height() / sand.worldScale.y;
+		transform.scale.x = sprite.Width()  / sand.worldScale.x;
+		transform.scale.y = sprite.Height() / sand.worldScale.y;
 
 		// collider should be 8 bit mask texture
 		// if its not then the color texture can be used actually so maybe this is fine
@@ -139,8 +139,8 @@ struct Regolith : EngineLoop
 		Texture mask   = Texture(_p(path_mask), false);
 		
 		Transform2D transform;
-		transform.sx = sprite.Width() / sand.worldScale.x;
-		transform.sy = sprite.Height() / sand.worldScale.y;
+		transform.scale.x = sprite.Width()  / sand.worldScale.x;
+		transform.scale.y = sprite.Height() / sand.worldScale.y;
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);
@@ -150,8 +150,8 @@ struct Regolith : EngineLoop
 		Rigidbody2D& body = physics.AddEntity(entity);
 
 		b2CircleShape shape;
-		shape.m_radius = std::max(transform.sx, transform.sy);
-		body.AddCollider(shape, 100.f);
+		shape.m_radius = max(transform.scale);
+		body.AddCollider(shape);
 
 		return entity;
 	}

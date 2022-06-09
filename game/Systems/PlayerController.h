@@ -20,7 +20,7 @@ struct PlayerController : System<PlayerController>
 		auto [player, transform] = playerEntity.GetAll<Player, Transform2D>();
 
 		vec2 direction = safe_normalize(player.AttackDirectionInput);
-		vec2 position = vec2(transform.x, transform.y) + direction * 1.f;
+		vec2 position = transform.position + direction * 1.f;
 		
 		direction *= 600.f;
 
@@ -71,7 +71,7 @@ struct PlayerController : System<PlayerController>
 
 		// calculate the direction from the player to the target
 		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
-		vec2 relitiveTarget = target - vec2(transform.x, transform.y);
+		vec2 relitiveTarget = target - transform.position;
 
 		SendNow(event_Input{ InputName::AIM_X, relitiveTarget.x });
 		SendNow(event_Input{ InputName::AIM_Y, relitiveTarget.y });

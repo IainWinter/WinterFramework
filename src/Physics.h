@@ -25,8 +25,8 @@ public:
 		, LastTransform (transform) 
 	{
 		m_body.type = b2_dynamicBody;
-		m_body.position = b2Vec2(transform.x, transform.y);
-		m_body.angle = transform.r;
+		m_body.position = _tb(transform.position);
+		m_body.angle = transform.rotation;
 	}
 	
 	// functions for setting properties for box2d...

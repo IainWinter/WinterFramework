@@ -60,43 +60,42 @@ struct Color
 
 struct Transform2D
 {
-	union {
-		vec3 position3D;
-		struct
-		{
-			vec2 position;
-			float _z; // this is messy...
-		};
-		struct { float x, y, z; };
-	};
-
-	union {
-		vec2 scale;
-		struct { float sx, sy; };
-	};
-
-	union
-	{
-		float r;
-		float rotation;
-	};
+	vec2 position;
+	vec2 scale;
+	float rotation;
+	float z;
 
 	Transform2D()
-		:  x(0), y(0), z(0), sx(1), sy(1), r(0)
+		: position (0.f, 0.f)
+		, scale    (0.f, 0.f)
+		, rotation (0.f)
+		, z        (0.f)
 	{}
 
 	Transform2D(
 		float x, float y, float z, float sx, float sy, float r
 	)
-		:  x(x), y(y), z(z), sx(sx), sy(sy), r(r)
+		: position (x, y)
+		, scale    (sx, sy)
+		, rotation (r)
+		, z        (z)
+	{}
+
+	Transform2D(
+		vec2 position, vec2 scale, float rotation
+	)
+		: position (position)
+		, scale    (scale)
+		, rotation (rotation)
+		, z        (0.f)
 	{}
 
 	glm::mat4 World() const
 	{
 		glm::mat4 world = glm::mat4(1.f);
-		world = glm::translate(world, glm::vec3(x, y, z));
-		world = glm::rotate(world, r, glm::vec3(0, 0, 1.f));
-		world = glm::scale(world, glm::vec3(sx, sy, 1.f));
+		world = glm::translate(world, vec3(position, z));
+		world = glm::rotate   (world, rotation, vec3(0.f, 0.f, 1.f));
+		world = glm::scale    (world, vec3(scale, 1.f));
 
 		return world;
 	}
@@ -132,6 +131,11 @@ inline vec2 safe_normalize(const vec2& p)
 {
 	float n = sqrt((float)(p.x * p.x + p.y * p.y));
 	return (n == 0) ? vec2(0.f, 0.f) : vec2(p.x / n, p.y / n);
+}
+
+inline float max(const vec2& v)
+{
+	return max(v.x, v.y);
 }
 
 template<typename _t>
