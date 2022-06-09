@@ -11,8 +11,7 @@ struct FlockingMovement : SystemBase
 		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
 		{
 			// Arbitrarily weight these forces
-            auto [sep, ali, coh] = CalcForces(body, flocker);
-			body.ApplyForce(sep * 1.5f + ali * 1.f + coh * 1.f);
+			body.ApplyForce(CalcForces(body, flocker));
 		}
 	}
 
@@ -20,7 +19,7 @@ private:
 
     // credit Daniel Shiffman (https://processing.org/examples/flocking.html)
 
-	std::tuple<vec2, vec2, vec2> CalcForces(const Rigidbody2D& body, const Flocker& flocker)
+	vec2 CalcForces(const Rigidbody2D& body, const Flocker& flocker)
 	{
         vec2 forceSeperation = vec2(0.f, 0.f);
         vec2 forceAlign      = vec2(0.f, 0.f);
@@ -59,6 +58,6 @@ private:
         forceAlign      = clamp(safe_normalize(forceAlign)      * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
         forceCohesion   = clamp(safe_normalize(forceCohesion)   * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
 
-        return { forceSeperation, forceAlign, forceCohesion };
+        return 10.5f * forceSeperation + 10.f * forceAlign + 10.f * forceCohesion;
 	}
 };

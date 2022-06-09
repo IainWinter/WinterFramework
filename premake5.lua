@@ -84,6 +84,8 @@ project "Framework"
 			"shell32"
 		}
 
+		defines { "IW_PLATFORM_WINDOWS" }
+
 	filter "configurations:Debug"
 		defines { "DEBUG" }
 		symbols "On"

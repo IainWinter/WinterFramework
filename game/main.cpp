@@ -14,6 +14,20 @@
 #include "ext/systems/SimpleSpriteRender.h"
 #include "ext/systems/SimpleTriangleRender.h"
 
+struct SandSpriteMaskRenderer : SystemBase
+{
+	void Update() override
+	{
+		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
+
+		render.Begin(camera);
+		for (auto [transform, sprite] : Query<Transform2D, SandSprite>())
+		{
+			render.DrawSprite(transform, sprite.Get());
+		}
+	}
+};
+
 struct Regolith : EngineLoop
 {
 	void _Init()
@@ -44,7 +58,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(PhysicsInterpolation());
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
-		level->AddSystem(SimpleTriangleRenderer2D());
+		level->AddSystem(SandSpriteMaskRenderer());
+		//level->AddSystem(SimpleTriangleRenderer2D());
 		level->AddSystem(FlockingMovement());
 	}
 
@@ -79,13 +94,13 @@ struct Regolith : EngineLoop
 
 		CreateSandSprite("player.png", "player_collider_mask.png").Add<Player>();
 
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
-		CreateTexturedCircle("enemy_bomb.png").AddAll(Flocker()).Get<Transform2D>().position = vec2(get_rand(20, 20));
+		for (int i = 0; i < 20; i++)
+		{
+			Entity entity = CreateTexturedCircle("enemy_station.png", "enemy_station_mask.png")
+				;// .AddAll(Flocker());
+
+			entity.Get<Transform2D>().position = vec2(get_rand(20, 20));
+		}
 	}
 
 	// should make sand cut the collider sprite as well, this will make the colliders much simopler
@@ -96,7 +111,7 @@ struct Regolith : EngineLoop
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
 		Texture sprite = Texture(_p(path), false);
-		
+		Texture mask   = Texture(_p(collider_mask_path), false);
 		Transform2D transform;
 		transform.sx = sprite.Width() / sand.worldScale.x;
 		transform.sy = sprite.Height() / sand.worldScale.y;
@@ -106,7 +121,7 @@ struct Regolith : EngineLoop
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);
-		entity.Add<SandSprite>(Texture(_p(collider_mask_path)));
+		entity.Add<SandSprite>(mask);
 		entity.Add<Sprite>(sprite);
 
 		physics.AddEntity(entity);
@@ -116,11 +131,12 @@ struct Regolith : EngineLoop
 		return entity;
 	}
 
-	Entity CreateTexturedCircle(const std::string& path)
+	Entity CreateTexturedCircle(const std::string& path, const std::string& path_mask)
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
 		Texture sprite = Texture(_p(path), false);
+		Texture mask   = Texture(_p(path_mask), false);
 		
 		Transform2D transform;
 		transform.sx = sprite.Width() / sand.worldScale.x;
@@ -128,14 +144,14 @@ struct Regolith : EngineLoop
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);
-		entity.Add<SandSprite>();
+		entity.Add<SandSprite>(mask);
 		entity.Add<Sprite>(sprite);
 
 		Rigidbody2D& body = physics.AddEntity(entity);
 
 		b2CircleShape shape;
 		shape.m_radius = std::max(transform.sx, transform.sy);
-		body.AddCollider(shape);
+		body.AddCollider(shape, 100.f);
 
 		return entity;
 	}

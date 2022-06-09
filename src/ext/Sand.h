@@ -22,7 +22,7 @@ struct Cell
 
 struct CellProjectile
 {
-	int owner; // for no damage to who fired
+	u32 owner; // for no damage to who fired
 };
 
 struct CellLife
@@ -34,9 +34,12 @@ struct SandSprite
 {
 	float density = 100.f;
 	bool hasChanged = false;
-	Texture colliderMask;
+	r<Texture> colliderMask;
+
+	Texture& Get() { return *colliderMask; }
+
 	SandSprite() = default;
-	SandSprite(const Texture& collider) : colliderMask(collider) {}
+	SandSprite(const Texture& collider) : colliderMask(std::make_shared<Texture>(collider)) {}
 };
 
 struct event_SandCellCollision
@@ -75,16 +78,10 @@ struct SandWorld
 		screen = std::make_shared<Target>();
 
 		//spriteTarget->Add(Target::aDepth, w, h, 1);
-		screen->Add(Target::aColor, w, h, Texture::uRGBA, false);
-		screen->Add(Target::aColor1, w, h, Texture::uINT_32, false);
+		screen->Add(Target::aColor, w, h, Texture::uINT_32, false);
 		
 		// see Windowing.h
 		//screen->Add(Target::aDepth, w, h, Texture::uDEPTH, true);
-
-		display = LevelManager::CurrentLevel()->CreateEntity();
-		display.Add<Transform2D>(0, 0, 0, camScaleX, camScaleY, 0);
-		display.Add<Sprite>(screen->Get(Target::aColor));
-		display.Add<Renderable>();
 
 		worldScale.x = w / camScaleX / 2; // by 2 bc mesh does from -1 to 1
 		worldScale.y = h / camScaleY / 2;
@@ -93,12 +90,6 @@ struct SandWorld
 		screenSize.y = h;
 
 		screenOffset = screenSize / 2;
-	}
-
-	~SandWorld()
-	{
-		if (!display.IsAlive()) return; // moved
-		display.Destroy();
 	}
 
 	Entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
@@ -122,7 +113,7 @@ struct SandWorld
 	const ivec4& GetCollisionInfo(ivec2 pos) const
 	{
 		pos += screenOffset;
-		return *(ivec4*)screen->Get(Target::aColor1)->At<int>(pos.x, pos.y);
+		return *(ivec4*)screen->Get(Target::aColor)->At<int>(pos.x, pos.y);
 	}
 
 	vec2 ToScreenPos(const vec2& pos) const
@@ -168,7 +159,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 		vel.y += get_rand(400) - 200;
 		vel = normalize(vel) * speed;
 
-		e.sprite.Get<Sprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
+		e.sprite.Get<Sprite>()    .Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
+		e.sprite.Get<SandSprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
 		e.sprite.Get<SandSprite>().hasChanged = true;
 
 		bool alreadyHit = false;
@@ -199,12 +191,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 		sandSprite.density = e.density;
 
-		assert(sandSprite.colliderMask.Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
+		assert(sandSprite.colliderMask->Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
 
 		auto polygons = MakePolygonFromField<u32>(
-			(u32*)sandSprite.colliderMask.Pixels(),
-			sandSprite.colliderMask.Width(),
-			sandSprite.colliderMask.Height(),
+			(u32*)sandSprite.colliderMask->Pixels(),
+			sandSprite.colliderMask->Width(),
+			sandSprite.colliderMask->Height(),
 			[](const u32& color) { return (color & 0xff000000) > 0; }
 		);
 
@@ -223,7 +215,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			}
 			shape.Set(shape.m_vertices, polygon.size());
 
-			assert(polygon.size() < 9);
+			assert(polygon.size() < 12);
 			body.AddCollider(shape, 100.f);
 		}
 
@@ -243,13 +235,14 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		for (auto [splitMe, projectile, projectileLocation] : toSplit)
 		{
-			Texture& sprite = splitMe.Get<Sprite>().Get();
-			int length = sprite.Width() * sprite.Height();
+			r<Texture> sprite = splitMe.Get<Sprite>().m_source;
+			r<Texture> mask   = splitMe.Get<SandSprite>().colliderMask;
+			int length = mask->Width() * mask->Height();
 
 			printf("splitting sprite with length %d\n", length);
 
 			std::vector<flood_fill_cell_state> state = flood_fill_get_states_from_array<u32>(
-				(u32*)sprite.Pixels(), length, [](const u32& x) { return (x & 0xff000000) > 0; }
+				(u32*)mask->Pixels(), length, [](const u32& x) { return (x & 0xff000000) > 0; }
 			);
 
 			std::vector<std::vector<int>> islands;
@@ -257,7 +250,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 			for (int seed = 0; seed < length; seed++) // slow could use 'active pixels' cached list
 			{
-				std::vector<int> island = flood_fill(seed, sprite.Width(), sprite.Height(), state);
+				std::vector<int> island = flood_fill(seed, mask->Width(), mask->Height(), state);
 				if (island.size() > 0)
 				{
 					totalPixelCount += island.size();
@@ -267,7 +260,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 			Rigidbody2D& body = splitMe.Get<Rigidbody2D>();
 			vec2 projectileVel = projectile.Get<Cell>().vel;
-			vec2 midOld = vec2(sprite.Width(), sprite.Height()) / 2.f; // width/height because it's 0-width/height
+			vec2 midOld = vec2(mask->Width(), mask->Height()) / 2.f; // width/height because it's 0-width/height
 
 			body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - midOld) / sand.worldScale);
 
@@ -282,7 +275,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 					for (const int& index : island)
 					{
-						auto [x, y] = get_xy(index, sprite.Width());
+						auto [x, y] = get_xy(index, mask->Width());
 						if (x < minX) minX = x;
 						if (y < minY) minY = y;
 						if (x > maxX) maxX = x;
@@ -291,17 +284,17 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 					Transform2D splitTransform = splitMe.Get<Transform2D>();
 
-					if (island.size() < 15)
+					if (island.size() < 25)
 					{
 						for (const int& index : island)
 						{
-							auto [x, y] = get_xy(index, sprite.Width());
+							auto [x, y] = get_xy(index, sprite->Width());
 
 							vec2 pos = (vec2(x, y) - midOld) / 10.f;
 							rotate(pos, splitTransform.r);
 							pos += vec2(splitTransform.x, splitTransform.y);
 
-							Color color = sprite.At(x, y);
+							Color color = sprite->At(x, y);
 							vec2 offset = 1.f / sand.worldScale;
 
 							auto get_vel = [projectileVel]()
@@ -332,18 +325,30 @@ struct Sand_System_Update : System<Sand_System_Update>
 						// copy old data to new texture
 
 						Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
+						Texture splitMask    = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false); // could be uR
+						
 						splitTexture.Clear();
+						splitMask.Clear();
 
 						for (const int& index : island)
 						{
-							auto [x, y] = get_xy(index, sprite.Width()); // this math doesnt need to transform to xy
+							auto [x, y] = get_xy(index, mask->Width());  // this math doesnt need to transform to xy
 																		 // simplify index = (x - minX) + (y - minY) * width
-						
+							// set color
+
 							Color& to = splitTexture.At(x - minX, y - minY);
-							Color& from = sprite.At(x, y);
+							Color& from = sprite->At(x, y);
 
 							to = from;
 							from = Color(0, 0, 0, 0);
+
+							// set mask
+
+							Color& toMask = splitMask.At(x - minX, y - minY);
+							Color& fromMask = mask->At(x, y);
+
+							toMask = fromMask;
+							fromMask = Color(0, 0, 0, 0);
 						}
 
 						// create new tile
@@ -358,7 +363,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 						splitTransform.y += offset.y / sand.worldScale.y;
 
 						Entity splitOff = LevelManager::CurrentLevel()->CreateEntity()
-							.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitTexture));
+							.AddAll(splitTransform, Sprite(splitTexture), SandSprite(splitMask));
 
 						vec3 vel;
 						if (splitMe.Has<Rigidbody2D>())
@@ -380,7 +385,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 					}
 				}
 
-				sprite.Cleanup();
+				// destroy textures
+				sprite->Cleanup();
+				mask->Cleanup();
+
 				GetModule<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
 				splitMe.Destroy();
 			}
@@ -426,34 +434,29 @@ struct Sand_System_Update : System<Sand_System_Update>
 			}
 		}
 
-		Texture& color = *sand.screen->Get(Target::aColor);
-		Texture& sInfo = *sand.screen->Get(Target::aColor1); // sprite info / collision info, probally an index (or entity index) to an array of structs
-
-		color.SendToHost();
-		sInfo.SendToHost();
+		Texture& collisionMaskRender = *sand.screen->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
+		collisionMaskRender.SendToHost();
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
 			if (length(cell.vel / cell.dampen * Time::DeltaTime()) > 1)
 			{
-				DrawLine(sand, color, sInfo, e, cell);
+				DrawLine(sand, collisionMaskRender, e, cell);
 			}
 
 			else
 			{
 				if (sand.OnScreen(cell.pos))
 				{
-					sand.DrawPixel(color, cell.pos, cell.color);
+					//sand.DrawPixel(color, cell.pos, cell.color);
 				}
 
 				cell.pos += cell.vel * Time::DeltaTime();
 			}
 		}
-
-		color.SendToDevice();
 	}
 
-	void DrawLine(SandWorld& sand, Texture& display, Texture& collisionInfo, Entity e, Cell& cell)
+	void DrawLine(SandWorld& sand, Texture& collisionInfo, Entity e, Cell& cell)
 	{
 		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
 		vec2 current = cell.pos;
@@ -469,8 +472,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 			if (!sand.OnScreen(raster))
 			{
-				// break if going offscreen
-				continue;
+				continue; // break if going offscreen
 			}
 
 			if (isProjectile && sand.CollidePixel(raster))
@@ -479,11 +481,18 @@ struct Sand_System_Update : System<Sand_System_Update>
 				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
 				int tileIndex = spriteInfo[2];
 
-				// should defer
-				SendNow(event_SandCellCollision{ tileCache.at(tileIndex), e, positionInSprite });
+				Entity tileEntity = tileCache.at(tileIndex);
+
+				if (tileEntity.Id() != e.Get<CellProjectile>().owner)
+				{
+					SendNow(event_SandCellCollision { tileEntity, e, positionInSprite }); // should defer
+				}
+
+				vec2& v = e.Get<Cell>().vel;
+				v = normalize(v + get_rand(10.f, 10.f)) * length(v);
 			}
 
-			sand.DrawPixel(display, raster, cell.color);
+			//sand.DrawPixel(display, raster, cell.color);
 			current += delta;
 			cell.pos = current;
 		}

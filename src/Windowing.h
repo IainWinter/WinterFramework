@@ -45,15 +45,10 @@ struct event_Mouse
 enum class InputName
 {
 	_NONE,
-	
-	// Movement
-
 	UP,
 	DOWN,
 	RIGHT,
 	LEFT,
-
-	// Aiming
 
 	AIM_X,
 	AIM_Y,
@@ -123,24 +118,37 @@ public:
 	)
 		: m_events (events)
 		, m_config (config)
+		, m_window (nullptr)
+		, m_opengl (nullptr)
 	{
 		if (s_first) s_first = false;
 		else assert(false && "Only a single window has been tested");
+	}
 
+	~Window()
+	{
+		if (!m_window) return;
+		Dnit();
+	}
+
+	void Init()
+	{
 		const char* first_glsl_version = Window::Init_Video();
 
-		m_window = SDL_CreateWindow(config.Title.c_str(), 0, 0, config.Width, config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+		m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 		m_opengl = SDL_GL_CreateContext(m_window);
-		
+
 		SDL_GL_MakeCurrent(m_window, m_opengl);
 		SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 		Init_Imgui(first_glsl_version);
 
-		Resize(config.Width, config.Height);
+		Resize(m_config.Width, m_config.Height);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glClearColor(1.f, 1.f, 1.f, 1.f);
 
 		// sand breaks because this isnt setup
 		//glEnable(GL_DEPTH_TEST);
@@ -148,13 +156,11 @@ public:
 
 		// vsync
 
-		SDL_GL_SetSwapInterval(0);
+		SDL_GL_SetSwapInterval(1);
 	}
 
-	~Window()
+	void Dnit()
 	{
-		if (!m_window) return;
-		
 		Dnit_Imgui();
 		SDL_GL_DeleteContext(m_opengl);
 		SDL_DestroyWindow(m_window);
@@ -260,13 +266,21 @@ public:
 	{
 		m_config.Width = width;
 		m_config.Height = height;
-		gl(glViewport(0, 0, m_config.Width, m_config.Height));
+
+		if (m_opengl) // if opengl isnt init, then when window is first opened it will take the m_config size
+		{
+			gl(glViewport(0, 0, m_config.Width, m_config.Height));
+		}
 	}
 
 	void Resize(int width, int height, bool center = true)
 	{
-		SDL_SetWindowSize(m_window, width, height); // high DPI screens need some other functions?
-		if (center) SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		if (m_window) // only if open
+		{
+			SDL_SetWindowSize(m_window, width, height); // high DPI screens need some other functions?
+			if (center) SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+		}
+
 		ResizeViewport(width, height);
 	}
 
@@ -279,6 +293,10 @@ public:
 	{
 		SDL_GL_SwapWindow(m_window);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+#ifdef IW_PLATFORM_WINDOWS
+		ImGui::UpdatePlatformWindows();
+#endif
 	}
 	
 	// imgui renderer
@@ -292,8 +310,17 @@ public:
 
 	void EndImgui()
 	{
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+#ifdef IW_PLATFORM_WINDOWS
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+#endif
+			SDL_GL_MakeCurrent(m_window, m_opengl);
+		}
 	}
 
 	// yes moves

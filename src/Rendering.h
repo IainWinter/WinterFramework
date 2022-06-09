@@ -403,7 +403,6 @@ private:
 
 		assert(false);
 		return -1;
-
 	}
 };
 

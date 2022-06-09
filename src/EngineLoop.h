@@ -54,10 +54,15 @@ public:
 
 		// init the default level
 		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
+
+		// open window, defered for Imgui config flags before calling init
+		m_app.GetModule<Window>().Init();
 	}
 
 	void Dnit()
 	{
+		// doesnt dnit window, should this delete all modules?
+
 		m_app.Detach(this);
 		_Dnit();
 	}

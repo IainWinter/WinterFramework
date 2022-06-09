@@ -17,16 +17,7 @@ struct PlayerController : System<PlayerController>
 
 	void Update()
 	{
-		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
-
-		vec2 vel = lerp(
-			body.GetVelocity(),
-			safe_normalize(player.MovementInput) * player.MovementSpeed,
-			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
-
-		body.SetVelocity(vel);
-
-		Transform2D& transform = playerEntity.Get<Transform2D>();
+		auto [player, transform] = playerEntity.GetAll<Player, Transform2D>();
 
 		vec2 direction = safe_normalize(player.AttackDirectionInput);
 		vec2 position = vec2(transform.x, transform.y) + direction * 1.f;
@@ -37,8 +28,22 @@ struct PlayerController : System<PlayerController>
 		{
 			GetModule<SandWorld>()
 				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x, direction.y, 1.f)
-				.Add<CellLife>(5.f);
+				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
 		}
+	}
+
+	void FixedUpdate()
+	{
+		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
+
+		// allow for collision response...
+
+		vec2 vel = lerp(
+			body.GetVelocity(),
+			safe_normalize(player.MovementInput) * player.MovementSpeed,
+			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
+
+		body.SetVelocity(vel);
 	}
 
 	void on(event_Input& e)

@@ -11,7 +11,7 @@ struct SimpleSpriteRenderer2D : SystemBase
 
 		render.Begin(camera);
 		render.Clear();
-		for (auto [transform, sprite, _] : Query<Transform2D, Sprite, Renderable>())
+		for (auto [transform, sprite] : Query<Transform2D, Sprite>())
 		{
 			render.DrawSprite(transform, sprite);
 		}
