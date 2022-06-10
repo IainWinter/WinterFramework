@@ -104,6 +104,7 @@ public:
 
 private:
 	inline static bool s_first = true;
+	const char* m_first_glsl_version = nullptr;
 
 public:
 	Window()
@@ -133,7 +134,7 @@ public:
 
 	void Init()
 	{
-		const char* first_glsl_version = Window::Init_Video();
+		m_first_glsl_version = Window::Init_Video();
 
 		m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 		m_opengl = SDL_GL_CreateContext(m_window);
@@ -142,7 +143,6 @@ public:
 		SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-		Init_Imgui(first_glsl_version);
 
 		Resize(m_config.Width, m_config.Height);
 		glEnable(GL_BLEND);
@@ -157,6 +157,11 @@ public:
 		// vsync
 
 		SDL_GL_SetSwapInterval(1);
+	}
+
+	void InitUI()
+	{
+		Init_Imgui(m_first_glsl_version);
 	}
 
 	void Dnit()

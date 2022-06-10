@@ -84,7 +84,8 @@ struct IDeviceObject
 	IDeviceObject(
 		bool is_static
 	)
-		: m_static (is_static)
+		: m_static   (is_static)
+		, m_outdated (true)
 	{} 
 
 	void FreeHost()
@@ -97,22 +98,28 @@ struct IDeviceObject
 	{
 		assert_on_device();
 		_FreeDevice();
+		m_outdated = true;
 	}
 
 	void SendToDevice()
 	{
 		assert_on_host(); // always require at least something on host to be copied to device, no device only init
 
-		if (OnDevice())
+		if (Outdated())
 		{
-			assert_not_static();
-			_UpdateOnDevice();
-		}
+			m_outdated = false;
 
-		else
-		{
-			_InitOnDevice();
-			if (m_static) FreeHost();
+			if (OnDevice())
+			{
+				assert_not_static();
+				_UpdateOnDevice();
+			}
+
+			else
+			{
+				_InitOnDevice();
+				if (m_static) FreeHost();
+			}
 		}
 	}
 
@@ -134,6 +141,16 @@ struct IDeviceObject
 		return m_static;
 	}
 
+	bool Outdated() const
+	{
+		return m_outdated;
+	}
+
+	void MarkForUpdate()
+	{
+		m_outdated = true;
+	}
+
 	// interface
 
 public:
@@ -149,6 +166,7 @@ protected:
 	virtual void _UpdateFromDevice() = 0;       // update host memory
 private:
 	bool m_static;
+	bool m_outdated;
 
 	// some helpers
 
@@ -216,10 +234,29 @@ public:
 	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (_t*)&At(x, y).as_u32; }
 	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (_t*)&At(x, y).as_u32; }
 
-	void Clear(Color color = Color(0, 0, 0, 0))
+	void ClearHost(Color color = Color(0, 0, 0, 0))
 	{
 		assert_on_host();
 		memset(m_host, color.as_u32, BufferSize());
+
+		MarkForUpdate();
+	}
+
+	void Resize(int width, int height)
+	{
+		assert_on_host();
+		assert_not_static();
+
+		if (m_width == width && m_height == height) return;
+
+		m_width = width;
+		m_height = height;
+
+		void* newMemory = realloc(m_host, BufferSize());
+		assert(newMemory && "failed to resize texture");
+		m_host = (u8*)newMemory;
+
+		MarkForUpdate();
 	}
 
 // interface
@@ -252,10 +289,24 @@ protected:
 
 	void _UpdateOnDevice() override
 	{
-		// really slow find fix
-		// is it the data or the point in time this function is getting called?
+		glBindTexture(GL_TEXTURE_2D, m_device);
 
-		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
+		int w, h;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
+		if (w != m_width || h != m_height)
+		{
+			gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(), Width(), Height(), 0, gl_format(), gl_type(), Pixels()));
+		}
+
+		else
+		{
+			// really slow find fix
+			// is it the data or the point in time this function is getting called?
+
+			gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
+		}
 	}
 
 	void _UpdateFromDevice() override
@@ -427,12 +478,17 @@ private:
 	using _attachments = std::unordered_map<AttachmentName, r<Texture>>;
 
 	_attachments m_attachments;        // deafult construction
-	GLuint       m_device = 0;
+	GLuint       m_device       = 0;
+
+	int          m_width        = 0;
+	int          m_height       = 0;
 
 	// public target specific functions
 
 public:
 	int NumberOfAttachments() const { return m_attachments.size(); }
+	int Width()               const { return m_width; }
+	int Height()              const { return m_height; }
 
 	      r<Texture>& Get(AttachmentName name)       { return m_attachments.at(name); }
 	const r<Texture>& Get(AttachmentName name) const { return m_attachments.at(name); }
@@ -454,9 +510,20 @@ public:
 		return texture;
 	}
 
+	void Resize(int width, int height)
+	{
+		if (m_width == width && m_height == height) return;
+
+		for (auto& [_, texture] : m_attachments) texture->Resize(width, height);
+		m_width = width;
+		m_height = height;
+
+		MarkForUpdate();
+	}
+
 	void Use()
 	{
-		if (!OnDevice()) SendToDevice();
+		if (!OnDevice() || Outdated()) SendToDevice();
 		gl(glBindFramebuffer(GL_FRAMEBUFFER, m_device));
 	}
 
@@ -604,11 +671,20 @@ public:
 	// length is number of elements
 	void Set(int length, const void* data)
 	{
-		assert_on_host();
+		// see below
+		if (m_length > 0) assert_on_host();
+
 		int size = length * BytesPerElement();
-		m_length = length;
-		m_host = realloc(m_host, size);
+		
+		if (m_length != length)
+		{
+			m_host = realloc(m_host, size);
+			m_length = length;
+		}
+
 		memcpy(m_host, data, size);
+
+		MarkForUpdate();
 	}
 
 	// length is number of elements
@@ -618,7 +694,11 @@ public:
 	// data is left uninitalized if there are gaps between offsets
 	void Append(int length, const void* data, int offset)
 	{
-		assert_on_host();
+		assert(offset >= 0 && "offset must be positive");
+
+		// this is weird, could recreate on host if its not there...
+		if (m_length > 0) assert_on_host();
+
 		assert(offset >= 0 && offset <= Length() && "offset must be positive and adjacent or inside of the buffer");
 		int size = length * BytesPerElement();
 		int osize = size + offset * BytesPerElement();
@@ -628,7 +708,10 @@ public:
 			m_length = length + offset;
 		}
 
+		assert_on_host(); // see above, could put it here, tihs allows you to resize but not copy into...
 		memcpy((char*)m_host + offset, data, size);
+
+		MarkForUpdate();
 	}
 
 // interface
@@ -738,6 +821,7 @@ public:
 	enum DrawType
 	{
 		dTriangles,
+		dLines,
 		dLoops
 	};
 private:
@@ -745,6 +829,8 @@ private:
 	
 	_buffers     m_buffers;            // deafult construction
 	GLuint       m_device   = 0;
+public:
+	DrawType     topology   = dTriangles;
 
 // public mesh specific functions
 
@@ -765,7 +851,7 @@ public:
 	// creates an empty buffer
 	r<Buffer> Add(AttribName name, int length, int repeat, Buffer::ElementType type)
 	{
-		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type);
+		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type, IsStatic());
 		Add(name, buffer);
 
 		return buffer;
@@ -809,9 +895,19 @@ public:
 		return buffer;
 	}
 
+	void SendOutdatedBuffersToDevice()
+	{
+		for (auto& [_, buffer] : m_buffers)
+		{
+			if (buffer->Outdated() && buffer->OnHost()) buffer->SendToDevice();
+		}
+	}
+
 	void Draw(DrawType drawType = DrawType::dTriangles)
 	{
 		if (!OnDevice()) SendToDevice();
+		SendOutdatedBuffersToDevice();
+
 		gl(glBindVertexArray(m_device));
 
 		if (m_buffers.find(aIndexBuffer) != m_buffers.end())
@@ -925,6 +1021,7 @@ private:
 		switch (drawType)
 		{
 			case DrawType::dTriangles: return GL_TRIANGLES;
+			case DrawType::dLines:     return GL_LINES;
 			case DrawType::dLoops:     return GL_LINE_LOOP;
 		}
 
@@ -998,7 +1095,11 @@ public:
 
 	void Set(const std::string& name, Texture& texture)
 	{
-		if (!texture.OnDevice()) texture.SendToDevice();
+		if (!texture.OnDevice() && texture.Outdated())
+		{
+			texture.SendToDevice();
+		}
+
 		gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
 		gl(glActiveTexture(gl_slot()));
 		gl(glUniform1i(gl_location(name), m_slot));
@@ -1125,6 +1226,49 @@ struct Camera
 	}
 };
 
+//struct Material
+//{
+//private:
+//	struct Prop
+//	{
+//		std::string name;
+//		virtual void SetOnDevice(ShaderProgram* program) = 0;
+//	};
+//
+//	template<typename _t>
+//	struct PropValue : Prop
+//	{
+//		_t value;
+//		void SetOnDevice(ShaderProgram* program)
+//		{
+//			program->Set(name, value);
+//		}
+//	};
+//
+//	std::unordered_map<std::string, Prop*> m_properties;
+//
+//public:
+//	template<typename _t>
+//	void Set(const std::string& name, const _t& value)
+//	{
+//		auto itr = m_properties.find(name);
+//		if (itr == m_properties.end())
+//		{
+//			m_properties[name] = new PropValue();
+//		}
+//
+//		m_properties[name].value = value;
+//	}
+//
+//	void SendToDevice(ShaderProgram* program)
+//	{
+//		for (auto& [name, prop] : m_properties)
+//		{
+//			prop->SetOnDevice(program);
+//		}
+//	}
+//};
+
  struct Sprite
  {
  	r<Texture> m_source;
@@ -1132,14 +1276,6 @@ struct Camera
 	Sprite(r<Texture> source) : m_source(source) {}
 	Sprite(const Texture& sourceToCopy) : m_source(std::make_shared<Texture>(sourceToCopy)) {}
  	Texture& Get() { return *m_source; }
- };
-
- // this tag lets you mark only some sprite to get draw in normal render pass
-
- struct Renderable
- {
-	 int pad;
-	// Owning scene
  };
 
  // shader is becomming geared twoards Sand btw
@@ -1257,7 +1393,7 @@ struct SpriteRenderer2D
 	}
 };
 
-struct TriangleRenderer2D
+struct MeshRenderer2D
 {
 	ShaderProgram m_shader;
 
@@ -1267,7 +1403,7 @@ struct TriangleRenderer2D
 	}
 	m_render_state;
 
-	TriangleRenderer2D()
+	MeshRenderer2D()
 	{
 		const char* source_vert = 
 								"#version 330 core\n"
@@ -1316,6 +1452,6 @@ struct TriangleRenderer2D
 		m_shader.Set("model",      transform.World());
 		m_shader.Set("tint",       Color().as_v4());
 
-		mesh.Draw(Mesh::dLoops);
+		mesh.Draw(mesh.topology);
 	}
 };

@@ -27,7 +27,7 @@ struct PlayerController : System<PlayerController>
 		if (player.AttackFireInput)
 		{
 			GetModule<SandWorld>()
-				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x, direction.y, 1.f)
+				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x + get_randc(100.f), direction.y + get_randc(100.f), 1.f)
 				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
 		}
 	}

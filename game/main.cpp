@@ -12,7 +12,7 @@
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/SimpleSpriteRender.h"
-#include "ext/systems/SimpleTriangleRender.h"
+#include "ext/systems/SimpleMeshRender.h"
 
 struct SandSpriteMaskRenderer : SystemBase
 {
@@ -25,6 +25,17 @@ struct SandSpriteMaskRenderer : SystemBase
 		{
 			render.DrawSprite(transform, sprite.Get());
 		}
+	}
+};
+
+struct MetricsSystem : System<MetricsSystem>
+{
+	void UI()
+	{
+		ImGui::Begin("Metrics");
+		ImGui::Text("Delta time: %f", Time::RawDeltaTime());
+		ImGui::Text("Scaled Delta time: %f", Time::DeltaTime());
+		ImGui::End();
 	}
 };
 
@@ -58,15 +69,17 @@ struct Regolith : EngineLoop
 		level->AddSystem(PhysicsInterpolation());
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
-		level->AddSystem(SandSpriteMaskRenderer());
-		//level->AddSystem(SimpleTriangleRenderer2D());
+		level->AddSystem(SimpleMeshRenderer2D());
 		level->AddSystem(FlockingMovement());
+
+		level->AddSystem(MetricsSystem());
+		level->AddSystem(SandSpriteMaskRenderer());
 	}
 
 	void ConfigureModules()
 	{
 		m_app.AddModule<SpriteRenderer2D>();
-		m_app.AddModule<TriangleRenderer2D>();
+		m_app.AddModule<MeshRenderer2D>();
 		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
 		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
 
@@ -94,12 +107,11 @@ struct Regolith : EngineLoop
 
 		CreateSandSprite("player.png", "player_collider_mask.png").Add<Player>();
 
-		for (int i = 0; i < 20; i++)
+		for (int i = 0; i < 1; i++)
 		{
-			Entity entity = CreateTexturedCircle("enemy_station.png", "enemy_station_mask.png")
-				;// .AddAll(Flocker());
-
-			entity.Get<Transform2D>().position = vec2(get_rand(20, 20));
+			Entity entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
+			entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
+			entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
 		}
 	}
 

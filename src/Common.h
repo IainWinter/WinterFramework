@@ -67,7 +67,7 @@ struct Transform2D
 
 	Transform2D()
 		: position (0.f, 0.f)
-		, scale    (0.f, 0.f)
+		, scale    (1.f, 1.f)
 		, rotation (0.f)
 		, z        (0.f)
 	{}

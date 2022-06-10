@@ -33,7 +33,6 @@ struct CellLife
 struct SandSprite
 {
 	float density = 100.f;
-	bool hasChanged = false;
 	r<Texture> colliderMask;
 
 	Texture& Get() { return *colliderMask; }
@@ -66,29 +65,39 @@ struct SandWorld
 	Entity display;
 
 	vec2 worldScale; // scale of meters to cells
-	ivec2 screenSize;
 	vec2 screenOffset;
+	ivec2 screenSize;
 
 	r<Target> screen;
+	Mesh lineProjectiles;
 
 	SandWorld() = default;
 
 	SandWorld(int w, int h, int camScaleX, int camScaleY)
 	{
-		screen = std::make_shared<Target>();
-
-		//spriteTarget->Add(Target::aDepth, w, h, 1);
+		screen = std::make_shared<Target>(false);
 		screen->Add(Target::aColor, w, h, Texture::uINT_32, false);
+		//spriteTarget->Add(Target::aDepth, w, h, 1);
 		
+		lineProjectiles = Mesh(false);
+		lineProjectiles.Add<vec2>(Mesh::aPosition, {});
+		lineProjectiles.topology = Mesh::dLines;
+
+		Entity e = LevelManager::CurrentLevel()->CreateEntity().AddAll(Transform2D(), lineProjectiles);
+
 		// see Windowing.h
 		//screen->Add(Target::aDepth, w, h, Texture::uDEPTH, true);
 
 		worldScale.x = w / camScaleX / 2; // by 2 bc mesh does from -1 to 1
 		worldScale.y = h / camScaleY / 2;
 
-		screenSize.x = w;
-		screenSize.y = h;
+		ResizeWorld(w, h, camScaleX, camScaleY);
+	}
 
+	void ResizeWorld(int width, int height, int camScaleX, int camScaleY)
+	{
+		screen->Resize(width, height);
+		screenSize = vec2(width, height);
 		screenOffset = screenSize / 2;
 	}
 
@@ -97,7 +106,6 @@ struct SandWorld
 		return LevelManager::CurrentLevel()->CreateEntity()
 			.AddAll(Cell { ToScreenPos(vec2(x, y)), vec2(vx, vy), dampen, color });
 	}
-
 
 	void DrawPixel(Texture& display, ivec2 pos, Color c)
 	{
@@ -135,6 +143,85 @@ struct SandWorld
 	SandWorld& operator=(const SandWorld& copy) = delete;
 };
 
+// rendering for collision info
+
+struct SandCollisionInfoRenderer
+{
+	ShaderProgram m_shader;
+	Mesh          m_quad;
+
+	// this gets run multiple times... should save static stuff like shaders
+	// drop raii just use init function or something
+
+	SandCollisionInfoRenderer()
+	{
+		m_quad.Add<vec2>(Mesh::aPosition, { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) });
+		m_quad.Add<vec2>(Mesh::aTextureCoord, { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) });
+		m_quad.Add<int>(Mesh::aIndexBuffer, { 0, 1, 2, 0, 2, 3});
+
+		const char* source_vert =
+			"#version 330 core\n"
+			"layout (location = 0) in vec2 pos;"
+			"layout (location = 1) in vec2 uv;"
+
+			"out vec2 TexCoords;"
+
+			"uniform mat4 model;"
+			"uniform mat4 projection;"
+
+			"void main()"
+			"{"
+				"TexCoords = uv;"
+				"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
+			"}";
+
+		const char* source_frag =
+			"#version 330 core\n"
+			"in vec2 TexCoords;"
+
+			"out ivec4 spriteId;" // sprite (x, y) (entity index), (alpha for if its even there)
+
+			"uniform sampler2D colliderMask;"
+			"uniform vec2 spriteSize;"
+			"uniform int spriteIndex;"
+
+			"void main()"
+			"{"
+				"vec4 mask = texture(colliderMask, TexCoords);"
+				"if (mask.a > .7) mask.a = 1.f;" // round up for health thing
+				"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, mask.a > 0);"
+			"}";
+
+		m_shader.Add(ShaderProgram::sVertex, source_vert);
+		m_shader.Add(ShaderProgram::sFragment, source_frag);
+	}
+
+	void Begin(Camera& camera, r<Target> target)
+	{
+		if (target) target->Use();
+		else Target::UseDefault();
+
+		m_shader.Use();
+		m_shader.Set("projection", camera.Projection());
+
+		gl(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+		gl(glClearColor(0, 0, 0, 0));
+		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+	}
+
+	void DrawCollisionInfo(const Transform2D& transform, SandSprite& sprite, int spriteIndex)
+	{
+		Texture& mask = sprite.Get();
+
+		m_shader.Set("model", transform.World());
+		m_shader.Set("colliderMask", mask);
+		m_shader.Set("spriteSize", vec2(mask.Width(), mask.Height()));
+		m_shader.Set("spriteIndex", spriteIndex);
+
+		m_quad.Draw();
+	}
+};
+
 // sand update
 
 // render all the tiles to a texture, could chunk but regolith is a single screen game so dont worry about this for now
@@ -145,10 +232,19 @@ struct Sand_System_Update : System<Sand_System_Update>
 	std::vector<event_SandCellCollision> toSplit; // queue events to not exe a split on every collision, could be multiple per frame on same obj
 	std::vector<Entity> tileCache; // for the sprite index in the shader, indexes into this array
 
+	SandCollisionInfoRenderer maskRender;
+
 	void Init()
-	{ 
+	{
+		Attach<event_WindowResize>();
 		Attach<event_SandCellCollision>();
 		Attach<event_SandAddSprite>();
+	}
+
+	void on(event_WindowResize& e)
+	{
+		auto [sand, camera] = GetModules<SandWorld, Camera>();
+		sand.ResizeWorld(e.width, e.height, camera.w, camera.h);
 	}
 
 	void on(event_SandCellCollision& e)
@@ -161,7 +257,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		e.sprite.Get<Sprite>()    .Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
 		e.sprite.Get<SandSprite>().Get().At(e.hitPosInSprite.x, e.hitPosInSprite.y).a = 0;
-		e.sprite.Get<SandSprite>().hasChanged = true;
+		e.sprite.Get<SandSprite>().Get().MarkForUpdate();
 
 		bool alreadyHit = false;
 		for (event_SandCellCollision& E : toSplit)
@@ -227,7 +323,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void Update()
 	{
-		auto [render, camera, sand, window] = GetModules<SpriteRenderer2D, Camera, SandWorld, Window>();
+		auto [camera, sand, window] = GetModules<Camera, SandWorld, Window>();
 
 		// Sprite update
 
@@ -282,7 +378,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 					Transform2D splitTransform = splitMe.Get<Transform2D>();
 
-					if (island.size() < 25)
+					if (island.size() < 15)
 					{
 						for (const int& index : island)
 						{
@@ -325,8 +421,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 						Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
 						Texture splitMask    = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false); // could be uR
 						
-						splitTexture.Clear();
-						splitMask.Clear();
+						splitTexture.ClearHost();
+						splitMask.ClearHost();
 
 						for (const int& index : island)
 						{
@@ -401,22 +497,13 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Render tiles to hidden target
 
-		render.Begin(camera, sand.screen);
-		render.Clear(Color(0));
+		maskRender.Begin(camera, sand.screen);
 
 		int spriteIndex = 0;
-		for (auto [e, transform, sprite, sandSprite] : QueryWithEntity<Transform2D, Sprite, SandSprite>())
+		for (auto [e, transform, sandSprite] : QueryWithEntity<Transform2D, SandSprite>())
 		{
-			if (sandSprite.hasChanged)
-			{
-				sandSprite.hasChanged = false;
-				sprite.Get().SendToDevice();
-			}
-
-			render.m_shader.Set("spriteIndex", spriteIndex);
-			render.DrawSprite(transform, sprite.Get());
+			maskRender.DrawCollisionInfo(transform, sandSprite, spriteIndex);
 			spriteIndex += 1;
-
 			tileCache.push_back(e);
 		}
 
@@ -434,28 +521,47 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Texture& collisionMaskRender = *sand.screen->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
 		collisionMaskRender.SendToHost();
 
+		std::vector<std::tuple<vec2, vec2/*, Color*/>> linesToDraw;
+
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
+			//linesToDraw.push_back(std::make_tuple(
+			//	cell.pos / sand.worldScale, 
+			//	cell.pos + cell.vel * Time::DeltaTime() / cell.dampen / sand.worldScale/*, 
+			//	cell.color*/
+			//));
+
 			if (length(cell.vel / cell.dampen * Time::DeltaTime()) > 1)
 			{
-				DrawLine(sand, collisionMaskRender, e, cell);
+				linesToDraw.push_back(DrawLine(sand, collisionMaskRender, e, cell));
 			}
 
-			else
-			{
-				if (sand.OnScreen(cell.pos))
-				{
-					//sand.DrawPixel(color, cell.pos, cell.color);
-				}
+		//	else
+		//	{
+		//		if (sand.OnScreen(cell.pos))
+		//		{
+		//			//sand.DrawPixel(color, cell.pos, cell.color);
+		//		}
 
-				cell.pos += cell.vel * Time::DeltaTime();
-			}
+		//		cell.pos += cell.vel * Time::DeltaTime();
+		//	}
+		}
+
+		if (linesToDraw.size() > 0)
+		{
+			sand.lineProjectiles.Get(Mesh::aPosition)->Set(linesToDraw.size()*2, linesToDraw.data());
+
+			printf("%d %p\n", linesToDraw.size(), sand.lineProjectiles.Get(Mesh::aPosition)->Data());
+
+			linesToDraw.clear();
 		}
 	}
 
-	void DrawLine(SandWorld& sand, Texture& collisionInfo, Entity e, Cell& cell)
+	// return begin and end of line
+	std::pair<vec2, vec2> DrawLine(SandWorld& sand, Texture& collisionInfo, Entity e, Cell& cell)
 	{
 		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
+		vec2 origin = cell.pos;
 		vec2 current = cell.pos;
 
 		float distance = glm::length(delta);
@@ -493,5 +599,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			current += delta;
 			cell.pos = current;
 		}
+
+		return { origin / sand.worldScale, current / sand.worldScale };
 	}
 };

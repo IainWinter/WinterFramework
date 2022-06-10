@@ -23,7 +23,7 @@ struct bin_writer : meta::serial_writer
 
 		else
 		{
-			type->serial_write(this, instance);
+			type->_serial_write(this, instance);
 		}
 	}
 
@@ -67,7 +67,7 @@ struct bin_reader : meta::serial_reader
 
 		else
 		{
-			type->serial_read(this, instance);
+			type->_serial_read(this, instance);
 		}
 	}
 
@@ -80,7 +80,7 @@ struct bin_reader : meta::serial_reader
 
 	void read_array(meta::type* type, void* instance, size_t repeat) override
 	{
-		for (int i =  0; i < repeat; i++)
+		for (int i = 0; i < repeat; i++)
 		{
 			read_type(type, (char*)instance + i * type->m_info->m_size);
 		}

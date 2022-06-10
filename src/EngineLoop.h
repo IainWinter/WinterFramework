@@ -49,14 +49,17 @@ public:
 		// default level
 		m_app.GetModule<LevelManager>().CreateLevel();
 
+		// open window and create graphics context, allows sending data to device
+		m_app.GetModule<Window>().Init();
+
 		// init user code
 		_Init();
 
 		// init the default level
 		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
 
-		// open window, defered for Imgui config flags before calling init
-		m_app.GetModule<Window>().Init();
+		// init UI, defered for Imgui config flags before calling init
+		m_app.GetModule<Window>().InitUI();
 	}
 
 	void Dnit()
