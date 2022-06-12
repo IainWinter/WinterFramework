@@ -24,6 +24,8 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
+		"vendor/sqlite/src/sqlite3.c",
+
 		-- these are game files, remove for just framework
 
 		--"test/Window_Test.cpp",
@@ -43,6 +45,8 @@ project "Framework"
 		"vendor/glad/include",
 		"vendor/asio/include",
 		"vendor/json/include",
+
+		"vendor/sqlite/include",
 
 		-- these are game files, see above
 

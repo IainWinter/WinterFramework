@@ -138,6 +138,10 @@ protected:
 	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->m_rootQueue.send(event); }
 	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->m_rootBus.send(event); }
 
+	// Entities
+
+	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
+
 public:
 	virtual ~SystemBase()
 	{

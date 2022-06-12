@@ -4,14 +4,13 @@
 #include "Physics.h"
 #include "Flocker.h"
 
-struct FlockingMovement : SystemBase
+struct System_FlockingMovement : SystemBase
 {
-	void Update()
+	void FixedUpdate()
 	{
 		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
 		{
-			// Arbitrarily weight these forces
-			body.ApplyForce(CalcForces(body, flocker));
+			body.ApplyForce(body.GetMass() * CalcForces(body, flocker));
 		}
 	}
 
@@ -54,10 +53,13 @@ private:
         forceAlign      /= (float)clamp(numberClose,      1, INT_MAX);
         forceCohesion   -= body.GetPosition();
 
-        forceSeperation = clamp(safe_normalize(forceSeperation) * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
-        forceAlign      = clamp(safe_normalize(forceAlign)      * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
-        forceCohesion   = clamp(safe_normalize(forceCohesion)   * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
+        forceSeperation = limit(safe_normalize(forceSeperation) * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
+        forceAlign      = limit(safe_normalize(forceAlign)      * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
+        forceCohesion   = limit(safe_normalize(forceCohesion)   * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
 
-        return 10.5f * forceSeperation + 10.f * forceAlign + 10.f * forceCohesion;
+        // Arbitrarily weight these forces
+        // but actually should be based on the mass of the object...
+
+        return 1.5f * forceSeperation + 1.f * forceAlign + 1.f * forceCohesion;
 	}
 };

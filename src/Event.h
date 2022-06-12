@@ -230,10 +230,10 @@ struct event_queue
 		event_type m_type;
 		_e m_event;
 
-		queued_event(event_type type, const char* where, _e&& e)
-			: m_where(where)
-			, m_type(type)
-			, m_event(e)
+		queued_event(event_type type, const char* where, const _e& event)
+			: m_where (where)
+			, m_type  (type)
+			, m_event (event)
 		{}
 
 		void send(event_manager* manager)
@@ -254,20 +254,30 @@ struct event_queue
 	{}
 
 	template<typename _e>
-	void send(_e&& event)
+	void send(const _e& event)
 	{
-		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, std::forward<_e>(event)); // could use pool...
+		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, event); // should use pool...
 		m_queue.push_back(qe);
 	}
 
 	void execute()
 	{
-		std::vector<queued_event_base*> copy = m_queue;
-		for (queued_event_base* event : copy)
+		size_t i = 0;
+
+		do
 		{
-			event->send(m_manager);
-			delete event;
+			size_t sizeThisIteration = m_queue.size();
+
+			for (; i < sizeThisIteration; i++)
+			{
+				queued_event_base* e = m_queue.at(i);
+				e->send(m_manager);
+				delete e;
+				m_queue.at(i) = nullptr; // debug
+			}
 		}
+		while (i < m_queue.size());
+
 		m_queue.clear();
 	}
 };

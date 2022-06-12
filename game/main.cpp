@@ -1,42 +1,81 @@
 #include "EngineLoop.h"
-
 #include "Common.h"
 #include "Rendering.h"
+
 #include "ext/Sand.h"
 #include "ext/Time.h"
+#include "ext/MeshGenerators.h"
+
+#include "imgui/implot.h"
 
 // systems
 
-#include "Systems/PlayerController.h"
+#include "Systems//PlayerController.h"
 #include "Systems/FlockingMovement.h"
+#include "Systems/TurnTwoardsTarget.h"
+#include "Systems/ExplodeNearTarget.h"
+#include "Systems/ExplosionSpawner.h"
+#include "Systems/EnemyController.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/SimpleSpriteRender.h"
 #include "ext/systems/SimpleMeshRender.h"
 
-struct SandSpriteMaskRenderer : SystemBase
-{
-	void Update() override
-	{
-		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
-
-		render.Begin(camera);
-		for (auto [transform, sprite] : Query<Transform2D, SandSprite>())
-		{
-			render.DrawSprite(transform, sprite.Get());
-		}
-	}
-};
+//struct SandSpriteMaskRenderer : SystemBase
+//{
+//	void Update() override
+//	{
+//		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
+//
+//		render.Begin(camera);
+//		for (auto [transform, sprite] : Query<Transform2D, SandSprite>())
+//		{
+//			render.DrawSprite(transform, sprite.Get());
+//		}
+//	}
+//};
 
 struct MetricsSystem : System<MetricsSystem>
 {
+	std::vector<float> m_deltaTime;
+	std::vector<float> m_fixedTimePoint;
+
+	void Init()
+	{
+		Attach<event_RecordMetric>();
+	}
+
 	void UI()
 	{
 		ImGui::Begin("Metrics");
 		ImGui::Text("Delta time: %f", Time::RawDeltaTime());
 		ImGui::Text("Scaled Delta time: %f", Time::DeltaTime());
+
+		for (auto [transform, flocker] : Query<Transform2D, Flocker>())
+		{
+			ImGui::Text("x: %f y: %f", transform.position.x, transform.position.y);
+		}
+
+		//ImPlot::SetNextAxesToFit();
+		//ImPlot::BeginPlot("Times");
+		//ImPlot::PlotLine("Delta time", m_deltaTime.data(), m_deltaTime.size());
+		//ImPlot::EndPlot();
+
 		ImGui::End();
+
+
+		if (m_deltaTime.size() > 200) m_deltaTime.erase(m_deltaTime.begin()); // lots of copies
 	}
+
+	void on(event_RecordMetric& e)
+	{
+		switch (e.metric)
+		{
+			case TICK:            m_deltaTime     .push_back(e.value); break;
+			case TICK_FIXED_TIME: m_fixedTimePoint.push_back(e.value); break;
+		}
+	}
+
 };
 
 struct Regolith : EngineLoop
@@ -65,15 +104,20 @@ struct Regolith : EngineLoop
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
-		level->AddSystem(PlayerController());
 		level->AddSystem(PhysicsInterpolation());
 		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
 		level->AddSystem(SimpleMeshRenderer2D());
-		level->AddSystem(FlockingMovement());
+
+		level->AddSystem(System_PlayerController());
+		level->AddSystem(System_FlockingMovement());
+		level->AddSystem(System_TurnTwoardsTarget());
+		level->AddSystem(System_ExplodeNearTarget());
+		level->AddSystem(System_ExplosionSpawner());
+		level->AddSystem(System_EnemyController());
 
 		level->AddSystem(MetricsSystem());
-		level->AddSystem(SandSpriteMaskRenderer());
+		//level->AddSystem(SandSpriteMaskRenderer());
 	}
 
 	void ConfigureModules()
@@ -105,13 +149,24 @@ struct Regolith : EngineLoop
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
-		CreateSandSprite("player.png", "player_collider_mask.png").Add<Player>();
+		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
+		player.Add<Player>();
+		player.Get<Rigidbody2D>().SetFixedRotation(true);
+		player.Get<SandSprite>().invulnerable = true;
+
+		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(10.f, 0.f)));
 
 		for (int i = 0; i < 1; i++)
 		{
-			Entity entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
+			Entity entity = CreateTexturedCircle("enemy_station.png", "enemy_station_mask.png");
+			//entity.Add<TurnTwoardsTarget>(target);
+			//entity.Add<Flocker>();
+			//entity.Add<ExplodeNearTarget>(player);
+			//entity.Add<Mesh>(GenerateCircle(16, 5.f));
+			
 			entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
 			entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
+			//entity.Get<Rigidbody2D>().SetVelocity(vec2(get_randc(20.f, 20.f)));
 		}
 	}
 
@@ -124,6 +179,10 @@ struct Regolith : EngineLoop
 
 		Texture sprite = Texture(_p(path), false);
 		Texture mask   = Texture(_p(collider_mask_path), false);
+
+		assert(sprite.Length() == mask.Length());
+
+
 		Transform2D transform;
 		transform.scale.x = sprite.Width()  / sand.worldScale.x;
 		transform.scale.y = sprite.Height() / sand.worldScale.y;
@@ -150,6 +209,8 @@ struct Regolith : EngineLoop
 		Texture sprite = Texture(_p(path), false);
 		Texture mask   = Texture(_p(path_mask), false);
 		
+		assert(sprite.Length() == mask.Length());
+
 		Transform2D transform;
 		transform.scale.x = sprite.Width()  / sand.worldScale.x;
 		transform.scale.y = sprite.Height() / sand.worldScale.y;
@@ -163,7 +224,11 @@ struct Regolith : EngineLoop
 
 		b2CircleShape shape;
 		shape.m_radius = max(transform.scale);
-		body.AddCollider(shape);
+		
+		b2Fixture* collider = body.AddCollider(shape, 100.f);
+		collider->SetRestitution(.5f);
+
+		m_app.GetRootEventQueue()->send(event_SandAddSprite{ entity });
 
 		return entity;
 	}

@@ -3,8 +3,12 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_sdl.h"
+
+#include "imgui/implot.h"
+
 #include "SDL2/SDL.h"
 #include "glad/glad.h"
+
 #include <unordered_map>
 #include <string>
 
@@ -403,6 +407,7 @@ private:
 	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
+		ImPlot::CreateContext();
 		ImGui::StyleColorsDark();
 
 		ImGui_ImplSDL2_InitForOpenGL(m_window, m_opengl);
@@ -414,5 +419,6 @@ private:
 		ImGui_ImplOpenGL3_Shutdown();
     	ImGui_ImplSDL2_Shutdown();
  		ImGui::DestroyContext();
+		ImPlot::DestroyContext();
 	}
 };

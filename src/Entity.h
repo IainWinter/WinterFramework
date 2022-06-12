@@ -190,13 +190,30 @@ public:
 	template<typename _t>
 	_t& Get()
 	{
+		return const_cast<_t&>(std::as_const(*this).Get<_t>());
+	}
+
+	template<typename... _t>
+	std::tuple<_t&...> GetAll()
+	{
+		//return const_cast<std::tuple<_t&...>>(std::as_const(*this).GetAll<_t...>());
+		// annoying
+
+		assert_is_valid();
+		assert_has_components<_t...>();
+		return m_owning->m_registry.get<_t...>(m_handle);
+	}
+
+	template<typename _t>
+	const _t& Get() const
+	{
 		assert_is_valid();
 		assert_has_components<_t>();
 		return std::get<0>(GetAll<_t>());
 	}
 
 	template<typename... _t>
-	std::tuple<_t&...> GetAll()
+	std::tuple<const _t&...> GetAll() const
 	{
 		assert_is_valid();
 		assert_has_components<_t...>();

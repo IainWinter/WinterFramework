@@ -3,8 +3,12 @@
 #include "Leveling.h"
 #include "Player.h"
 #include "CoordTranslation.h"
+#include "Windowing.h"
+#include "ext/Sand.h"
 
-struct PlayerController : System<PlayerController>
+#include "Events.h"
+
+struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
 
@@ -27,9 +31,14 @@ struct PlayerController : System<PlayerController>
 		if (player.AttackFireInput)
 		{
 			GetModule<SandWorld>()
-				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x + get_randc(100.f), direction.y + get_randc(100.f), 1.f)
+				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x /*+ get_randc(100.f)*/, direction.y /*+ get_randc(100.f)*/, 1.f)
 				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
 		}
+
+		//if (player.AttackFireInput)
+		//{
+		//	Send(event_SpawnExplosion { vec2(20, 0), 20 });
+		//}
 	}
 
 	void FixedUpdate()

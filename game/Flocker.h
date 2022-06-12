@@ -3,7 +3,7 @@
 struct Flocker
 {
 	float maxSpeed = 20;
-	float maxForceFactor = 1000;
-	float desiredSeparation = 2.0f;
-	float neighborDist = 15;
+	float maxForceFactor = 5;
+	float desiredSeparation = 4.0f;
+	float neighborDist = 5;
 };

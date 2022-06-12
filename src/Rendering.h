@@ -105,22 +105,19 @@ struct IDeviceObject
 	{
 		assert_on_host(); // always require at least something on host to be copied to device, no device only init
 
-		if (Outdated())
+		if (OnDevice())
 		{
-			m_outdated = false;
-
-			if (OnDevice())
-			{
-				assert_not_static();
-				_UpdateOnDevice();
-			}
-
-			else
-			{
-				_InitOnDevice();
-				if (m_static) FreeHost();
-			}
+			assert_not_static();
+			_UpdateOnDevice();
 		}
+
+		else
+		{
+			_InitOnDevice();
+			if (m_static) FreeHost();
+		}
+
+		m_outdated = false;
 	}
 
 	void SendToHost()
@@ -221,6 +218,7 @@ public:
 	Usage UsageType()     const { return m_usage; }
 	u8* Pixels()          const { return (u8*)m_host; }
 	int BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
+	int Length()          const { return Width() * Height(); }
 
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
@@ -228,11 +226,20 @@ public:
 	// only rg -> Channels() = 2
 	// only rgb -> Channels() = 3
 	// full rgba -> Channels() = 4
-	      Color& At(int x, int y)       { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
-	const Color& At(int x, int y) const { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
 
-	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (_t*)&At(x, y).as_u32; }
-	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (_t*)&At(x, y).as_u32; }
+	// assumed non const At will be written to
+
+	      Color& At(int x, int y)       { assert_on_host(); MarkForUpdate(); return At(Index(x, y)); }
+	const Color& At(int x, int y) const { assert_on_host();                  return At(Index(x, y)); }
+
+		  Color& At(int index)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + index); }
+	const Color& At(int index) const { assert_on_host();                  return *(Color*)(Pixels() + index); }
+
+	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
+	int Index32(int x, int y) const { return x + y * m_width; }
+
+	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (const _t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (      _t*)&At(x, y).as_u32; }
 
 	void ClearHost(Color color = Color(0, 0, 0, 0))
 	{
@@ -302,16 +309,14 @@ protected:
 
 		else
 		{
-			// really slow find fix
-			// is it the data or the point in time this function is getting called?
-
 			gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
 		}
 	}
 
 	void _UpdateFromDevice() override
 	{
-		// real slow...
+		// really slow find fix
+		// is it the data or the point in time this function is getting called?
 
 		gl(glGetTextureImage(m_device, 0, gl_format(), gl_type(), BufferSize(), Pixels()));
 	}
@@ -668,6 +673,12 @@ public:
 	template<typename _t>       _t& Get(int i)       { assert_on_host(); return *(      _t*)m_host + i * BytesPerElement(); }
 	template<typename _t> const _t& Get(int i) const { assert_on_host(); return *(const _t*)m_host + i * BytesPerElement(); }
 
+	template<typename _t>
+	void Set(const std::vector<_t>& data)
+	{
+		Set(data.size(), data.data());
+	}
+
 	// length is number of elements
 	void Set(int length, const void* data)
 	{
@@ -818,11 +829,11 @@ public:
 		aIndexBuffer // the index buffer
 	};
 
-	enum DrawType
+	enum Topology
 	{
-		dTriangles,
-		dLines,
-		dLoops
+		tTriangles,
+		tLines,
+		tLoops
 	};
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
@@ -830,15 +841,15 @@ private:
 	_buffers     m_buffers;            // deafult construction
 	GLuint       m_device   = 0;
 public:
-	DrawType     topology   = dTriangles;
+	Topology     topology   = tTriangles;
 
 // public mesh specific functions
 
 public:
 	int NumberOfBuffers() const { return m_buffers.size(); }
 
-	      r<Buffer>& Get(AttribName name)       { return m_buffers.at(name); }
-	const r<Buffer>& Get(AttribName name) const { return m_buffers.at(name); }
+	      r<Buffer>& Get(AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
+	const r<Buffer>& Get(AttribName name) const {                  return m_buffers.at(name); }
 
 	// instances a buffer
 	void Add(AttribName name, const r<Buffer>& buffer)
@@ -846,6 +857,8 @@ public:
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
 		m_buffers.emplace(name, buffer);
+
+		MarkForUpdate();
 	}
 
 	// creates an empty buffer
@@ -895,18 +908,9 @@ public:
 		return buffer;
 	}
 
-	void SendOutdatedBuffersToDevice()
+	void Draw(Topology drawType = Topology::tTriangles)
 	{
-		for (auto& [_, buffer] : m_buffers)
-		{
-			if (buffer->Outdated() && buffer->OnHost()) buffer->SendToDevice();
-		}
-	}
-
-	void Draw(DrawType drawType = DrawType::dTriangles)
-	{
-		if (!OnDevice()) SendToDevice();
-		SendOutdatedBuffersToDevice();
+		if (!OnDevice() || Outdated()) SendToDevice();
 
 		gl(glBindVertexArray(m_device));
 
@@ -1016,13 +1020,13 @@ private:
 		return IsStatic() ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 	}
 
-	GLenum gl_drawtype(DrawType drawType) const
+	GLenum gl_drawtype(Topology drawType) const
 	{
 		switch (drawType)
 		{
-			case DrawType::dTriangles: return GL_TRIANGLES;
-			case DrawType::dLines:     return GL_LINES;
-			case DrawType::dLoops:     return GL_LINE_LOOP;
+			case Topology::tTriangles: return GL_TRIANGLES;
+			case Topology::tLines:     return GL_LINES;
+			case Topology::tLoops:     return GL_LINE_LOOP;
 		}
 
 		assert(false);
@@ -1095,11 +1099,7 @@ public:
 
 	void Set(const std::string& name, Texture& texture)
 	{
-		if (!texture.OnDevice() && texture.Outdated())
-		{
-			texture.SendToDevice();
-		}
-
+		if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
 		gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
 		gl(glActiveTexture(gl_slot()));
 		gl(glUniform1i(gl_location(name), m_slot));

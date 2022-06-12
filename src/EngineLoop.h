@@ -20,6 +20,21 @@
 // functions for updating its state
 // this is where global events would attach...
 
+//#define IW_METRICS_TIMER
+
+enum MetricName
+{
+	TICK,               // value is DeltaTime
+	TICK_FIXED_TIME     // value is FixedTime
+};
+
+struct event_RecordMetric
+{
+	MetricName metric; // name
+	float timePoint;   // TotalTime
+	float value;       // whatever value for metric, see metric name
+};
+
 struct EngineLoop
 {
 protected:
@@ -74,9 +89,17 @@ public:
 	{
 		Time::UpdateTime();
 
+#ifdef IW_METRICS_TIMER
+		LogMetric(TICK, Time::DeltaTime());
+#endif
+
 		m_fixedStepAcc += Time::DeltaTime();
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
+#ifdef IW_METRICS_TIMER
+			LogMetric(TICK_FIXED_TIME, Time::FixedTime());
+#endif
+
 			m_fixedStepAcc = 0;
 			
 			TickLevelFixed();
@@ -144,6 +167,16 @@ private:
 		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
 		physics.Step(Time::FixedTime());
 	}
+
+#ifdef IW_METRICS_TIMER
+	// debug
+
+	void LogMetric(MetricName name, float value)
+	{
+		m_app.GetRootEventQueue()->send(event_RecordMetric{ name, Time::TotalTime(), value });
+	}
+
+#endif
 };
 
 template<typename _engine_loop>

@@ -18,6 +18,12 @@ template<typename _t> using r = std::shared_ptr<_t>;
 // be ingrained into the framework at a core level
 using namespace glm;
 
+inline vec2 safe_normalize(const vec2& p)
+{
+	float n = sqrt((float)(p.x * p.x + p.y * p.y));
+	return (n == 0) ? vec2(0.f, 0.f) : vec2(p.x / n, p.y / n);
+}
+
 // return a random number between (0, x)
 inline float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
 
@@ -29,6 +35,7 @@ inline int get_rand(int x) { return rand() % x; }
 
 inline vec2 get_rand (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
 inline vec2 get_randc(float x, float y) { return vec2(get_randc(x), get_randc(y)); }
+inline vec2 get_randn(float scale)      { return get_rand(scale) * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
 
 struct Color
 {
@@ -73,7 +80,7 @@ struct Transform2D
 	{}
 
 	Transform2D(
-		float x, float y, float z, float sx, float sy, float r
+		float x, float y, float z = 0.f, float sx = 1.f, float sy = 1.f, float r = 0.f
 	)
 		: position (x, y)
 		, scale    (sx, sy)
@@ -82,7 +89,7 @@ struct Transform2D
 	{}
 
 	Transform2D(
-		vec2 position, vec2 scale, float rotation
+		vec2 position, vec2 scale = vec2(0.f, 0.f), float rotation = 0.f
 	)
 		: position (position)
 		, scale    (scale)
@@ -113,13 +120,6 @@ inline float clamp(float x, float min, float max)
 	return x; 
 }
 
-inline vec2 clamp(const vec2& x, float max)
-{
-	float d = length(x);
-	if (d > max) return x / d * max;
-	return x;
-}
-
 inline vec2 clamp(vec2 x, const vec2& min, const vec2& max)
 {
 	x.x = clamp(x.x, min.x, max.x);
@@ -127,10 +127,11 @@ inline vec2 clamp(vec2 x, const vec2& min, const vec2& max)
 	return x;
 }
 
-inline vec2 safe_normalize(const vec2& p)
+inline vec2 limit(const vec2& x, float max)
 {
-	float n = sqrt((float)(p.x * p.x + p.y * p.y));
-	return (n == 0) ? vec2(0.f, 0.f) : vec2(p.x / n, p.y / n);
+	float d = length(x);
+	if (d > max) return x / d * max;
+	return x;
 }
 
 inline float max(const vec2& v)
@@ -149,4 +150,13 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 inline std::string _p(const std::string& filename)
 {
 	return "../assets/" + filename;
+}
+
+// vector helpers
+
+template<typename _t>
+void pop_erase(std::vector<_t>& list, size_t index)
+{
+	list.at(index) = list.back();
+	list.pop_back();
 }

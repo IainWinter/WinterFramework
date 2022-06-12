@@ -3,7 +3,7 @@
 #include "Leveling.h"
 #include "ext/Time.h"
 
-struct SpawnerUpdateSystem : System<SpawnerUpdateSystem>
+struct System_SpawnerUpdate : System<System_SpawnerUpdate>
 {
 	int score = 0;
 	float difficulty = 0;
