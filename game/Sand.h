@@ -5,9 +5,11 @@
 #include "Physics.h"
 #include "Leveling.h"
 #include "Windowing.h"
+#include "Events.h"
 #include "ext/Time.h"
 #include "ext/flood_fill.h"
 #include "ext/marching_cubes.h"
+#include "ext/Components.h"
 #include <vector>
 #include <functional>
 #include <unordered_set>
@@ -23,6 +25,7 @@ struct Cell
 struct CellProjectile
 {
 	u32 owner; // for no damage to who fired
+	int health = 15; // how many cells can this projectile destroy
 };
 
 struct CellLife
@@ -36,6 +39,8 @@ struct SandSprite
 	bool invulnerable = false;
 	r<Texture> colliderMask;
 	std::vector<int> core; // if this list has items, these are the only cells to floodfill
+	int hasCore = false; // if the list is health or every pixel
+	int originalCoreCount = 0;
 
 	Texture& Get() { return *colliderMask; }
 
@@ -324,7 +329,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
-		sandSprite.core = GetCorePixels(e.entity.Get<Sprite>().m_source);
+		auto [coreIndex, isHealth] = GetCorePixels(e.entity.Get<Sprite>().m_source);
+
+		sandSprite.core = coreIndex;
+		sandSprite.hasCore = isHealth;
+		sandSprite.originalCoreCount = coreIndex.size();
 
 		// setup collider if requested
 
@@ -381,34 +390,43 @@ struct Sand_System_Update : System<Sand_System_Update>
 			r<Texture> mask   = sandSprite.colliderMask;
 
 			vec2 projectileVel = projectile.Get<Cell>().vel;
-			vec2 midOld = vec2(mask->Width(), mask->Height()) / 2.f;
+			vec2 mid = vec2(mask->Width(), mask->Height()) / 2.f;
 
 			// this should go somewhere else, like in event
-			body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - midOld) / sand.worldScale);
+			//body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - mid) / sand.worldScale);
 
 			Islands islands = GetIslands(splitMe.Get<SandSprite>());
 
 			if (islands.Count() > 1)
 			{
-				for (const std::vector<int>& island : islands.coreIslands)
+				if (islands.coreIslands.size() > 1) // this is the core and the bits surrounding
 				{
-					SplitFromIsland(island, sprite, mask, transform, body, midOld, projectileVel);
+					Send(event_SpawnExplosion{transform.position, 50.f});
 				}
+
+				//for (const std::vector<int>& island : islands.coreIslands)
+				//	SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
 
 				for (const std::vector<int>& island : islands.otherIslands)
 				{
-					SplitFromIsland(island, sprite, mask, transform, body, midOld, projectileVel);
+					SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+
+					for (const int& index : island)
+					{
+						sprite->At(index) = Color(0);
+						mask  ->At(index) = Color(0);
+					}
 				}
 
-				GetModule<PhysicsWorld>().Remove(body); // todo: add listener to physics obj
-				sprite->Cleanup();
-				mask->Cleanup();
-				splitMe.Destroy();
+				//GetModule<PhysicsWorld>().Remove(body); // todo: add listener to physics obj
+				//sprite->Cleanup();
+				//mask->Cleanup();
+				//splitMe.Destroy();
 			}
 
 			else
 			{
-				sandSprite.core = GetCorePixels(sprite);
+				sandSprite.core = GetCorePixels(sprite).first;
 			}
 		}
 
@@ -498,15 +516,30 @@ private:
 
 				Entity tileEntity = tileCache.at(tileIndex);
 
-				if (!tileEntity.Get<SandSprite>().invulnerable)
+				if (tileEntity.Id() != e.Get<CellProjectile>().owner)
 				{
-					if (tileEntity.Id() != e.Get<CellProjectile>().owner)
+					if (!tileEntity.Get<SandSprite>().invulnerable)
 					{
 						SendNow(event_SandCellCollision { tileEntity, e, positionInSprite }); // should defer
+						
+						int& health = e.Get<CellProjectile>().health;
+						health -= 1;
+						if (health <= 0)
+						{
+							e.Get<CellLife>().life = 0;
+							break;
+						}
+
+						// turn projectile a little
+						vec2& v = e.Get<Cell>().vel;
+						v = normalize(v + get_rand(10.f, 10.f)) * length(v);
 					}
 
-					vec2& v = e.Get<Cell>().vel;
-					v = normalize(v + get_rand(10.f, 10.f)) * length(v);
+					else // stop and delete projectile
+					{
+						e.Get<CellLife>().life = 0;
+						break;
+					}
 				}
 			}
 
@@ -524,7 +557,7 @@ private:
 
 	// returns only health pixels, or all pixels if there are none
 	// a health pixel has an alpha not equal to 0 or 255, could make a third texture for this, but seems unnessesary, no sprites have opacity as of now...
-	std::vector<int> GetCorePixels(const r<Texture>& texture)
+	std::pair<std::vector<int>, bool> GetCorePixels(const r<Texture>& texture)
 	{
 		std::vector<int> filled, core;
 
@@ -539,11 +572,12 @@ private:
 			if (alpha > 0 && alpha < 255) core.push_back(i);
 		}
 
-		if (core.size() == 0) core = filled; // use all filled if no core, this is for rocks and broken pieces
+		if (core.size() == 0)
+		{
+			return { {}, false };
+		}
 
-		assert(core.size() > 0 && "empty core");
-
-		return core;
+		return { core, true };
 	}
 
 	// splitting
@@ -564,12 +598,6 @@ private:
 			vec2  v = body.GetVelocity();
 			float a = body.GetAngularVelocity();
 			float d = 10.f;//body.GetCollider()->GetDensity();
-
-			//vec2 pveln = normalize(projectileVel);
-
-			//vel.x += get_randc(.1f) + pveln.x;
-			//vel.y += get_randc(.1f) + pveln.y;
-			//vel.z += get_randc(.5f);
 
 			SendNow(event_SandAddSprite { splitOff, v, a, d });
 		}
@@ -594,7 +622,7 @@ private:
 		return { minX, minY, maxX, maxY };
 	}
 
-	void ExplodeSpriteIntoDust(const std::vector<int>& island, const r<Texture>& sprite, const Transform2D& transform, vec2 mid, vec2 projectileVel)
+	void ExplodeSpriteIntoDust(const std::vector<int>& island, r<Texture>& sprite, const Transform2D& transform, vec2 mid, vec2 projectileVel)
 	{
 		SandWorld& sand = GetModule<SandWorld>();
 
@@ -606,7 +634,7 @@ private:
 			rotate(pos, transform.rotation);
 			pos += transform.position;
 
-			Color color = sprite->At(x, y);
+			Color& color = sprite->At(x, y);
 			vec2 offset = 1.f / sand.worldScaleInit;
 
 			auto get_vel = [projectileVel]()
@@ -645,22 +673,11 @@ private:
 		for (const int& index : island)
 		{
 			auto [x, y] = get_xy(index, sprite->Width());  // this math doesnt need to transform to xy
-															// simplify index = (x - minX) + (y - minY) * width
-			// set color
+														   // simplify index = (x - minX) + (y - minY) * width
+			// set color & mask
 
-			Color& to = splitTexture.At(x - minX, y - minY);
-			Color& from = sprite->At(x, y);
-
-			to = from;
-			from = Color(0, 0, 0, 0);
-
-			// set mask
-
-			Color& toMask = splitMask.At(x - minX, y - minY);
-			Color& fromMask = mask->At(x, y);
-
-			toMask = fromMask;
-			fromMask = Color(0, 0, 0, 0);
+			splitTexture.At(x - minX, y - minY) = sprite->At(x, y);
+			splitMask   .At(x - minX, y - minY) = mask  ->At(x, y);
 		}
 
 		// create new tile
@@ -688,6 +705,7 @@ private:
 
 		std::vector<flood_fill_cell_state> state = GetSpriteStates(sprite.colliderMask);
 
+		if (sprite.hasCore)
 		for (int seed : sprite.core)
 		{
 			AddSingleIsland(seed, sprite.colliderMask, state, islands.coreIslands);

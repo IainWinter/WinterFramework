@@ -4,7 +4,7 @@
 #include "Player.h"
 #include "CoordTranslation.h"
 #include "Windowing.h"
-#include "ext/Sand.h"
+#include "Sand.h"
 
 #include "Events.h"
 
@@ -21,17 +21,19 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void Update()
 	{
-		auto [player, transform] = playerEntity.GetAll<Player, Transform2D>();
+		auto [player, transform, body] = playerEntity.GetAll<Player, Transform2D, Rigidbody2D>();
 
-		vec2 direction = safe_normalize(player.AttackDirectionInput);
+		vec2 direction = safe_normalize(player.AttackLocationInput - transform.position);
 		vec2 position = transform.position + direction * 1.f;
 		
-		direction *= 600.f;
+		direction *= 2000.f;
 
-		if (player.AttackFireInput)
+		player.m_attackTimer -= Time::DeltaTime();
+		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
-			GetModule<SandWorld>()
-				.CreateCell(position.x, position.y, Color(255, 0, 0, 255), direction.x /*+ get_randc(100.f)*/, direction.y /*+ get_randc(100.f)*/, 1.f)
+			player.m_attackTimer = player.AttackTime;
+
+			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 0, 0, 255))
 				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
 		}
 
@@ -66,8 +68,8 @@ struct System_PlayerController : System<System_PlayerController>
 			case InputName::RIGHT: player.MovementInput.x += e.state; break;
 			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
 
-			case InputName::AIM_X:  player.AttackDirectionInput.x = e.state;        break;
-			case InputName::AIM_Y:  player.AttackDirectionInput.y = e.state;        break;
+			case InputName::AIM_X:  player.AttackLocationInput.x = e.state;        break;
+			case InputName::AIM_Y:  player.AttackLocationInput.y = e.state;        break;
 			case InputName::ATTACK: player.AttackFireInput        = e.state != 0.f; break;
 		}
 	}
@@ -80,10 +82,10 @@ struct System_PlayerController : System<System_PlayerController>
 
 		// calculate the direction from the player to the target
 		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
-		vec2 relitiveTarget = target - transform.position;
+		//vec2 relitiveTarget = target - transform.position;
 
-		SendNow(event_Input{ InputName::AIM_X, relitiveTarget.x });
-		SendNow(event_Input{ InputName::AIM_Y, relitiveTarget.y });
+		SendNow(event_Input{ InputName::AIM_X, target.x });
+		SendNow(event_Input{ InputName::AIM_Y, target.y });
 		SendNow(event_Input{ InputName::ATTACK, (float)e.button_left });
 	}
 };

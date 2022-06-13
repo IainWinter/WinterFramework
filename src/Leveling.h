@@ -91,6 +91,7 @@ public:
 
 	int                             Id()                const { return m_levelId; }
 	const std::vector<SystemBase*>& GetSystems()        const { return m_systems; }
+	EntityWorld&                    GetWorld()                { return m_world; }
 	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	Entity                          CreateEntity()            { return m_world.Create(); }
 	

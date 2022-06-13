@@ -2,7 +2,7 @@
 
 #include "Leveling.h"
 #include "Events.h"
-#include "ext/Sand.h"
+#include "Sand.h"
 
 struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 {

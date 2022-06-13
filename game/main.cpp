@@ -2,9 +2,10 @@
 #include "Common.h"
 #include "Rendering.h"
 
-#include "ext/Sand.h"
+#include "Sand.h"
 #include "ext/Time.h"
 #include "ext/MeshGenerators.h"
+#include "ext/Components.h"
 
 #include "imgui/implot.h"
 
@@ -212,8 +213,7 @@ struct Regolith : EngineLoop
 		assert(sprite.Length() == mask.Length());
 
 		Transform2D transform;
-		transform.scale.x = sprite.Width()  / sand.worldScale.x;
-		transform.scale.y = sprite.Height() / sand.worldScale.y;
+		transform.scale = vec2(sprite.Width(), sprite.Height()) * sand.worldScale;
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);
@@ -238,9 +238,6 @@ void setup()
 {
 	RunEngineLoop<Regolith>();
 }
-
-
-
 
 // rip
 

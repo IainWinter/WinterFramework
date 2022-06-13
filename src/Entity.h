@@ -3,6 +3,8 @@
 #include "Defines.h"
 #include "entt/entity/registry.hpp"
 
+// entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
+
 struct Entity;
 struct EntityWorld;
 using Order = void*;
