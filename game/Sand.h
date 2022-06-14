@@ -14,6 +14,8 @@
 #include <functional>
 #include <unordered_set>
 
+#include "Components/KeepOnScreen.h"
+
 struct Cell
 {
 	vec2 pos;
@@ -40,7 +42,9 @@ struct SandSprite
 	r<Texture> colliderMask;
 	std::vector<int> core; // if this list has items, these are the only cells to floodfill
 	int hasCore = false; // if the list is health or every pixel
-	int originalCoreCount = 0;
+	//int originalCoreCount = 0;
+
+	int cellStrength = 1;
 
 	Texture& Get() { return *colliderMask; }
 
@@ -61,7 +65,12 @@ struct event_SandAddSprite
 	Entity entity;
 	vec2 velocity = vec2(0.f, 0.f);
 	float aVelocity = 0.f;
-	float density = 0;
+	float density = 1.f;
+};
+
+struct event_SandTurnSpriteToDust
+{
+	Entity entity;
 };
 
 struct event_SpawnSandCell
@@ -86,15 +95,20 @@ struct SandWorld
 	vec2 screenOffset;
 	ivec2 screenSize;
 
-	r<Target> screen;
+	r<Target> screenRead;
+	//r<Target> screenWrite; // to make copying to cpu not stall?
 	Entity lineProjectiles;
 
 	SandWorld() = default;
 
 	SandWorld(int w, int h, int camScaleX, int camScaleY)
 	{
-		screen = std::make_shared<Target>(false);
-		screen->Add(Target::aColor, w, h, Texture::uINT_32, false);
+		screenRead = std::make_shared<Target>(false);
+		screenRead->Add(Target::aColor, w, h, Texture::uINT_32, false);
+
+		//screenWrite = std::make_shared<Target>(false);
+		//screenWrite->Add(Target::aColor, w, h, Texture::uINT_32, false);
+
 		//spriteTarget->Add(Target::aDepth, w, h, 1);
 		
 		Mesh LPmesh = Mesh(false);
@@ -109,7 +123,8 @@ struct SandWorld
 
 	void ResizeWorld(int width, int height, int camScaleX, int camScaleY)
 	{
-		screen->Resize(width, height);
+		screenRead->Resize(width, height);
+		//screenWrite->Resize(width, height);
 		screenSize = vec2(width, height);
 		screenOffset = screenSize / 2;
 
@@ -141,7 +156,7 @@ struct SandWorld
 	const ivec4& GetCollisionInfo(ivec2 pos) const
 	{
 		pos += screenOffset;
-		return *(ivec4*)screen->Get(Target::aColor)->At<int>(pos.x, pos.y);
+		return *(ivec4*)screenRead->Get(Target::aColor)->At<int>(pos.x, pos.y);
 	}
 
 	vec2 ToScreenPos(const vec2& pos) const
@@ -283,6 +298,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_WindowResize>();
 		Attach<event_SandCellCollision>();
 		Attach<event_SandAddSprite>();
+		Attach<event_SandTurnSpriteToDust>();
 	}
 
 	void on(event_SpawnSandCell& e)
@@ -299,17 +315,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_SandCellCollision& e)
 	{
-		vec2& vel = e.projectile.Get<Cell>().vel;
-		float speed = length(vel);
-		vel.x += get_rand(400) - 200;
-		vel.y += get_rand(400) - 200;
-		vel = normalize(vel) * speed;
-
 		// assumes sprite and mask are same size
 
 		auto [sprite, mask] = e.entity.GetAll<Sprite, SandSprite>();
 
-		int index = sprite.Get().Index(e.hitPosInSprite.x, e.hitPosInSprite.y);
+		int index = sprite.Get().Index32(e.hitPosInSprite.x, e.hitPosInSprite.y);
 		sprite.Get().At(index).a = 0;
 		mask  .Get().At(index).a = 0;
 
@@ -322,6 +332,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_SandAddSprite& e)
 	{
+		e.entity.Add<KeepOnScreen>();
+
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
 		transform.scale.x = sprite.Width()  / GetModule<SandWorld>().worldScaleInit.x;
@@ -329,11 +341,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
-		auto [coreIndex, isHealth] = GetCorePixels(e.entity.Get<Sprite>().m_source);
+		auto [coreIndex, _, isHealth, hasAny] = GetCorePixels(e.entity.Get<Sprite>().m_source);
 
 		sandSprite.core = coreIndex;
 		sandSprite.hasCore = isHealth;
-		sandSprite.originalCoreCount = coreIndex.size();
 
 		// setup collider if requested
 
@@ -342,38 +353,27 @@ struct Sand_System_Update : System<Sand_System_Update>
 			Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
 			body.SetVelocity(e.velocity);
 			body.SetAngularVelocity(e.aVelocity);
-		
-			assert(sandSprite.colliderMask->Channels() == 4 && "collider mask needs to be 32 bit right now, in future should be 8");
-
-			auto polygons = MakePolygonFromField<u32>(
-				(u32*)sandSprite.colliderMask->Pixels(),
-				sandSprite.colliderMask->Width(),
-				sandSprite.colliderMask->Height(),
-				[](const u32& color) { return (color & 0xff000000) > 0; }
-			);
-
-			for (const std::vector<vec2>& polygon : polygons.first)
+			
+			bool hasCollider = SetPolygonColliderOnSprite(e.entity, sandSprite.colliderMask, e.density);
+			if (!hasCollider)
 			{
-				b2PolygonShape shape;
-				for (int i = 0; i < polygon.size(); i++)
-				{
-					shape.m_vertices[i] = _tb(polygon.at(i) * transform.scale);
-				}
-				shape.Set(shape.m_vertices, polygon.size());
+				// fail case
+				// if not colliders just explode, this is usally only for small shapes, not sure why hitbox fails
 
-				assert(polygon.size() < 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
-				body.AddCollider(shape, e.density);
+				SendNow(event_SandTurnSpriteToDust { e.entity });
 			}
-
-			// debug
-			// wont work if entity has Mesh
-			// need to make a model class with a list of Meshs + Transforms
-			//std::vector<vec2> debug_mesh; 
-			//for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) debug_mesh.push_back(v);
-			//e.entity.Add<Mesh>();
-			//Mesh& mesh = e.entity.Get<Mesh>();
-			//mesh.Add(Mesh::aPosition, debug_mesh);
 		}
+	}
+
+	void on(event_SandTurnSpriteToDust& e)
+	{
+		r<Texture> sprite = e.entity.Get<Sprite>().m_source;
+		vec2 projectileVel = get_randn(100.f);
+		vec2 mid = vec2(sprite->Width(), sprite->Height()) / 2.f;
+
+		ExplodeSpriteIntoDust(std::get<1>(GetCorePixels(sprite)), sprite, e.entity.Get<Transform2D>(), mid, projectileVel);
+
+		e.entity.Destroy();
 	}
 
 	void Update()
@@ -404,8 +404,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 					Send(event_SpawnExplosion{transform.position, 50.f});
 				}
 
-				//for (const std::vector<int>& island : islands.coreIslands)
-				//	SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+				for (const std::vector<int>& island : islands.coreIslands)
+					SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
 
 				for (const std::vector<int>& island : islands.otherIslands)
 				{
@@ -418,16 +418,21 @@ struct Sand_System_Update : System<Sand_System_Update>
 					}
 				}
 
-				//GetModule<PhysicsWorld>().Remove(body); // todo: add listener to physics obj
-				//sprite->Cleanup();
-				//mask->Cleanup();
-				//splitMe.Destroy();
+				GetModule<PhysicsWorld>().Remove(body); // todo: add listener to physics obj
+				sprite->Cleanup();
+				mask->Cleanup();
+				splitMe.Destroy();
 			}
 
 			else
 			{
-				sandSprite.core = GetCorePixels(sprite).first;
+				//auto [core, hasCore, hasAnyFilled] = GetCorePixels(sprite);
+				//if (hasAnyFilled) sandSprite.core = core;
+				//else              splitMe.Destroy();
 			}
+
+			// always recalc collider
+			//SetPolygonColliderOnSprite(splitMe, sandSprite.colliderMask, sandSprite.density);
 		}
 
 		toSplit.clear();
@@ -440,7 +445,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Render tiles to hidden target
 
-		maskRender.Begin(camera, sand.screen);
+		maskRender.Begin(camera, sand.screenRead);
 
 		int spriteIndex = 0;
 		for (auto [e, transform, sandSprite] : QueryWithEntity<Transform2D, SandSprite>())
@@ -461,7 +466,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			}
 		}
 
-		Texture& collisionMaskRender = *sand.screen->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
+		Texture& collisionMaskRender = *sand.screenRead->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
 		collisionMaskRender.SendToHost();
 
 		std::vector<vec2> verticesOfLines;
@@ -483,6 +488,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		Mesh& lines = sand.lineProjectiles.Get<Mesh>();
 		lines.Get(Mesh::aPosition)->Set(verticesOfLines);
+
+		//std::swap(sand.screenRead, sand.screenWrite);
 	}
 
 private:
@@ -518,12 +525,13 @@ private:
 
 				if (tileEntity.Id() != e.Get<CellProjectile>().owner)
 				{
-					if (!tileEntity.Get<SandSprite>().invulnerable)
+					SandSprite& sprite = tileEntity.Get<SandSprite>();
+					if (!sprite.invulnerable)
 					{
 						SendNow(event_SandCellCollision { tileEntity, e, positionInSprite }); // should defer
 						
 						int& health = e.Get<CellProjectile>().health;
-						health -= 1;
+						health -= sprite.cellStrength;
 						if (health <= 0)
 						{
 							e.Get<CellLife>().life = 0;
@@ -532,7 +540,10 @@ private:
 
 						// turn projectile a little
 						vec2& v = e.Get<Cell>().vel;
-						v = normalize(v + get_rand(10.f, 10.f)) * length(v);
+						float d = length(v);
+						v = normalize(v + get_randn(1000.f)) * d;
+
+						delta = normalize(cell.vel / cell.dampen * Time::DeltaTime());
 					}
 
 					else // stop and delete projectile
@@ -557,7 +568,7 @@ private:
 
 	// returns only health pixels, or all pixels if there are none
 	// a health pixel has an alpha not equal to 0 or 255, could make a third texture for this, but seems unnessesary, no sprites have opacity as of now...
-	std::pair<std::vector<int>, bool> GetCorePixels(const r<Texture>& texture)
+	std::tuple<std::vector<int>, std::vector<int>, bool, bool> GetCorePixels(const r<Texture>& texture)
 	{
 		std::vector<int> filled, core;
 
@@ -574,10 +585,10 @@ private:
 
 		if (core.size() == 0)
 		{
-			return { {}, false };
+			return { {}, filled, false, filled.size() > 0 };
 		}
 
-		return { core, true };
+		return { core, filled, true, true };
 	}
 
 	// splitting
@@ -740,6 +751,55 @@ private:
 		{
 			islands.emplace_back(std::move(island));
 		}
+	}
+
+	// colliders
+
+	// if a collider was set
+	bool SetPolygonColliderOnSprite(Entity e, const r<Texture>& mask, float density)
+	{
+		assert(mask->Channels() == 4 && "collider mask needs to be 32 bit right now");
+		//assert(e.Has<Transform2D, Rigidbody2D>());
+
+		Transform2D& tran = e.Get<Transform2D>();
+		Rigidbody2D& body = e.Get<Rigidbody2D>();
+		
+		auto polygons = MakePolygonFromField<u32>(
+			(u32*)mask->Pixels(),
+			mask->Width(),
+			mask->Height(),
+			[](const u32& color) { return (color & 0xff000000) > 0; }
+		);
+
+		body.RemoveColliders();
+
+		for (const std::vector<vec2>& polygon : polygons.first)
+		{
+			b2PolygonShape shape;
+			for (int i = 0; i < polygon.size(); i++)
+			{
+				shape.m_vertices[i] = _tb(polygon.at(i) * tran.scale);
+			}
+			shape.Set(shape.m_vertices, polygon.size());
+
+			assert(polygon.size() < 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
+			body.AddCollider(shape, density);
+		}
+
+		// debug
+		// wont work if entity has Mesh
+		// need to make a model class with a list of Meshs + Transforms
+
+		//if (e.Has<Mesh>()) e.Remove<Mesh>();
+
+		//std::vector<vec2> debug_mesh;
+		//for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) debug_mesh.push_back(v);
+		//e.Add<Mesh>();
+		//Mesh& mesh = e.Get<Mesh>();
+		//mesh.topology = Mesh::tLoops;
+		//mesh.Add(Mesh::aPosition, debug_mesh);
+
+		return polygons.first.size() > 0;
 	}
 };
 

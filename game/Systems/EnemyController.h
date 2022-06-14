@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EnemyAI.h"
 #include "Leveling.h"
+#include "Components/EnemyAI.h"
 
 struct System_EnemyController : System<System_EnemyController>
 {
@@ -18,7 +18,7 @@ struct System_EnemyController : System<System_EnemyController>
 
 		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
 		{
-			body.SetVelocity(normalize(body.GetVelocity()) * 15.f);
+			body.SetVelocity(normalize(body.GetVelocity()) * 15.f); // set constant velocity for flockers
 		}
 	}
 };

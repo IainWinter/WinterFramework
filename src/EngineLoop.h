@@ -73,8 +73,11 @@ public:
 		// init the default level
 		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
 
-		// init UI, defered for Imgui config flags before calling init
+		// init UI, defered for user set Imgui config flags
 		m_app.GetModule<Window>().InitUI();
+
+		// send events from init functions before first tick
+		TickEvents();
 	}
 
 	void Dnit()
@@ -110,9 +113,7 @@ public:
 		TickLevelUI();
 		
 		TickFrame();
-
-		m_app.GetRootEventQueue()->execute();
-		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+		TickEvents();
 	}
 
 	// Interface
@@ -166,6 +167,12 @@ private:
 	{
 		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
 		physics.Step(Time::FixedTime());
+	}
+
+	void TickEvents()
+	{
+		m_app.GetRootEventQueue()->execute();
+		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
 	}
 
 #ifdef IW_METRICS_TIMER

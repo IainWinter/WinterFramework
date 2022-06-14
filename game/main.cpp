@@ -17,6 +17,7 @@
 #include "Systems/ExplodeNearTarget.h"
 #include "Systems/ExplosionSpawner.h"
 #include "Systems/EnemyController.h"
+#include "Systems/KeepOnScreen.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/SimpleSpriteRender.h"
@@ -116,6 +117,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_ExplodeNearTarget());
 		level->AddSystem(System_ExplosionSpawner());
 		level->AddSystem(System_EnemyController());
+		level->AddSystem(System_KeepOnScreen());
 
 		level->AddSystem(MetricsSystem());
 		//level->AddSystem(SandSpriteMaskRenderer());
@@ -151,22 +153,21 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
-		player.Add<Player>();
-		player.Get<Rigidbody2D>().SetFixedRotation(true);
 		player.Get<SandSprite>().invulnerable = true;
+		player.Add<Player>();
 
 		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(10.f, 0.f)));
 
-		for (int i = 0; i < 1; i++)
+		for (int i = 0; i < 2; i++)
 		{
-			Entity entity = CreateTexturedCircle("enemy_station.png", "enemy_station_mask.png");
+			Entity entity = CreateSandSprite("asteroid_mid_1.png", "asteroid_mid_1.png");
 			//entity.Add<TurnTwoardsTarget>(target);
 			//entity.Add<Flocker>();
 			//entity.Add<ExplodeNearTarget>(player);
 			//entity.Add<Mesh>(GenerateCircle(16, 5.f));
 			
 			entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
-			entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
+			//entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
 			//entity.Get<Rigidbody2D>().SetVelocity(vec2(get_randc(20.f, 20.f)));
 		}
 	}
@@ -195,8 +196,6 @@ struct Regolith : EngineLoop
 		entity.Add<Transform2D>(transform);
 		entity.Add<SandSprite>(mask);
 		entity.Add<Sprite>(sprite);
-
-		physics.AddEntity(entity);
 
 		m_app.GetRootEventQueue()->send(event_SandAddSprite { entity });
 

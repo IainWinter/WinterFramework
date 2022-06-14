@@ -80,6 +80,27 @@ public:
 
 	// functions that should hide the box2d api, but dont right now
 
+	void RemoveColliders() 
+	{ 
+		assert_in_world();
+		b2Fixture* fix = m_instance->GetFixtureList();
+		while (fix)
+		{
+			b2Fixture* next = fix->GetNext();
+			m_instance->DestroyFixture(fix);
+			fix = next;
+		}
+	}
+
+	int GetColliderCount() const
+	{ 
+		assert_in_world();
+		b2Fixture* fix = m_instance->GetFixtureList();
+		int count = 0;
+		while (fix) { fix = fix->GetNext(); count += 1; }
+		return count;
+	}
+
 	b2Fixture* AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); return m_instance->CreateFixture(&shape, density); }
 	
 	      b2Fixture* GetCollider(int i = 0)       { assert_in_world(); return m_instance->GetFixtureList() + i; }

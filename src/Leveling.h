@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Entity.h"
 #include "Common.h"
+#include "Entity.h"
+#include "Event.h"
 
 // This holds the global state for the program
 // each module represents a plugin / major piece of the framework

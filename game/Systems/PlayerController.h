@@ -1,12 +1,13 @@
 #pragma once
 
 #include "Leveling.h"
-#include "Player.h"
 #include "CoordTranslation.h"
 #include "Windowing.h"
 #include "Sand.h"
-
 #include "Events.h"
+
+#include "Components/Player.h"
+
 
 struct System_PlayerController : System<System_PlayerController>
 {

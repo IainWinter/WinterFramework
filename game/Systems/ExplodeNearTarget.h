@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Leveling.h"
-#include "EnemyAI.h"
 #include "Events.h"
 #include "ext/Time.h"
+#include "Components/EnemyAI.h"
 
 struct System_ExplodeNearTarget : SystemBase
 {

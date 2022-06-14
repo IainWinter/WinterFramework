@@ -229,17 +229,18 @@ public:
 
 	// assumed non const At will be written to
 
-	      Color& At(int x, int y)       { assert_on_host(); MarkForUpdate(); return At(Index(x, y)); }
-	const Color& At(int x, int y) const { assert_on_host();                  return At(Index(x, y)); }
+	      Color& At(int x, int y)       { return At(Index32(x, y)); }
+	const Color& At(int x, int y) const { return At(Index32(x, y)); }
 
-		  Color& At(int index)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + index); }
-	const Color& At(int index) const { assert_on_host();                  return *(Color*)(Pixels() + index); }
+		  Color& At(int index32)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + Index(index32)); }
+	const Color& At(int index32) const { assert_on_host();                  return *(Color*)(Pixels() + Index(index32)); }
 
-	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
 	int Index32(int x, int y) const { return x + y * m_width; }
+	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
+	int Index  (int index32)  const { return index32 * m_channels * m_bytesPerChannel; }
 
-	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (const _t*)&At(x, y).as_u32; }
-	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (      _t*)&At(x, y).as_u32; }
+	template<typename _t> const _t* At(int x, int y) const { return (const _t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { return (      _t*)&At(x, y).as_u32; }
 
 	void ClearHost(Color color = Color(0, 0, 0, 0))
 	{
@@ -1223,6 +1224,11 @@ struct Camera
 		camera = translate(camera, vec3(x, y, 0.f));
 
 		return camera;
+	}
+
+	vec2 ScreenSize() const
+	{
+		return vec2(w, h);
 	}
 };
 

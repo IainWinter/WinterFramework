@@ -7,10 +7,10 @@
 // should allow for handlers to classes without an interface for every type of function
 // and events arent an interface
 
-#include <functional>
-#include <unordered_map>
 #include <vector>
 #include <stdint.h>
+#include <functional>
+#include <unordered_map>
 
 using hash_t = uint64_t;
 

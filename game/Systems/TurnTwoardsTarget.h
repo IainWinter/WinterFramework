@@ -2,7 +2,7 @@
 
 #include "Leveling.h"
 #include "Physics.h"
-#include "EnemyAI.h"
+#include "Components/EnemyAI.h"
 
 struct System_TurnTwoardsTarget : SystemBase
 {
