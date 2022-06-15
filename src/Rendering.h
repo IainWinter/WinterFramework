@@ -820,6 +820,9 @@ public:
 		aNormal,
 		aTangent,
 		aBiTangent,
+		
+		aColor,
+
 		aCustom1,
 		aCustom2,
 		aCustom3,
@@ -1352,7 +1355,10 @@ struct SpriteRenderer2D
 									"vec4 spriteColor = texture(sprite, TexCoords);"
 									"if (spriteColor.a > .7) spriteColor.a = 1.f;" // round up for health thing
 									"color = tint * spriteColor;"
-									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, spriteColor.a > 0);" // this is going to be an index to an array on the cpu or something like that
+
+									"if (color.a == 0) discard;"
+
+									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, color.a);" // this is going to be an index to an array on the cpu or something like that
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
@@ -1414,20 +1420,24 @@ struct MeshRenderer2D
 		const char* source_vert = 
 								"#version 330 core\n"
 								"layout (location = 0) in vec2 vertex;"
+								"layout (location = 5) in vec4 color;"
 								"uniform mat4 model;"
 								"uniform mat4 projection;"
+								"out vec4 vertColor;"
 								"void main()"
 								"{"
+									"vertColor = color;"
 									"gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);"
 								"}";
 
 		const char* source_frag = 
 								"#version 330 core\n"
+								"in vec4 vertColor;"
 								"out vec4 color;"
-								"uniform vec4 tint;"
 								"void main()"
 								"{"
-									"color = tint;"  
+									//"if (vertColor.a == 0) { vertColor = vec4(1, 1, 1, 1); }"
+									"color = vertColor;"  
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
@@ -1456,7 +1466,6 @@ struct MeshRenderer2D
 		m_shader.Use();
 		m_shader.Set("projection", m_render_state.camera_proj);
 		m_shader.Set("model",      transform.World());
-		m_shader.Set("tint",       Color().as_v4());
 
 		mesh.Draw(mesh.topology);
 	}

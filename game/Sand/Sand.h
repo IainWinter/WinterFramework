@@ -16,71 +16,8 @@
 
 #include "Components/KeepOnScreen.h"
 
-struct Cell
-{
-	vec2 pos;
-	vec2 vel;
-	float dampen = 20;
-	Color color;
-};
-
-struct CellProjectile
-{
-	u32 owner; // for no damage to who fired
-	int health = 15; // how many cells can this projectile destroy
-};
-
-struct CellLife
-{
-	float life;
-};
-
-struct SandSprite
-{
-	float density = 100.f;
-	bool invulnerable = false;
-	r<Texture> colliderMask;
-	std::vector<int> core; // if this list has items, these are the only cells to floodfill
-	int hasCore = false; // if the list is health or every pixel
-	//int originalCoreCount = 0;
-
-	int cellStrength = 1;
-
-	Texture& Get() { return *colliderMask; }
-
-	SandSprite() = default;
-	SandSprite(const Texture& collider) : colliderMask(std::make_shared<Texture>(collider)) {}
-};
-
-struct event_SandCellCollision
-{
-	Entity entity;
-	Entity projectile;
-	ivec2 hitPosInSprite;
-};
-
-// cretea a mesh collider is entity has no Rigidbody component
-struct event_SandAddSprite
-{
-	Entity entity;
-	vec2 velocity = vec2(0.f, 0.f);
-	float aVelocity = 0.f;
-	float density = 1.f;
-};
-
-struct event_SandTurnSpriteToDust
-{
-	Entity entity;
-};
-
-struct event_SpawnSandCell
-{
-	vec2 position;
-	vec2 velocity;
-	Color color;
-
-	std::function<void(Entity)> onCreate;
-};
+#include "Sand/SandEvents.h"
+#include "Sand/SandComponents.h"
 
 // everywhere LevelManager is needed should be inside of a System
 // because Systems are owned by whatever level, so it's more contained
@@ -113,6 +50,7 @@ struct SandWorld
 		
 		Mesh LPmesh = Mesh(false);
 		LPmesh.Add<vec2>(Mesh::aPosition, {});
+		LPmesh.Add<vec4>(Mesh::aColor, {});
 		LPmesh.topology = Mesh::tLines;
 
 		lineProjectiles = LevelManager::CurrentLevel()->CreateEntity().AddAll(Transform2D(), LPmesh);
@@ -224,7 +162,10 @@ struct SandCollisionInfoRenderer
 			"{"
 				"vec4 mask = texture(colliderMask, TexCoords);"
 				"if (mask.a > .7) mask.a = 1.f;" // round up for health thing
-				"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, mask.a > 0);"
+
+				"if (mask.a == 0) discard;"
+
+				"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, 1);"
 			"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
@@ -285,7 +226,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 	struct ToSplitHash { size_t operator()(const ToSplit& t) const { return t.hit.Id(); } };
 
 	// queue events to not exe a split on every collision, could be multiple per frame on same obj
-	std::unordered_set<ToSplit, ToSplitHash> toSplit; 
+	std::unordered_set<ToSplit, ToSplitHash> toSplit;
+
+	// queue creating colliders to multithread in Update
+	std::unordered_set<Entity> toCreateCollider;
 	
 	// for the sprite index in the shader, indexes into this array
 	std::vector<Entity> tileCache; 
@@ -304,7 +248,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_SpawnSandCell& e)
 	{
 		Entity entity = GetModule<SandWorld>().CreateCell(e.position, e.velocity, e.color);
-		e.onCreate(entity);
+		if (e.life > 0.f) entity.Add<CellLife>(e.life);
+		if (e.onCreate) e.onCreate(entity);
 	}
 
 	void on(event_WindowResize& e)
@@ -320,14 +265,21 @@ struct Sand_System_Update : System<Sand_System_Update>
 		auto [sprite, mask] = e.entity.GetAll<Sprite, SandSprite>();
 
 		int index = sprite.Get().Index32(e.hitPosInSprite.x, e.hitPosInSprite.y);
+		Color color = sprite.Get().At(index);
+		
 		sprite.Get().At(index).a = 0;
 		mask  .Get().At(index).a = 0;
+		mask.cellCount -= 1;
 
 		toSplit.insert({
 			e.entity,
 			e.projectile,
 			e.hitPosInSprite
 		});
+
+		Cell cell = e.projectile.Get<Cell>();
+
+		Send(event_SpawnSandCell{cell.pos, cell.vel + get_randn(length(cell.vel) / 2.f), color, .5f });
 	}
 
 	void on(event_SandAddSprite& e)
@@ -341,10 +293,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
-		auto [coreIndex, _, isHealth, hasAny] = GetCorePixels(e.entity.Get<Sprite>().m_source);
+		auto [coreIndex, filled, isHealth, hasAny] = GetCorePixels(e.entity.Get<Sprite>().m_source);
 
 		sandSprite.core = coreIndex;
 		sandSprite.hasCore = isHealth;
+		sandSprite.density = e.density;
+		sandSprite.cellCount = filled.size();
 
 		// setup collider if requested
 
@@ -354,14 +308,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			body.SetVelocity(e.velocity);
 			body.SetAngularVelocity(e.aVelocity);
 			
-			bool hasCollider = SetPolygonColliderOnSprite(e.entity, sandSprite.colliderMask, e.density);
-			if (!hasCollider)
-			{
-				// fail case
-				// if not colliders just explode, this is usally only for small shapes, not sure why hitbox fails
-
-				SendNow(event_SandTurnSpriteToDust { e.entity });
-			}
+			SendNow(event_Sand_CreateCollider{ e.entity });
 		}
 	}
 
@@ -382,58 +329,32 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Sprite update
 
-		for (auto [splitMe, projectile, projectileLocation] : toSplit)
+		printf("Number of tiles to split %d\n", toSplit.size());
+
+		//TaskSyncPoint syncPoint(toSplit.size());
+
+		for (auto& split : toSplit)
 		{
-			auto [transform, body, drawSprite, sandSprite] = splitMe.GetAll<Transform2D, Rigidbody2D, Sprite, SandSprite>();
-
-			r<Texture> sprite = drawSprite.m_source;
-			r<Texture> mask   = sandSprite.colliderMask;
-
-			vec2 projectileVel = projectile.Get<Cell>().vel;
-			vec2 mid = vec2(mask->Width(), mask->Height()) / 2.f;
-
-			// this should go somewhere else, like in event
-			//body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - mid) / sand.worldScale);
-
-			Islands islands = GetIslands(splitMe.Get<SandSprite>());
-
-			if (islands.Count() > 1)
+			if (!split.hit.IsAlive())
 			{
-				if (islands.coreIslands.size() > 1) // this is the core and the bits surrounding
-				{
-					Send(event_SpawnExplosion{transform.position, 50.f});
-				}
-
-				for (const std::vector<int>& island : islands.coreIslands)
-					SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
-
-				for (const std::vector<int>& island : islands.otherIslands)
-				{
-					SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
-
-					for (const int& index : island)
-					{
-						sprite->At(index) = Color(0);
-						mask  ->At(index) = Color(0);
-					}
-				}
-
-				GetModule<PhysicsWorld>().Remove(body); // todo: add listener to physics obj
-				sprite->Cleanup();
-				mask->Cleanup();
-				splitMe.Destroy();
+				printf("invalid entity in toSplit list!\n");
+				continue; // should investigate why this sometimes is invalid
 			}
 
-			else
+			if (split.hit.Get<SandSprite>().cellCount <= 0)
 			{
-				//auto [core, hasCore, hasAnyFilled] = GetCorePixels(sprite);
-				//if (hasAnyFilled) sandSprite.core = core;
-				//else              splitMe.Destroy();
+				split.hit.Destroy();
+				continue;
 			}
 
-			// always recalc collider
-			//SetPolygonColliderOnSprite(splitMe, sandSprite.colliderMask, sandSprite.density);
+			//Thread([&]()
+			//{
+				SplitSprite(split.hit, split.projectile);
+				//syncPoint.Tick();
+			//});
 		}
+
+		//syncPoint.BlockUntilZero();
 
 		toSplit.clear();
 		tileCache.clear();
@@ -470,6 +391,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		collisionMaskRender.SendToHost();
 
 		std::vector<vec2> verticesOfLines;
+		std::vector<vec4>   colorsOfLines;
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
@@ -484,10 +406,14 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 			verticesOfLines.push_back(a);
 			verticesOfLines.push_back(b);
+
+			colorsOfLines.push_back(cell.color.as_v4());
+			colorsOfLines.push_back(cell.color.as_v4());
 		}
 
 		Mesh& lines = sand.lineProjectiles.Get<Mesh>();
 		lines.Get(Mesh::aPosition)->Set(verticesOfLines);
+		lines.Get(Mesh::aColor)   ->Set(colorsOfLines);
 
 		//std::swap(sand.screenRead, sand.screenWrite);
 	}
@@ -522,6 +448,8 @@ private:
 				int tileIndex = spriteInfo[2];
 
 				Entity tileEntity = tileCache.at(tileIndex);
+
+				if (!tileEntity.IsAlive()) continue;
 
 				if (tileEntity.Id() != e.Get<CellProjectile>().owner)
 				{
@@ -564,6 +492,60 @@ private:
 
 	// start splitting functions into clear peices
 
+	void SplitSprite(Entity splitMe, Entity projectile)
+	{
+		auto [transform, body, drawSprite, sandSprite] = splitMe.GetAll<Transform2D, Rigidbody2D, Sprite, SandSprite>();
+
+		r<Texture> sprite = drawSprite.m_source;
+		r<Texture> mask   = sandSprite.colliderMask;
+
+		vec2 projectileVel = projectile.Get<Cell>().vel;
+		vec2 mid = vec2(mask->Width(), mask->Height()) / 2.f;
+
+		// this should go somewhere else, like in event
+		//body.ApplyForce(projectileVel / 1.f, (vec2(projectileLocation) - mid) / sand.worldScale);
+
+		Islands islands = GetIslands(splitMe.Get<SandSprite>());
+
+		if (islands.Count() > 1)
+		{
+			if (islands.coreIslands.size() > 1) // this is the core and the bits surrounding
+			{
+				Send(event_SpawnExplosion{transform.position, 50.f});
+			}
+
+			for (const std::vector<int>& island : islands.coreIslands)
+				SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+
+			for (const std::vector<int>& island : islands.otherIslands)
+			{
+				SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+
+				for (const int& index : island)
+				{
+					sprite->At(index) = Color(0);
+					mask  ->At(index) = Color(0);
+				}
+			}
+
+			//Coroutine([=]() 
+			//{
+				GetModule<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
+				sprite->Cleanup();
+				mask->Cleanup();
+				splitMe.Destroy();
+
+				//return true;
+			//});
+		}
+	}
+
+	//
+	//
+	// All these are helpers functions for sprite splitting
+	//
+	//
+
 	// core pixels
 
 	// returns only health pixels, or all pixels if there are none
@@ -604,13 +586,23 @@ private:
 
 		else
 		{
-			Entity splitOff = SplitSprite(island, sprite, mask, transform, mid, minX, minY, maxX, maxY);
+			auto split = SplitSpriteInTwo(island, sprite, mask, transform, mid, minX, minY, maxX, maxY);
+			
+			//Coroutine([=]()
+			//{
+				// nice names lol
+				
+				auto [t, s, ss] = split;
+				Entity e = CreateEntity().AddAll(t, Sprite(s), SandSprite(ss));
+				
+				vec2  v = body.GetVelocity();
+				float a = body.GetAngularVelocity();
+				float d = 10.f;//body.GetCollider()->GetDensity();
 
-			vec2  v = body.GetVelocity();
-			float a = body.GetAngularVelocity();
-			float d = 10.f;//body.GetCollider()->GetDensity();
-
-			SendNow(event_SandAddSprite { splitOff, v, a, d });
+				SendNow(event_SandAddSprite { e, v, a, d });
+						
+				//return true;
+			//});
 		}
 	}
 
@@ -635,7 +627,7 @@ private:
 
 	void ExplodeSpriteIntoDust(const std::vector<int>& island, r<Texture>& sprite, const Transform2D& transform, vec2 mid, vec2 projectileVel)
 	{
-		SandWorld& sand = GetModule<SandWorld>();
+		SandWorld& sand = GetModule<SandWorld>(); // non threadsafe read
 
 		for (const int& index : island)
 		{
@@ -646,7 +638,7 @@ private:
 			pos += transform.position;
 
 			Color& color = sprite->At(x, y);
-			vec2 offset = 1.f / sand.worldScaleInit;
+			vec2 offset = 1.f / sand.worldScaleInit; // non threadsafe read
 
 			auto get_vel = [projectileVel]()
 			{
@@ -664,22 +656,22 @@ private:
 				get_vel() + get_randc(50, 50)
 			};
 
-			sand.CreateCell(pos.x,            pos.y,            color, vels[0].x, vels[0].y, 1).Add<CellLife>(get_randc(1.f));
-			sand.CreateCell(pos.x + offset.x, pos.y,            color, vels[1].x, vels[1].y, 1).Add<CellLife>(get_randc(1.f));
-			sand.CreateCell(pos.x,            pos.y + offset.y, color, vels[2].x, vels[2].y, 1).Add<CellLife>(get_randc(1.f));
-			sand.CreateCell(pos.x + offset.x, pos.y + offset.y, color, vels[3].x, vels[3].y, 1).Add<CellLife>(get_randc(1.f));
+			Send(event_SpawnSandCell{ pos, vels[0], color, get_rand(.3f) + .1f });
+			Send(event_SpawnSandCell{ pos, vels[1], color, get_rand(.3f) + .1f });
+			Send(event_SpawnSandCell{ pos, vels[2], color, get_rand(.3f) + .1f });
+			Send(event_SpawnSandCell{ pos, vels[3], color, get_rand(.3f) + .1f });
 		}
 	}
 
-	Entity SplitSprite(const std::vector<int>& island, r<Texture>& sprite, r<Texture>& mask, Transform2D transform, vec2 mid, int minX, int minY, int maxX, int maxY)
+	std::tuple<Transform2D, r<Texture>, r<Texture>> SplitSpriteInTwo(const std::vector<int>& island, r<Texture>& sprite, r<Texture>& mask, Transform2D transform, vec2 mid, int minX, int minY, int maxX, int maxY)
 	{
 		// copy old data to new texture
 
-		Texture splitTexture = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
-		Texture splitMask    = Texture(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false); // could be uR
+		r<Texture> splitTexture = mkr<Texture>(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
+		r<Texture> splitMask    = mkr<Texture>(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false); // could be uR
 						
-		splitTexture.ClearHost();
-		splitMask.ClearHost();
+		splitTexture->ClearHost();
+		splitMask   ->ClearHost();
 
 		for (const int& index : island)
 		{
@@ -687,8 +679,8 @@ private:
 														   // simplify index = (x - minX) + (y - minY) * width
 			// set color & mask
 
-			splitTexture.At(x - minX, y - minY) = sprite->At(x, y);
-			splitMask   .At(x - minX, y - minY) = mask  ->At(x, y);
+			splitTexture->At(x - minX, y - minY) = sprite->At(x, y);
+			splitMask   ->At(x - minX, y - minY) = mask  ->At(x, y);
 		}
 
 		// create new tile
@@ -701,11 +693,7 @@ private:
 
 		transform.position += offset / GetModule<SandWorld>().worldScaleInit;
 
-		return LevelManager::CurrentLevel()->CreateEntity().AddAll(
-			transform, 
-			Sprite(splitTexture), 
-			SandSprite(splitMask)
-		);
+		return { transform, splitTexture, splitMask };
 	}
 
 	// flood fill

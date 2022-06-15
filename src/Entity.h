@@ -157,7 +157,13 @@ public:
 
 	bool IsAlive() const
 	{
-		return !!m_owning;
+		return !!m_owning && m_owning->m_registry.valid(m_handle);
+	}
+
+	void Destroy() const
+	{
+		assert_is_valid();
+		m_owning->m_registry.destroy(m_handle);
 	}
 
 	void Destroy()

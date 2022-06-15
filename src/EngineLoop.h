@@ -114,6 +114,7 @@ public:
 		
 		TickFrame();
 		TickEvents();
+		TickTasks();
 	}
 
 	// Interface
@@ -173,6 +174,11 @@ private:
 	{
 		m_app.GetRootEventQueue()->execute();
 		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+	}
+
+	void TickTasks()
+	{
+		m_app.GetTaskPool()->TickCoroutines();
 	}
 
 #ifdef IW_METRICS_TIMER

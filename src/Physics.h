@@ -148,6 +148,11 @@ struct PhysicsWorld
 		body.m_instance = m_world->CreateBody(&body.m_body);
 	}
 	
+	void Remove(const Rigidbody2D& body)
+	{
+		m_world->DestroyBody(body.m_instance);
+	}
+
 	void Remove(Rigidbody2D& body)
 	{
 		m_world->DestroyBody(body.m_instance);

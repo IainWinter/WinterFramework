@@ -2,7 +2,7 @@
 #include "Common.h"
 #include "Rendering.h"
 
-#include "Sand.h"
+#include "Sand/Sand.h"
 #include "ext/Time.h"
 #include "ext/MeshGenerators.h"
 #include "ext/Components.h"
@@ -10,6 +10,8 @@
 #include "imgui/implot.h"
 
 // systems
+
+#include "Sand/SandSystems.h"
 
 #include "Systems//PlayerController.h"
 #include "Systems/FlockingMovement.h"
@@ -120,6 +122,9 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_KeepOnScreen());
 
 		level->AddSystem(MetricsSystem());
+
+		AddSandSystemsToLevel(level);
+
 		//level->AddSystem(SandSpriteMaskRenderer());
 	}
 
@@ -160,7 +165,7 @@ struct Regolith : EngineLoop
 
 		for (int i = 0; i < 2; i++)
 		{
-			Entity entity = CreateSandSprite("asteroid_mid_1.png", "asteroid_mid_1.png");
+			Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
 			//entity.Add<TurnTwoardsTarget>(target);
 			//entity.Add<Flocker>();
 			//entity.Add<ExplodeNearTarget>(player);

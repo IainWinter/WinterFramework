@@ -2,7 +2,7 @@
 
 #include "Leveling.h"
 #include "Events.h"
-#include "Sand.h"
+#include "Sand/Sand.h"
 
 struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 {
@@ -32,7 +32,7 @@ private:
 		{
 			float speed = get_rand(r) + r / 3.f;
 			vec2 velocity = get_randn(1.f) * speed;
-			Send(event_SpawnSandCell { position, velocity, Color(150, 50, 50), onCreate });
+			Send(event_SpawnSandCell { position, velocity, Color(150, 50, 50), .1f, onCreate });
 		}
 	}
 };

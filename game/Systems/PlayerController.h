@@ -3,7 +3,7 @@
 #include "Leveling.h"
 #include "CoordTranslation.h"
 #include "Windowing.h"
-#include "Sand.h"
+#include "Sand/Sand.h"
 #include "Events.h"
 
 #include "Components/Player.h"
@@ -34,7 +34,7 @@ struct System_PlayerController : System<System_PlayerController>
 		{
 			player.m_attackTimer = player.AttackTime;
 
-			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 0, 0, 255))
+			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 255, 255, 255))
 				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
 		}
 

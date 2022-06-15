@@ -155,12 +155,15 @@ public:
 		glClearColor(1.f, 1.f, 1.f, 1.f);
 
 		// sand breaks because this isnt setup
-		//glEnable(GL_DEPTH_TEST);
-		//glDepthFunc(GL_GREATER);
+		glEnable(GL_DEPTH_TEST);
+
+		// enable transparency
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// vsync
 
-		SDL_GL_SetSwapInterval(1);
+		SDL_GL_SetSwapInterval(0);
 	}
 
 	void InitUI()
