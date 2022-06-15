@@ -40,10 +40,10 @@ struct SandWorld
 
 	SandWorld(int w, int h, int camScaleX, int camScaleY)
 	{
-		screenRead = std::make_shared<Target>(false);
+		screenRead = mkr<Target>(false);
 		screenRead->Add(Target::aColor, w, h, Texture::uINT_32, false);
 
-		//screenWrite = std::make_shared<Target>(false);
+		//screenWrite = std::mkr<Target>(false);
 		//screenWrite->Add(Target::aColor, w, h, Texture::uINT_32, false);
 
 		//spriteTarget->Add(Target::aDepth, w, h, 1);
@@ -172,6 +172,11 @@ struct SandCollisionInfoRenderer
 		m_shader.Add(ShaderProgram::sFragment, source_frag);
 	}
 
+	~SandCollisionInfoRenderer()
+	{
+
+	}
+
 	void Begin(Camera& camera, r<Target> target)
 	{
 		if (target) target->Use();
@@ -234,7 +239,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 	// for the sprite index in the shader, indexes into this array
 	std::vector<Entity> tileCache; 
 
-	SandCollisionInfoRenderer maskRender;
+	r<SandCollisionInfoRenderer> maskRender;
 
 	void Init()
 	{
@@ -243,6 +248,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_SandCellCollision>();
 		Attach<event_SandAddSprite>();
 		Attach<event_SandTurnSpriteToDust>();
+
+		maskRender = mkr<SandCollisionInfoRenderer>();
 	}
 
 	void on(event_SpawnSandCell& e)
@@ -329,7 +336,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Sprite update
 
-		printf("Number of tiles to split %d\n", toSplit.size());
+		if (toSplit.size() > 0)
+		{
+			printf("Number of tiles to split %d\n", toSplit.size());
+		}
 
 		//TaskSyncPoint syncPoint(toSplit.size());
 
@@ -366,12 +376,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Render tiles to hidden target
 
-		maskRender.Begin(camera, sand.screenRead);
+		maskRender->Begin(camera, sand.screenRead);
 
 		int spriteIndex = 0;
 		for (auto [e, transform, sandSprite] : QueryWithEntity<Transform2D, SandSprite>())
 		{
-			maskRender.DrawCollisionInfo(transform, sandSprite, spriteIndex);
+			maskRender->DrawCollisionInfo(transform, sandSprite, spriteIndex);
 			spriteIndex += 1;
 			tileCache.push_back(e);
 		}

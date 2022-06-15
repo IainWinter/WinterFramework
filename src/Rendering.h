@@ -86,7 +86,9 @@ struct IDeviceObject
 	)
 		: m_static   (is_static)
 		, m_outdated (true)
-	{} 
+	{}
+
+	virtual ~IDeviceObject() = default;
 
 	void FreeHost()
 	{
@@ -148,7 +150,7 @@ struct IDeviceObject
 		m_outdated = true;
 	}
 
-	// interface
+// interface
 
 public:
 	virtual bool OnHost() const = 0; 
@@ -161,18 +163,21 @@ protected:
 	virtual void _InitOnDevice() = 0;           // create device memory
 	virtual void _UpdateOnDevice() = 0;         // update device memory
 	virtual void _UpdateFromDevice() = 0;       // update host memory
+
 private:
 	bool m_static;
 	bool m_outdated;
 
-	// some helpers
-
-// these could be public
-protected:
+public:
 	void assert_on_host()    const { assert(OnHost()   && "Device object has no data on host"); }
 	void assert_on_device()  const { assert(OnDevice() && "Device object has no data on device"); }
 	void assert_is_static()  const { assert( m_static  && "Device object is static"); }
 	void assert_not_static() const { assert(!m_static  && "Device object is not static"); }
+
+// move & copy
+
+protected:
+	void copy_base(const IDeviceObject* move) { m_static = move->m_static; m_outdated = move->m_outdated; }
 };
 
 // textures are very simple
@@ -359,6 +364,59 @@ public:
 	{
 		init_texture_host_memory(pixels, width, height, usage);
 	}
+
+	~Texture() { Cleanup(); }
+
+	Texture           (      Texture&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Texture           (const Texture&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Texture& operator=(      Texture&& move)                                  { return move_into(std::move(move)); }
+	Texture& operator=(const Texture&  copy)                                  { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Texture& move_into(Texture&& move)
+	{
+		copy_base(&move);
+
+		m_width           = move.m_width;
+		m_height          = move.m_height;
+		m_channels        = move.m_channels;
+		m_bytesPerChannel = move.m_bytesPerChannel;
+		m_usage           = move.m_usage;
+
+		m_host            = move.m_host;
+		m_device          = move.m_device;
+
+		move.m_host = nullptr;
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	Texture& copy_into(const Texture& copy)
+	{
+		copy_base(&copy);
+
+		m_width           = copy.m_width;
+		m_height          = copy.m_height;
+		m_channels        = copy.m_channels;
+		m_bytesPerChannel = copy.m_bytesPerChannel;
+		m_usage           = copy.m_usage;
+
+		m_device          = 0;
+
+		if (copy.OnHost())
+		{
+			m_host = (u8*)malloc(BufferSize());
+			memcpy(m_host, copy.m_host, BufferSize());
+		}
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	void init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	{
@@ -510,7 +568,7 @@ public:
 	// creates an empty texture that is not static
 	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, bool isStatic = true)
 	{
-		r<Texture> texture = std::make_shared<Texture>(width, height, usage, isStatic);
+		r<Texture> texture = mkr<Texture>(width, height, usage, isStatic);
 		Add(name, texture);
 
 		return texture;
@@ -603,6 +661,47 @@ public:
 	{}
 
 	// add instancing constructor
+
+	~Target() { Cleanup(); }
+
+	Target           (      Target&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Target           (const Target&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Target& operator=(      Target&& move)                                  { return move_into(std::move(move)); }
+	Target& operator=(const Target&  copy)                                  { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Target& move_into(Target&& move)
+	{
+		copy_base(&move);
+
+		m_width           = move.m_width;
+		m_height          = move.m_height;
+		m_attachments     = std::move(move.m_attachments);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Target& copy_into(const Target& copy)
+	{
+		copy_base(&copy);
+
+		m_width           = copy.m_width;
+		m_height          = copy.m_height;
+		m_attachments     = copy.m_attachments;
+		m_device          = 0;
+
+		return *this;
+	}
+
+// helpers
 
 private:
 	GLenum gl_attachment(AttachmentName name) const // doesnt need to be here
@@ -785,6 +884,58 @@ public:
 	{
 		m_host = malloc(length * repeat * element_type_size(type));
 	}
+
+	~Buffer() { Cleanup(); }
+
+	Buffer           (      Buffer&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Buffer           (const Buffer&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Buffer& operator=(      Buffer&& move)                                  { return move_into(std::move(move)); }
+	Buffer& operator=(const Buffer&  copy)                                  { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Buffer& move_into(Buffer&& move)
+	{
+		copy_base(&move);
+
+		m_length		  = move.m_length;
+		m_repeat		  = move.m_repeat;
+		m_type            = move.m_type;
+
+		m_host  		  = move.m_host;
+		m_device		  = move.m_device;
+
+		move.m_host   = 0;
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Buffer& copy_into(const Buffer& copy)
+	{
+		copy_base(&copy);
+
+		m_length          = copy.m_length;
+		m_repeat          = copy.m_repeat;
+		m_type            = copy.m_type;
+
+		m_device          = 0;
+
+		if (copy.OnHost())
+		{
+			m_host = (u8*)malloc(Bytes());
+			memcpy(m_host, copy.m_host, Bytes());
+		}
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	int element_type_size(ElementType type) const // doesnt need to be here
 	{
@@ -868,7 +1019,7 @@ public:
 	// creates an empty buffer
 	r<Buffer> Add(AttribName name, int length, int repeat, Buffer::ElementType type)
 	{
-		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type, IsStatic());
+		r<Buffer> buffer = mkr<Buffer>(length, repeat, type, IsStatic());
 		Add(name, buffer);
 
 		return buffer;
@@ -967,7 +1118,7 @@ protected:
 
 		for (auto& [attrib, buffer] : m_buffers)
 		{
- 			if (buffer->OnHost()) 
+ 			if (buffer->OnHost() && !buffer->OnDevice()) 
 			{
 				buffer->SendToDevice();
 			}
@@ -1004,6 +1155,45 @@ public:
 	{}
 
 	// add instancing constructor
+	
+	~Mesh() { Cleanup(); }
+
+	Mesh           (      Mesh&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Mesh           (const Mesh&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Mesh& operator=(      Mesh&& move)                                  { return move_into(std::move(move)); }
+	Mesh& operator=(const Mesh&  copy)                                  { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Mesh& move_into(Mesh&& move)
+	{
+		copy_base(&move);
+
+		topology          = move.topology;
+		m_buffers         = std::move(move.m_buffers);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Mesh& copy_into(const Mesh& copy)
+	{
+		copy_base(&copy);
+
+		topology          = copy.topology;
+		m_buffers         = copy.m_buffers;
+		m_device          = 0;
+
+		return *this;
+	}
+
+// helpers
 
 private:
 	GLenum gl_format(Buffer::ElementType type) const // doesnt need to be here
@@ -1182,6 +1372,45 @@ public:
 		: IDeviceObject (isStatic)
 	{}
 
+	~ShaderProgram() { Cleanup(); }
+
+	ShaderProgram           (      ShaderProgram&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	ShaderProgram           (const ShaderProgram&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	ShaderProgram& operator=(      ShaderProgram&& move)                                  { return move_into(std::move(move)); }
+	ShaderProgram& operator=(const ShaderProgram&  copy)                                  { return copy_into(copy); }
+
+// move & copy
+
+private:
+	ShaderProgram& move_into(ShaderProgram&& move)
+	{
+		copy_base(&move);
+
+		m_slot            = move.m_slot;
+		m_buffers         = std::move(move.m_buffers);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	ShaderProgram& copy_into(const ShaderProgram& copy)
+	{
+		copy_base(&copy);
+
+		m_slot            = copy.m_slot;
+		m_buffers         = copy.m_buffers;
+		m_device          = 0;
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	GLenum gl_type(ShaderName type) const // doesnt need to be here
 	{
@@ -1235,6 +1464,12 @@ struct Camera
 	}
 };
 
+//
+// end device objects s
+//
+
+
+
 //struct Material
 //{
 //private:
@@ -1283,7 +1518,7 @@ struct Camera
  	r<Texture> m_source;
 	Sprite() : m_source(nullptr) {}
 	Sprite(r<Texture> source) : m_source(source) {}
-	Sprite(const Texture& sourceToCopy) : m_source(std::make_shared<Texture>(sourceToCopy)) {}
+	Sprite(const Texture& sourceToCopy) : m_source(mkr<Texture>(sourceToCopy)) {}
  	Texture& Get() { return *m_source; }
  };
 

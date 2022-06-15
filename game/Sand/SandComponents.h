@@ -37,6 +37,6 @@ struct SandSprite
 	Texture& Get() { return *colliderMask; }
 
 	SandSprite() = default;
-	SandSprite(const Texture& collider) : colliderMask(std::make_shared<Texture>(collider)) {}
+	SandSprite(const Texture& collider) : colliderMask(mkr<Texture>(collider)) {}
 	SandSprite(r<Texture> collider)     : colliderMask(collider) {}
 };

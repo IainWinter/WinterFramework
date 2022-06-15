@@ -184,15 +184,15 @@ struct Regolith : EngineLoop
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
-		Texture sprite = Texture(_p(path), false);
-		Texture mask   = Texture(_p(collider_mask_path), false);
+		r<Texture> sprite = mkr<Texture>(_p(path), false);
+		r<Texture> mask   = mkr<Texture>(_p(collider_mask_path), false);
 
-		assert(sprite.Length() == mask.Length());
+		assert(sprite->Length() == mask->Length());
 
 
 		Transform2D transform;
-		transform.scale.x = sprite.Width()  / sand.worldScale.x;
-		transform.scale.y = sprite.Height() / sand.worldScale.y;
+		transform.scale.x = sprite->Width()  / sand.worldScale.x;
+		transform.scale.y = sprite->Height() / sand.worldScale.y;
 
 		// collider should be 8 bit mask texture
 		// if its not then the color texture can be used actually so maybe this is fine
@@ -211,13 +211,13 @@ struct Regolith : EngineLoop
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
-		Texture sprite = Texture(_p(path), false);
-		Texture mask   = Texture(_p(path_mask), false);
+		r<Texture> sprite = mkr<Texture>(_p(path), false);
+		r<Texture> mask   = mkr<Texture>(_p(path_mask), false);
 		
-		assert(sprite.Length() == mask.Length());
+		assert(sprite->Length() == mask->Length());
 
 		Transform2D transform;
-		transform.scale = vec2(sprite.Width(), sprite.Height()) * sand.worldScale;
+		transform.scale = vec2(sprite->Width(), sprite->Height()) * sand.worldScale;
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);

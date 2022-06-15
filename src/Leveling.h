@@ -227,7 +227,7 @@ public:
 
 	r<Level> CreateLevel()
 	{
-		r<Level> level = std::make_shared<Level>(m_nextLevelId, m_app);
+		r<Level> level = mkr<Level>(m_nextLevelId, m_app);
 		m_levels.emplace(m_nextLevelId, level);
 		m_nextLevelId += 1;
 
