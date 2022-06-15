@@ -145,6 +145,9 @@ std::vector<vec2> make_contour(const bool* mask_grid, int width, int height)
 			}
 		}
 
+		// this should soft error, and then we can just explode the sprite
+		// same as if it generates zero colliders
+
 		assert(false && "Found no starting point");
 		
 		// this causes inf loop sometimes...

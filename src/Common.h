@@ -9,13 +9,21 @@
 
 #include <memory>
 #include <utility>
+#include <string>
 
 template<typename _t> using r = std::shared_ptr<_t>;
+template<typename _t, typename... _args> r<_t> mkr(_args&&... args) { return std::make_shared<_t>(std::forward<_args>(args)...); }
 
 // make glm the deafult math library
 // no need to think about if something is glm or not because it should
 // be ingrained into the framework at a core level
 using namespace glm;
+
+inline vec2 safe_normalize(const vec2& p)
+{
+	float n = sqrt((float)(p.x * p.x + p.y * p.y));
+	return (n == 0) ? vec2(0.f, 0.f) : vec2(p.x / n, p.y / n);
+}
 
 // return a random number between (0, x)
 inline float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
@@ -28,6 +36,7 @@ inline int get_rand(int x) { return rand() % x; }
 
 inline vec2 get_rand (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
 inline vec2 get_randc(float x, float y) { return vec2(get_randc(x), get_randc(y)); }
+inline vec2 get_randn(float scale)      { return get_rand(scale) * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
 
 struct Color
 {
@@ -59,39 +68,76 @@ struct Color
 
 struct Transform2D
 {
-	float x, y, z, sx, sy, r;
+	vec2 position;
+	vec2 scale;
+	float rotation;
+	float z;
 
 	Transform2D()
-		:  x(0), y(0), z(0), sx(1), sy(1), r(0)
+		: position (0.f, 0.f)
+		, scale    (1.f, 1.f)
+		, rotation (0.f)
+		, z        (0.f)
 	{}
 
 	Transform2D(
-		int x, int y, int z, int sx, int sy, int r
+		float x, float y, float z = 0.f, float sx = 1.f, float sy = 1.f, float r = 0.f
 	)
-		:  x(x), y(y), z(z), sx(sx), sy(sy), r(r)
+		: position (x, y)
+		, scale    (sx, sy)
+		, rotation (r)
+		, z        (z)
+	{}
+
+	Transform2D(
+		vec2 position, vec2 scale = vec2(0.f, 0.f), float rotation = 0.f
+	)
+		: position (position)
+		, scale    (scale)
+		, rotation (rotation)
+		, z        (0.f)
 	{}
 
 	glm::mat4 World() const
 	{
 		glm::mat4 world = glm::mat4(1.f);
-		world = glm::translate(world, glm::vec3(x, y, z));
-		world = glm::rotate(world, r, glm::vec3(0, 0, 1.f));
-		world = glm::scale(world, glm::vec3(sx, sy, 1.f));
+		world = glm::translate(world, vec3(position, z));
+		world = glm::rotate   (world, rotation, vec3(0.f, 0.f, 1.f));
+		world = glm::scale    (world, vec3(scale, 1.f));
 
 		return world;
 	}
 };
 
-inline float lerp(float a, float b, float w)
-{
-	return a + w * (b - a);
-}
+inline float lerp(float a, float b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec2  a, vec2  b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec3  a, vec3  b, float w) { return a + w * (b - a); }
+inline vec2  lerp(vec4  a, vec4  b, float w) { return a + w * (b - a); }
 
 inline float clamp(float x, float min, float max)
 {
-	     if (x < min) x = min;
-	else if (x > max) x = max;
+	if (x < min) return min;
+	if (x > max) return max;
 	return x; 
+}
+
+inline vec2 clamp(vec2 x, const vec2& min, const vec2& max)
+{
+	x.x = clamp(x.x, min.x, max.x);
+	x.y = clamp(x.y, min.y, max.y);
+	return x;
+}
+
+inline vec2 limit(const vec2& x, float max)
+{
+	float d = length(x);
+	if (d > max) return x / d * max;
+	return x;
+}
+
+inline float max(const vec2& v)
+{
+	return max(v.x, v.y);
 }
 
 template<typename _t>
@@ -105,4 +151,13 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 inline std::string _p(const std::string& filename)
 {
 	return "../assets/" + filename;
+}
+
+// vector helpers
+
+template<typename _t>
+void pop_erase(std::vector<_t>& list, size_t index)
+{
+	list.at(index) = list.back();
+	list.pop_back();
 }

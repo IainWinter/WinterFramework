@@ -7,10 +7,13 @@
 // should allow for handlers to classes without an interface for every type of function
 // and events arent an interface
 
-#include <functional>
-#include <unordered_map>
+#include "util/tsque.h"
+
+#include <mutex>
 #include <vector>
 #include <stdint.h>
+#include <functional>
+#include <unordered_map>
 
 using hash_t = uint64_t;
 
@@ -37,7 +40,7 @@ event_type make_event()
 
 struct event_pipe
 {
-	void* m_destination; // bound with type info in lambdas
+	void* m_destination = nullptr; // bound with type info in lambdas
 	std::function<void(void*)> m_send;
 	std::function<bool(void*)> m_only_if;
 
@@ -230,10 +233,10 @@ struct event_queue
 		event_type m_type;
 		_e m_event;
 
-		queued_event(event_type type, const char* where, _e&& e)
-			: m_where(where)
-			, m_type(type)
-			, m_event(e)
+		queued_event(event_type type, const char* where, const _e& event)
+			: m_where (where)
+			, m_type  (type)
+			, m_event (event)
 		{}
 
 		void send(event_manager* manager)
@@ -243,7 +246,8 @@ struct event_queue
 	};
 
 	event_manager* m_manager;
-	std::vector<queued_event_base*> m_queue;
+	tsque<queued_event_base*> m_queue;
+
 	const char* m_where_current;
 
 	event_queue(
@@ -254,20 +258,39 @@ struct event_queue
 	{}
 
 	template<typename _e>
-	void send(_e&& event)
+	void send(const _e& event)
 	{
-		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, std::forward<_e>(event)); // could use pool...
+		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, event); // should use pool...
 		m_queue.push_back(qe);
 	}
 
 	void execute()
 	{
-		std::vector<queued_event_base*> copy = m_queue;
-		for (queued_event_base* event : copy)
+		while (m_queue.size() > 0)
 		{
-			event->send(m_manager);
-			delete event;
+			queued_event_base* e = m_queue.pop_front();
+			e->send(m_manager);
+			delete e;
 		}
-		m_queue.clear();
+
+		//size_t i = 0;
+
+
+
+		//do
+		//{
+		//	size_t sizeThisIteration = m_queue.size();
+
+		//	for (; i < sizeThisIteration; i++)
+		//	{
+		//		queued_event_base* e = m_queue.at(i);
+		//		e->send(m_manager);
+		//		delete e;
+		//		m_queue.at(i) = nullptr; // debug
+		//	}
+		//}
+		//while (i < m_queue.size());
+
+		//m_queue.clear();
 	}
 };

@@ -3,6 +3,8 @@
 #include "Defines.h"
 #include "entt/entity/registry.hpp"
 
+// entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
+
 struct Entity;
 struct EntityWorld;
 using Order = void*;
@@ -153,6 +155,17 @@ public:
 		return (u32)m_handle; // isnt there like a smuggle functions for this?
 	}
 
+	bool IsAlive() const
+	{
+		return !!m_owning && m_owning->m_registry.valid(m_handle);
+	}
+
+	void Destroy() const
+	{
+		assert_is_valid();
+		m_owning->m_registry.destroy(m_handle);
+	}
+
 	void Destroy()
 	{
 		assert_is_valid();
@@ -161,10 +174,8 @@ public:
 		m_handle = entt::null;
 	}
 
-	bool IsAlive() const
-	{
-		return !!m_owning;
-	}
+	// could use template meta nonsense to remove Get/GetAll
+	// this api isnt the best :(s
 
 	// Testing components
 
@@ -184,20 +195,37 @@ public:
 
 	// Getting components
 
+	template<typename _t>
+	_t& Get()
+	{
+		return const_cast<_t&>(std::as_const(*this).Get<_t>());
+	}
+
 	template<typename... _t>
 	std::tuple<_t&...> GetAll()
 	{
+		//return const_cast<std::tuple<_t&...>>(std::as_const(*this).GetAll<_t...>());
+		// annoying
+
 		assert_is_valid();
 		assert_has_components<_t...>();
 		return m_owning->m_registry.get<_t...>(m_handle);
 	}
 
 	template<typename _t>
-	_t& Get()
+	const _t& Get() const
 	{
 		assert_is_valid();
 		assert_has_components<_t>();
 		return std::get<0>(GetAll<_t>());
+	}
+
+	template<typename... _t>
+	std::tuple<const _t&...> GetAll() const
+	{
+		assert_is_valid();
+		assert_has_components<_t...>();
+		return m_owning->m_registry.get<_t...>(m_handle);
 	}
 
 	// Adding components
@@ -215,6 +243,15 @@ public:
 	{
 		(Add<_t>(_t(components)),...);
 		return *this;
+	}
+
+	// Removing compoennts
+
+	template<typename... _t>
+	void Remove()
+	{
+		assert_has_components<_t...>();
+		m_owning->m_registry.remove<_t...>(m_handle);
 	}
 
 	// Asserts

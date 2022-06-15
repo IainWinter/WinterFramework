@@ -20,6 +20,21 @@
 // functions for updating its state
 // this is where global events would attach...
 
+//#define IW_METRICS_TIMER
+
+enum MetricName
+{
+	TICK,               // value is DeltaTime
+	TICK_FIXED_TIME     // value is FixedTime
+};
+
+struct event_RecordMetric
+{
+	MetricName metric; // name
+	float timePoint;   // TotalTime
+	float value;       // whatever value for metric, see metric name
+};
+
 struct EngineLoop
 {
 protected:
@@ -38,6 +53,9 @@ public:
 
 	void Init()
 	{
+		// attach system events
+		m_app.Attach<event_Shutdown>(this);
+
 		// default app
 		m_app.AddModule<Window>(WindowConfig{ "Untitled", 400, 400 }, m_app.GetRootEventQueue());
 		m_app.AddModule<LevelManager>(m_app);
@@ -46,13 +64,26 @@ public:
 		// default level
 		m_app.GetModule<LevelManager>().CreateLevel();
 
-		m_app.Attach<event_Shutdown>(this);
-		
+		// open window and create graphics context, allows sending data to device
+		m_app.GetModule<Window>().Init();
+
+		// init user code
 		_Init();
+
+		// init the default level
+		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
+
+		// init UI, defered for user set Imgui config flags
+		m_app.GetModule<Window>().InitUI();
+
+		// send events from init functions before first tick
+		TickEvents();
 	}
 
 	void Dnit()
 	{
+		// doesnt dnit window, should this delete all modules?
+
 		m_app.Detach(this);
 		_Dnit();
 	}
@@ -61,9 +92,17 @@ public:
 	{
 		Time::UpdateTime();
 
+#ifdef IW_METRICS_TIMER
+		LogMetric(TICK, Time::DeltaTime());
+#endif
+
 		m_fixedStepAcc += Time::DeltaTime();
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
+#ifdef IW_METRICS_TIMER
+			LogMetric(TICK_FIXED_TIME, Time::FixedTime());
+#endif
+
 			m_fixedStepAcc = 0;
 			
 			TickLevelFixed();
@@ -74,9 +113,8 @@ public:
 		TickLevelUI();
 		
 		TickFrame();
-
-		m_app.GetRootEventQueue()->execute();
-		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+		TickEvents();
+		TickTasks();
 	}
 
 	// Interface
@@ -131,6 +169,27 @@ private:
 		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
 		physics.Step(Time::FixedTime());
 	}
+
+	void TickEvents()
+	{
+		m_app.GetRootEventQueue()->execute();
+		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+	}
+
+	void TickTasks()
+	{
+		m_app.GetTaskPool()->TickCoroutines();
+	}
+
+#ifdef IW_METRICS_TIMER
+	// debug
+
+	void LogMetric(MetricName name, float value)
+	{
+		m_app.GetRootEventQueue()->send(event_RecordMetric{ name, Time::TotalTime(), value });
+	}
+
+#endif
 };
 
 template<typename _engine_loop>

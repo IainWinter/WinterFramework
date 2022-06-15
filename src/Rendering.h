@@ -22,7 +22,7 @@
 // so hard commit to tieing it up with the renderer
 
 #include "util/error_check.h" // gives gl
-#include "sdl/SDL_surface.h"
+#include "SDL2/SDL_surface.h"
 
 #define STB_IMAGE_IMPLEMENTATION // not great, I guess this should be in a cpp file
 #include "stb/stb_image.h"
@@ -84,7 +84,8 @@ struct IDeviceObject
 	IDeviceObject(
 		bool is_static
 	)
-		: m_static (is_static)
+		: m_static   (is_static)
+		, m_outdated (true)
 	{} 
 
 	void FreeHost()
@@ -97,6 +98,7 @@ struct IDeviceObject
 	{
 		assert_on_device();
 		_FreeDevice();
+		m_outdated = true;
 	}
 
 	void SendToDevice()
@@ -114,6 +116,8 @@ struct IDeviceObject
 			_InitOnDevice();
 			if (m_static) FreeHost();
 		}
+
+		m_outdated = false;
 	}
 
 	void SendToHost()
@@ -134,6 +138,16 @@ struct IDeviceObject
 		return m_static;
 	}
 
+	bool Outdated() const
+	{
+		return m_outdated;
+	}
+
+	void MarkForUpdate()
+	{
+		m_outdated = true;
+	}
+
 	// interface
 
 public:
@@ -149,6 +163,7 @@ protected:
 	virtual void _UpdateFromDevice() = 0;       // update host memory
 private:
 	bool m_static;
+	bool m_outdated;
 
 	// some helpers
 
@@ -203,6 +218,7 @@ public:
 	Usage UsageType()     const { return m_usage; }
 	u8* Pixels()          const { return (u8*)m_host; }
 	int BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
+	int Length()          const { return Width() * Height(); }
 
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
@@ -210,16 +226,45 @@ public:
 	// only rg -> Channels() = 2
 	// only rgb -> Channels() = 3
 	// full rgba -> Channels() = 4
-	      Color& At(int x, int y)       { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
-	const Color& At(int x, int y) const { assert_on_host(); return *(Color*)(Pixels() + (x + y * m_width) * m_channels * m_bytesPerChannel); }
 
-	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (_t*)&At(x, y).as_u32; }
-	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (_t*)&At(x, y).as_u32; }
+	// assumed non const At will be written to
 
-	void Clear(Color color = Color(0, 0, 0, 0))
+	      Color& At(int x, int y)       { return At(Index32(x, y)); }
+	const Color& At(int x, int y) const { return At(Index32(x, y)); }
+
+		  Color& At(int index32)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + Index(index32)); }
+	const Color& At(int index32) const { assert_on_host();                  return *(Color*)(Pixels() + Index(index32)); }
+
+	int Index32(int x, int y) const { return x + y * m_width; }
+	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
+	int Index  (int index32)  const { return index32 * m_channels * m_bytesPerChannel; }
+
+	template<typename _t> const _t* At(int x, int y) const { return (const _t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { return (      _t*)&At(x, y).as_u32; }
+
+	void ClearHost(Color color = Color(0, 0, 0, 0))
 	{
 		assert_on_host();
 		memset(m_host, color.as_u32, BufferSize());
+
+		MarkForUpdate();
+	}
+
+	void Resize(int width, int height)
+	{
+		assert_on_host();
+		assert_not_static();
+
+		if (m_width == width && m_height == height) return;
+
+		m_width = width;
+		m_height = height;
+
+		void* newMemory = realloc(m_host, BufferSize());
+		assert(newMemory && "failed to resize texture");
+		m_host = (u8*)newMemory;
+
+		MarkForUpdate();
 	}
 
 // interface
@@ -252,15 +297,27 @@ protected:
 
 	void _UpdateOnDevice() override
 	{
-		// really slow find fix
-		// is it the data or the point in time this function is getting called?
+		glBindTexture(GL_TEXTURE_2D, m_device);
 
-		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
+		int w, h;
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+
+		if (w != m_width || h != m_height)
+		{
+			gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(), Width(), Height(), 0, gl_format(), gl_type(), Pixels()));
+		}
+
+		else
+		{
+			gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(), gl_type(), Pixels()));
+		}
 	}
 
 	void _UpdateFromDevice() override
 	{
-		// real slow...
+		// really slow find fix
+		// is it the data or the point in time this function is getting called?
 
 		gl(glGetTextureImage(m_device, 0, gl_format(), gl_type(), BufferSize(), Pixels()));
 	}
@@ -403,7 +460,6 @@ private:
 
 		assert(false);
 		return -1;
-
 	}
 };
 
@@ -428,12 +484,17 @@ private:
 	using _attachments = std::unordered_map<AttachmentName, r<Texture>>;
 
 	_attachments m_attachments;        // deafult construction
-	GLuint       m_device = 0;
+	GLuint       m_device       = 0;
+
+	int          m_width        = 0;
+	int          m_height       = 0;
 
 	// public target specific functions
 
 public:
 	int NumberOfAttachments() const { return m_attachments.size(); }
+	int Width()               const { return m_width; }
+	int Height()              const { return m_height; }
 
 	      r<Texture>& Get(AttachmentName name)       { return m_attachments.at(name); }
 	const r<Texture>& Get(AttachmentName name) const { return m_attachments.at(name); }
@@ -455,9 +516,20 @@ public:
 		return texture;
 	}
 
+	void Resize(int width, int height)
+	{
+		if (m_width == width && m_height == height) return;
+
+		for (auto& [_, texture] : m_attachments) texture->Resize(width, height);
+		m_width = width;
+		m_height = height;
+
+		MarkForUpdate();
+	}
+
 	void Use()
 	{
-		if (!OnDevice()) SendToDevice();
+		if (!OnDevice() || Outdated()) SendToDevice();
 		gl(glBindFramebuffer(GL_FRAMEBUFFER, m_device));
 	}
 
@@ -602,14 +674,29 @@ public:
 	template<typename _t>       _t& Get(int i)       { assert_on_host(); return *(      _t*)m_host + i * BytesPerElement(); }
 	template<typename _t> const _t& Get(int i) const { assert_on_host(); return *(const _t*)m_host + i * BytesPerElement(); }
 
+	template<typename _t>
+	void Set(const std::vector<_t>& data)
+	{
+		Set(data.size(), data.data());
+	}
+
 	// length is number of elements
 	void Set(int length, const void* data)
 	{
-		assert_on_host();
+		// see below
+		if (m_length > 0) assert_on_host();
+
 		int size = length * BytesPerElement();
-		m_length = length;
-		m_host = realloc(m_host, size);
+		
+		if (m_length != length)
+		{
+			m_host = realloc(m_host, size);
+			m_length = length;
+		}
+
 		memcpy(m_host, data, size);
+
+		MarkForUpdate();
 	}
 
 	// length is number of elements
@@ -619,7 +706,11 @@ public:
 	// data is left uninitalized if there are gaps between offsets
 	void Append(int length, const void* data, int offset)
 	{
-		assert_on_host();
+		assert(offset >= 0 && "offset must be positive");
+
+		// this is weird, could recreate on host if its not there...
+		if (m_length > 0) assert_on_host();
+
 		assert(offset >= 0 && offset <= Length() && "offset must be positive and adjacent or inside of the buffer");
 		int size = length * BytesPerElement();
 		int osize = size + offset * BytesPerElement();
@@ -629,7 +720,10 @@ public:
 			m_length = length + offset;
 		}
 
+		assert_on_host(); // see above, could put it here, tihs allows you to resize but not copy into...
 		memcpy((char*)m_host + offset, data, size);
+
+		MarkForUpdate();
 	}
 
 // interface
@@ -726,6 +820,9 @@ public:
 		aNormal,
 		aTangent,
 		aBiTangent,
+		
+		aColor,
+
 		aCustom1,
 		aCustom2,
 		aCustom3,
@@ -736,24 +833,27 @@ public:
 		aIndexBuffer // the index buffer
 	};
 
-	enum DrawType
+	enum Topology
 	{
-		dTriangles,
-		dLoops
+		tTriangles,
+		tLines,
+		tLoops
 	};
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
 	
 	_buffers     m_buffers;            // deafult construction
 	GLuint       m_device   = 0;
+public:
+	Topology     topology   = tTriangles;
 
 // public mesh specific functions
 
 public:
 	int NumberOfBuffers() const { return m_buffers.size(); }
 
-	      r<Buffer>& Get(AttribName name)       { return m_buffers.at(name); }
-	const r<Buffer>& Get(AttribName name) const { return m_buffers.at(name); }
+	      r<Buffer>& Get(AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
+	const r<Buffer>& Get(AttribName name) const {                  return m_buffers.at(name); }
 
 	// instances a buffer
 	void Add(AttribName name, const r<Buffer>& buffer)
@@ -761,12 +861,14 @@ public:
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
 		m_buffers.emplace(name, buffer);
+
+		MarkForUpdate();
 	}
 
 	// creates an empty buffer
 	r<Buffer> Add(AttribName name, int length, int repeat, Buffer::ElementType type)
 	{
-		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type);
+		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type, IsStatic());
 		Add(name, buffer);
 
 		return buffer;
@@ -810,9 +912,10 @@ public:
 		return buffer;
 	}
 
-	void Draw(DrawType drawType = DrawType::dTriangles)
+	void Draw(Topology drawType = Topology::tTriangles)
 	{
-		if (!OnDevice()) SendToDevice();
+		if (!OnDevice() || Outdated()) SendToDevice();
+
 		gl(glBindVertexArray(m_device));
 
 		if (m_buffers.find(aIndexBuffer) != m_buffers.end())
@@ -921,12 +1024,13 @@ private:
 		return IsStatic() ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW;
 	}
 
-	GLenum gl_drawtype(DrawType drawType) const
+	GLenum gl_drawtype(Topology drawType) const
 	{
 		switch (drawType)
 		{
-			case DrawType::dTriangles: return GL_TRIANGLES;
-			case DrawType::dLoops:     return GL_LINE_LOOP;
+			case Topology::tTriangles: return GL_TRIANGLES;
+			case Topology::tLines:     return GL_LINES;
+			case Topology::tLoops:     return GL_LINE_LOOP;
 		}
 
 		assert(false);
@@ -999,7 +1103,7 @@ public:
 
 	void Set(const std::string& name, Texture& texture)
 	{
-		if (!texture.OnDevice()) texture.SendToDevice();
+		if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
 		gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
 		gl(glActiveTexture(gl_slot()));
 		gl(glUniform1i(gl_location(name), m_slot));
@@ -1124,7 +1228,55 @@ struct Camera
 
 		return camera;
 	}
+
+	vec2 ScreenSize() const
+	{
+		return vec2(w, h);
+	}
 };
+
+//struct Material
+//{
+//private:
+//	struct Prop
+//	{
+//		std::string name;
+//		virtual void SetOnDevice(ShaderProgram* program) = 0;
+//	};
+//
+//	template<typename _t>
+//	struct PropValue : Prop
+//	{
+//		_t value;
+//		void SetOnDevice(ShaderProgram* program)
+//		{
+//			program->Set(name, value);
+//		}
+//	};
+//
+//	std::unordered_map<std::string, Prop*> m_properties;
+//
+//public:
+//	template<typename _t>
+//	void Set(const std::string& name, const _t& value)
+//	{
+//		auto itr = m_properties.find(name);
+//		if (itr == m_properties.end())
+//		{
+//			m_properties[name] = new PropValue();
+//		}
+//
+//		m_properties[name].value = value;
+//	}
+//
+//	void SendToDevice(ShaderProgram* program)
+//	{
+//		for (auto& [name, prop] : m_properties)
+//		{
+//			prop->SetOnDevice(program);
+//		}
+//	}
+//};
 
  struct Sprite
  {
@@ -1133,14 +1285,6 @@ struct Camera
 	Sprite(r<Texture> source) : m_source(source) {}
 	Sprite(const Texture& sourceToCopy) : m_source(std::make_shared<Texture>(sourceToCopy)) {}
  	Texture& Get() { return *m_source; }
- };
-
- // this tag lets you mark only some sprite to get draw in normal render pass
-
- struct Renderable
- {
-	 int pad;
-	// Owning scene
  };
 
  // shader is becomming geared twoards Sand btw
@@ -1211,7 +1355,10 @@ struct SpriteRenderer2D
 									"vec4 spriteColor = texture(sprite, TexCoords);"
 									"if (spriteColor.a > .7) spriteColor.a = 1.f;" // round up for health thing
 									"color = tint * spriteColor;"
-									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, spriteColor.a > 0);" // this is going to be an index to an array on the cpu or something like that
+
+									"if (color.a == 0) discard;"
+
+									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, color.a);" // this is going to be an index to an array on the cpu or something like that
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
@@ -1258,7 +1405,7 @@ struct SpriteRenderer2D
 	}
 };
 
-struct TriangleRenderer2D
+struct MeshRenderer2D
 {
 	ShaderProgram m_shader;
 
@@ -1268,25 +1415,29 @@ struct TriangleRenderer2D
 	}
 	m_render_state;
 
-	TriangleRenderer2D()
+	MeshRenderer2D()
 	{
 		const char* source_vert = 
 								"#version 330 core\n"
 								"layout (location = 0) in vec2 vertex;"
+								"layout (location = 5) in vec4 color;"
 								"uniform mat4 model;"
 								"uniform mat4 projection;"
+								"out vec4 vertColor;"
 								"void main()"
 								"{"
+									"vertColor = color;"
 									"gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);"
 								"}";
 
 		const char* source_frag = 
 								"#version 330 core\n"
+								"in vec4 vertColor;"
 								"out vec4 color;"
-								"uniform vec4 tint;"
 								"void main()"
 								"{"
-									"color = tint;"  
+									//"if (vertColor.a == 0) { vertColor = vec4(1, 1, 1, 1); }"
+									"color = vertColor;"  
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);
@@ -1315,8 +1466,7 @@ struct TriangleRenderer2D
 		m_shader.Use();
 		m_shader.Set("projection", m_render_state.camera_proj);
 		m_shader.Set("model",      transform.World());
-		m_shader.Set("tint",       Color().as_v4());
 
-		mesh.Draw(Mesh::dLoops);
+		mesh.Draw(mesh.topology);
 	}
 };

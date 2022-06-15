@@ -1,0 +1,92 @@
+#pragma once
+
+#include "Leveling.h"
+#include "CoordTranslation.h"
+#include "Windowing.h"
+#include "Sand/Sand.h"
+#include "Events.h"
+
+#include "Components/Player.h"
+
+
+struct System_PlayerController : System<System_PlayerController>
+{
+	Entity playerEntity;
+
+	void Init()
+	{
+		Attach<event_Input>();
+		Attach<event_Mouse>();
+		playerEntity = FirstEntityWith<Player>();
+	}
+
+	void Update()
+	{
+		auto [player, transform, body] = playerEntity.GetAll<Player, Transform2D, Rigidbody2D>();
+
+		vec2 direction = safe_normalize(player.AttackLocationInput - transform.position);
+		vec2 position = transform.position + direction * 1.f;
+		
+		direction *= 2000.f;
+
+		player.m_attackTimer -= Time::DeltaTime();
+		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
+		{
+			player.m_attackTimer = player.AttackTime;
+
+			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 255, 255, 255))
+				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
+		}
+
+		//if (player.AttackFireInput)
+		//{
+		//	Send(event_SpawnExplosion { vec2(20, 0), 20 });
+		//}
+	}
+
+	void FixedUpdate()
+	{
+		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
+
+		// allow for collision response...
+
+		vec2 vel = lerp(
+			body.GetVelocity(),
+			safe_normalize(player.MovementInput) * player.MovementSpeed,
+			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
+
+		body.SetVelocity(vel);
+	}
+
+	void on(event_Input& e)
+	{
+		Player& player = playerEntity.Get<Player>();
+
+		switch (e.name)
+		{
+			case InputName::UP:    player.MovementInput.y += e.state; break;
+			case InputName::DOWN:  player.MovementInput.y -= e.state; break;
+			case InputName::RIGHT: player.MovementInput.x += e.state; break;
+			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
+
+			case InputName::AIM_X:  player.AttackLocationInput.x = e.state;        break;
+			case InputName::AIM_Y:  player.AttackLocationInput.y = e.state;        break;
+			case InputName::ATTACK: player.AttackFireInput        = e.state != 0.f; break;
+		}
+	}
+
+	// translates mouse to controller
+
+	void on(event_Mouse& e)
+	{
+		Transform2D& transform = playerEntity.Get<Transform2D>();
+
+		// calculate the direction from the player to the target
+		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
+		//vec2 relitiveTarget = target - transform.position;
+
+		SendNow(event_Input{ InputName::AIM_X, target.x });
+		SendNow(event_Input{ InputName::AIM_Y, target.y });
+		SendNow(event_Input{ InputName::ATTACK, (float)e.button_left });
+	}
+};

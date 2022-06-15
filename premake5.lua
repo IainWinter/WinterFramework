@@ -18,21 +18,24 @@ project "Framework"
 	files { 
 		"src/**.h",
 
+		"src/ext/cpp/Time.cpp",
+
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 
-		"src/ext/cpp/Time.cpp",
-		"test/Window_Test.cpp",
-		--"test/Leveling_Test.cpp"
-		--"game/**.h",
-		--"game/**.cpp"
+		"vendor/sqlite/src/sqlite3.c",
+
+		-- these are game files, remove for just framework
+
+		--"test/Window_Test.cpp",
+		"game/**.h",
+		"game/**.cpp"
 	}
 
 	includedirs {
 		"src",
 
-		"vendor/sdl/include",
 		"vendor/box2d/include",
 		"vendor/imgui/include",
 		"vendor/hitbox/include",
@@ -41,11 +44,16 @@ project "Framework"
 		"vendor/glm/include",
 		"vendor/glad/include",
 		"vendor/asio/include",
-		"vendor/json/include"
+		"vendor/json/include",
+
+		"vendor/sqlite/include",
+
+		-- these are game files, see above
+
+		"game"
 	}
 
 	libdirs {
-		"vendor/sdl/lib",
 		"vendor/box2d/lib",
 		"vendor/imgui/lib",
 		"vendor/hitbox/lib" 
@@ -55,18 +63,32 @@ project "Framework"
 		"SDL2",
 		"box2d",
 		"ImGui", 
-		"hitbox",
-		"gdi32",
-		"ws2_32",
-		"wsock32",
-		"user32",
-		"kernel32",
-		"shell32"
+		"hitbox"
 	}
 
 	defines { 
 		"IW_DEBUG"
 	}
+
+	filter "system:Windows"
+		includedirs {
+			"vendor/sdl/include"
+		}
+
+		libdirs {
+			"vendor/sdl/lib"
+		}
+
+		links {
+			"gdi32",
+			"ws2_32",
+			"wsock32",
+			"user32",
+			"kernel32",
+			"shell32"
+		}
+
+		defines { "IW_PLATFORM_WINDOWS" }
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }

@@ -6,6 +6,32 @@
 inline b2Vec2 _tb(const vec2& v) { return b2Vec2(v.x, v.y); }
 inline vec2 _fb(const b2Vec2& v) { return vec2(v.x, v.y); }
 
+//struct Collider2D
+//{
+//	enum ColliderType
+//	{
+//		CIRCLE,
+//		TRIANGLE
+//	};
+//
+//private:
+//	ColliderType m_type;
+//	b2Shape*     m_shape = nullptr;
+//
+//public:
+//	Collider2D(
+//		ColliderType type
+//	)
+//		: m_type (type)
+//	{
+//		switch ()
+//	}
+//
+//
+//
+//
+//};
+
 struct Rigidbody2D
 {
 public:
@@ -15,7 +41,7 @@ private:
 	b2BodyDef m_body; // Init values for Physics Add
 	b2Body* m_instance; // If null, not in physics world
 	
-	friend class PhysicsWorld;
+	friend struct PhysicsWorld;
 
 public:
 	Rigidbody2D(
@@ -25,8 +51,8 @@ public:
 		, LastTransform (transform) 
 	{
 		m_body.type = b2_dynamicBody;
-		m_body.position = b2Vec2(transform.x, transform.y);
-		m_body.angle = transform.r;
+		m_body.position = _tb(transform.position);
+		m_body.angle = transform.rotation;
 	}
 	
 	// functions for setting properties for box2d...
@@ -47,9 +73,40 @@ public:
 	void ApplyForce(vec2 force, vec2 offsetFromCenter) { assert_in_world(); m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }
 	void ApplyTorque(float force)                      { assert_in_world(); m_instance->ApplyTorque(force, true); }
 
+	// these dont work?
+
+	void SetFixedRotation(bool isFixed) { assert_in_world(); m_instance->SetFixedRotation(isFixed); }
+	bool  IsFixedRotation()             { assert_in_world(); m_instance->IsFixedRotation(); }
+
 	// functions that should hide the box2d api, but dont right now
 
-	void AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); m_instance->CreateFixture(&shape, density); }
+	void RemoveColliders() 
+	{ 
+		assert_in_world();
+		b2Fixture* fix = m_instance->GetFixtureList();
+		while (fix)
+		{
+			b2Fixture* next = fix->GetNext();
+			m_instance->DestroyFixture(fix);
+			fix = next;
+		}
+	}
+
+	int GetColliderCount() const
+	{ 
+		assert_in_world();
+		b2Fixture* fix = m_instance->GetFixtureList();
+		int count = 0;
+		while (fix) { fix = fix->GetNext(); count += 1; }
+		return count;
+	}
+
+	b2Fixture* AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); return m_instance->CreateFixture(&shape, density); }
+	
+	      b2Fixture* GetCollider(int i = 0)       { assert_in_world(); return m_instance->GetFixtureList() + i; }
+	const b2Fixture* GetCollider(int i = 0) const { assert_in_world(); return m_instance->GetFixtureList() + i; }
+
+	float GetMass() const { assert_in_world(); return m_instance->GetMass(); }
 
 private:
 	void assert_in_world() const
@@ -91,6 +148,11 @@ struct PhysicsWorld
 		body.m_instance = m_world->CreateBody(&body.m_body);
 	}
 	
+	void Remove(const Rigidbody2D& body)
+	{
+		m_world->DestroyBody(body.m_instance);
+	}
+
 	void Remove(Rigidbody2D& body)
 	{
 		m_world->DestroyBody(body.m_instance);

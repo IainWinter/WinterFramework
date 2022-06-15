@@ -1,7 +1,11 @@
 #pragma once
 
-#include "Entity.h"
 #include "Common.h"
+#include "Entity.h"
+#include "Event.h"
+#include "Task.h"
+
+// might want to change the name of this file, it is a little confusing to include
 
 // This holds the global state for the program
 // each module represents a plugin / major piece of the framework
@@ -26,6 +30,8 @@ private:
 
 	event_manager m_rootBus; // all engine events + inter level comms
 	event_queue m_rootQueue;
+	
+	TaskPool m_task; // one thread pool per app makes the most sense
 
 public:
 	Application()
@@ -44,16 +50,28 @@ public:
 	template<typename    _t> void                   RemoveModule()             { m_modules.Remove<_t>(); }
 	template<typename    _t, typename... _args> _t& AddModule(_args&&... args) { return m_modules.Add<_t>(std::forward<_args>(args)...); }
 
-	event_queue* GetRootEventQueue() // window needs this, but annoying to have to expose like this
-	{
-		return &m_rootQueue;
-	}
+	// window needs this, but annoying to have to expose like this
+	// or maybe these are the only two access functions
+	// and the below are removed
+
+	event_queue* GetRootEventQueue() { return &m_rootQueue; }
+	TaskPool*    GetTaskPool()       { return &m_task; }
+
+	// subject to removal ? \/
+
+	// access to the root queue
+	// ideally these wouldnt be here and everything would be through systems
 
 	template<typename _t, typename _h> void Attach (_h*   handler) { m_rootBus.attach<_t, _h>(handler); }
 	template<typename _t>              void Detach (void* handler) { m_rootBus.detach<_t>(handler); }
 	                                   void Detach (void* handler) { m_rootBus.detach(handler); }
 	template<typename _t>              void Send   (_t&& event)    { m_rootQueue.send(event); }
 	template<typename _t>              void SendNow(_t&& event)    { m_rootBus.send(event); }
+
+	// acess to thread pool
+
+	void Thread   (const std::function<void()>& work) { m_task.Thread(work); }
+	void Coroutine(const std::function<bool()>& work) { m_task.Coroutine(work); }
 };
 
 struct Level;
@@ -73,6 +91,8 @@ private:
 
 	std::vector<SystemBase*> m_systems; // updater functions
 
+	bool m_initialized = false;
+
 	template<typename _t> friend struct System;
 	                      friend struct SystemBase;
 
@@ -83,16 +103,13 @@ public:
 		, m_levelQueue (&m_levelBus)
 	{}
 	
-	~Level()
-	{
-		// delete all systems, we made copies so this is always valid
-		for (SystemBase* system : m_systems) delete system;
-	}
+	~Level(); // calls SystemBase::~SystemBase
 
 	// EngineLoop needs GetLevelEventQueue, but annoying to have to expose like this
 
 	int                             Id()                const { return m_levelId; }
 	const std::vector<SystemBase*>& GetSystems()        const { return m_systems; }
+	EntityWorld&                    GetWorld()                { return m_world; }
 	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	Entity                          CreateEntity()            { return m_world.Create(); }
 	
@@ -115,12 +132,7 @@ public:
 
 private:
 	template<typename _t>
-	SystemBase* NewSystem(const _t& system_toCopy)
-	{
-		SystemBase* system = new _t(system_toCopy);
-		system->m_level = this;
-		return system;
-	}
+	SystemBase* NewSystem(const _t& system_toCopy);
 };
 
 struct SystemBase
@@ -137,10 +149,22 @@ protected:
 	template<typename    _t> _t&                          GetModule()       { assert_init(); return m_level->m_app->GetModule<_t>(); }
 	template<typename... _t> std::tuple<_t&...>           GetModules()      { assert_init(); return m_level->m_app->GetModules<_t...>(); }
 
+	// some helpers
+	template<typename... _t> Entity                       FirstEntityWith() { assert_init(); return std::get<0>(*m_level->m_world.QueryWithEntity<_t...>().begin()); }
+
 	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
 	template<typename _t> void SendNow      (_t&& event) { assert_init(); m_level->m_levelBus.send(event); }
-	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->m_rootQueue.send(event); }
-	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->m_rootBus.send(event); }
+	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->Send(event); }
+	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->SendNow(event); }
+
+	// Entities
+
+	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
+
+	// Threading
+	
+	void Thread   (const std::function<void()>& work) { assert_init(); m_level->m_app->Thread(work); }
+	void Coroutine(const std::function<bool()>& work) { assert_init(); m_level->m_app->Coroutine(work); }
 
 public:
 	virtual ~SystemBase()
@@ -221,7 +245,7 @@ public:
 		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
 	}
 
-	void InitLevel(r<Level>& level)
+	void InitLevel(r<Level> level)
 	{
 		for (SystemBase* system : level->GetSystems())
 		{
@@ -229,7 +253,7 @@ public:
 		}
 	}
 
-	void DnitLevel(r<Level>& level)
+	void DnitLevel(r<Level> level)
 	{
 		for (SystemBase* system : level->GetSystems())
 		{
@@ -243,4 +267,21 @@ public:
 	}
 };
 
+// Level Manager
+
 inline static r<Level> m_current = nullptr;
+
+// Level
+
+inline Level::~Level()
+{
+	for (SystemBase* system : m_systems) delete system;
+}
+
+template<typename _t>
+inline SystemBase* Level::NewSystem(const _t& system_toCopy)
+{
+	SystemBase* system = new _t(system_toCopy);
+	system->m_level = this;
+	return system;
+}

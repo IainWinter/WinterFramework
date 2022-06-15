@@ -11,104 +11,82 @@ struct Player
 	float speed = 300;
 };
 
-struct EventLoggingSystem : System<EventLoggingSystem>
-{
-	void Init()
-	{
-		Attach<event_Shutdown>();
-		Attach<event_WindowResize>();
-		Attach<event_Mouse>();
-		Attach<event_Input>();
-	}
+//enum EnemyType
+//{
+//	FIGHTER,
+//	BOMB,
+//	STATION,
+//	BASE
+//};
+//
+//struct event_SpawnEnemy
+//{
+//	EnemyType enemyType;
+//};
+//
+//struct Enemy
+//{
+//
+//};
+//
+//struct EnemySpawnnerSystem : System<EnemySpawnnerSystem>
+//{
+//	void Init()
+//	{
+//		Attach<event_SpawnEnemy>();
+//	}
+//
+//	void Update()
+//	{
+//		// getDifficulty
+//	}
+//
+//	void on(event_SpawnEnemy& e)
+//	{
+//		std::string spritePath;
+//		Entity enemy = LevelManager::CurrentLevel()->CreateEntity().AddAll(Transform2D{}, Enemy{});
+//
+//		switch (e.enemyType)
+//		{
+//			case FIGHTER:
+//			{
+//				enemy.Add<Sprite>("enemy_fighter.png");
+//				break;
+//			}
+//			case BOMB:
+//			{
+//				spritePath = "enemy_bomb.png";
+//				break;
+//			}
+//			case STATION:
+//			{
+//				spritePath = "enemy_station.png";
+//				break;
+//			}
+//			case BASE:
+//			{
+//				spritePath = "enemy_base.png";
+//				break;
+//			}
+//		}
+//	}
+//};
+//
+//struct EnemyAISystem : SystemBase
+//{
+//	void Update()
+//	{
+//		for (auto [transform, enemy] : Query<Transform2D, Enemy>())
+//		{
+//
+//		}
+//	}
+//};
 
-	void on(event_Shutdown& e)
-	{
-		printf(
-			"[Event] Recieved: event_Shutdown {}\n");
-	}
-
-	void on(event_WindowResize& e)
-	{
-		printf(
-			"[Event] Recieved: event_WindowResize {"
-			"\n\twidth %d"
-			"\n\theight %d"
-			"\n}\n", e.width, e.height);
-	}
-
-	void on(event_Mouse& e)
-	{	
-		printf(
-			"[Event] Recieved: event_Mouse {"
-			"\n\tpixel_x %d"
-			"\n\tpixel_y %d"
-			"\n\tscreen_x %f"
-			"\n\tscreen_y %f"
-			"\n\tvel_x %f"
-			"\n\tvel_y %f"
-			"\n\tbutton_left %d"
-			"\n\tbutton_middle %d"
-			"\n\tbutton_right %d"
-			"\n\tbutton_x1 %d"
-			"\n\tbutton_x2 %d"
-			"\n\tbutton_repeat %d"
-			"\n}\n", e.pixel_x, e.pixel_y, e.screen_x, e.screen_y, 
-				     e.vel_x, e.vel_y, e.button_left, e.button_middle,
-				     e.button_right, e.button_x1, e.button_x2, e.button_repeat);
-	}
-
-	void on(event_Input& e)
-	{
-		static std::unordered_map<InputName, const char*> names = 
-		{
-			{ InputName::_NONE, "None" },
-			{ InputName::UP,    "Up" },
-			{ InputName::DOWN,  "Down" },
-			{ InputName::RIGHT, "Right" },
-			{ InputName::LEFT,  "Left" },
-		};
-
-		printf(
-			"[Event] Recieved: event_Input {"
-			"\n\tname %s"
-			"\n\tstate %f"
-			"\n}\n", names.at(e.name), e.state);
-	}
-};
-
-struct PhysicsInterpolationSystem : SystemBase
-{
-	float m_acc = 0.f;
-
-	void Update() override
-	{
-		m_acc += Time::DeltaTime();
-		float ratio = clamp(m_acc / Time::RawFixedTime(), 0.f, 1.f);
-
-		for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
-		{
-			if (!body.InWorld()) continue;
-
-			transform.x = lerp(body.LastTransform.x, body.GetPosition().x, ratio);
-			transform.y = lerp(body.LastTransform.y, body.GetPosition().y, ratio);
-			transform.r = lerp(body.LastTransform.r, body.GetAngle(),      ratio);
-		}
-	}
-
-	void FixedUpdate() override
-	{
-		m_acc = 0;
-
-		for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
-		{
-			if (!body.InWorld()) continue;
-
-			body.LastTransform.x = body.GetPosition().x;
-			body.LastTransform.y = body.GetPosition().y;
-			body.LastTransform.r = body.GetAngle();
-		}
-	}
-};
+#include "ext/systems/EventLogging.h"
+#include "ext/systems/PhysicsInterpolation.h"
+#include "ext/systems/SimpleSpriteRender.h"
+#include "ext/systems/SimpleTriangleRender.h"
 
 struct ForceTwoardwsMouseSystem : SystemBase
 {
@@ -124,35 +102,6 @@ struct ForceTwoardwsMouseSystem : SystemBase
 			float fy = 0 - transform.y;
 
 			body.ApplyForce(vec2(fx, fy));
-		}
-	}
-};
-
-struct SpriteRenderer2DSystem : SystemBase
-{
-	void Update() override
-	{
-		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
-
-		render.Begin(camera);
-		render.Clear();
-		for (auto [transform, sprite, _] : Query<Transform2D, Sprite, Renderable>())
-		{
-			render.DrawSprite(transform, sprite);
-		}
-	}
-};
-
-struct TriangleRenderer2DSystem : SystemBase
-{
-	void Update() override
-	{
-		auto [camera, render] = GetModules<Camera, TriangleRenderer2D>();
-
-		render.Begin(camera, false);
-		for (auto [transform, mesh] : Query<Transform2D, Mesh>())
-		{
-			render.DrawMesh(transform, mesh);
 		}
 	}
 };
@@ -209,9 +158,10 @@ struct CharacterController : System<CharacterController>
 		auto [body] = *Query<Rigidbody2D>().begin();
 
 		float ts = Time::TimeScale();
+		vec2 pos = body.GetPosition();
 
 		ImGui::Begin("#");
-		ImGui::SliderFloat2("pos", (float*)&body.GetPosition(), -10, 10);
+		ImGui::SliderFloat2("pos", (float*)&pos, -10, 10);
 		ImGui::SliderFloat("speed", &speed, 0, 1000);
 		ImGui::SliderFloat("time", &ts, 0, 2);
 		ImGui::Text("Deltatime: %f", Time::RawDeltaTime());
@@ -275,15 +225,12 @@ struct WindowTest : EngineLoop
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
-		level->AddSystem(PhysicsInterpolationSystem());
+		level->AddSystem(PhysicsInterpolation());
 		level->AddSystem(CharacterController());
 		level->AddSystem(Sand_System_Update());
-		level->AddSystem(SpriteRenderer2DSystem());
+		level->AddSystem(SimpleSpriteRenderer2D());
 		//level->AddSystem(EventLoggingSystem());
-
 		//level->AddSystem(ForceTwoardwsMouseSystem());
-
-		m_app.GetModule<LevelManager>().InitLevel(level);
 	}
 
 	void ConfigureModules()
@@ -343,8 +290,6 @@ struct WindowTest : EngineLoop
 		entity.Add<Sprite>(sprite);
 
 		physics.AddEntity(entity);
-
-		//m_app.Send(event_SandAddSprite{entity});
 
 		return entity;
 	}
