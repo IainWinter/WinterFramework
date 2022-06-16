@@ -220,6 +220,15 @@ public:
 		, m_app         (&owning)
 	{}
 
+	// dont worry about move / copies...
+	void Destroy()
+	{
+		while (m_levels.size() > 0)
+		{
+			DestroyLevel(m_levels.begin()->first);
+		}
+	}
+
 	// Creating levels
 	// this is where they would be loaded form file
 	// that would call CreateLevel and add all its Systems then call InitLevel
@@ -241,6 +250,13 @@ public:
 	void DestroyLevel(int levelId)
 	{
 		r<Level> level = m_levels.at(levelId);
+		DnitLevel(level);
+
+		if (m_current == level)
+		{
+			m_current = nullptr;
+		}
+
 		m_levels.erase(levelId);
 		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
 	}

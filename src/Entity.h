@@ -110,6 +110,11 @@ private:
 public:
 	Entity Create();
 
+	void Clear()
+	{
+		m_registry.clear();
+	}
+
 	template<typename... _t>
 	EntityQuery<_t...> Query()
 	{

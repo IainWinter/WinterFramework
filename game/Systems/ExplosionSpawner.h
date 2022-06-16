@@ -22,17 +22,16 @@ private:
 	{
 		const auto onCreate = [](Entity& e)
 		{
-			e.Add<CellProjectile>(0u);
-			e.Add<CellLife>(get_rand(.4f) + .1f);
+			e.Add<CellProjectile>(0u, 35, .8f);
 		};
 
-		float r = 500.f;
+		float r = 700.f;
 
 		for (float i = 0; i < power; i += 1.f) // global power scale
 		{
 			float speed = get_rand(r) + r / 3.f;
-			vec2 velocity = get_randn(1.f) * speed;
-			Send(event_SpawnSandCell { position, velocity, Color(150, 50, 50), .1f, onCreate });
+			vec2 velocity = get_randn(speed);
+			Send(event_Sand_CreateCell(position, velocity, Color(205 + get_rand(50), 218, 20), .4f, onCreate));
 		}
 	}
 };

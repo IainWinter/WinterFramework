@@ -5,15 +5,24 @@
 
 struct SimpleMeshRenderer2D : SystemBase
 {
+private:
+	r<MeshRenderer2D> m_render;
+
+public:
+	void Init() override
+	{
+		m_render = mkr<MeshRenderer2D>();
+	}
+
 	void Update() override
 	{
-		auto [camera, render] = GetModules<Camera, MeshRenderer2D>();
+		auto [camera] = GetModules<Camera>();
 
-		render.Begin(camera, false);
+		m_render->Begin(camera, false);
 		for (auto [transform, mesh] : Query<Transform2D, Mesh>())
 		{
 			// need to check for if mesh is 3d or not, maybe have a dimension in mesh or a simple typedef to distinguish
-			render.DrawMesh(transform, mesh);
+			m_render->DrawMesh(transform, mesh);
 		}
 	}
 };

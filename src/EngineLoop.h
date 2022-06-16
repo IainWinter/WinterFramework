@@ -83,7 +83,7 @@ public:
 	void Dnit()
 	{
 		// doesnt dnit window, should this delete all modules?
-
+		m_app.GetModule<LevelManager>().Destroy(); // delete all entities before window (glcontext) is destroied
 		m_app.Detach(this);
 		_Dnit();
 	}

@@ -8,7 +8,6 @@
 
 #include "Components/Player.h"
 
-
 struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
@@ -33,15 +32,8 @@ struct System_PlayerController : System<System_PlayerController>
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-
-			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 255, 255, 255))
-				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
+			Send(event_Sand_CreateCell(position, direction, Color(255, 255, 255), 5.f, [this](Entity e) { e.Add<CellProjectile>(playerEntity.Id()); }));
 		}
-
-		//if (player.AttackFireInput)
-		//{
-		//	Send(event_SpawnExplosion { vec2(20, 0), 20 });
-		//}
 	}
 
 	void FixedUpdate()

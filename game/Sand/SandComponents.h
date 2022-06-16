@@ -7,19 +7,15 @@ struct Cell
 {
 	vec2 pos;
 	vec2 vel;
-	float dampen = 20;
 	Color color;
+	float life = 0.f;
 };
 
 struct CellProjectile
 {
 	u32 owner; // for no damage to who fired
-	int health = 15; // how many cells can this projectile destroy
-};
-
-struct CellLife
-{
-	float life;
+	int health = 25; // how many cells can this projectile destroy
+	float turnOnHitRate = .2f; // percent of velocity that should be used to turn on each cell hit
 };
 
 struct SandSprite
@@ -31,7 +27,7 @@ struct SandSprite
 	int hasCore = false;  // if the list is health or every pixel
 	//int originalCoreCount = 0;
 
-	int cellStrength = 0;
+	int cellStrength = 1;
 	int cellCount = 0;
 
 	Texture& Get() { return *colliderMask; }

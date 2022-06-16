@@ -5,15 +5,24 @@
 
 struct SimpleSpriteRenderer2D : SystemBase
 {
+private:
+	r<SpriteRenderer2D> m_render;
+
+public:
+	void Init() override
+	{
+		m_render = mkr<SpriteRenderer2D>();
+	}
+
 	void Update() override
 	{
-		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
+		auto [camera] = GetModules<Camera>();
 
-		render.Begin(camera);
-		render.Clear();
+		m_render->Begin(camera);
+		m_render->Clear();
 		for (auto [transform, sprite] : Query<Transform2D, Sprite>())
 		{
-			render.DrawSprite(transform, sprite);
+			m_render->DrawSprite(transform, sprite);
 		}
 	}
 };

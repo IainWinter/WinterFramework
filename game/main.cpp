@@ -21,6 +21,8 @@
 #include "Systems/EnemyController.h"
 #include "Systems/KeepOnScreen.h"
 
+#include "Systems/FireWeaponAfterDelay.h"
+
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/SimpleSpriteRender.h"
 #include "ext/systems/SimpleMeshRender.h"
@@ -43,6 +45,7 @@ struct MetricsSystem : System<MetricsSystem>
 {
 	std::vector<float> m_deltaTime;
 	std::vector<float> m_fixedTimePoint;
+	std::vector<int> m_cellCounts;
 
 	void Init()
 	{
@@ -60,15 +63,25 @@ struct MetricsSystem : System<MetricsSystem>
 			ImGui::Text("x: %f y: %f", transform.position.x, transform.position.y);
 		}
 
-		//ImPlot::SetNextAxesToFit();
-		//ImPlot::BeginPlot("Times");
-		//ImPlot::PlotLine("Delta time", m_deltaTime.data(), m_deltaTime.size());
-		//ImPlot::EndPlot();
+		int cellCount = 0;
+
+		for (auto _ : Query<Cell>())
+		{
+			cellCount += 1;
+		}
+
+		m_cellCounts.push_back(cellCount);
+
+		ImPlot::SetNextAxesToFit();
+		ImPlot::BeginPlot("Times");
+		ImPlot::PlotLine("Cell count", m_cellCounts.data(), m_cellCounts.size());
+		ImPlot::EndPlot();
 
 		ImGui::End();
 
 
-		if (m_deltaTime.size() > 200) m_deltaTime.erase(m_deltaTime.begin()); // lots of copies
+		if (m_deltaTime .size()  > 200) m_deltaTime .erase(m_deltaTime .begin()); // lots of copies
+		if (m_cellCounts.size() > 1000) m_cellCounts.erase(m_cellCounts.begin()); // lots of copies
 	}
 
 	void on(event_RecordMetric& e)
@@ -92,6 +105,10 @@ struct Regolith : EngineLoop
 		ConfigureInputMapping();
 
 		ConfigureMainGameLevel();
+	}
+
+	void _Dnit()
+	{
 	}
 
 	// Init
@@ -120,6 +137,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_ExplosionSpawner());
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
+		level->AddSystem(System_FireWeaponAfterDelay());
 
 		level->AddSystem(MetricsSystem());
 
@@ -130,8 +148,6 @@ struct Regolith : EngineLoop
 
 	void ConfigureModules()
 	{
-		m_app.AddModule<SpriteRenderer2D>();
-		m_app.AddModule<MeshRenderer2D>();
 		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
 		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
 
@@ -160,12 +176,15 @@ struct Regolith : EngineLoop
 		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
 		player.Get<SandSprite>().invulnerable = true;
 		player.Add<Player>();
+		player.Add<Rigidbody2D>().SetFixedRotation(true);
 
 		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(10.f, 0.f)));
 
 		for (int i = 0; i < 2; i++)
 		{
-			Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
+			Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
+			//Entity entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
+			//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
 			//entity.Add<TurnTwoardsTarget>(target);
 			//entity.Add<Flocker>();
 			//entity.Add<ExplodeNearTarget>(player);
@@ -242,104 +261,3 @@ void setup()
 {
 	RunEngineLoop<Regolith>();
 }
-
-// rip
-
-//struct Phase
-//{
-//	float StartDifficulty;
-//	float EndDifficulty;
-//	int EndScore;
-//
-//	Phase(float startDifficulty, float endDifficulty, int endScore)
-//	{
-//		StartDifficulty = startDifficulty;
-//		EndDifficulty = endDifficulty;
-//		EndScore = endScore;
-//	}
-//
-//	float GetDifficulty(int relScore) 
-//	{
-//		// invalid deal with later ---> next step
-//		// difficulty = (score < 0.5 ? 8 * score * score * score * score : 1 - pow(-2 * score + 2, 4) / 2);
-//		float RelScore = relScore;
-//		return lerp(StartDifficulty, EndDifficulty, RelScore);
-//	}
-//};
-//
-//struct Level
-//{
-//	// startpoint and endpoint are difficulty measurements
-//	std::vector<Phase> phases;
-//
-//public: 
-//	void AddPhase(float startDifficulty, float endDifficulty, int scoreLength)
-//	{
-//		assert(scoreLength > 0);
-//
-//		int currentScore = 0;
-//		if (phases.size() > 0)
-//		{
-//			currentScore = phases.back().EndScore;
-//		}
-//
-//		phases.push_back(Phase(startDifficulty, endDifficulty, currentScore + scoreLength));
-//	}
-//
-//	Phase& GetPhase(int currentScore)
-//	{
-//		assert(phases.size() > 0);
-//
-//		for (int i = 0; i < phases.size(); i++)
-//		{
-//			if (currentScore < phases[i].EndScore)
-//			{
-//				return phases[i];
-//			}
-//		}
-//
-//		return phases.back();
-//	}
-//
-//	void SpawnNext(int currentScore)
-//	{
-//		Phase& currentPhase = GetPhase(currentScore);
-//	}
-//
-//	void SpawnFighter(float x, float y) {} 
-//	void SpawnBomb(float x, float y) {}
-//	void SpawnStation(float x, float y) {}
-//	void SpawnBase(float x, float y) {}
-//};
-//
-//void setup()
-//{
-//	Level currentLevel;
-//
-//	// create all the levels / load them from a file
-//
-//	// arbitrary score thresholds
-//	// start at phase 1
-//	// if score = 200* go to phase 2
-//	// if score = 1000*  go to phase 3
-//	// if score = 5000* go to phase 4
-//	// if score = 15000* go to phase 5(boss)
-//
-//	currentLevel.AddPhase(0, 1, 200);
-//	currentLevel.AddPhase(0, 1, 1000-200);
-//	currentLevel.AddPhase(0, 1, 5000-1000);
-//	currentLevel.AddPhase(0, 1, 15000-5000);
-//
-//	// Test Code
-//	currentLevel.SpawnNext(100);
-//	currentLevel.SpawnNext(1580);
-//	currentLevel.SpawnNext(1000000);
-//}
-//
-//
-//
-//bool loop()
-//{
-//
-//
-//}

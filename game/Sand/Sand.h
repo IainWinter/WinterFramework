@@ -70,16 +70,6 @@ struct SandWorld
 		worldScale.y = height / camScaleY / 2;
 	}
 
-	Entity CreateCell(float x, float y, Color color, float vx = 0, float vy = 0, float dampen = 20.f)
-	{
-		return LevelManager::CurrentLevel()->CreateEntity().AddAll(Cell { ToScreenPos(vec2(x, y)), vec2(vx, vy), dampen, color });
-	}
-
-	Entity CreateCell(vec2 position, vec2 velocity, Color color)
-	{
-		return LevelManager::CurrentLevel()->CreateEntity().AddAll(Cell { ToScreenPos(position), velocity, 1.f, color });
-	}
-
 	void DrawPixel(Texture& display, ivec2 pos, Color c)
 	{
 		pos += screenOffset;
@@ -172,11 +162,6 @@ struct SandCollisionInfoRenderer
 		m_shader.Add(ShaderProgram::sFragment, source_frag);
 	}
 
-	~SandCollisionInfoRenderer()
-	{
-
-	}
-
 	void Begin(Camera& camera, r<Target> target)
 	{
 		if (target) target->Use();
@@ -243,20 +228,29 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void Init()
 	{
-		Attach<event_SpawnSandCell>();
 		Attach<event_WindowResize>();
 		Attach<event_SandCellCollision>();
 		Attach<event_SandAddSprite>();
 		Attach<event_SandTurnSpriteToDust>();
+		Attach<event_Sand_CreateCell>();
 
 		maskRender = mkr<SandCollisionInfoRenderer>();
 	}
 
-	void on(event_SpawnSandCell& e)
+	void on(event_Sand_CreateCell& e)
 	{
-		Entity entity = GetModule<SandWorld>().CreateCell(e.position, e.velocity, e.color);
-		if (e.life > 0.f) entity.Add<CellLife>(e.life);
-		if (e.onCreate) e.onCreate(entity);
+		Cell c = e.cell;
+		if (e.adjustPosition)
+		{
+			c.pos = GetModule<SandWorld>().ToScreenPos(c.pos);
+		}
+
+		Entity entity = CreateEntity().AddAll(c);
+		
+		if (e.onCreate)
+		{
+			e.onCreate(entity);
+		}
 	}
 
 	void on(event_WindowResize& e)
@@ -285,8 +279,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 		});
 
 		Cell cell = e.projectile.Get<Cell>();
-
-		Send(event_SpawnSandCell{cell.pos, cell.vel + get_randn(length(cell.vel) / 2.f), color, .5f });
+		cell.vel = cell.vel / (get_rand(5.f) + 1.f);
+		cell.vel += get_randn(length(cell.vel) / 4.f);
+		cell.life = .2f;
+		cell.color = color;
+		Send(event_Sand_CreateCell(cell));
 	}
 
 	void on(event_SandAddSprite& e)
@@ -314,7 +311,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
 			body.SetVelocity(e.velocity);
 			body.SetAngularVelocity(e.aVelocity);
-			
+
 			SendNow(event_Sand_CreateCollider{ e.entity });
 		}
 	}
@@ -338,7 +335,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		if (toSplit.size() > 0)
 		{
-			printf("Number of tiles to split %d\n", toSplit.size());
+			printf("Number of tiles to split %d\n", (int)toSplit.size());
 		}
 
 		//TaskSyncPoint syncPoint(toSplit.size());
@@ -388,15 +385,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Cell update
 
-		for (auto [e, time] : QueryWithEntity<CellLife>())
-		{
-			time.life -= Time::DeltaTime();
-			if (time.life <= 0.f)
-			{
-				e.Destroy();
-			}
-		}
-
 		Texture& collisionMaskRender = *sand.screenRead->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
 		collisionMaskRender.SendToHost();
 
@@ -405,6 +393,13 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
+			cell.life -= Time::DeltaTime();
+			if (cell.life <= 0.f)
+			{
+				e.Destroy();
+				continue;
+			}
+
 			auto [a, b] = DrawLine(sand, collisionMaskRender, e, cell);
 			float dist = distance(a, b);
 
@@ -433,7 +428,7 @@ private:
 	// return begin and end of line
 	std::pair<vec2, vec2> DrawLine(SandWorld& sand, Texture& collisionInfo, Entity e, Cell& cell)
 	{
-		vec2 delta = cell.vel / cell.dampen * Time::DeltaTime();
+		vec2 delta = cell.vel * Time::DeltaTime();
 		vec2 origin = cell.pos;
 		vec2 current = cell.pos;
 
@@ -446,53 +441,54 @@ private:
 		{
 			ivec2 raster = floor(current);
 
-			if (!sand.OnScreen(raster))
+			if (isProjectile && sand.OnScreen(raster))
 			{
-				continue; // break if going offscreen
-			}
-
-			if (isProjectile && sand.CollidePixel(raster))
-			{
-				const ivec4& spriteInfo = sand.GetCollisionInfo(raster);
-				ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
-				int tileIndex = spriteInfo[2];
-
-				Entity tileEntity = tileCache.at(tileIndex);
-
-				if (!tileEntity.IsAlive()) continue;
-
-				if (tileEntity.Id() != e.Get<CellProjectile>().owner)
+				if (sand.CollidePixel(raster))
 				{
-					SandSprite& sprite = tileEntity.Get<SandSprite>();
-					if (!sprite.invulnerable)
+					const ivec4& spriteInfo = sand.GetCollisionInfo(raster);
+					ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
+					int tileIndex = spriteInfo[2];
+
+					Entity tileEntity = tileCache.at(tileIndex);
+
+					if (!tileEntity.IsAlive()) continue;
+
+					CellProjectile& proj = e.Get<CellProjectile>();
+
+					if (tileEntity.Id() != proj.owner)
 					{
-						SendNow(event_SandCellCollision { tileEntity, e, positionInSprite }); // should defer
-						
-						int& health = e.Get<CellProjectile>().health;
-						health -= sprite.cellStrength;
-						if (health <= 0)
+						SandSprite& sprite = tileEntity.Get<SandSprite>();
+						if (!sprite.invulnerable)
 						{
-							e.Get<CellLife>().life = 0;
-							break;
+							SendNow(event_SandCellCollision{ tileEntity, e, positionInSprite }); // should defer
+
+							int& health = e.Get<CellProjectile>().health;
+							health -= sprite.cellStrength;
+							if (health <= 0)
+							{
+								cell.life = 0;
+								break;
+							}
+
+							// turn projectile a little
+							vec2& v = cell.vel;
+							float d = length(v);
+							v = normalize(v + get_randn(d * proj.turnOnHitRate)) * d;
+							delta = normalize(cell.vel * Time::DeltaTime());
 						}
 
-						// turn projectile a little
-						vec2& v = e.Get<Cell>().vel;
-						float d = length(v);
-						v = normalize(v + get_randn(1000.f)) * d;
-
-						delta = normalize(cell.vel / cell.dampen * Time::DeltaTime());
-					}
-
-					else // stop and delete projectile
-					{
-						e.Get<CellLife>().life = 0;
-						break;
+						else // stop and delete projectile
+						{
+							cell.life = 0;
+							break;
+						}
 					}
 				}
+				
+				// trail
+				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, .1f);
 			}
 
-			//sand.DrawPixel(display, raster, cell.color);
 			current += delta;
 			cell.pos = current;
 		}
@@ -666,10 +662,10 @@ private:
 				get_vel() + get_randc(50, 50)
 			};
 
-			Send(event_SpawnSandCell{ pos, vels[0], color, get_rand(.3f) + .1f });
-			Send(event_SpawnSandCell{ pos, vels[1], color, get_rand(.3f) + .1f });
-			Send(event_SpawnSandCell{ pos, vels[2], color, get_rand(.3f) + .1f });
-			Send(event_SpawnSandCell{ pos, vels[3], color, get_rand(.3f) + .1f });
+			Send(event_Sand_CreateCell(pos, vels[0], color, get_rand(.3f) + .1f));
+			Send(event_Sand_CreateCell(pos, vels[1], color, get_rand(.3f) + .1f));
+			Send(event_Sand_CreateCell(pos, vels[2], color, get_rand(.3f) + .1f));
+			Send(event_Sand_CreateCell(pos, vels[3], color, get_rand(.3f) + .1f));
 		}
 	}
 

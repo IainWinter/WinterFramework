@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include "Common.h"
+#include "Sand/SandComponents.h"
 #include <functional>
 
 struct event_SandCellCollision
@@ -25,15 +26,32 @@ struct event_SandTurnSpriteToDust
 	Entity entity;
 };
 
-struct event_SpawnSandCell
+struct event_Sand_CreateCell
 {
-	vec2 position;
-	vec2 velocity;
-	Color color;
-
-	float life = 0.f;
-
+	Cell cell;
+	bool adjustPosition;
 	std::function<void(Entity)> onCreate;
+
+	event_Sand_CreateCell(
+		Cell cell, 
+		std::function<void(Entity)> onCreate = {}
+	)
+		: cell           (cell)
+		, onCreate       (onCreate)
+		, adjustPosition (false)
+	{}
+
+	event_Sand_CreateCell(
+		vec2 pos, 
+		vec2 vel, 
+		Color color, 
+		float life,
+		std::function<void(Entity)> onCreate = {}
+	)
+		: cell           (Cell{ pos, vel, color, life })
+		, onCreate       (onCreate)
+		, adjustPosition (true)
+	{}
 };
 
 struct event_Sand_CreateCollider
