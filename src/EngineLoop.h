@@ -103,7 +103,7 @@ public:
 			LogMetric(TICK_FIXED_TIME, Time::FixedTime());
 #endif
 
-			m_fixedStepAcc = 0;
+			m_fixedStepAcc -= Time::FixedTime();
 			
 			TickLevelFixed();
 			TickPhysics();
@@ -112,9 +112,10 @@ public:
 		TickLevel();
 		TickLevelUI();
 		
+		TickTasks();
+		
 		TickFrame();
 		TickEvents();
-		TickTasks();
 	}
 
 	// Interface

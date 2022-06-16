@@ -120,17 +120,20 @@ struct SandWorld
 
 struct SandCollisionInfoRenderer
 {
-	ShaderProgram m_shader;
-	Mesh          m_quad;
+	r<ShaderProgram> m_shader;
+	r<Mesh>          m_quad;
 
 	// this gets run multiple times... should save static stuff like shaders
 	// drop raii just use init function or something
 
 	SandCollisionInfoRenderer()
 	{
-		m_quad.Add<vec2>(Mesh::aPosition, { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) });
-		m_quad.Add<vec2>(Mesh::aTextureCoord, { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) });
-		m_quad.Add<int>(Mesh::aIndexBuffer, { 0, 1, 2, 0, 2, 3});
+		m_shader = mkr<ShaderProgram>();
+		m_quad   = mkr<Mesh>();
+
+		m_quad->Add<vec2>(Mesh::aPosition, { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) });
+		m_quad->Add<vec2>(Mesh::aTextureCoord, { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(0, 1) });
+		m_quad->Add<int>(Mesh::aIndexBuffer, { 0, 1, 2, 0, 2, 3});
 
 		const char* source_vert =
 			"#version 330 core\n"
@@ -168,13 +171,8 @@ struct SandCollisionInfoRenderer
 				"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, 1);"
 			"}";
 
-		m_shader.Add(ShaderProgram::sVertex, source_vert);
-		m_shader.Add(ShaderProgram::sFragment, source_frag);
-	}
-
-	~SandCollisionInfoRenderer()
-	{
-
+		m_shader->Add(ShaderProgram::sVertex, source_vert);
+		m_shader->Add(ShaderProgram::sFragment, source_frag);
 	}
 
 	void Begin(Camera& camera, r<Target> target)
@@ -182,8 +180,8 @@ struct SandCollisionInfoRenderer
 		if (target) target->Use();
 		else Target::UseDefault();
 
-		m_shader.Use();
-		m_shader.Set("projection", camera.Projection());
+		m_shader->Use();
+		m_shader->Set("projection", camera.Projection());
 
 		gl(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
 		gl(glClearColor(0, 0, 0, 0));
@@ -194,12 +192,12 @@ struct SandCollisionInfoRenderer
 	{
 		Texture& mask = sprite.Get();
 
-		m_shader.Set("model", transform.World());
-		m_shader.Set("colliderMask", mask);
-		m_shader.Set("spriteSize", vec2(mask.Width(), mask.Height()));
-		m_shader.Set("spriteIndex", spriteIndex);
+		m_shader->Set("model", transform.World());
+		m_shader->Set("colliderMask", mask);
+		m_shader->Set("spriteSize", vec2(mask.Width(), mask.Height()));
+		m_shader->Set("spriteIndex", spriteIndex);
 
-		m_quad.Draw();
+		m_quad->Draw();
 	}
 };
 
@@ -239,7 +237,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 	// for the sprite index in the shader, indexes into this array
 	std::vector<Entity> tileCache; 
 
-	r<SandCollisionInfoRenderer> maskRender;
+	SandCollisionInfoRenderer maskRender;
 
 	void Init()
 	{
@@ -249,7 +247,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_SandAddSprite>();
 		Attach<event_SandTurnSpriteToDust>();
 
-		maskRender = mkr<SandCollisionInfoRenderer>();
+		//maskRender = mkr<SandCollisionInfoRenderer>();
 	}
 
 	void on(event_SpawnSandCell& e)
@@ -284,9 +282,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 			e.hitPosInSprite
 		});
 
-		Cell cell = e.projectile.Get<Cell>();
-
-		Send(event_SpawnSandCell{cell.pos, cell.vel + get_randn(length(cell.vel) / 2.f), color, .5f });
+		//Cell cell = e.projectile.Get<Cell>();
+		//Send(event_SpawnSandCell{cell.pos, cell.vel + get_randn(length(cell.vel) / 2.f), color, .5f });
 	}
 
 	void on(event_SandAddSprite& e)
@@ -376,12 +373,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// Render tiles to hidden target
 
-		maskRender->Begin(camera, sand.screenRead);
+		maskRender.Begin(camera, sand.screenRead);
 
 		int spriteIndex = 0;
 		for (auto [e, transform, sandSprite] : QueryWithEntity<Transform2D, SandSprite>())
 		{
-			maskRender->DrawCollisionInfo(transform, sandSprite, spriteIndex);
+			maskRender.DrawCollisionInfo(transform, sandSprite, spriteIndex);
 			spriteIndex += 1;
 			tileCache.push_back(e);
 		}
@@ -477,11 +474,10 @@ private:
 						}
 
 						// turn projectile a little
-						vec2& v = e.Get<Cell>().vel;
-						float d = length(v);
-						v = normalize(v + get_randn(1000.f)) * d;
-
-						delta = normalize(cell.vel / cell.dampen * Time::DeltaTime());
+						//vec2& v = e.Get<Cell>().vel;
+						//float d = length(v);
+						//v = normalize(v + get_randn(1000.f)) * d;
+						//delta = normalize(cell.vel / cell.dampen * Time::DeltaTime());
 					}
 
 					else // stop and delete projectile
@@ -525,7 +521,9 @@ private:
 			}
 
 			for (const std::vector<int>& island : islands.coreIslands)
+			{
 				SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+			}
 
 			for (const std::vector<int>& island : islands.otherIslands)
 			{
@@ -540,13 +538,14 @@ private:
 
 			//Coroutine([=]() 
 			//{
-				GetModule<PhysicsWorld>().Remove(splitMe.Get<Rigidbody2D>()); // todo: add listener to physics obj
-				sprite->Cleanup();
-				mask->Cleanup();
 				splitMe.Destroy();
-
-				//return true;
+			//	return true;
 			//});
+		}
+
+		else
+		{
+			Send(event_Sand_CreateCollider{splitMe});
 		}
 	}
 
@@ -598,20 +597,16 @@ private:
 		{
 			auto split = SplitSpriteInTwo(island, sprite, mask, transform, mid, minX, minY, maxX, maxY);
 			
+			vec2  v = body.GetVelocity();
+			float a = body.GetAngularVelocity();
+			float d = 10.f; //body.GetCollider()->GetDensity();
+
 			//Coroutine([=]()
 			//{
-				// nice names lol
-				
 				auto [t, s, ss] = split;
-				Entity e = CreateEntity().AddAll(t, Sprite(s), SandSprite(ss));
-				
-				vec2  v = body.GetVelocity();
-				float a = body.GetAngularVelocity();
-				float d = 10.f;//body.GetCollider()->GetDensity();
-
+				Entity e = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 				SendNow(event_SandAddSprite { e, v, a, d });
-						
-				//return true;
+			//	return true;
 			//});
 		}
 	}
@@ -749,55 +744,6 @@ private:
 		{
 			islands.emplace_back(std::move(island));
 		}
-	}
-
-	// colliders
-
-	// if a collider was set
-	bool SetPolygonColliderOnSprite(Entity e, const r<Texture>& mask, float density)
-	{
-		assert(mask->Channels() == 4 && "collider mask needs to be 32 bit right now");
-		//assert(e.Has<Transform2D, Rigidbody2D>());
-
-		Transform2D& tran = e.Get<Transform2D>();
-		Rigidbody2D& body = e.Get<Rigidbody2D>();
-		
-		auto polygons = MakePolygonFromField<u32>(
-			(u32*)mask->Pixels(),
-			mask->Width(),
-			mask->Height(),
-			[](const u32& color) { return (color & 0xff000000) > 0; }
-		);
-
-		body.RemoveColliders();
-
-		for (const std::vector<vec2>& polygon : polygons.first)
-		{
-			b2PolygonShape shape;
-			for (int i = 0; i < polygon.size(); i++)
-			{
-				shape.m_vertices[i] = _tb(polygon.at(i) * tran.scale);
-			}
-			shape.Set(shape.m_vertices, polygon.size());
-
-			assert(polygon.size() < 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
-			body.AddCollider(shape, density);
-		}
-
-		// debug
-		// wont work if entity has Mesh
-		// need to make a model class with a list of Meshs + Transforms
-
-		//if (e.Has<Mesh>()) e.Remove<Mesh>();
-
-		//std::vector<vec2> debug_mesh;
-		//for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) debug_mesh.push_back(v);
-		//e.Add<Mesh>();
-		//Mesh& mesh = e.Get<Mesh>();
-		//mesh.topology = Mesh::tLoops;
-		//mesh.Add(Mesh::aPosition, debug_mesh);
-
-		return polygons.first.size() > 0;
 	}
 };
 

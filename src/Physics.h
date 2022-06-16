@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Entity.h"
 #include "box2d/box2d.h"
 
 inline b2Vec2 _tb(const vec2& v) { return b2Vec2(v.x, v.y); }
@@ -136,25 +137,20 @@ struct PhysicsWorld
 			e.Add<Rigidbody2D>(e.Get<Transform2D>());
 		}
 
-		//e.on_destroy([this](Entity e) { Remove(e.Get<Rigidbody2D>()); });
+		e.OnDestroy([this](Entity entity) 
+		{ 
+			Remove(entity); 
+		});
 
 		Rigidbody2D& body = e.Get<Rigidbody2D>();
-		Add(body);
+		body.m_instance = m_world->CreateBody(&body.m_body);
+
 		return body;
 	}
-
-	void Add(Rigidbody2D& body)
-	{
-		body.m_instance = m_world->CreateBody(&body.m_body);
-	}
 	
-	void Remove(const Rigidbody2D& body)
+	void Remove(Entity& e)
 	{
-		m_world->DestroyBody(body.m_instance);
-	}
-
-	void Remove(Rigidbody2D& body)
-	{
+		Rigidbody2D& body = e.Get<Rigidbody2D>();
 		m_world->DestroyBody(body.m_instance);
 		body.m_instance = nullptr;
 	}

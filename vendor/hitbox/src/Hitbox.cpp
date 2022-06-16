@@ -518,8 +518,15 @@ std::vector<std::vector<vec2>> make_multiple(std::vector<vec2> polygon)
 
 std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* mask_grid, int width, int height, int accuracy)
 {
+	if (width < 2 || height < 2) return {};
+
 	auto contour  = make_contour(mask_grid, width, height);
 	auto bounds   = make_bounds(contour);
+
+	// infinte loop on bounds.x/y == 0 in make_polygon
+	if (bounds.Width() == 0 || bounds.Height() == 0)
+		return {};
+
 	auto polygons = make_multiple(make_polygon(contour, bounds, accuracy));
 	
 	float w = bounds.Width()  / 2;

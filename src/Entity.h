@@ -100,10 +100,16 @@ public:
 	Iterator end() { return Iterator(m_view.end(), m_owning); }
 };
 
+struct EntityEventState
+{
+	std::function<void(Entity)> onDestroy;
+};
+
 struct EntityWorld
 {
 private:
 	entt::registry m_registry;
+	std::unordered_map<u32, EntityEventState> m_events;
 
 	friend struct Entity;
 
@@ -121,6 +127,17 @@ public:
 	{
 		return EntityQueryWithEntity<_t...>(m_registry.view<_t...>().each(), this);
 	}
+
+	// events
+
+	void RegisterEventState_OnDestroy(u32 id, const std::function<void(Entity)>& func)
+	{
+		m_events[id].onDestroy = func;
+	}
+
+	void              RemoveEventState(u32 id) {        m_events.erase(id); }
+	bool              HasEventState   (u32 id) { return m_events.find(id) != m_events.end(); }
+	EntityEventState& GetEventState   (u32 id) { return m_events.at(id); }
 };
 
 struct Entity
@@ -163,13 +180,21 @@ public:
 	void Destroy() const
 	{
 		assert_is_valid();
+
+		if (m_owning->HasEventState(Id()))
+		{
+			m_owning->GetEventState(Id()).onDestroy(*this);
+			m_owning->RemoveEventState(Id());
+		}
+
 		m_owning->m_registry.destroy(m_handle);
 	}
 
 	void Destroy()
 	{
-		assert_is_valid();
-		m_owning->m_registry.destroy(m_handle);
+		const Entity* me = this;
+		me->Destroy();
+
 		m_owning = nullptr;
 		m_handle = entt::null;
 	}
@@ -252,6 +277,14 @@ public:
 	{
 		assert_has_components<_t...>();
 		m_owning->m_registry.remove<_t...>(m_handle);
+	}
+
+	// Listeners
+
+	Entity& OnDestroy(const std::function<void(Entity)>& func)
+	{
+		m_owning->RegisterEventState_OnDestroy(Id(), func);
+		return *this;
 	}
 
 	// Asserts

@@ -44,10 +44,23 @@ struct MetricsSystem : System<MetricsSystem>
 	std::vector<float> m_deltaTime;
 	std::vector<float> m_fixedTimePoint;
 
+	std::vector<int> m_cellCounts;
+
 	void Init()
 	{
 		Attach<event_RecordMetric>();
 	}
+
+	//void Update()
+	//{
+	//	int count = 0;
+	//	for (auto a : Query<Cell>())
+	//	{
+	//		count += 1;
+	//	}
+
+	//	m_cellCounts.push_back(count);
+	//}
 
 	void UI()
 	{
@@ -61,14 +74,13 @@ struct MetricsSystem : System<MetricsSystem>
 		}
 
 		//ImPlot::SetNextAxesToFit();
-		//ImPlot::BeginPlot("Times");
-		//ImPlot::PlotLine("Delta time", m_deltaTime.data(), m_deltaTime.size());
+		//ImPlot::BeginPlot("Line Metrics");
+		//ImPlot::PlotLine("Cell Count", m_cellCounts.data(), m_cellCounts.size());
 		//ImPlot::EndPlot();
 
 		ImGui::End();
 
-
-		if (m_deltaTime.size() > 200) m_deltaTime.erase(m_deltaTime.begin()); // lots of copies
+		//if (m_cellCounts.size() > 2000) m_cellCounts.erase(m_cellCounts.begin()); // lots of copies
 	}
 
 	void on(event_RecordMetric& e)
@@ -109,7 +121,6 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		level->AddSystem(PhysicsInterpolation());
-		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
 		level->AddSystem(SimpleMeshRenderer2D());
 
@@ -121,6 +132,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 
+		level->AddSystem(Sand_System_Update());
+		
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
