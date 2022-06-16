@@ -695,8 +695,14 @@ private:
 
 		m_width           = copy.m_width;
 		m_height          = copy.m_height;
-		m_attachments     = copy.m_attachments;
 		m_device          = 0;
+
+		// copy the buffers, do not instance
+
+		for (const auto& [name, texture] : m_attachments)
+		{
+			m_attachments.emplace(name, mkr<Texture>(*texture));
+		}
 
 		return *this;
 	}
@@ -1187,8 +1193,15 @@ private:
 		copy_base(&copy);
 
 		topology          = copy.topology;
-		m_buffers         = copy.m_buffers;
 		m_device          = 0;
+
+		// actually copy the data of the buffers, not just the references
+		// instancing can happen somewhere else, not in the copy constructor, this should make an independent copy
+		for (const auto& [name, buffer] : copy.m_buffers)
+		{
+			buffer->assert_on_host(); // needs to have some data on host for this to make sense
+			m_buffers.emplace(name, mkr<Buffer>(*buffer));
+		}
 
 		return *this;
 	}

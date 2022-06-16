@@ -47,10 +47,23 @@ struct MetricsSystem : System<MetricsSystem>
 	std::vector<float> m_fixedTimePoint;
 	std::vector<int> m_cellCounts;
 
+	std::vector<int> m_cellCounts;
+
 	void Init()
 	{
 		Attach<event_RecordMetric>();
 	}
+
+	//void Update()
+	//{
+	//	int count = 0;
+	//	for (auto a : Query<Cell>())
+	//	{
+	//		count += 1;
+	//	}
+
+	//	m_cellCounts.push_back(count);
+	//}
 
 	void UI()
 	{
@@ -126,7 +139,6 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		level->AddSystem(PhysicsInterpolation());
-		level->AddSystem(Sand_System_Update());
 		level->AddSystem(SimpleSpriteRenderer2D());
 		level->AddSystem(SimpleMeshRenderer2D());
 
@@ -139,6 +151,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
 
+		level->AddSystem(Sand_System_Update());
+		
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
