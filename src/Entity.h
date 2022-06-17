@@ -326,6 +326,38 @@ public:
 	}
 };
 
+template<typename... _t>
+struct EntityRequires : Entity
+{
+	EntityRequires()
+	{
+		// no assurance on empty...
+	}
+
+	EntityRequires(Entity&& move) noexcept
+		: Entity(std::move(move))
+	{
+		assert_has_components<_t...>();
+	}
+	EntityRequires& operator=(Entity&& move) noexcept
+	{
+		*((Entity*)this) = std::move(move);
+		assert_has_components<_t...>();
+		return *this;
+	}
+	EntityRequires(const Entity& copy)
+		: Entity(copy)
+	{
+		assert_has_components<_t...>();
+	}
+	EntityRequires& operator=(const Entity& copy)
+	{
+		*((Entity*)this) = copy;
+		assert_has_components<_t...>();
+		return *this;
+	}
+};
+
 namespace std {
 	template<> struct hash<Entity> { size_t operator()(const Entity& x) const { return x.Id(); } };
 }

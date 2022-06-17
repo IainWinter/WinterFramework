@@ -6,4 +6,5 @@
 inline void AddSandSystemsToLevel(r<Level> level)
 {
 	level->AddSystem(Sand_System_CreateCollider());
+	level->AddSystem(Sand_System_Update());
 }

@@ -58,7 +58,6 @@ private:
         forceCohesion   = limit(safe_normalize(forceCohesion)   * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
 
         // Arbitrarily weight these forces
-        // but actually should be based on the mass of the object...
 
         return 1.5f * forceSeperation + 1.f * forceAlign + 1.f * forceCohesion;
 	}

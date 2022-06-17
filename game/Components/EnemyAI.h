@@ -9,9 +9,9 @@ enum Weapon
 
 struct TurnTwoardsTarget
 {
-	Entity target; // only needs Transform2D, could just be an empty point that only has a Transform2D
-	float strength = 0.9f;
-	float atTargetVelocityDampen = 1.f;
+	EntityRequires<Transform2D> target; // only needs Transform2D, could just be an empty point that only has a Transform2D
+	float strength = 0.6f;
+	float atTargetVelocityDampen = .1f;
 };
 
 struct FireWeaponAfterDelay

@@ -291,8 +291,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_SandAddSprite& e)
 	{
-		e.entity.Add<KeepOnScreen>();
-
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
 		transform.scale.x = sprite.Width()  / GetModule<SandWorld>().worldScaleInit.x;
@@ -309,12 +307,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// setup collider if requested
 
-		if (!e.entity.Has<Rigidbody2D>())
-		{
-			Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
-			body.SetVelocity(e.velocity);
-			body.SetAngularVelocity(e.aVelocity);
+		Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
+		body.SetVelocity(e.velocity);
+		body.SetAngularVelocity(e.aVelocity);
 
+		if (body.GetColliderCount() == 0)
+		{
 			SendNow(event_Sand_CreateCollider{ e.entity });
 		}
 	}
@@ -335,11 +333,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 		auto [camera, sand, window] = GetModules<Camera, SandWorld, Window>();
 
 		// Sprite update
-
-		if (toSplit.size() > 0)
-		{
-			printf("Number of tiles to split %d\n", (int)toSplit.size());
-		}
 
 		//TaskSyncPoint syncPoint(toSplit.size());
 
