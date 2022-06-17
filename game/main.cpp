@@ -47,8 +47,6 @@ struct MetricsSystem : System<MetricsSystem>
 	std::vector<float> m_fixedTimePoint;
 	std::vector<int> m_cellCounts;
 
-	std::vector<int> m_cellCounts;
-
 	void Init()
 	{
 		Attach<event_RecordMetric>();
@@ -85,13 +83,12 @@ struct MetricsSystem : System<MetricsSystem>
 
 		m_cellCounts.push_back(cellCount);
 
-		ImPlot::SetNextAxesToFit();
-		ImPlot::BeginPlot("Times");
-		ImPlot::PlotLine("Cell count", m_cellCounts.data(), m_cellCounts.size());
-		ImPlot::EndPlot();
+		//ImPlot::SetNextAxesToFit();
+		//ImPlot::BeginPlot("Times");
+		//ImPlot::PlotLine("Cell count", m_cellCounts.data(), m_cellCounts.size());
+		//ImPlot::EndPlot();
 
 		ImGui::End();
-
 
 		if (m_deltaTime .size()  > 200) m_deltaTime .erase(m_deltaTime .begin()); // lots of copies
 		if (m_cellCounts.size() > 1000) m_cellCounts.erase(m_cellCounts.begin()); // lots of copies
@@ -120,10 +117,6 @@ struct Regolith : EngineLoop
 		ConfigureMainGameLevel();
 	}
 
-	void _Dnit()
-	{
-	}
-
 	// Init
 
 	void ConfigureWindow()
@@ -143,16 +136,14 @@ struct Regolith : EngineLoop
 		level->AddSystem(SimpleMeshRenderer2D());
 
 		level->AddSystem(System_PlayerController());
-		level->AddSystem(System_FlockingMovement());
 		level->AddSystem(System_TurnTwoardsTarget());
+		level->AddSystem(System_FlockingMovement());
 		level->AddSystem(System_ExplodeNearTarget());
 		level->AddSystem(System_ExplosionSpawner());
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
 
-		level->AddSystem(Sand_System_Update());
-		
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
@@ -191,22 +182,60 @@ struct Regolith : EngineLoop
 		player.Get<SandSprite>().invulnerable = true;
 		player.Add<Player>();
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
+		player.Add<KeepOnScreen>();
 
-		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(10.f, 0.f)));
+		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 15; i++)
 		{
-			Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
-			//Entity entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
-			//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
+			Entity entity;
+
+			switch (get_rand(1))
+			{
+				case 0: // fighter
+				{
+					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
+					//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
+					entity.Add<TurnTwoardsTarget>(target);
+					entity.Add<Flocker>();
+
+					break;
+				}
+
+				case 1: // bomb
+				{
+					entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
+					entity.Add<TurnTwoardsTarget>(target);
+
+					break;
+				}
+
+				case 2: // station
+				{
+					entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
+					entity.Add<TurnTwoardsTarget>(target);
+					entity.Add<Flocker>();
+
+					break;
+				}
+			}
+
+			Transform2D& transform = entity.Get<Transform2D>();
+			transform.position = get_randc(20.f, 20.f);
+
+			entity.Add<Rigidbody2D>(transform).SetFixedRotation(true);
+
+			////Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
+			//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
+			////entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
 			//entity.Add<TurnTwoardsTarget>(target);
-			//entity.Add<Flocker>();
-			//entity.Add<ExplodeNearTarget>(player);
-			//entity.Add<Mesh>(GenerateCircle(16, 5.f));
-			
-			entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
-			//entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
-			//entity.Get<Rigidbody2D>().SetVelocity(vec2(get_randc(20.f, 20.f)));
+			////entity.Add<Flocker>(3.f, 1.f, 7.f);
+			////entity.Add<ExplodeNearTarget>(player);
+			////entity.Add<Mesh>(GenerateCircle(16, 5.f));
+
+			//entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
+			////entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
+			////entity.Get<Rigidbody2D>().SetVelocity(vec2(get_randc(20.f, 20.f)));
 		}
 	}
 
@@ -221,7 +250,6 @@ struct Regolith : EngineLoop
 		r<Texture> mask   = mkr<Texture>(_p(collider_mask_path), false);
 
 		assert(sprite->Length() == mask->Length());
-
 
 		Transform2D transform;
 		transform.scale.x = sprite->Width()  / sand.worldScale.x;
