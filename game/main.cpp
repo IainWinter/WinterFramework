@@ -29,13 +29,16 @@
 
 //struct SandSpriteMaskRenderer : SystemBase
 //{
+//	SpriteRenderer2D render;
+//
 //	void Update() override
 //	{
-//		auto [camera, render] = GetModules<Camera, SpriteRenderer2D>();
+//		auto [camera] = GetModules<Camera>();
 //
 //		render.Begin(camera);
 //		for (auto [transform, sprite] : Query<Transform2D, SandSprite>())
 //		{
+//			render.m_shader.Set("tint", vec4(1, 0, 0, 1));
 //			render.DrawSprite(transform, sprite.Get());
 //		}
 //	}
@@ -147,8 +150,6 @@ struct Regolith : EngineLoop
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
-
-		//level->AddSystem(SandSpriteMaskRenderer());
 	}
 
 	void ConfigureModules()
@@ -186,7 +187,17 @@ struct Regolith : EngineLoop
 
 		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 
-		for (int i = 0; i < 15; i++)
+		Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
+		entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
+
+		//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
+		////entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
+		//entity.Add<TurnTwoardsTarget>(target);
+		////entity.Add<Flocker>(3.f, 1.f, 7.f);
+		////entity.Add<ExplodeNearTarget>(player);
+		////entity.Add<Mesh>(GenerateCircle(16, 5.f));
+
+		for (int i = 0; i < 0; i++)
 		{
 			Entity entity;
 
@@ -195,7 +206,7 @@ struct Regolith : EngineLoop
 				case 0: // fighter
 				{
 					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-					//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
+					entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(target);
 					entity.Add<Flocker>();
 
@@ -224,18 +235,6 @@ struct Regolith : EngineLoop
 			transform.position = get_randc(20.f, 20.f);
 
 			entity.Add<Rigidbody2D>(transform).SetFixedRotation(true);
-
-			////Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
-			//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-			////entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
-			//entity.Add<TurnTwoardsTarget>(target);
-			////entity.Add<Flocker>(3.f, 1.f, 7.f);
-			////entity.Add<ExplodeNearTarget>(player);
-			////entity.Add<Mesh>(GenerateCircle(16, 5.f));
-
-			//entity.Get<Transform2D>().position = vec2(get_randc(20.f, 20.f));
-			////entity.Get<Rigidbody2D>().SetPosition(vec2(get_randc(20.f, 20.f)));
-			////entity.Get<Rigidbody2D>().SetVelocity(vec2(get_randc(20.f, 20.f)));
 		}
 	}
 

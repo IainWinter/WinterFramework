@@ -4,6 +4,7 @@
 #include "Common.h"
 #include "Sand/SandComponents.h"
 #include <functional>
+#include <vector>
 
 struct event_SandCellCollision
 {
@@ -19,11 +20,6 @@ struct event_SandAddSprite
 	vec2 velocity = vec2(0.f, 0.f);
 	float aVelocity = 0.f;
 	float density = 1.f;
-};
-
-struct event_SandTurnSpriteToDust
-{
-	Entity entity;
 };
 
 struct event_Sand_CreateCell
@@ -57,4 +53,12 @@ struct event_Sand_CreateCell
 struct event_Sand_CreateCollider
 {
 	Entity entity; // requires Rigidbody2D, SandSprite
+};
+
+struct event_Sand_ExplodeToDust
+{
+	EntityWith<Transform2D, Sprite, SandSprite> entity;
+	EntityWith<Cell, CellProjectile> projectile;
+
+	std::vector<int> onlyThisIndex; // if empty everything is blow
 };

@@ -39,6 +39,13 @@ public:
 		return m_cowork.push_back(work);
 	}
 
+	// execute work on the main thread at the end of the frame, but before events fire
+	// runs one time
+	void Defer(const std::function<void()>& work)
+	{
+		return Coroutine([work]() { work(); return true; });
+	}
+
 	void TickCoroutines()
 	{
 		std::unique_lock lock(m_coworkMutex);

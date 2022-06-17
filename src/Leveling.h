@@ -67,11 +67,6 @@ public:
 	                                   void Detach (void* handler) { m_rootBus.detach(handler); }
 	template<typename _t>              void Send   (_t&& event)    { m_rootQueue.send(event); }
 	template<typename _t>              void SendNow(_t&& event)    { m_rootBus.send(event); }
-
-	// acess to thread pool
-
-	void Thread   (const std::function<void()>& work) { m_task.Thread(work); }
-	void Coroutine(const std::function<bool()>& work) { m_task.Coroutine(work); }
 };
 
 struct Level;
@@ -163,8 +158,9 @@ protected:
 
 	// Threading
 	
-	void Thread   (const std::function<void()>& work) { assert_init(); m_level->m_app->Thread(work); }
-	void Coroutine(const std::function<bool()>& work) { assert_init(); m_level->m_app->Coroutine(work); }
+	void Thread   (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Thread(work); }
+	void Coroutine(const std::function<bool()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Coroutine(work); }
+	void Defer    (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Defer(work); }
 
 public:
 	virtual ~SystemBase()

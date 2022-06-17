@@ -18,6 +18,7 @@
 
 #include "Sand/SandEvents.h"
 #include "Sand/SandComponents.h"
+#include "Sand/SandHelpers.h"
 
 // everywhere LevelManager is needed should be inside of a System
 // because Systems are owned by whatever level, so it's more contained
@@ -200,8 +201,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 {
 	struct Islands
 	{
-		std::vector<std::vector<int>> coreIslands;
-		std::vector<std::vector<int>> otherIslands;
+		using Group = std::vector<std::vector<int>>;
+
+		Group coreIslands;
+		Group otherIslands;
 
 		size_t Count() const
 		{
@@ -214,9 +217,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Entity hit;
 		Entity projectile;
 		ivec2 locationInSprite;
-		bool operator==(const ToSplit& t) const { return (hit.Id() == t.hit.Id()); }
+		bool operator==(const ToSplit& t) const { return (hit.raw_id() == t.hit.raw_id()); }
 	};
-	struct ToSplitHash { size_t operator()(const ToSplit& t) const { return t.hit.Id(); } };
+	struct ToSplitHash { size_t operator()(const ToSplit& t) const { return t.hit.raw_id(); } };
 
 	// queue events to not exe a split on every collision, could be multiple per frame on same obj
 	std::unordered_set<ToSplit, ToSplitHash> toSplit;
@@ -234,7 +237,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_WindowResize>();
 		Attach<event_SandCellCollision>();
 		Attach<event_SandAddSprite>();
-		Attach<event_SandTurnSpriteToDust>();
 		Attach<event_Sand_CreateCell>();
 
 		//maskRender = mkr<SandCollisionInfoRenderer>();
@@ -291,6 +293,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_SandAddSprite& e)
 	{
+		if (!e.entity.Has<KeepOnScreen>())
+			e.entity.Add<KeepOnScreen>();
+
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
 		transform.scale.x = sprite.Width()  / GetModule<SandWorld>().worldScaleInit.x;
@@ -298,10 +303,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
-		auto [coreIndex, filled, isHealth, hasAny] = GetCorePixels(e.entity.Get<Sprite>().m_source);
+		auto [coreIndex, filled, isHealth, hasAny] = GetCorePixels(e.entity.Get<Sprite>().source);
 
 		sandSprite.core = coreIndex;
-		sandSprite.hasCore = isHealth;
 		sandSprite.density = e.density;
 		sandSprite.cellCount = filled.size();
 
@@ -317,47 +321,43 @@ struct Sand_System_Update : System<Sand_System_Update>
 		}
 	}
 
-	void on(event_SandTurnSpriteToDust& e)
-	{
-		r<Texture> sprite = e.entity.Get<Sprite>().m_source;
-		vec2 projectileVel = get_randn(100.f);
-		vec2 mid = vec2(sprite->Width(), sprite->Height()) / 2.f;
-
-		ExplodeSpriteIntoDust(std::get<1>(GetCorePixels(sprite)), sprite, e.entity.Get<Transform2D>(), mid, projectileVel);
-
-		e.entity.Destroy();
-	}
-
 	void Update()
 	{
 		auto [camera, sand, window] = GetModules<Camera, SandWorld, Window>();
 
 		// Sprite update
-
-		//TaskSyncPoint syncPoint(toSplit.size());
+		
+		std::unordered_set<ToSplit, ToSplitHash> validToSplit;
 
 		for (auto& split : toSplit)
 		{
-			if (!split.hit.IsAlive())
+			if (split.hit.IsAlive())
+			{
+				int cellCount = split.hit.Get<SandSprite>().cellCount;
+
+				     if (cellCount == 0) split.hit.Destroy();
+				else if (cellCount < 15) Send(event_Sand_ExplodeToDust{split.hit});
+				else                     validToSplit.insert(split);
+			}
+
+			else
 			{
 				printf("invalid entity in toSplit list!\n");
-				continue; // should investigate why this sometimes is invalid
 			}
-
-			if (split.hit.Get<SandSprite>().cellCount <= 0)
-			{
-				split.hit.Destroy();
-				continue;
-			}
-
-			//Thread([&]()
-			//{
-				SplitSprite(split.hit, split.projectile);
-				//syncPoint.Tick();
-			//});
 		}
 
-		//syncPoint.BlockUntilZero();
+		TaskSyncPoint syncPoint(validToSplit.size());
+
+		for (auto& split : validToSplit)
+		{
+			Thread([&]()
+			{
+				SplitSprite(split.hit, split.projectile);
+				syncPoint.Tick();
+			});
+		}
+
+		syncPoint.BlockUntilZero();
 
 		toSplit.clear();
 		tileCache.clear();
@@ -392,7 +392,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 			cell.life -= Time::DeltaTime();
 			if (cell.life <= 0.f)
 			{
-				e.Destroy();
+				e.DestroyAtEndOfFrame();
 				continue;
 			}
 
@@ -426,7 +426,6 @@ private:
 	{
 		vec2 delta = cell.vel * Time::DeltaTime();
 		vec2 origin = cell.pos;
-		vec2 current = cell.pos;
 
 		float distance = glm::length(delta);
 		delta /= distance;
@@ -435,10 +434,13 @@ private:
 
 		for (int i = 0; i < ceil(distance); i++)
 		{
-			ivec2 raster = floor(current);
+			ivec2 raster = floor(cell.pos);
 
 			if (isProjectile && sand.OnScreen(raster))
 			{
+				// trail
+				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, .1f);
+
 				if (sand.CollidePixel(raster))
 				{
 					const ivec4& spriteInfo = sand.GetCollisionInfo(raster);
@@ -446,50 +448,41 @@ private:
 					int tileIndex = spriteInfo[2];
 
 					Entity tileEntity = tileCache.at(tileIndex);
-
-					if (!tileEntity.IsAlive()) continue;
-
 					CellProjectile& proj = e.Get<CellProjectile>();
 
-					if (tileEntity.Id() != proj.owner)
+					if (!tileEntity.IsAlive() || tileEntity.Id() == proj.owner) continue;
+
+					SandSprite& sprite = tileEntity.Get<SandSprite>();
+					
+					if (sprite.invulnerable)
 					{
-						SandSprite& sprite = tileEntity.Get<SandSprite>();
-						if (!sprite.invulnerable)
-						{
-							SendNow(event_SandCellCollision{ tileEntity, e, positionInSprite }); // should defer
-
-							int& health = e.Get<CellProjectile>().health;
-							health -= sprite.cellStrength;
-							if (health <= 0)
-							{
-								cell.life = 0;
-								break;
-							}
-
-							// turn projectile a little
-							vec2& v = cell.vel;
-							float d = length(v);
-							v = normalize(v + get_randn(d * proj.turnOnHitRate)) * d;
-							delta = normalize(cell.vel * Time::DeltaTime());
-						}
-
-						else // stop and delete projectile
-						{
-							cell.life = 0;
-							break;
-						}
+						cell.life = 0;
+						break;
 					}
+					
+					SendNow(event_SandCellCollision{ tileEntity, e, positionInSprite }); // should defer
+
+					int& health = e.Get<CellProjectile>().health;
+					health -= sprite.cellStrength;
+					
+					if (health <= 0)
+					{
+						cell.life = 0;
+						break;
+					}
+
+					// turn projectile a little
+					vec2& v = cell.vel;
+					float d = length(v);
+					v = normalize(v + get_randn(d * proj.turnOnHitRate)) * d;
+					delta = normalize(cell.vel * Time::DeltaTime());
 				}
-				
-				// trail
-				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, .1f);
 			}
 
-			current += delta;
-			cell.pos = current;
+			cell.pos += delta;
 		}
 
-		return { origin / sand.worldScale, current / sand.worldScale };
+		return { origin / sand.worldScale, cell.pos / sand.worldScale };
 	}
 
 	// start splitting functions into clear peices
@@ -498,7 +491,7 @@ private:
 	{
 		auto [transform, body, drawSprite, sandSprite] = splitMe.GetAll<Transform2D, Rigidbody2D, Sprite, SandSprite>();
 
-		r<Texture> sprite = drawSprite.m_source;
+		r<Texture> sprite = drawSprite.source;
 		r<Texture> mask   = sandSprite.colliderMask;
 
 		vec2 projectileVel = projectile.Get<Cell>().vel;
@@ -509,37 +502,45 @@ private:
 
 		Islands islands = GetIslands(splitMe.Get<SandSprite>());
 
+		// Split if there are more than two islands (means there is a gap between two sets of cells in the sprite)
+		// If an island contains the core, then its the main peice and should keep the components of the orignal sprite
+		// If there are two islands that contain the core, this means it's been split and should explode
+		// Any waother island is part of the larger armor, and can be split off by spawning a new entity
+
 		if (islands.Count() > 1)
 		{
+			// this might need to change the center of mass?
+			// atleast recalc colliders when the core hasnt been repasted
+
 			if (islands.coreIslands.size() > 1) // this is the core and the bits surrounding
 			{
-				Send(event_SpawnExplosion{transform.position, 50.f});
-			}
+				Send(event_SpawnExplosion{transform.position, 10.f});
 
-			for (const std::vector<int>& island : islands.coreIslands)
-			{
-				SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+				// effectivly remove core
+				for (auto& core : islands.coreIslands) islands.otherIslands.emplace_back(std::move(core));
+				islands.coreIslands.clear();
 			}
 
 			for (const std::vector<int>& island : islands.otherIslands)
 			{
-				SplitFromIsland(island, sprite, mask, transform, body, mid, projectileVel);
+				SplitFromIsland(island, splitMe, projectile);
 
 				for (const int& index : island)
 				{
 					sprite->At(index) = Color(0);
 					mask  ->At(index) = Color(0);
 				}
+
+				sandSprite.cellCount -= island.size();
 			}
 
-			//Coroutine([=]() 
-			//{
-				splitMe.Destroy();
-			//	return true;
-			//});
+			if (islands.coreIslands.size() != 1)
+			{
+				splitMe.DestroyAtEndOfFrame();
+			}
 		}
 
-		else
+		if (splitMe.IsAliveAtEndOfFrame())
 		{
 			Send(event_Sand_CreateCollider{splitMe});
 		}
@@ -551,122 +552,46 @@ private:
 	//
 	//
 
-	// core pixels
-
-	// returns only health pixels, or all pixels if there are none
-	// a health pixel has an alpha not equal to 0 or 255, could make a third texture for this, but seems unnessesary, no sprites have opacity as of now...
-	std::tuple<std::vector<int>, std::vector<int>, bool, bool> GetCorePixels(const r<Texture>& texture)
-	{
-		std::vector<int> filled, core;
-
-		u32* itr = (u32*)texture->Pixels();
-		u32* end = itr + texture->Length();
-
-		for (int i = 0; itr != end; itr++, i++)
-		{
-			u8 alpha = Color(*itr).a;
-
-			if (alpha > 0) filled.push_back(i);
-			if (alpha > 0 && alpha < 255) core.push_back(i);
-		}
-
-		if (core.size() == 0)
-		{
-			return { {}, filled, false, filled.size() > 0 };
-		}
-
-		return { core, filled, true, true };
-	}
-
 	// splitting
 
-	void SplitFromIsland(const std::vector<int>& island, r<Texture> sprite, r<Texture> mask, Transform2D transform, Rigidbody2D& body, vec2 mid, vec2 projectileVel)
+	void SplitFromIsland(const std::vector<int>& island, Entity splitMe, Entity projectile)
 	{
-		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(island, mask->Width());
+		r<Texture> sprite = splitMe.Get<Sprite>()    .source;
+		r<Texture> mask   = splitMe.Get<SandSprite>().colliderMask;
+
+		vec2 projectileVel = projectile.Get<Cell>().vel;
+		vec2 mid = vec2(mask->Width(), mask->Height()) / 2.f;
 
 		if (island.size() < 15)
 		{
-			ExplodeSpriteIntoDust(island, sprite, transform, mid, projectileVel);
+			Send(event_Sand_ExplodeToDust{ splitMe, projectile, island });
 		}
 
 		else
 		{
-			auto split = SplitSpriteInTwo(island, sprite, mask, transform, mid, minX, minY, maxX, maxY);
-			
+			auto split = SplitSpriteInTwo(island, splitMe);
+			Rigidbody2D& body = splitMe.Get<Rigidbody2D>();
+
 			vec2  v = body.GetVelocity();
 			float a = body.GetAngularVelocity();
 			float d = 10.f; //body.GetCollider()->GetDensity();
 
-			//Coroutine([=]()
+			//Defer([=]()
 			//{
 				auto [t, s, ss] = split;
 				Entity e = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
-				SendNow(event_SandAddSprite { e, v, a, d });
-			//	return true;
+				Send(event_SandAddSprite { e, v, a, d });
 			//});
 		}
 	}
 
-	std::tuple<int, int, int, int> GetBoundingBoxOfIsland(const std::vector<int>& island, int width)
+	std::tuple<Transform2D, r<Texture>, r<Texture>> SplitSpriteInTwo(const std::vector<int>& island, Entity toSplit)
 	{
-		int minX =  INT_MAX;
-		int minY =  INT_MAX;
-		int maxX = -INT_MAX;
-		int maxY = -INT_MAX;
+		r<Texture> sprite = toSplit.Get<Sprite>().source;
+		r<Texture> mask   = toSplit.Get<SandSprite>().colliderMask;
 
-		for (const int& index : island)
-		{
-			auto [x, y] = get_xy(index, width);
-			if (x < minX) minX = x;
-			if (y < minY) minY = y;
-			if (x > maxX) maxX = x;
-			if (y > maxY) maxY = y;
-		}
-
-		return { minX, minY, maxX, maxY };
-	}
-
-	void ExplodeSpriteIntoDust(const std::vector<int>& island, r<Texture>& sprite, const Transform2D& transform, vec2 mid, vec2 projectileVel)
-	{
-		SandWorld& sand = GetModule<SandWorld>(); // non threadsafe read
-
-		for (const int& index : island)
-		{
-			auto [x, y] = get_xy(index, sprite->Width());
-
-			vec2 pos = (vec2(x, y) - mid) / 10.f;
-			rotate(pos, transform.rotation);
-			pos += transform.position;
-
-			Color& color = sprite->At(x, y);
-			vec2 offset = 1.f / sand.worldScaleInit; // non threadsafe read
-
-			auto get_vel = [projectileVel]()
-			{
-				//float r = 100.f;
-				//vec2 v = vec2(get_randc(r), get_randc(r));
-				vec2 v = projectileVel;
-
-				return v*.1f; // x .1 makes this faster??
-			};
-
-			vec2 vels[4] = {
-				get_vel() + get_randc(50, 50),
-				get_vel() + get_randc(50, 50),
-				get_vel() + get_randc(50, 50),
-				get_vel() + get_randc(50, 50)
-			};
-
-			Send(event_Sand_CreateCell(pos, vels[0], color, get_rand(.3f) + .1f));
-			Send(event_Sand_CreateCell(pos, vels[1], color, get_rand(.3f) + .1f));
-			Send(event_Sand_CreateCell(pos, vels[2], color, get_rand(.3f) + .1f));
-			Send(event_Sand_CreateCell(pos, vels[3], color, get_rand(.3f) + .1f));
-		}
-	}
-
-	std::tuple<Transform2D, r<Texture>, r<Texture>> SplitSpriteInTwo(const std::vector<int>& island, r<Texture>& sprite, r<Texture>& mask, Transform2D transform, vec2 mid, int minX, int minY, int maxX, int maxY)
-	{
-		// copy old data to new texture
+		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(island, mask->Width());
+		vec2 mid = vec2(mask->Width(), mask->Height()) / 2.f;
 
 		r<Texture> splitTexture = mkr<Texture>(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false);
 		r<Texture> splitMask    = mkr<Texture>(maxX - minX + 1, maxY - minY + 1, Texture::uRGBA, false); // could be uR
@@ -684,17 +609,14 @@ private:
 			splitMask   ->At(x - minX, y - minY) = mask  ->At(x, y);
 		}
 
-		// create new tile
-		// this only works for the new tile, not if the orignaldis is remade...
-
-		// place the new sprites in their relitive locations
+		Transform2D tran = toSplit.Get<Transform2D>();
 
 		vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
-		vec2 offset = 2.f * rotate(midNew - mid, transform.rotation);
+		vec2 offset = 2.f * rotate(midNew - mid, tran.rotation);
 
-		transform.position += offset / GetModule<SandWorld>().worldScaleInit;
+		tran.position += offset / GetModule<SandWorld>().worldScaleInit;
 
-		return { transform, splitTexture, splitMask };
+		return { tran, splitTexture, splitMask };
 	}
 
 	// flood fill
@@ -705,15 +627,10 @@ private:
 
 		std::vector<flood_fill_cell_state> state = GetSpriteStates(sprite.colliderMask);
 
-		if (sprite.hasCore)
 		for (int seed : sprite.core)
 		{
 			AddSingleIsland(seed, sprite.colliderMask, state, islands.coreIslands);
 		}
-
-		// then we need to search for any leftover islands and split those off, maybe there needs to be a differnece between core groups and non core groups
-		// if there are 2 core groups, means core is cut in half and should explode
-		// all other islands should follow normal rules
 
 		for (int i = 0; i < state.size(); i++)
 		{
@@ -742,14 +659,3 @@ private:
 		}
 	}
 };
-
-// print debug shape in console
-//for (int i = 0; i < sprite.colliderMask->Width(); i++)
-//{
-//	for (int j = 0; j < sprite.colliderMask->Height(); j++)
-//	{
-//		printf(state.at(i + j * sprite.colliderMask->Width()) == flood_fill_cell_state::FILLED ? "." : " ");
-//	}
-//	printf("\n");
-//}
-//printf("\n");

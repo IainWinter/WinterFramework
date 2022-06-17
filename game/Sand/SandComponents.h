@@ -23,9 +23,7 @@ struct SandSprite
 	float density = 100.f;
 	bool invulnerable = false;
 	r<Texture> colliderMask;
-	std::vector<int> core; // if this list has items, these are the only cells to floodfill
-	int hasCore = false;  // if the list is health or every pixel
-	//int originalCoreCount = 0;
+	std::vector<int> core;
 
 	int cellStrength = 1;
 	int cellCount = 0;

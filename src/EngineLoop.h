@@ -116,6 +116,8 @@ public:
 		
 		TickFrame();
 		TickEvents();
+
+		TickDefered();
 	}
 
 	// Interface
@@ -180,6 +182,12 @@ private:
 	void TickTasks()
 	{
 		m_app.GetTaskPool()->TickCoroutines();
+	}
+
+	void TickDefered()
+	{
+		// technically the entityworld at the root App level should also get ticked, but I dont think it will ever be needed
+		LevelManager::CurrentLevel()->GetWorld().ExecuteDeferdDeletions();
 	}
 
 #ifdef IW_METRICS_TIMER

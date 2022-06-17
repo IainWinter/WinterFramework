@@ -1526,17 +1526,14 @@ struct Camera
 //	}
 //};
 
- struct Sprite
- {
- 	r<Texture> m_source;
-	Sprite() : m_source(nullptr) {}
-	Sprite(r<Texture> source) : m_source(source) {}
-	Sprite(const Texture& sourceToCopy) : m_source(mkr<Texture>(sourceToCopy)) {}
- 	Texture& Get() { return *m_source; }
- };
-
- // shader is becomming geared twoards Sand btw
- // should split...
+struct Sprite
+{
+	r<Texture> source;
+	Sprite() : source(nullptr) {}
+	Sprite(r<Texture> source) : source(source) {}
+	Sprite(const Texture& sourceToCopy) : source(mkr<Texture>(sourceToCopy)) {}
+	Texture& Get() { return *source; }
+};
 
 struct SpriteRenderer2D
 {
@@ -1591,22 +1588,18 @@ struct SpriteRenderer2D
 								"in vec2 TexCoords;"
 
 								"out vec4 color;"
-								"out ivec4 spriteId;" // sprite (x, y) (entity index), (alpha for if its even there)
 
 								"uniform sampler2D sprite;"
-								"uniform vec2 spriteSize;"
-								"uniform int spriteIndex;"
-								"uniform vec4 tint;"
+								"uniform vec4 tint = vec4(1.f, 1.f, 1.f, 1.f);"
 
 								"void main()"
 								"{"
 									"vec4 spriteColor = texture(sprite, TexCoords);"
-									"if (spriteColor.a > .7) spriteColor.a = 1.f;" // round up for health thing
+
+									"if (spriteColor.a > .7) { spriteColor.a = 1.f; }" // round up for health thing
+									"else                    { discard; }"
+
 									"color = tint * spriteColor;"
-
-									"if (color.a == 0) discard;"
-
-									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, color.a);" // this is going to be an index to an array on the cpu or something like that
 								"}";
 
 		m_shader.Add(ShaderProgram::sVertex, source_vert);

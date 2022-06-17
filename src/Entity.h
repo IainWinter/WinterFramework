@@ -2,6 +2,7 @@
 
 #include "Defines.h"
 #include "entt/entity/registry.hpp"
+#include <unordered_set>
 
 // entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
 
@@ -100,27 +101,22 @@ public:
 	Iterator end() { return Iterator(m_view.end(), m_owning); }
 };
 
-struct EntityEventState
-{
-	std::function<void(Entity)> onDestroy;
-};
-
 struct EntityWorld
 {
 private:
+	struct EntityState
+	{
+		std::function<void(Entity)> onDestroy;
+	};
+
 	entt::registry m_registry;
-	std::unordered_map<u32, EntityEventState> m_events;
+	std::unordered_map<entt::entity, EntityState> m_events;
+	std::unordered_set<entt::entity> m_deferDelete;
+	std::mutex m_deferDeleteMutex;
 
 	friend struct Entity;
 
 public:
-	Entity Create();
-
-	void Clear()
-	{
-		m_registry.clear();
-	}
-
 	template<typename... _t>
 	EntityQuery<_t...> Query()
 	{
@@ -133,16 +129,43 @@ public:
 		return EntityQueryWithEntity<_t...>(m_registry.view<_t...>().each(), this);
 	}
 
-	// events
-
-	void RegisterEventState_OnDestroy(u32 id, const std::function<void(Entity)>& func)
+	void ExecuteDeferdDeletions()
 	{
-		m_events[id].onDestroy = func;
+		for (const entt::entity& handle : m_deferDelete)
+		{
+			DeleteEntityNow(handle);
+		}
+		m_deferDelete.clear();
+	}
+	
+	void Clear()
+	{
+		m_registry.clear();
 	}
 
-	void              RemoveEventState(u32 id) {        m_events.erase(id); }
-	bool              HasEventState   (u32 id) { return m_events.find(id) != m_events.end(); }
-	EntityEventState& GetEventState   (u32 id) { return m_events.at(id); }
+	Entity Create();
+
+// hidden entity functions, called from Entity
+
+private:
+
+	Entity Wrap(entt::entity id);
+	void DeleteEntityNow(entt::entity id);
+
+	void AddDeferedDelete(entt::entity id)
+	{
+		std::unique_lock lock(m_deferDeleteMutex);
+		m_deferDelete.insert(id);
+	}
+
+// events
+
+private:
+
+	void         RemoveState(entt::entity id) {        m_events.erase(id); }
+	bool         HasState   (entt::entity id) { return m_events.find(id) != m_events.end(); }
+	EntityState& AssureState(entt::entity id) { return m_events[id]; }
+	EntityState& GetState   (entt::entity id) { return m_events.at(id); }
 };
 
 struct Entity
@@ -174,7 +197,19 @@ public:
 	u32 Id() const
 	{
 		assert_is_valid();
+		return raw_id();
+	}
+
+	// doesnt check for if this id is valid or not
+	u32 raw_id() const
+	{
 		return (u32)m_handle; // isnt there like a smuggle functions for this?
+	}
+
+	bool IsAliveAtEndOfFrame() const
+	{
+		return IsAlive()
+			&& m_owning->m_deferDelete.find(m_handle) == m_owning->m_deferDelete.end();
 	}
 
 	bool IsAlive() const
@@ -185,14 +220,7 @@ public:
 	void Destroy() const
 	{
 		assert_is_valid();
-
-		if (m_owning->HasEventState(Id()))
-		{
-			m_owning->GetEventState(Id()).onDestroy(*this);
-			m_owning->RemoveEventState(Id());
-		}
-
-		m_owning->m_registry.destroy(m_handle);
+		m_owning->DeleteEntityNow(m_handle);
 	}
 
 	void Destroy()
@@ -202,6 +230,12 @@ public:
 
 		m_owning = nullptr;
 		m_handle = entt::null;
+	}
+
+	// threadsafe and guards against double defer deletes
+	void DestroyAtEndOfFrame() const
+	{
+		m_owning->AddDeferedDelete(m_handle);
 	}
 
 	// could use template meta nonsense to remove Get/GetAll
@@ -288,8 +322,25 @@ public:
 
 	Entity& OnDestroy(const std::function<void(Entity)>& func)
 	{
-		m_owning->RegisterEventState_OnDestroy(Id(), func);
+		m_owning->AssureState(m_handle).onDestroy = func;
 		return *this;
+	}
+
+	// Cloning
+
+	Entity Clone()
+	{
+		Entity entity;
+
+		for (auto [id, storage] : m_owning->m_registry.storage())  // like visit function
+		{
+			if (storage.contains(m_handle))
+			{
+				storage.emplace(entity.m_handle, storage.get(m_handle));
+			}
+		}
+
+		return entity;
 	}
 
 	// Asserts
@@ -327,30 +378,30 @@ public:
 };
 
 template<typename... _t>
-struct EntityRequires : Entity
+struct EntityWith : Entity
 {
-	EntityRequires()
+	EntityWith()
 	{
 		// no assurance on empty...
 	}
 
-	EntityRequires(Entity&& move) noexcept
+	EntityWith(Entity&& move) noexcept
 		: Entity(std::move(move))
 	{
 		assert_has_components<_t...>();
 	}
-	EntityRequires& operator=(Entity&& move) noexcept
+	EntityWith& operator=(Entity&& move) noexcept
 	{
 		*((Entity*)this) = std::move(move);
 		assert_has_components<_t...>();
 		return *this;
 	}
-	EntityRequires(const Entity& copy)
+	EntityWith(const Entity& copy)
 		: Entity(copy)
 	{
 		assert_has_components<_t...>();
 	}
-	EntityRequires& operator=(const Entity& copy)
+	EntityWith& operator=(const Entity& copy)
 	{
 		*((Entity*)this) = copy;
 		assert_has_components<_t...>();
@@ -362,9 +413,25 @@ namespace std {
 	template<> struct hash<Entity> { size_t operator()(const Entity& x) const { return x.Id(); } };
 }
 
-// impl, could go into cpp but these funcs are tiny
+// impl here for Entity def
 
 inline Entity EntityWorld::Create()
 {
-	return Entity(m_registry.create(), this);
+	return Wrap(m_registry.create());
+}
+
+inline void EntityWorld::DeleteEntityNow(entt::entity id)
+{
+	if (HasState(id))
+	{
+		GetState(id).onDestroy(Wrap(id));
+		RemoveState(id);
+	}
+
+	m_registry.destroy(id);
+}
+
+inline Entity EntityWorld::Wrap(entt::entity id)
+{
+	return Entity(id, this);
 }

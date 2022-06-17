@@ -10,7 +10,7 @@ struct Player
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;
-	float AttackTime = .4f;
+	float AttackTime = .004f;
 	float m_attackTimer = 0.f;
 	bool AttackFireInput;
 };
