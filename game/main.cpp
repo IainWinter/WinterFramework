@@ -184,7 +184,7 @@ struct Regolith : EngineLoop
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
 
-		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(10.f, 0.f)));
+		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 
 		for (int i = 0; i < 15; i++)
 		{
