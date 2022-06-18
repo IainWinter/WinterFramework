@@ -46,25 +46,16 @@
 
 struct MetricsSystem : System<MetricsSystem>
 {
+	std::vector<float> m_time;
+
+	std::vector<float> m_fixedTicks;
 	std::vector<float> m_deltaTime;
-	std::vector<float> m_fixedTimePoint;
 	std::vector<int> m_cellCounts;
 
 	void Init()
 	{
 		Attach<event_RecordMetric>();
 	}
-
-	//void Update()
-	//{
-	//	int count = 0;
-	//	for (auto a : Query<Cell>())
-	//	{
-	//		count += 1;
-	//	}
-
-	//	m_cellCounts.push_back(count);
-	//}
 
 	void UI()
 	{
@@ -86,26 +77,41 @@ struct MetricsSystem : System<MetricsSystem>
 
 		m_cellCounts.push_back(cellCount);
 
-		//ImPlot::SetNextAxesToFit();
-		//ImPlot::BeginPlot("Times");
-		//ImPlot::PlotLine("Cell count", m_cellCounts.data(), m_cellCounts.size());
-		//ImPlot::EndPlot();
+		ImPlot::SetNextAxesToFit();
+		if (ImPlot::BeginPlot("Times"))
+		{
+			ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
+			ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
+			ImPlot::EndPlot();
+		}
 
 		ImGui::End();
 
-		if (m_deltaTime .size()  > 200) m_deltaTime .erase(m_deltaTime .begin()); // lots of copies
-		if (m_cellCounts.size() > 1000) m_cellCounts.erase(m_cellCounts.begin()); // lots of copies
+		if (m_time.size() > 10.f / Time::DeltaTime())
+		{
+			m_time      .erase(m_time      .begin());
+			m_deltaTime .erase(m_deltaTime .begin());
+			m_fixedTicks.erase(m_fixedTicks.begin());
+		}
 	}
 
 	void on(event_RecordMetric& e)
 	{
 		switch (e.metric)
 		{
-			case TICK:            m_deltaTime     .push_back(e.value); break;
-			case TICK_FIXED_TIME: m_fixedTimePoint.push_back(e.value); break;
+			case TICK:       
+			{
+				m_time     .push_back(e.timePoint);
+				m_deltaTime.push_back(e.value);
+				break;
+			}
+			case TICK_FIXED: 
+			{
+				m_fixedTicks.push_back(e.value * Time::DeltaTime());
+				break;
+			}
 		}
 	}
-
 };
 
 struct Regolith : EngineLoop
@@ -187,7 +193,7 @@ struct Regolith : EngineLoop
 
 		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 
-		Entity entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
+		Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
 		entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
 
 		//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");

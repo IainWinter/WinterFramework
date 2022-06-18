@@ -155,6 +155,7 @@ protected:
 	// Entities
 
 	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
+	Entity Wrap(u32 id)   { assert_init(); return m_level->GetWorld().Wrap(id); }
 
 	// Threading
 	

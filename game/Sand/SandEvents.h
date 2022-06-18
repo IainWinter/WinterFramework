@@ -62,3 +62,10 @@ struct event_Sand_ExplodeToDust
 
 	std::vector<int> onlyThisIndex; // if empty everything is blow
 };
+
+struct event_Sand_ProjectileHit
+{
+	EntityWith<Transform2D, Sprite, SandSprite> entity;
+	EntityWith<Cell, CellProjectile> projectile;
+	ivec2 hitPosInSprite;
+};

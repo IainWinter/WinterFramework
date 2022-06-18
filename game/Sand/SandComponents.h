@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Rendering.h"
+#include <vector>
 
 struct Cell
 {
@@ -25,7 +26,7 @@ struct SandSprite
 	r<Texture> colliderMask;
 	std::vector<int> core;
 
-	int cellStrength = 1;
+	int cellStrength = 0;
 	int cellCount = 0;
 
 	Texture& Get() { return *colliderMask; }

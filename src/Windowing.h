@@ -315,7 +315,13 @@ public:
 
 	void BeginImgui()
 	{
-        ImGui_ImplOpenGL3_NewFrame();
+		// might want to allow user to configure this
+		// but 99% of the time you want to draw imgui 
+		// to the screen not some backbuffer
+		
+		gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+		ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(m_window);
         ImGui::NewFrame();
 	}

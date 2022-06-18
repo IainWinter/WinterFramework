@@ -14,6 +14,7 @@
 #include <stdint.h>
 #include <functional>
 #include <unordered_map>
+#include <assert.h>
 
 using hash_t = uint64_t;
 

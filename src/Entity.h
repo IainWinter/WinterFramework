@@ -3,6 +3,8 @@
 #include "Defines.h"
 #include "entt/entity/registry.hpp"
 #include <unordered_set>
+#include <unordered_map>
+#include <mutex>
 
 // entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
 
@@ -35,7 +37,7 @@ namespace tuple_helpers
 	{
 		return pop_front_impl(tuple, std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
 	}
-};
+}
 
 template<typename... _t>
 struct EntityQuery
@@ -144,12 +146,11 @@ public:
 	}
 
 	Entity Create();
+	Entity Wrap(u32 id);
 
 // hidden entity functions, called from Entity
 
 private:
-
-	Entity Wrap(entt::entity id);
 	void DeleteEntityNow(entt::entity id);
 
 	void AddDeferedDelete(entt::entity id)
@@ -417,21 +418,21 @@ namespace std {
 
 inline Entity EntityWorld::Create()
 {
-	return Wrap(m_registry.create());
+	return Wrap((u32)m_registry.create());
+}
+
+inline Entity EntityWorld::Wrap(u32 id)
+{
+	return Entity((entt::entity)id, this);
 }
 
 inline void EntityWorld::DeleteEntityNow(entt::entity id)
 {
 	if (HasState(id))
 	{
-		GetState(id).onDestroy(Wrap(id));
+		GetState(id).onDestroy(Wrap((u32)id));
 		RemoveState(id);
 	}
 
 	m_registry.destroy(id);
-}
-
-inline Entity EntityWorld::Wrap(entt::entity id)
-{
-	return Entity(id, this);
 }

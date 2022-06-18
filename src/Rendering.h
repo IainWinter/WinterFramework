@@ -23,37 +23,7 @@
 
 #include "util/error_check.h" // gives gl
 #include "SDL2/SDL_surface.h"
-
-#define STB_IMAGE_IMPLEMENTATION // not great, I guess this should be in a cpp file
-#include "stb/stb_image.h"
-
-std::tuple<u8*, int, int, int> load_image_using_stb(const std::string& filepath)
-{
-	int width, height, channels, format;
-	stbi_info(filepath.c_str(), &width, &height, &channels);
-
-	switch (channels)
-	{
-		case 1: format = STBI_grey;       break;
-		case 2: format = STBI_grey_alpha; break;
-		case 3: format = STBI_rgb;        break;
-		case 4: format = STBI_rgb_alpha;  break;
-	}
-
-	u8* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, format);
-
-	if (!pixels /*|| stbi_failure_reason()*/) // no SOI bug
-	{
-		printf("failed to load image '%s' reason: %s\n", filepath.c_str(), stbi_failure_reason());
-	}
-
-	return std::make_tuple(pixels, width, height, channels);
-}
-
-void free_image_using_stb(void* pixels)
-{
-	free(pixels); // stb calls free, doesnt HAVE to though so this is a lil jank
-}
+#include "stb/load_image.h"
 
 // I want to create the simplest graphics api that hides as much as possible away
 // I only need simple Texture/Mesh/Shader, I dont even need materials
@@ -340,7 +310,7 @@ public:
 	)
 		: IDeviceObject (isStatic)
 	{
-		auto [pixels, width, height, channels] = load_image_using_stb(path);
+		auto [pixels, width, height, channels] = load_image(path);
 		assert(channels > 0 && channels <= 4 && "Invalid RGBA channel count created by stb");
 		init_texture_host_memory(pixels, width, height, (Usage)channels);
 	}
@@ -1459,7 +1429,7 @@ struct Camera
 		: x(0), y(0), w(12), h(8) 
 	{}
 
-	Camera(int x, int y, int w, int h)
+	Camera(float x, float y, float w, float h)
 		: x(x), y(y), w(w), h(h)
 	{}
 

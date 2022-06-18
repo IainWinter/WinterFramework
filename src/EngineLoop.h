@@ -20,12 +20,12 @@
 // functions for updating its state
 // this is where global events would attach...
 
-//#define IW_METRICS_TIMER
+#define IW_METRICS_TIMER
 
 enum MetricName
 {
-	TICK,               // value is DeltaTime
-	TICK_FIXED_TIME     // value is FixedTime
+	TICK,         // value is Delta time
+	TICK_FIXED    // value is Number of ticks in frame
 };
 
 struct event_RecordMetric
@@ -96,28 +96,31 @@ public:
 		LogMetric(TICK, Time::DeltaTime());
 #endif
 
+		float physicsTicks = 0;
+
 		m_fixedStepAcc += Time::DeltaTime();
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
-#ifdef IW_METRICS_TIMER
-			LogMetric(TICK_FIXED_TIME, Time::FixedTime());
-#endif
+			physicsTicks += 1;
 
 			m_fixedStepAcc -= Time::FixedTime();
-			
+
 			TickLevelFixed();
 			TickPhysics();
 		}
+
+#ifdef IW_METRICS_TIMER
+		LogMetric(TICK_FIXED, physicsTicks);
+#endif
 
 		TickLevel();
 		TickLevelUI();
 		
 		TickTasks();
+		TickEvents();
+		TickDefered();
 		
 		TickFrame();
-		TickEvents();
-
-		TickDefered();
 	}
 
 	// Interface
