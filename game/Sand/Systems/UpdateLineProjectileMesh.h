@@ -80,8 +80,10 @@ private:
 
 			if (isProjectile && sand.OnScreen(raster))
 			{
+				CellProjectile& proj = e.Get<CellProjectile>();
+				
 				// trail
-				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, .1f);
+				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, proj.trailLife);
 
 				if (sand.CollidePixel(raster))
 				{
@@ -90,7 +92,6 @@ private:
 					int tileIndex = spriteInfo[2];
 
 					Entity tileEntity = Wrap(tileIndex);
-					CellProjectile& proj = e.Get<CellProjectile>();
 
 					if (!tileEntity.IsAlive() || tileEntity.Id() == proj.owner) continue;
 

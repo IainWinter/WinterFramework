@@ -156,6 +156,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
+
+		//level->CreateEntity().AddAll(Transform2D(0, 0, -1, 30*1.8, 10*1.8), Sprite(_p("bg.png")));
 	}
 
 	void ConfigureModules()
@@ -191,10 +193,10 @@ struct Regolith : EngineLoop
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
 
-		Entity target = level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
+		Entity target = player;// level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 
-		Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
-		entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
+		//Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
+		//entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
 
 		//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
 		////entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
@@ -203,16 +205,16 @@ struct Regolith : EngineLoop
 		////entity.Add<ExplodeNearTarget>(player);
 		////entity.Add<Mesh>(GenerateCircle(16, 5.f));
 
-		for (int i = 0; i < 0; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;
 
-			switch (get_rand(1))
+			switch (get_rand(2))
 			{
 				case 0: // fighter
 				{
 					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-					entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
+					//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(target);
 					entity.Add<Flocker>();
 

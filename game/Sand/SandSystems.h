@@ -14,7 +14,7 @@ inline void AddSandSystemsToLevel(r<Level> level)
 	
 	level->AddSystem(Sand_System_UpdateLineProjectileMesh());
 	level->AddSystem(Sand_System_DrawSandSprites());
-	//level->AddSystem(Sand_System_SplitTiles());
+	level->AddSystem(Sand_System_SplitTiles());
 
 
 	// reactive systems

@@ -26,7 +26,7 @@ struct System_PlayerController : System<System_PlayerController>
 		vec2 direction = safe_normalize(player.AttackLocationInput - transform.position);
 		vec2 position = transform.position + direction * 1.f;
 		
-		direction *= 2000.f;
+		direction *= 500.f;
 
 		player.m_attackTimer -= Time::DeltaTime();
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
