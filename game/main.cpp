@@ -193,8 +193,6 @@ struct Regolith : EngineLoop
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
 
-		Entity target = player;// level->CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
-
 		//Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
 		//entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
 
@@ -215,7 +213,7 @@ struct Regolith : EngineLoop
 				{
 					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
 					//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
-					entity.Add<TurnTwoardsTarget>(target);
+					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
 					entity.Add<Flocker>();
 
 					break;
@@ -224,7 +222,7 @@ struct Regolith : EngineLoop
 				case 1: // bomb
 				{
 					entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
-					entity.Add<TurnTwoardsTarget>(target);
+					entity.Add<TurnTwoardsTarget>(player);
 
 					break;
 				}
@@ -232,7 +230,7 @@ struct Regolith : EngineLoop
 				case 2: // station
 				{
 					entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
-					entity.Add<TurnTwoardsTarget>(target);
+					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_rand(32, 18))));
 					entity.Add<Flocker>();
 
 					break;

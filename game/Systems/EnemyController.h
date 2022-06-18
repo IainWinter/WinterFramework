@@ -16,9 +16,9 @@ struct System_EnemyController : System<System_EnemyController>
 		//	}
 		//}
 
-		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
+		for (auto [body, flocker] : Query<Rigidbody2D, TurnTwoardsTarget>())
 		{
-			body.SetVelocity(normalize(body.GetVelocity()) * 10.f); // set constant velocity for flockers
+			body.SetVelocity(safe_normalize(body.GetVelocity()) * 10.f); // set constant velocity for flockers
 		}
 	}
 };

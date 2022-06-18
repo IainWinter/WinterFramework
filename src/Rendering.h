@@ -21,6 +21,10 @@
 // imgui is going to be the UI library for everything in the game
 // so hard commit to tieing it up with the renderer
 
+// could hide this in a cpp file
+// probally the best thing to do would be to put all the _XXXXX functions into a cpp
+// that way opengl is actually hidden
+
 #include "util/error_check.h" // gives gl
 #include "SDL2/SDL_surface.h"
 #include "stb/load_image.h"
