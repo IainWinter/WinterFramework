@@ -147,13 +147,6 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 	return { index % width, index / width };
 }
 
-// map asset path
-
-inline std::string _p(const std::string& filename)
-{
-	return "../assets/" + filename;
-}
-
 // vector helpers
 
 template<typename _t>
@@ -161,4 +154,15 @@ void pop_erase(std::vector<_t>& list, size_t index)
 {
 	list.at(index) = list.back();
 	list.pop_back();
+}
+
+// asset
+
+#ifndef ASSET_ROOT_PATH
+#	define ASSET_ROOT_PATH "../assets/"
+#endif
+
+inline std::string _a(const std::string& path)
+{
+	return ASSET_ROOT_PATH + path;
 }

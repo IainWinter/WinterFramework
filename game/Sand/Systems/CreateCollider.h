@@ -58,7 +58,7 @@ private:
 		vec2 sizeMask   = vec2(mask->Width(), mask->Height());
 		
 		vec2 offset = sizeMask / sizeIsland - vec2(1.f, 1.f);
-		vec2 scale  = sizeIsland / GetModule<SandWorld>().worldScaleInit;
+		vec2 scale = sizeIsland / (float)GetModule<SandWorld>().cellsPerMeter;
 
 		// scale and move origin of polygons
 		for (std::vector<vec2>& polygon : polygons.first)

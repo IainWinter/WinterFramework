@@ -79,11 +79,11 @@ struct Level
 private:
 	int m_levelId; // not really needed was for global ecs to mark entities
 	Application* m_app;
-
-	EntityWorld m_world;
+	
 	event_manager m_levelBus; // intra level comms
 	event_queue m_levelQueue; // intra level comms
 
+	EntityWorld m_world;
 	std::vector<SystemBase*> m_systems; // updater functions
 
 	bool m_initialized = false;
@@ -104,9 +104,13 @@ public:
 
 	int                             Id()                const { return m_levelId; }
 	const std::vector<SystemBase*>& GetSystems()        const { return m_systems; }
-	EntityWorld&                    GetWorld()                { return m_world; }
-	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	Entity                          CreateEntity()            { return m_world.Create(); }
+
+	// these should be removed to force use of systems for updating
+
+	EntityWorld*                    GetWorld()                { return &m_world; }
+	Application*                    GetApp()                  { return m_app; }
+	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	
 	// system constructors should be only default init of values
 	// wait until Start to do any work
@@ -155,7 +159,7 @@ protected:
 	// Entities
 
 	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
-	Entity Wrap(u32 id)   { assert_init(); return m_level->GetWorld().Wrap(id); }
+	Entity Wrap(u32 id)   { assert_init(); return m_level->GetWorld()->Wrap(id); }
 
 	// Threading
 	

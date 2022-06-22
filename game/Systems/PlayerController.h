@@ -26,13 +26,15 @@ struct System_PlayerController : System<System_PlayerController>
 		vec2 direction = safe_normalize(player.AttackLocationInput - transform.position);
 		vec2 position = transform.position + direction * 1.f;
 		
-		direction *= 500.f;
+		direction *= 1500.f;
 
 		player.m_attackTimer -= Time::DeltaTime();
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
 			Send(event_Sand_CreateCell(position, direction, Color(255, 255, 255), 5.f, [this](Entity e) { e.Add<CellProjectile>(playerEntity.Id()); }));
+		
+			//Send(event_SpawnExplosion{vec2(10, 0), 20.f});
 		}
 	}
 

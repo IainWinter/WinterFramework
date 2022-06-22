@@ -24,25 +24,11 @@
 #include "Systems/FireWeaponAfterDelay.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
-#include "ext/systems/SimpleSpriteRender.h"
-#include "ext/systems/SimpleMeshRender.h"
+#include "ext/systems/ParticleUpdate.h"
 
-//struct SandSpriteMaskRenderer : SystemBase
-//{
-//	SpriteRenderer2D render;
-//
-//	void Update() override
-//	{
-//		auto [camera] = GetModules<Camera>();
-//
-//		render.Begin(camera);
-//		for (auto [transform, sprite] : Query<Transform2D, SandSprite>())
-//		{
-//			render.m_shader.Set("tint", vec4(1, 0, 0, 1));
-//			render.DrawSprite(transform, sprite.Get());
-//		}
-//	}
-//};
+#include "Systems/RenderSceneGraph.h"
+
+#include "GameRender.h"
 
 struct MetricsSystem : System<MetricsSystem>
 {
@@ -63,27 +49,37 @@ struct MetricsSystem : System<MetricsSystem>
 		ImGui::Text("Delta time: %f", Time::RawDeltaTime());
 		ImGui::Text("Scaled Delta time: %f", Time::DeltaTime());
 
-		for (auto [transform, flocker] : Query<Transform2D, Flocker>())
-		{
-			ImGui::Text("x: %f y: %f", transform.position.x, transform.position.y);
-		}
+		float timeScale = Time::TimeScale();
+		ImGui::SliderFloat("time scale", &timeScale, 0, 2);
+		Time::SetTimeScale(timeScale);
 
-		int cellCount = 0;
+		SandWorld& sand = GetModule<SandWorld>();
 
-		for (auto _ : Query<Cell>())
-		{
-			cellCount += 1;
-		}
+		ImGui::SliderInt2("world size cells", &sand.worldSizeCells.x, 0, 10);
+		ImGui::SliderFloat2("cam size meters", &sand.cameraSizeMeters.x, 0, 40);
+		ImGui::SliderFloat("cells per meter", &sand.cellsPerMeter, 0, 40);
 
-		m_cellCounts.push_back(cellCount);
+		//for (auto [transform, flocker] : Query<Transform2D, Flocker>())
+		//{
+		//	ImGui::Text("x: %f y: %f", transform.position.x, transform.position.y);
+		//}
 
-		ImPlot::SetNextAxesToFit();
-		if (ImPlot::BeginPlot("Times"))
-		{
-			ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
-			ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
-			ImPlot::EndPlot();
-		}
+		//int cellCount = 0;
+
+		//for (auto _ : Query<Cell>())
+		//{
+		//	cellCount += 1;
+		//}
+
+		//m_cellCounts.push_back(cellCount);
+
+		//ImPlot::SetNextAxesToFit();
+		//if (ImPlot::BeginPlot("Times"))
+		//{
+		//	ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
+		//	ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
+		//	ImPlot::EndPlot();
+		//}
 
 		ImGui::End();
 
@@ -119,10 +115,11 @@ struct Regolith : EngineLoop
 	void _Init()
 	{
 		ConfigureWindow();
+		InitGameRenderVars();
+
 		ConfigureModules();
 		ConfigureLevel();
 		ConfigureInputMapping();
-
 		ConfigureMainGameLevel();
 	}
 
@@ -140,9 +137,9 @@ struct Regolith : EngineLoop
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
+		level->AddSystem(System_RenderSceneGraph());
+
 		level->AddSystem(PhysicsInterpolation());
-		level->AddSystem(SimpleSpriteRenderer2D());
-		level->AddSystem(SimpleMeshRenderer2D());
 
 		level->AddSystem(System_PlayerController());
 		level->AddSystem(System_TurnTwoardsTarget());
@@ -152,21 +149,27 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
+		level->AddSystem(System_ParticleUpdate());
 
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
 
-		//level->CreateEntity().AddAll(Transform2D(0, 0, -1, 30*1.8, 10*1.8), Sprite(_p("bg.png")));
+		//level->CreateEntity().AddAll(Transform2D(0, 0, -1, 30*1.8, 10*1.8), Sprite(_a("bg.png")));
 	}
 
 	void ConfigureModules()
 	{
-		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
-		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
+		Window& window = m_app.GetModule<Window>();
+
+		vec2 screenSize = vec2(window.Width(), window.Height());
+		vec2 cameraSize = vec2(16 * 2, 9 * 2);
+
+		m_app.AddModule<SandWorld>(20, vec2(cameraSize.x, cameraSize.y));
+		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
 		CoordTranslation coords;
-		coords.ScreenToWorld = vec2(32, 18);
+		coords.ScreenToWorld = cameraSize;
 
 		m_app.AddModule<CoordTranslation>(coords);
 	}
@@ -175,7 +178,7 @@ struct Regolith : EngineLoop
 
 	void ConfigureInputMapping()
 	{
-		InputMapping& input = m_app.GetModule<Window>().m_input;
+		InputMapping& input = m_app.GetModule<Window>().Input();
 
 		input.m_keyboard[SDL_SCANCODE_W] = InputName::UP;
 		input.m_keyboard[SDL_SCANCODE_S] = InputName::DOWN;
@@ -184,7 +187,7 @@ struct Regolith : EngineLoop
 	}
 
 	void ConfigureMainGameLevel()
-	{
+	{ 
 		r<Level> level = LevelManager::CurrentLevel();
 
 		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
@@ -193,17 +196,12 @@ struct Regolith : EngineLoop
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
 
-		//Entity entity = CreateSandSprite("test_sqr.png", "test_sqr.png");
-		//entity.Add<Rigidbody2D>().SetPosition(vec2(10.f, 0));
+		CreateSandSprite("test_line.png", "test_line.png");
 
-		//Entity entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-		////entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f);
-		//entity.Add<TurnTwoardsTarget>(target);
-		////entity.Add<Flocker>(3.f, 1.f, 7.f);
-		////entity.Add<ExplodeNearTarget>(player);
-		////entity.Add<Mesh>(GenerateCircle(16, 5.f));
+		level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
+		level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
 
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 0; i++)
 		{
 			Entity entity;
 
@@ -244,21 +242,18 @@ struct Regolith : EngineLoop
 		}
 	}
 
-	// should make sand cut the collider sprite as well, this will make the colliders much simopler
-	// I think, if this doesnt happen then the sprite will become incorrect on the first hit
-
 	Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path)
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
-		r<Texture> sprite = mkr<Texture>(_p(path), false);
-		r<Texture> mask   = mkr<Texture>(_p(collider_mask_path), false);
+		r<Texture> sprite = mkr<Texture>(_a(path), false);
+		r<Texture> mask   = mkr<Texture>(_a(collider_mask_path), false);
 
 		assert(sprite->Length() == mask->Length());
 
 		Transform2D transform;
-		transform.scale.x = sprite->Width()  / sand.worldScale.x;
-		transform.scale.y = sprite->Height() / sand.worldScale.y;
+		//transform.scale.x = sprite->Width()  / sand.worldScale.x;
+		//transform.scale.y = sprite->Height() / sand.worldScale.y;
 
 		// collider should be 8 bit mask texture
 		// if its not then the color texture can be used actually so maybe this is fine
@@ -277,13 +272,13 @@ struct Regolith : EngineLoop
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
-		r<Texture> sprite = mkr<Texture>(_p(path), false);
-		r<Texture> mask   = mkr<Texture>(_p(path_mask), false);
+		r<Texture> sprite = mkr<Texture>(_a(path), false);
+		r<Texture> mask   = mkr<Texture>(_a(path_mask), false);
 		
 		assert(sprite->Length() == mask->Length());
 
 		Transform2D transform;
-		transform.scale = vec2(sprite->Width(), sprite->Height()) * sand.worldScale;
+		//transform.scale = vec2(sprite->Width(), sprite->Height()) * sand.worldScale;
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);

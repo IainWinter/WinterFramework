@@ -6,65 +6,52 @@
 #include "Leveling.h"
 #include "Windowing.h"
 #include "Events.h"
+
 #include "ext/Time.h"
 #include "ext/flood_fill.h"
 #include "ext/marching_cubes.h"
 #include "ext/Components.h"
-#include <vector>
-#include <functional>
-#include <unordered_set>
+#include "ext/rendering/Sprite.h"
+#include "ext/rendering/Camera.h"
 
 #include "Components/KeepOnScreen.h"
+#include "CoordTranslation.h"
 
 #include "Sand/SandEvents.h"
 #include "Sand/SandComponents.h"
 #include "Sand/SandHelpers.h"
 
+#include <vector>
+#include <functional>
+#include <unordered_set>
+
 struct SandWorld
 {
-	Entity display;
-
-	 vec2 worldScaleInit; // scale of meters to cells, needed for sprite cutting
-	 vec2 worldScale;     // scale of meters to cells
-	 vec2 screenOffset;
-	ivec2 screenSize;
+	ivec2 worldSizeCells;
+	vec2 cameraSizeMeters;
+	float cellsPerMeter;
 
 	r<Target> screenRead;
-	r<Target> screenWrite; // to make copying to cpu not stall?
 
-	SandWorld(int w, int h, int camScaleX, int camScaleY)
+	SandWorld(int cellsPerMeter, vec2 camSize)
 	{
 		screenRead = mkr<Target>(false);
-		screenRead->Add(Target::aColor, w, h, Texture::uINT_32, false);
-
-		screenWrite = mkr<Target>(false);
-		screenWrite->Add(Target::aColor, w, h, Texture::uINT_32, false);
-
-		Mesh LPmesh = Mesh(false);
-		LPmesh.Add<vec2>(Mesh::aPosition, {});
-		LPmesh.Add<vec4>(Mesh::aColor, {});
-		LPmesh.topology = Mesh::tLines;
-
-		ResizeWorld(w, h, camScaleX, camScaleY);
-		worldScaleInit = worldScale;
+		ResizeWorld(cellsPerMeter, camSize);
+		screenRead->Add(Target::aColor, worldSizeCells.x, worldSizeCells.y, Texture::uINT_32, false);
 	}
 
-	void ResizeWorld(int width, int height, int camScaleX, int camScaleY)
+	void ResizeWorld(int cellsPerMeter_, vec2 camSize)
 	{
-		screenRead ->Resize(width, height);
-		screenWrite->Resize(width, height);
-		
-		screenSize = vec2(width, height);
-		screenOffset = screenSize / 2;
+		worldSizeCells = camSize * (float)cellsPerMeter_;
+		cameraSizeMeters = camSize;
+		cellsPerMeter = cellsPerMeter_;
 
-		worldScale.x = width  / camScaleX / 2; // by 2 bc mesh does from -1 to 1
-		worldScale.y = height / camScaleY / 2;
+		screenRead->Resize(worldSizeCells.x, worldSizeCells.y);
 	}
 
-	void DrawPixel(Texture& display, ivec2 pos, Color c)
+	ivec2 ToScreenPos(vec2 posInMeters) const
 	{
-		pos += screenOffset;
-		display.At(pos.x, pos.y) = c;
+		return posInMeters / cameraSizeMeters * cellsPerMeter;
 	}
 
 	bool CollidePixel(ivec2 pos) const
@@ -74,19 +61,18 @@ struct SandWorld
 
 	const ivec4& GetCollisionInfo(ivec2 pos) const
 	{
-		pos += screenOffset;
-		return *(ivec4*)screenRead->Get(Target::aColor)->At<int>(pos.x, pos.y);
-	}
-
-	vec2 ToScreenPos(const vec2& pos) const
-	{
-		return pos * worldScale;
+		ivec2 p = ToScreenPos(pos);
+		return *(ivec4*)screenRead->Get(Target::aColor)->At<int>(p.x, p.y);
 	}
 
 	bool OnScreen(ivec2 pos) const
 	{
-		pos += screenOffset; 
-		return pos.x >= 0 && pos.y >= 0 && pos.x < screenSize.x && pos.y < screenSize.y;
+		ivec2 p = ToScreenPos(pos);
+
+		return p.x >= 0 
+			&& p.y >= 0
+			&& p.x < worldSizeCells.x 
+			&& p.y < worldSizeCells.y;
 	}
 
 	// yes moves
@@ -112,18 +98,17 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_SandAddSprite>();
 		Attach<event_Sand_CreateCell>();
 
-		//maskRender = mkr<SandCollisionInfoRenderer>();
+		auto [sand, camera] = GetModules<SandWorld, Camera>();
+		
+		CreateEntity().AddAll(
+			Transform2D(vec2(0.f), vec2(5, 5)), 
+			Sprite(sand.screenRead->Get(Target::aColor))
+		);
 	}
 
 	void on(event_Sand_CreateCell& e)
 	{
-		Cell c = e.cell;
-		if (e.adjustPosition)
-		{
-			c.pos = GetModule<SandWorld>().ToScreenPos(c.pos);
-		}
-
-		Entity entity = CreateEntity().AddAll(c);
+		Entity entity = CreateEntity().AddAll(e.cell);
 		
 		if (e.onCreate)
 		{
@@ -134,7 +119,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_WindowResize& e)
 	{
 		auto [sand, camera] = GetModules<SandWorld, Camera>();
-		sand.ResizeWorld(e.width, e.height, camera.w, camera.h);
+		sand.ResizeWorld(sand.cellsPerMeter, vec2(camera.w, camera.h));
 	}
 
 	void on(event_SandAddSprite& e)
@@ -144,8 +129,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
-		transform.scale.x = sprite.Width()  / GetModule<SandWorld>().worldScaleInit.x;
-		transform.scale.y = sprite.Height() / GetModule<SandWorld>().worldScaleInit.y;
+		transform.scale = sprite.Dimensions() / GetModule<SandWorld>().cellsPerMeter;
 
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 

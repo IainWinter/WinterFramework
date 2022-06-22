@@ -25,7 +25,6 @@ struct event_SandAddSprite
 struct event_Sand_CreateCell
 {
 	Cell cell;
-	bool adjustPosition;
 	std::function<void(Entity)> onCreate;
 
 	event_Sand_CreateCell(
@@ -34,7 +33,6 @@ struct event_Sand_CreateCell
 	)
 		: cell           (cell)
 		, onCreate       (onCreate)
-		, adjustPosition (false)
 	{}
 
 	event_Sand_CreateCell(
@@ -46,7 +44,6 @@ struct event_Sand_CreateCell
 	)
 		: cell           (Cell{ pos, vel, color, life })
 		, onCreate       (onCreate)
-		, adjustPosition (true)
 	{}
 };
 

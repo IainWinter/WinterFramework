@@ -98,7 +98,7 @@ struct WindowConfig
 
 struct Window
 {
-public:
+private:
 	SDL_Window* m_window;
 	SDL_GLContext m_opengl;
 	event_queue* m_events;
@@ -106,7 +106,6 @@ public:
 	WindowConfig m_config;
 	InputMapping m_input;
 
-private:
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;
 
@@ -136,6 +135,11 @@ public:
 		Dnit();
 	}
 
+	int                Width()  const { return m_config.Width; }
+	int                Height() const { return m_config.Height; }
+	const std::string& Title()  const { return m_config.Title; }
+	InputMapping&      Input()        { return m_input; }
+
 	void Init()
 	{
 		m_first_glsl_version = Window::Init_Video();
@@ -163,7 +167,7 @@ public:
 
 		// vsync
 
-		SDL_GL_SetSwapInterval(0);
+		SDL_GL_SetSwapInterval(1);
 	}
 
 	void InitUI()

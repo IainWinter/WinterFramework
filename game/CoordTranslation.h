@@ -5,4 +5,6 @@
 struct CoordTranslation
 {
 	vec2 ScreenToWorld;
+
+	// put sand world scaling
 };

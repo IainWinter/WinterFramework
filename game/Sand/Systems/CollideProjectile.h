@@ -16,6 +16,8 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 		int index = sprite.Get().Index32(e.hitPosInSprite.x, e.hitPosInSprite.y);
 		
+		printf("%d, %d\n", e.hitPosInSprite.x, e.hitPosInSprite.y);
+
 		sprite.Get().At(index).a = 0;
 		mask  .Get().At(index).a = 0;
 		mask.cellCount -= 1;

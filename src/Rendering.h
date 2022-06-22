@@ -199,6 +199,8 @@ public:
 	int BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
 	int Length()          const { return Width() * Height(); }
 
+	vec2 Dimensions()     const { return vec2(Width(), Height()); }
+
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
 	// only r -> Channels() = 1
@@ -568,6 +570,12 @@ public:
 	static void UseDefault()
 	{
 		gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+	}
+
+	static void Clear(Color color)
+	{
+		gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
+		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	}
 
 	// interface
@@ -1265,7 +1273,8 @@ public:
 	// think of another way to do this...
 
 	void Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
-	void Set(const std::string& name, const float& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
+	void Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); }
+	void Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); }
@@ -1425,31 +1434,16 @@ private:
 	}
 };
 
-struct Camera
-{
-	float x, y, w, h;
+// Need a simple material system
+// needs particles that change a uniform every frame
+//
 
-	Camera()
-		: x(0), y(0), w(12), h(8) 
-	{}
+// each mesh needs a material
+// a model could be a list of meshes and materials
 
-	Camera(float x, float y, float w, float h)
-		: x(x), y(y), w(w), h(h)
-	{}
+// a sprite renderer takes a 
 
-	mat4 Projection() const
-	{
-		mat4 camera = ortho(-w, w, -h, h, -16.f, 16.f);
-		camera = translate(camera, vec3(x, y, 0.f));
-
-		return camera;
-	}
-
-	vec2 ScreenSize() const
-	{
-		return vec2(w, h);
-	}
-};
+// 
 
 //
 // end device objects s
@@ -1499,189 +1493,3 @@ struct Camera
 //		}
 //	}
 //};
-
-struct Sprite
-{
-	r<Texture> source;
-	Sprite() : source(nullptr) {}
-	Sprite(r<Texture> source) : source(source) {}
-	Sprite(const Texture& sourceToCopy) : source(mkr<Texture>(sourceToCopy)) {}
-	Texture& Get() { return *source; }
-};
-
-struct SpriteRenderer2D
-{
-	ShaderProgram m_shader;
-	Mesh          m_quad;
-
-	// this gets run multiple times... should save static stuff like shaders
-	// drop raii just use init function or something
-
-	SpriteRenderer2D()
-	{
-		m_quad.Add<vec2>(Mesh::aPosition,
-		{
-			vec2(-1, -1),
-			vec2( 1, -1),
-			vec2( 1,  1),
-			vec2(-1,  1)
-		});
-
-		m_quad.Add<vec2>(Mesh::aTextureCoord,
-		{
-			vec2(0, 0),
-			vec2(1, 0),
-			vec2(1, 1),
-			vec2(0, 1)
-		});
-
-		m_quad.Add<int>(Mesh::aIndexBuffer,
-		{
-			0, 1, 2,
-			0, 2, 3
-		});
-
-		const char* source_vert = 
-								"#version 330 core\n"
-								"layout (location = 0) in vec2 pos;"
-								"layout (location = 1) in vec2 uv;"
-
-								"out vec2 TexCoords;"
-
-								"uniform mat4 model;"
-								"uniform mat4 projection;"
-
-								"void main()"
-								"{"
-									"TexCoords = uv;"
-									"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
-								"}";
-
-		const char* source_frag = 
-								"#version 330 core\n"
-								"in vec2 TexCoords;"
-
-								"out vec4 color;"
-
-								"uniform sampler2D sprite;"
-								"uniform vec4 tint = vec4(1.f, 1.f, 1.f, 1.f);"
-
-								"void main()"
-								"{"
-									"vec4 spriteColor = texture(sprite, TexCoords);"
-
-									"if (spriteColor.a > .7) { spriteColor.a = 1.f; }" // round up for health thing
-									"else                    { discard; }"
-
-									"color = tint * spriteColor;"
-								"}";
-
-		m_shader.Add(ShaderProgram::sVertex, source_vert);
-		m_shader.Add(ShaderProgram::sFragment, source_frag);
-	}
-
-	// I dont like clear here, it's dependent on the order of systems
-	// drawings, which will make odd behaviour
-	// I guess a wrapper with a queue system will abstract this so it doesnt really matter actually
-	//
-	// should queue and sort by least state change, could also instance
-	// but Ill just go with this until its a problem...
-
-	void Begin(Camera& camera, r<Target> target = nullptr)
-	{
-		if (target) target->Use();
-		else Target::UseDefault();
-
-		m_shader.Use();
-		m_shader.Set("projection", camera.Projection());
-
-		gl(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
-	}
-
-	void Clear(Color color = Color(22, 22, 22, 22))
-	{
-		gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
-		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-	}
-
-	void DrawSprite(const Transform2D& transform, Sprite& sprite)
-	{
-		DrawSprite(transform, sprite.Get());
-	}
-
-	void DrawSprite(const Transform2D& transform, Texture& sprite)
-	{
-		m_shader.Set("model",      transform.World());
-		m_shader.Set("tint",       Color().as_v4());
-		m_shader.Set("sprite",     sprite);
-		m_shader.Set("spriteSize", vec2(sprite.Width(), sprite.Height()));
-
-		m_quad.Draw();
-	}
-};
-
-struct MeshRenderer2D
-{
-	ShaderProgram m_shader;
-
-	struct
-	{
-		mat4 camera_proj;
-	}
-	m_render_state;
-
-	MeshRenderer2D()
-	{
-		const char* source_vert = 
-								"#version 330 core\n"
-								"layout (location = 0) in vec2 vertex;"
-								"layout (location = 5) in vec4 color;"
-								"uniform mat4 model;"
-								"uniform mat4 projection;"
-								"out vec4 vertColor;"
-								"void main()"
-								"{"
-									"vertColor = color;"
-									"gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);"
-								"}";
-
-		const char* source_frag = 
-								"#version 330 core\n"
-								"in vec4 vertColor;"
-								"out vec4 color;"
-								"void main()"
-								"{"
-									//"if (vertColor.a == 0) { vertColor = vec4(1, 1, 1, 1); }"
-									"color = vertColor;"  
-								"}";
-
-		m_shader.Add(ShaderProgram::sVertex, source_vert);
-		m_shader.Add(ShaderProgram::sFragment, source_frag);
-	}
-
-	void Begin(Camera& camera, bool clear) // include render target
-	{
-		m_render_state.camera_proj = camera.Projection();
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		
-		if (clear)
-		{
-			Color cc = Color(22, 22, 22, 22);
-			gl(glClearColor(cc.rf(), cc.gf(), cc.bf(), cc.af()));
-			gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-		}
-	}
-
-	// should queue and sort by least state change, could also instance
-	// but Ill just go with this until its a problem...
-
-	void DrawMesh(const Transform2D& transform, Mesh& mesh)
-	{
-		m_shader.Use();
-		m_shader.Set("projection", m_render_state.camera_proj);
-		m_shader.Set("model",      transform.World());
-
-		mesh.Draw(mesh.topology);
-	}
-};

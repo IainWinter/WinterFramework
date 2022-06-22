@@ -24,26 +24,27 @@ struct Sand_System_UpdateLineProjectileMesh : SystemBase
 	void Update()
 	{
 		SandWorld& sand = GetModule<SandWorld>();
-
 		Texture& collisionMaskRender = *sand.screenRead->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
-		collisionMaskRender.SendToHost();
 
 		std::vector<vec2> verticesOfLines;
 		std::vector<vec4>   colorsOfLines;
 
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
-			cell.life -= Time::DeltaTime();
-			if (cell.life <= 0.f)
+			if (cell.life > 0.f)
 			{
-				e.DestroyAtEndOfFrame();
-				continue;
+				cell.life -= Time::DeltaTime();
+				if (cell.life <= 0.f)
+				{
+					e.DestroyAtEndOfFrame();
+					continue;
+				}
 			}
 
 			auto [a, b] = DrawLine(sand, e, cell);
 			float dist = distance(a, b);
 
-			vec2 smallest = vec2(1.f / sand.worldScale.x, 1.f / sand.worldScale.y) * 1.f;
+			vec2 smallest = vec2(1.f / sand.cellsPerMeter);
 			if (dist < length(smallest))
 			{
 				b += smallest;
@@ -59,6 +60,9 @@ struct Sand_System_UpdateLineProjectileMesh : SystemBase
 		Mesh& lines = entity.Get<Mesh>();
 		lines.Get(Mesh::aPosition)->Set(verticesOfLines);
 		lines.Get(Mesh::aColor)   ->Set(colorsOfLines);
+
+		Transform2D& transform = entity.Get<Transform2D>();
+		//transform.scale = sand.worldScale;
 	}
 
 private:
@@ -123,6 +127,6 @@ private:
 			}
 		}
 
-		return { origin / sand.worldScale, cell.pos / sand.worldScale };
+		return { origin, cell.pos };
 	}
 };

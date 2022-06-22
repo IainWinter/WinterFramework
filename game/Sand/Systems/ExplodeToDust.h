@@ -39,7 +39,7 @@ private:
 			pos += transform.position;
 
 			Color& color = tex.At(x, y);
-			vec2 offset = 1.f / sand.worldScaleInit; // non threadsafe read
+			vec2 offset = vec2(1.f / sand.cellsPerMeter); // non threadsafe read
 
 			auto get_vel = [vel]()
 			{

@@ -180,7 +180,7 @@ private:
 		vec2 midNew = vec2(minX + maxX + 1, minY + maxY + 1) / 2.f;
 		vec2 offset = 2.f * rotate(midNew - mid, tran.rotation);
 
-		tran.position += offset / GetModule<SandWorld>().worldScaleInit;
+		tran.position += offset / GetModule<SandWorld>().cellsPerMeter;
 
 		return { tran, splitTexture, splitMask };
 	}
