@@ -42,7 +42,7 @@ struct SandWorld
 
 	void ResizeWorld(int cellsPerMeter_, vec2 camSize)
 	{
-		worldSizeCells = camSize * (float)cellsPerMeter_;
+		worldSizeCells = camSize * 2.f * (float)cellsPerMeter_;
 		cameraSizeMeters = camSize;
 		cellsPerMeter = cellsPerMeter_;
 
@@ -51,21 +51,21 @@ struct SandWorld
 
 	ivec2 ToScreenPos(vec2 posInMeters) const
 	{
-		return posInMeters / cameraSizeMeters * cellsPerMeter;
+		return posInMeters * cellsPerMeter + vec2(worldSizeCells) / 2.f;
 	}
 
-	bool CollidePixel(ivec2 pos) const
+	bool CollidePixel(vec2 pos) /*const*/
 	{
 		return GetCollisionInfo(pos)[3] > 0;
 	}
 
-	const ivec4& GetCollisionInfo(ivec2 pos) const
+	/*const*/ ivec4& GetCollisionInfo(vec2 pos) /*const*/
 	{
 		ivec2 p = ToScreenPos(pos);
 		return *(ivec4*)screenRead->Get(Target::aColor)->At<int>(p.x, p.y);
 	}
 
-	bool OnScreen(ivec2 pos) const
+	bool OnScreen(vec2 pos) const
 	{
 		ivec2 p = ToScreenPos(pos);
 

@@ -4,11 +4,14 @@ r<Mesh> g_quad;
 r<ShaderProgram> g_wireframe;
 r<ShaderProgram> g_sprite;
 r<ShaderProgram> g_collisionInfo;
+r<ShaderProgram> g_debug_displayCollisionInfo;
 
 r<Mesh>          GetQuadMesh2D()             { return g_quad; }
 r<ShaderProgram> GetProgram_Sprite()         { return g_sprite; }
 r<ShaderProgram> GetProgram_Wireframe()      { return g_wireframe; }
 r<ShaderProgram> GetProgram_SandSpriteInfo() { return g_collisionInfo; }
+
+r<ShaderProgram> GetProgram_Debug_DisplayCollisionInfo() { return g_debug_displayCollisionInfo; }
 
 void InitQuadMesh2D()
 {
@@ -51,7 +54,7 @@ void InitWireframeProgram()
 		"out vec4 color;"
 		"void main()"
 		"{"
-		"color = vertColor;"
+			"color = vertColor;"
 		"}";
 
 	g_wireframe = MakeVertexAndFragmentShader(source_vert, source_frag);
@@ -85,13 +88,16 @@ void InitSpriteProgram()
 		"out vec4 color;"
 
 		"uniform sampler2D sprite;"
+		"uniform vec4 tint = vec4(1, 1, 1, 1);"
 
 		"void main()"
 		"{"
-			"vec4 spriteColor = texture(sprite, TexCoords);"
+			"vec4 spriteColor = tint * texture(sprite, TexCoords);"
 
-			"if (spriteColor.a > .7) spriteColor.a = 1.f;"
-			"else                    discard;"
+			"if (spriteColor.a == 0) discard;"
+
+			//"if (spriteColor.a > .7) spriteColor.a = 1.f;"
+			//"else                    discard;"
 
 			"color = spriteColor;"
 		"}";
@@ -136,7 +142,42 @@ void InitCollisionInfoProgram()
 		"}";
 
 	g_collisionInfo = MakeVertexAndFragmentShader(source_vert, source_frag);
+}
 
+void Init_Debug_DisplayCollisionInfo()
+{
+	const char* source_vert =
+		"#version 330 core\n"
+		"layout (location = 0) in vec2 pos;"
+		"layout (location = 1) in vec2 uv;"
+		
+		"out vec2 TexCoords;"
+		
+		"uniform mat4 model;"
+		"uniform mat4 projection;"
+
+		"void main()"
+		"{"
+			"TexCoords = uv;"
+			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
+		"}";
+
+	const char* source_frag =
+		"#version 330 core\n"
+		"in vec2 TexCoords;"
+		
+		"out vec4 color;"
+		
+		"uniform isampler2D sprite;"
+
+		"void main()"
+		"{"
+			"ivec4 spriteColor = texture(sprite, TexCoords);"
+			"if (spriteColor.a == 0) discard;"
+			"color = vec4(1, 1, 1, 1);"
+		"}";
+
+	g_debug_displayCollisionInfo = MakeVertexAndFragmentShader(source_vert, source_frag);
 }
 
 void InitGameRenderVars()
@@ -145,4 +186,5 @@ void InitGameRenderVars()
 	InitWireframeProgram();
 	InitSpriteProgram();
 	InitCollisionInfoProgram();
+	Init_Debug_DisplayCollisionInfo();
 }

@@ -8,4 +8,5 @@ r<Mesh> GetQuadMesh2D();
 r<ShaderProgram> GetProgram_Sprite();
 r<ShaderProgram> GetProgram_Wireframe();
 r<ShaderProgram> GetProgram_SandSpriteInfo();
-r<ShaderProgram> GetProgram_Particle();
+
+r<ShaderProgram> GetProgram_Debug_DisplayCollisionInfo();

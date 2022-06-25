@@ -6,6 +6,7 @@
 
 #include "ext/marching_cubes.h"
 
+#include "Sand/Sand.h"
 #include "Sand/SandEvents.h"
 #include "Sand/SandComponents.h"
 #include "Sand/SandHelpers.h"

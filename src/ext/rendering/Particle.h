@@ -35,18 +35,9 @@ struct Particle
 		frameCurrent += skipFrame;
 	}
 
-	bool EndOfLife() const
-	{
-		return frameCurrent / frameCount >= repeatCount;
-	}
+	bool  EndOfLife() const { return frameCurrent / frameCount >= repeatCount; }
+	float Age()       const { return frameCurrent / float(frameCount * repeatCount); }
 
-	const TextureAtlas::Bounds& GetCurrentFrameUV() const
-	{
-		return atlas->GetUVForFrame(frameCurrent % frameCount);
-	}
-
-	Texture& GetTexture()
-	{
-		return *atlas->source;
-	}
+	const TextureAtlas::Bounds& GetCurrentFrameUV() const { return atlas->GetUVForFrame(frameCurrent % frameCount); }
+	                   Texture& GetTexture()              { return *atlas->source; }
 };

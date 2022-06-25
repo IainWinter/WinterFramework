@@ -12,8 +12,49 @@
 #include <string>
 #include <vector>
 
+// Memory helpers
+
 template<typename _t> using r = std::shared_ptr<_t>;
 template<typename _t, typename... _args> r<_t> mkr(_args&&... args) { return std::make_shared<_t>(std::forward<_args>(args)...); }
+
+//inline void* alloc_and_copy(void* ptrToCopy, int sizeInBytes)
+//{
+//	void* newptr = malloc(sizeInBytes);
+//	
+//	if (newptr == nullptr)
+//	{
+//		printf("failed to allocate memory\n");
+//		assert(false);
+//		return nullptr;
+//	}
+//
+//	memcpy(newptr, ptrToCopy, sizeInBytes);
+//	return newptr;
+//}
+//
+//inline void* realloc_and_copy(void* ptrToRealloc, const void* ptrToCopy, int oldSize, int newSize)
+//{
+//	void* newptr = nullptr;
+//
+//	if (oldSize == newSize) newptr = ptrToRealloc;
+//	else                    newptr = realloc(ptrToRealloc, newSize);
+//
+//	if (newptr)
+//	{
+//		memset(newptr, 0, newSize);
+//
+//		if (newSize > oldSize) memcpy(newptr, ptrToCopy, oldSize);
+//		else                   memcpy(newptr, ptrToCopy, newSize);
+//
+//		return newptr;
+//	}
+//
+//	printf("failed to realloc_and_copy\n");
+//	assert(false);
+//	return newptr;
+//}
+
+// Math helpers
 
 // make glm the deafult math library
 // no need to think about if something is glm or not because it should
@@ -91,12 +132,21 @@ struct Transform2D
 	{}
 
 	Transform2D(
-		vec2 position, vec2 scale = vec2(0.f, 0.f), float rotation = 0.f
+		vec2 position, vec2 scale = vec2(1.f, 1.f), float rotation = 0.f
 	)
 		: position (position)
 		, scale    (scale)
 		, rotation (rotation)
 		, z        (0.f)
+	{}
+
+	Transform2D(
+		vec3 position, vec2 scale = vec2(1.f, 1.f), float rotation = 0.f
+	)
+		: position (position)
+		, scale    (scale)
+		, rotation (rotation)
+		, z        (position.z)
 	{}
 
 	glm::mat4 World() const

@@ -153,8 +153,6 @@ public:
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 
 		Resize(m_config.Width, m_config.Height);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glClearColor(1.f, 1.f, 1.f, 1.f);
 
@@ -393,7 +391,6 @@ private:
 		// is this needed?
 
 #ifdef __APPLE__
-		// GL 3.2 Core + GLSL 150
 		SDL_GL_SetAttribute( // required on Mac OS
 			SDL_GL_CONTEXT_FLAGS,
 			SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
@@ -402,16 +399,14 @@ private:
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 		return "#version 150";
 #elif __linux__
-		// GL 3.2 Core + GLSL 150
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 		return "#version 150";
 #elif _WIN32
-		// GL 3.0 + GLSL 130
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 		return "#version 130";
 #endif
 	}

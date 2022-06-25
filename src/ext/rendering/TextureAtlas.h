@@ -18,7 +18,7 @@ struct TextureAtlas
 		, bounds (bounds)
 	{}
 
-	TextureAtlas(r<Texture> source, int numberOfTilesX, int numberOfTilesY)
+	TextureAtlas(r<Texture> source, int numberOfTilesX = 1, int numberOfTilesY = 1)
 		: source (source)
 	{
 		bounds.reserve(numberOfTilesX * numberOfTilesY);

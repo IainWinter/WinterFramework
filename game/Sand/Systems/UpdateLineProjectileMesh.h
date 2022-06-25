@@ -75,29 +75,29 @@ private:
 
 		float distance = glm::length(delta);
 		delta /= distance;
+		delta /= sand.cellsPerMeter;
 
 		bool isProjectile = e.Has<CellProjectile>();
 
 		for (int i = 0; i < ceil(distance); i++, cell.pos += delta)
 		{
-			ivec2 raster = floor(cell.pos);
-
-			if (isProjectile && sand.OnScreen(raster))
+			if (isProjectile && sand.OnScreen(cell.pos))
 			{
 				CellProjectile& proj = e.Get<CellProjectile>();
 				
 				// trail
 				CreateEntity().Add<Cell>(cell.pos, vec2(0.f, 0.f), cell.color, proj.trailLife);
 
-				if (sand.CollidePixel(raster))
+				const ivec4& spriteInfo = sand.GetCollisionInfo(cell.pos);
+				if (spriteInfo[3] > 0)
 				{
-					const ivec4& spriteInfo = sand.GetCollisionInfo(raster);
-					ivec2 positionInSprite = ivec2(spriteInfo[0], spriteInfo[1]);
-					int tileIndex = spriteInfo[2];
-
-					Entity tileEntity = Wrap(tileIndex);
-
-					if (!tileEntity.IsAlive() || tileEntity.Id() == proj.owner) continue;
+					Entity tileEntity = Wrap(spriteInfo[2]);
+					
+					if (  !tileEntity.IsAlive()
+						|| tileEntity.Id() == proj.owner)
+					{
+						continue;
+					}
 
 					SandSprite& sprite = tileEntity.Get<SandSprite>();
 					
@@ -107,7 +107,7 @@ private:
 						break;
 					}
 					
-					Send(event_Sand_ProjectileHit{ tileEntity, e, positionInSprite });
+					Send(event_Sand_ProjectileHit{ tileEntity, e, ivec2(spriteInfo[0], spriteInfo[1]), cell.pos });
 
 					int& health = e.Get<CellProjectile>().health;
 					health -= sprite.cellStrength;
@@ -119,10 +119,10 @@ private:
 					}
 
 					// turn projectile a little
-					//vec2& v = cell.vel;
-					//float d = length(v);
-					//v = normalize(v + get_randn(d * proj.turnOnHitRate)) * d;
-					//delta = normalize(cell.vel * Time::DeltaTime());
+					vec2& v = cell.vel;
+					float d = length(v);
+					v = normalize(v + get_randn(d * proj.turnOnHitRate)) * d;
+					delta = normalize(cell.vel * Time::DeltaTime()) / sand.cellsPerMeter;
 				}
 			}
 		}

@@ -64,5 +64,6 @@ struct event_Sand_ProjectileHit
 {
 	EntityWith<Transform2D, Sprite, SandSprite> entity;
 	EntityWith<Cell, CellProjectile> projectile;
-	ivec2 hitPosInSprite;
+	ivec2 hitPosInSprite; // in pixels
+	vec2 hitPosInWorld;      // in meters
 };

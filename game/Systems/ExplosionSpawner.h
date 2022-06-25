@@ -42,7 +42,7 @@ private:
 		}
 
 		CreateEntity().AddAll(
-			Transform2D (position, vec2(6.f, 6.f), get_rand(2.f * pi<float>())),
+			Transform2D (position, vec2(5.f, 5.f), get_rand(2.f * pi<float>())),
 			Particle    (m_explosion)
 		);
 	}

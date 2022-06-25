@@ -5,18 +5,23 @@
 #include "Windowing.h"
 #include "Sand/Sand.h"
 #include "Events.h"
-
+#include "ext/rendering/Particle.h"
 #include "Components/Player.h"
 
 struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
+	Particle fireball;
 
 	void Init()
 	{
 		Attach<event_Input>();
 		Attach<event_Mouse>();
 		playerEntity = FirstEntityWith<Player>();
+
+		fireball = Particle(
+			mkr<TextureAtlas>(mkr<Texture>(_a("fire_burst.png")), 9, 9), 75
+		);
 	}
 
 	void Update()
@@ -32,7 +37,11 @@ struct System_PlayerController : System<System_PlayerController>
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-			Send(event_Sand_CreateCell(position, direction, Color(255, 255, 255), 5.f, [this](Entity e) { e.Add<CellProjectile>(playerEntity.Id()); }));
+			Send(event_Sand_CreateCell(position, direction, Color(255, 255, 255), 5.f, [this](Entity e) 
+			{ 
+				e.Add<CellProjectile>(playerEntity.Id());
+				e.Add<Particle>(fireball);
+			}));
 		
 			//Send(event_SpawnExplosion{vec2(10, 0), 20.f});
 		}

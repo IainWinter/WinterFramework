@@ -198,8 +198,8 @@ struct Regolith : EngineLoop
 
 		CreateSandSprite("test_line.png", "test_line.png");
 
-		level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
-		level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
+		//level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
+		//level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
 
 		for (int i = 0; i < 0; i++)
 		{

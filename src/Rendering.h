@@ -343,15 +343,15 @@ public:
 
 	~Texture() { Cleanup(); }
 
-	Texture           (      Texture&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-	Texture           (const Texture&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-	Texture& operator=(      Texture&& move)                                  { return move_into(std::move(move)); }
-	Texture& operator=(const Texture&  copy)                                  { return copy_into(copy); }
+	Texture           (      Texture&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Texture           (const Texture&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Texture& operator=(      Texture&& move) noexcept                                  { return move_into(std::move(move)); }
+	Texture& operator=(const Texture&  copy)                                           { return copy_into(copy); }
 
 // move & copy
 
 private:
-	Texture& move_into(Texture&& move)
+	Texture& move_into(Texture&& move) noexcept
 	{
 		copy_base(&move);
 
@@ -646,15 +646,15 @@ public:
 
 	~Target() { Cleanup(); }
 
-	Target           (      Target&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-	Target           (const Target&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-	Target& operator=(      Target&& move)                                  { return move_into(std::move(move)); }
-	Target& operator=(const Target&  copy)                                  { return copy_into(copy); }
+	Target           (      Target&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Target           (const Target&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Target& operator=(      Target&& move) noexcept                                  { return move_into(std::move(move)); }
+	Target& operator=(const Target&  copy)                                           { return copy_into(copy); }
 
 // move & copy
 
 private:
-	Target& move_into(Target&& move)
+	Target& move_into(Target&& move) noexcept
 	{
 		copy_base(&move);
 
@@ -875,15 +875,15 @@ public:
 
 	~Buffer() { Cleanup(); }
 
-	Buffer           (      Buffer&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-	Buffer           (const Buffer&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-	Buffer& operator=(      Buffer&& move)                                  { return move_into(std::move(move)); }
-	Buffer& operator=(const Buffer&  copy)                                  { return copy_into(copy); }
+	Buffer           (      Buffer&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Buffer           (const Buffer&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Buffer& operator=(      Buffer&& move) noexcept                                  { return move_into(std::move(move)); }
+	Buffer& operator=(const Buffer&  copy)                                           { return copy_into(copy); }
 
 // move & copy
 
 private:
-	Buffer& move_into(Buffer&& move)
+	Buffer& move_into(Buffer&& move) noexcept
 	{
 		copy_base(&move);
 
@@ -944,6 +944,40 @@ private:
 	}
 };
 
+// tihs allows you to get the number of elements and element type from some glm types
+
+template<typename _t>
+std::pair<int, Buffer::ElementType> get_element_type_info()
+{
+	Buffer::ElementType type;
+	int repeat = 1; // deafult
+
+	constexpr bool isFloat = std::is_same<_t, float>::value;
+	constexpr bool isByte  = std::is_same<_t,  char>::value || std::is_same<_t, unsigned char>::value; // or bool?
+	constexpr bool isInt   = std::is_same<_t,   int>::value || std::is_same<_t, unsigned  int>::value;
+
+	if constexpr (!isFloat && !isByte && !isInt)
+	{
+		// assume has a value_type and length() like glm
+
+		constexpr bool _isFloat = std::is_same<typename _t::value_type, float>::value;
+		constexpr bool _isByte  = std::is_same<typename _t::value_type,  char>::value || std::is_same<typename _t::value_type, unsigned char>::value; // or bool?
+		constexpr bool _isInt   = std::is_same<typename _t::value_type,   int>::value || std::is_same<typename _t::value_type, unsigned  int>::value;
+
+		if constexpr (_isFloat) { type = Buffer::_f32; }
+		if constexpr (_isByte)  { type = Buffer::_u8;  }
+		if constexpr (_isInt)   { type = Buffer::_u32; }
+
+		repeat = _t::length();
+	}
+
+	if constexpr (isFloat) { type = Buffer::_f32; }
+	if constexpr (isByte)  { type = Buffer::_u8;  }
+	if constexpr (isInt)   { type = Buffer::_u32; }
+
+	return { repeat, type };
+}
+
 // mesh data is a list of buffer objects bound together
 // by a vertex array
 // attribs in shaders need to be in the order of AttribName
@@ -978,10 +1012,17 @@ public:
 		tLines,
 		tLoops
 	};
+
+	struct BufferInfo
+	{
+		int instancedStride;
+	};
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
-	
+	using _info    = std::unordered_map<AttribName, BufferInfo>; // could change to a struct if there is other info
+																 // right now this is just the instanced stride
 	_buffers     m_buffers;            // deafult construction
+	_info        m_info;
 	GLuint       m_device   = 0;
 public:
 	Topology     topology   = tTriangles;
@@ -991,64 +1032,48 @@ public:
 public:
 	int NumberOfBuffers() const { return m_buffers.size(); }
 
-	      r<Buffer>& Get(AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
-	const r<Buffer>& Get(AttribName name) const {                  return m_buffers.at(name); }
+	      r<Buffer>&  Get    (AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
+	      BufferInfo& GetInfo(AttribName name)       { MarkForUpdate(); return m_info.at(name); }
+	const r<Buffer>&  Get    (AttribName name) const {                  return m_buffers.at(name); }
+	const BufferInfo& GetInfo(AttribName name) const {                  return m_info.at(name); }
+
+	Mesh& SetIsInstanced(AttribName name, int instancedStride) { GetInfo(name).instancedStride = instancedStride; return *this; }
 
 	// instances a buffer
-	void Add(AttribName name, const r<Buffer>& buffer)
+	Mesh& Add(AttribName name, const r<Buffer>& buffer)
 	{
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
 		m_buffers.emplace(name, buffer);
+		m_info   .emplace(name, BufferInfo{ 0 });
 
 		MarkForUpdate();
+		return *this;
 	}
 
 	// creates an empty buffer
-	r<Buffer> Add(AttribName name, int length, int repeat, Buffer::ElementType type)
+	Mesh& Add(AttribName name, int length, int repeat, Buffer::ElementType type, int isStatic = 2)
 	{
-		r<Buffer> buffer = mkr<Buffer>(length, repeat, type, IsStatic());
-		Add(name, buffer);
+		r<Buffer> buffer = mkr<Buffer>(length, repeat, type, isStatic == 2 ? IsStatic() : isStatic);
+		return Add(name, buffer);
+	}
 
-		return buffer;
+	template<typename _t>
+	Mesh& Add(AttribName name, int length, int isStatic = 2)
+	{
+		auto [repeat, type] = get_element_type_info<_t>();
+		return Add(name, length, repeat, type, isStatic);
 	}
 
 	// creates an empty buffer
 	// gets repeat from _t::length() or 1
 	// gets type from ::value_type or _t 
 	template<typename _t>
-	r<Buffer> Add(AttribName name, const std::vector<_t>& data)
+	Mesh& Add(AttribName name, const std::vector<_t>& data)
 	{
-		Buffer::ElementType type;
-		int repeat = 1; // deafult
-
-		constexpr bool isFloat = std::is_same<_t, float>::value;
-		constexpr bool isByte  = std::is_same<_t,  char>::value || std::is_same<_t, unsigned char>::value; // or bool?
-		constexpr bool isInt   = std::is_same<_t,   int>::value || std::is_same<_t, unsigned  int>::value;
-
-		if constexpr (!isFloat && !isByte && !isInt)
-		{
-			// assume has a value_type and length() like glm
-
-			constexpr bool _isFloat = std::is_same<typename _t::value_type, float>::value;
-			constexpr bool _isByte  = std::is_same<typename _t::value_type,  char>::value || std::is_same<typename _t::value_type, unsigned char>::value; // or bool?
-			constexpr bool _isInt   = std::is_same<typename _t::value_type,   int>::value || std::is_same<typename _t::value_type, unsigned  int>::value;
-
-			if constexpr (_isFloat) { type = Buffer::_f32; }
-			if constexpr (_isByte)  { type = Buffer::_u8;  }
-			if constexpr (_isInt)   { type = Buffer::_u32; }
-
-			repeat = _t::length();
-		}
-
-		if constexpr (isFloat) { type = Buffer::_f32; }
-		if constexpr (isByte)  { type = Buffer::_u8;  }
-		if constexpr (isInt)   { type = Buffer::_u32; }
-
-		r<Buffer> buffer = Add(name, data.size(), repeat, type);
-		buffer->Set(data.size(), data.data());
-
-		return buffer;
+		Add<_t>(name, data.size());
+		Get(name)->Set(data.size(), data.data());
+		return *this;
 	}
 
 	void Draw(Topology drawType = Topology::tTriangles)
@@ -1118,8 +1143,10 @@ protected:
 			}
 
 			gl(glBindBuffer(GL_ARRAY_BUFFER, buffer->DeviceHandle()));
-			gl(glVertexAttribPointer(attrib, buffer->Repeat(), gl_format(buffer->Type()), GL_FALSE, 0/*buffer->BytesPerElement()*/, nullptr));
+
 			gl(glEnableVertexAttribArray(attrib));
+			gl(glVertexAttribPointer(attrib, buffer->Repeat(), gl_format(buffer->Type()), GL_FALSE, 0, nullptr));
+			gl(glVertexAttribDivisor(attrib, GetInfo(attrib).instancedStride));
 		}
 	}
 
@@ -1146,20 +1173,26 @@ public:
 	
 	~Mesh() { Cleanup(); }
 
-	Mesh           (      Mesh&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-	Mesh           (const Mesh&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-	Mesh& operator=(      Mesh&& move)                                  { return move_into(std::move(move)); }
-	Mesh& operator=(const Mesh&  copy)                                  { return copy_into(copy); }
+	Mesh           (      Mesh&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Mesh           (const Mesh&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Mesh& operator=(      Mesh&& move) noexcept                                  { return move_into(std::move(move)); }
+	Mesh& operator=(const Mesh&  copy)                                           { return copy_into(copy); }
+
+	Mesh Copy()
+	{
+		return *this;
+	}
 
 // move & copy
 
 private:
-	Mesh& move_into(Mesh&& move)
+	Mesh& move_into(Mesh&& move) noexcept
 	{
 		copy_base(&move);
 
 		topology          = move.topology;
 		m_buffers         = std::move(move.m_buffers);
+		m_info            = std::move(move.m_info);
 		m_device          = 0;
 
 		move.m_device = 0;
@@ -1174,6 +1207,7 @@ private:
 	{
 		copy_base(&copy);
 
+		m_info            = copy.m_info;
 		topology          = copy.topology;
 		m_device          = 0;
 
@@ -1184,6 +1218,7 @@ private:
 			buffer->assert_on_host(); // needs to have some data on host for this to make sense
 			m_buffers.emplace(name, mkr<Buffer>(*buffer));
 		}
+
 
 		return *this;
 	}
@@ -1370,10 +1405,10 @@ public:
 
 	~ShaderProgram() { Cleanup(); }
 
-	ShaderProgram           (      ShaderProgram&& move) : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-	ShaderProgram           (const ShaderProgram&  copy) : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-	ShaderProgram& operator=(      ShaderProgram&& move)                                  { return move_into(std::move(move)); }
-	ShaderProgram& operator=(const ShaderProgram&  copy)                                  { return copy_into(copy); }
+	ShaderProgram           (      ShaderProgram&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	ShaderProgram           (const ShaderProgram&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	ShaderProgram& operator=(      ShaderProgram&& move) noexcept                                  { return move_into(std::move(move)); }
+	ShaderProgram& operator=(const ShaderProgram&  copy)                                           { return copy_into(copy); }
 
 // move & copy
 
