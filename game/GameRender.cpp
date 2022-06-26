@@ -13,12 +13,19 @@ r<ShaderProgram> GetProgram_SandSpriteInfo() { return g_collisionInfo; }
 
 r<ShaderProgram> GetProgram_Debug_DisplayCollisionInfo() { return g_debug_displayCollisionInfo; }
 
+Mesh& InitQuadMesh2D(Mesh& mesh)
+{
+	mesh.Add<vec2>(Mesh::aPosition,     { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) });
+	mesh.Add<vec2>(Mesh::aTextureCoord, { vec2( 0,  0), vec2(1,  0), vec2(1, 1), vec2( 0, 1) });
+	mesh.Add<int> (Mesh::aIndexBuffer,  { 0, 1, 2, 0, 2, 3 });
+
+	return mesh;
+}
+
 void InitQuadMesh2D()
 {
 	g_quad = mkr<Mesh>();
-	g_quad->Add<vec2>(Mesh::aPosition,     { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) });
-	g_quad->Add<vec2>(Mesh::aTextureCoord, { vec2( 0,  0), vec2(1,  0), vec2(1, 1), vec2( 0, 1) });
-	g_quad->Add<int> (Mesh::aIndexBuffer,  { 0, 1, 2, 0, 2, 3 });
+	InitQuadMesh2D(*g_quad);
 }
 
 r<ShaderProgram> MakeVertexAndFragmentShader(const char* source_vert, const char* source_frag)

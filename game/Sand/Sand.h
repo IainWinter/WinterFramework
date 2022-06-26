@@ -98,12 +98,12 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_SandAddSprite>();
 		Attach<event_Sand_CreateCell>();
 
-		auto [sand, camera] = GetModules<SandWorld, Camera>();
+		//auto [sand, camera] = GetModules<SandWorld, Camera>();
 		
-		CreateEntity().AddAll(
-			Transform2D(vec2(0.f), vec2(5, 5)), 
-			Sprite(sand.screenRead->Get(Target::aColor))
-		);
+		//CreateEntity().AddAll(
+		//	Transform2D(vec2(0.f), vec2(5, 5)), 
+		//	Sprite(sand.screenRead->Get(Target::aColor))
+		//);
 	}
 
 	void on(event_Sand_CreateCell& e)

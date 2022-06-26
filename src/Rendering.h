@@ -53,6 +53,14 @@
 // you cannot however, SendToDevice(), FreeHost(), SendToHost()
 // Sending to host requires it is never freeed, and therefore not static
 
+#ifndef STATIC_HOST
+#	define DYNAMIC_HOST 0
+#	define STATIC_HOST 1
+#	define INHERIT_HOST 2
+//#	define PICK_INHERIT isStatic == INHERIT_HOST ? IsStatic() : isStatic
+#endif
+
+
 struct IDeviceObject
 {
 	IDeviceObject(
@@ -731,6 +739,7 @@ private:
 // then a Mesh is just an instance of this, can swap out attribs as it likes
 
 // add std::enable_shared_from_this
+// add better support for length 0, right now it is a little unclear with malloc / realloc of size 0, should just set nullptr
 
 struct Buffer : IDeviceObject
 {
@@ -968,12 +977,15 @@ std::pair<int, Buffer::ElementType> get_element_type_info()
 		if constexpr (_isByte)  { type = Buffer::_u8;  }
 		if constexpr (_isInt)   { type = Buffer::_u32; }
 
-		repeat = _t::length();
+		repeat = sizeof(_t) / sizeof(_t::value_type);// _t::length();
 	}
 
 	if constexpr (isFloat) { type = Buffer::_f32; }
 	if constexpr (isByte)  { type = Buffer::_u8;  }
 	if constexpr (isInt)   { type = Buffer::_u32; }
+
+	//assert(repeat <= 4 && "vec4 is max data allowed in one VA attrib");
+	// attribs now auto expand to handle this
 
 	return { repeat, type };
 }
@@ -996,12 +1008,20 @@ public:
 		
 		aColor,
 
-		aCustom1,
-		aCustom2,
-		aCustom3,
-		aCustom4,
-		aCustom5,
-		aCustom6,
+		aCustom_a1,
+		aCustom_a2,
+		aCustom_a3,
+		aCustom_a4,
+
+		aCustom_b1,
+		aCustom_b2,
+		aCustom_b3,
+		aCustom_b4,
+
+		aCustom_c1,
+		aCustom_c2,
+		aCustom_c3,
+		aCustom_c4,
 
 		aIndexBuffer // the index buffer
 	};
@@ -1016,6 +1036,8 @@ public:
 	struct BufferInfo
 	{
 		int instancedStride;
+		int offset;            // this is used if the buffer is larger than a vec4
+		int repeat;            // so each buffer knows how many repeats (buffer with 5 repeats) first attrib has 4, next has 1
 	};
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
@@ -1024,74 +1046,139 @@ private:
 	_buffers     m_buffers;            // deafult construction
 	_info        m_info;
 	GLuint       m_device   = 0;
+	int          m_hasInstance = 0;
 public:
 	Topology     topology   = tTriangles;
 
 // public mesh specific functions
 
 public:
-	int NumberOfBuffers() const { return m_buffers.size(); }
+	int  NumberOfBuffers()     const { return m_buffers.size(); }
+	bool HasInstancedBuffers() const { return m_hasInstance > 0; }
 
 	      r<Buffer>&  Get    (AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
 	      BufferInfo& GetInfo(AttribName name)       { MarkForUpdate(); return m_info.at(name); }
 	const r<Buffer>&  Get    (AttribName name) const {                  return m_buffers.at(name); }
 	const BufferInfo& GetInfo(AttribName name) const {                  return m_info.at(name); }
 
-	Mesh& SetIsInstanced(AttribName name, int instancedStride) { GetInfo(name).instancedStride = instancedStride; return *this; }
+	Mesh& SetTopology(Topology topology)
+	{
+		this->topology = topology;
+		return *this;
+	}
+
+	// set the instanced stride of a buffer
+	// if set to 0, instancing is disabled
+	// if any buffers are instanced, DrawInstanced is required to draw
+	// an assert will fire if this is not done
+	Mesh& SetInst(AttribName name, int instancedStride) 
+	{
+		if (instancedStride == 0) m_hasInstance -= GetInfo(name).instancedStride;
+		else                      m_hasInstance += instancedStride;
+
+		GetInfo(name).instancedStride = instancedStride; 
+		
+		return *this; 
+	}
+
+	// set the byte offset of an attribute
+	// a single buffer can be bound to many attribs, this allows use of differnt parts of the data
+	// for each attrib
+	// max size for each attrib element is a vec4, so for a mat4, offsets are requires to use a single buffer
+	Mesh& SetOffset(AttribName name, int offset) 
+	{
+		GetInfo(name).offset = offset;
+		return *this; 
+	}
 
 	// instances a buffer
-	Mesh& Add(AttribName name, const r<Buffer>& buffer)
+	// if buffer->Repeat() returns more than 4, the attribs past 'name' are also linked to this buffer
+	// and their infos are set to reflect the offset inside each buffer element
+	Mesh& Add(AttribName name, int instancedStride, const r<Buffer>& buffer)
 	{
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
-		m_buffers.emplace(name, buffer);
-		m_info   .emplace(name, BufferInfo{ 0 });
+	
+		// if repeat is larger than 4, then use the next attribs
+		// add the same buffer ref, but change the offset and repeat of buffer info
 
+		int repeat = buffer->Repeat();
+		
+		for (int i = 0; i < repeat; i += 4) // will always run once
+		{
+			BufferInfo info;
+			info.instancedStride = instancedStride;
+			info.offset = i * sizeof(f32);            // assuming that each element is a single p float, and split is every 4th
+			info.repeat = min(4, repeat);
+
+			m_buffers.emplace(AttribName( (int)name + i/4 ), buffer);
+			m_info   .emplace(AttribName( (int)name + i/4 ), info);
+
+			m_hasInstance += instancedStride;
+		}
+	
 		MarkForUpdate();
 		return *this;
 	}
 
-	// creates an empty buffer
-	Mesh& Add(AttribName name, int length, int repeat, Buffer::ElementType type, int isStatic = 2)
-	{
-		r<Buffer> buffer = mkr<Buffer>(length, repeat, type, isStatic == 2 ? IsStatic() : isStatic);
-		return Add(name, buffer);
-	}
-
+	// constructs a buffer and sets its data
 	template<typename _t>
-	Mesh& Add(AttribName name, int length, int isStatic = 2)
+	Mesh& Add(AttribName name, int instancedStride, int isStatic, const std::vector<_t>& data)
 	{
 		auto [repeat, type] = get_element_type_info<_t>();
-		return Add(name, length, repeat, type, isStatic);
+		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, isStatic == INHERIT_HOST ? IsStatic() : isStatic);
+		buffer->Set(data.size(), data.data());
+		return Add(name, instancedStride, buffer);
 	}
 
-	// creates an empty buffer
-	// gets repeat from _t::length() or 1
-	// gets type from ::value_type or _t 
+// shorthand for simple configs (no instancing)
+
 	template<typename _t>
 	Mesh& Add(AttribName name, const std::vector<_t>& data)
 	{
-		Add<_t>(name, data.size());
-		Get(name)->Set(data.size(), data.data());
+		return Add<_t>(name, 0, INHERIT_HOST, data);
+	}
+
+	template<typename _t>
+	Mesh& Add(AttribName name, const r<Buffer>& buffer)
+	{
+		return Add<_t>(name, 0, buffer);
+	}
+
+	// setups a buffer without data
+	template<typename _t>
+	Mesh& Setup(AttribName name, int instancedStride = 0, int isStatic = INHERIT_HOST)
+	{
+		Add<_t>(name, instancedStride, isStatic, {});
 		return *this;
 	}
 
+	// gl() calls cause nullptr exception
+
 	void Draw(Topology drawType = Topology::tTriangles)
 	{
+		assert(!HasInstancedBuffers() && "mesh has instanced buffers, need to call DrawInstanced");
+		bool hasIndex = SendBindAndReturnHasIndex();
+		if (hasIndex) { /*gl(*/glDrawElements(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr)/*)*/; }
+		else          { /*gl(*/glDrawArrays  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length())/*)*/; }
+	}
+
+	void DrawInstanced(int numberOfInstances, Topology drawType = Topology::tTriangles)
+	{
+		assert(HasInstancedBuffers() && "mesh has no instanced buffers, need to call Draw");
+		bool hasIndex = SendBindAndReturnHasIndex();
+		if (hasIndex) { /*gl(*/glDrawElementsInstanced(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr, numberOfInstances)/*)*/; }
+		else          { /*gl(*/glDrawArraysInstanced  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length(),                           numberOfInstances)/*)*/; }
+	}
+
+private:
+
+	// helper for Draw functions
+	bool SendBindAndReturnHasIndex()
+	{
 		if (!OnDevice() || Outdated()) SendToDevice();
-
 		gl(glBindVertexArray(m_device));
-
-		if (m_buffers.find(aIndexBuffer) != m_buffers.end())
-		{
-			r<Buffer> index = m_buffers.at(aIndexBuffer);
-			gl(glDrawElements(gl_drawtype(drawType), index->Length(), GL_UNSIGNED_INT, nullptr));
-		}
-
-		else
-		{
-			gl(glDrawArrays(gl_drawtype(drawType), 0, m_buffers.at(aPosition)->Length()));
-		}
+		return m_buffers.find(aIndexBuffer) != m_buffers.end();
 	}
 
 // interface
@@ -1144,9 +1231,11 @@ protected:
 
 			gl(glBindBuffer(GL_ARRAY_BUFFER, buffer->DeviceHandle()));
 
+			BufferInfo& info = GetInfo(attrib);
+
 			gl(glEnableVertexAttribArray(attrib));
-			gl(glVertexAttribPointer(attrib, buffer->Repeat(), gl_format(buffer->Type()), GL_FALSE, 0, nullptr));
-			gl(glVertexAttribDivisor(attrib, GetInfo(attrib).instancedStride));
+			gl(glVertexAttribPointer(attrib, info.repeat, gl_format(buffer->Type()), GL_FALSE, buffer->BytesPerElement(), (void*)info.offset));
+			gl(glVertexAttribDivisor(attrib, info.instancedStride));
 		}
 	}
 
@@ -1191,6 +1280,7 @@ private:
 		copy_base(&move);
 
 		topology          = move.topology;
+		m_hasInstance     = move.m_hasInstance;
 		m_buffers         = std::move(move.m_buffers);
 		m_info            = std::move(move.m_info);
 		m_device          = 0;
@@ -1207,18 +1297,30 @@ private:
 	{
 		copy_base(&copy);
 
-		m_info            = copy.m_info;
 		topology          = copy.topology;
+		m_hasInstance     = copy.m_hasInstance;
+		m_info            = copy.m_info;
 		m_device          = 0;
 
+		std::unordered_map<r<Buffer>, std::vector<AttribName>> singleBuffers;
+		
 		// actually copy the data of the buffers, not just the references
 		// instancing can happen somewhere else, not in the copy constructor, this should make an independent copy
 		for (const auto& [name, buffer] : copy.m_buffers)
 		{
-			buffer->assert_on_host(); // needs to have some data on host for this to make sense
-			m_buffers.emplace(name, mkr<Buffer>(*buffer));
+			singleBuffers[buffer].push_back(name);
 		}
 
+		for (const auto& [buffer, names] : singleBuffers)
+		{
+			buffer->assert_on_host(); // needs to have some data on host for this to make sense
+			r<Buffer> copyBuffer = mkr<Buffer>(*buffer);
+
+			for (const AttribName& name : names)
+			{
+				m_buffers.emplace(name, copyBuffer);
+			}
+		}
 
 		return *this;
 	}

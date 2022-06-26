@@ -8,11 +8,11 @@ struct Sand_System_UpdateLineProjectileMesh : SystemBase
 {
 	void Init()
 	{
-		Mesh mesh = Mesh(false);
-		mesh.Add<vec2>(Mesh::aPosition, {});
-		mesh.Add<vec4>(Mesh::aColor, {});
-		mesh.topology = Mesh::tLines;
-
+		Mesh mesh = Mesh(DYNAMIC_HOST)
+				  . Setup<vec2>(Mesh::aPosition)
+				  . Setup<vec4>(Mesh::aColor)
+				  . SetTopology(Mesh::tLines);
+		
 		entity = CreateEntity().AddAll(Transform2D(), Mesh(mesh));
 	}
 

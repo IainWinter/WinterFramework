@@ -6,6 +6,7 @@
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Particle.h"
+#include "ext/rendering/BatchSpriteRenderer.h"
 #include "GameRender.h"
 
 struct Stage_ClearTarget : RenderStage
@@ -60,6 +61,23 @@ public:
 			program->Set("sprite", sprite.Get());
 			m_quad->Draw();
 		}
+	}
+};
+
+struct Stage_NewSpriteRender : RenderStage
+{
+private:
+	BatchSpriteRenderer render;
+
+public:
+	void Draw() override
+	{
+		render.Begin(level->GetApp()->GetModule<Camera>());
+		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
+		{
+			render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), Color(255, 255, 255, 255));
+		}
+		render.Draw();
 	}
 };
 
@@ -189,7 +207,10 @@ struct System_RenderSceneGraph : SystemBase
 
 		graph.AddStage(clearScreen, nullptr);
 		graph.AddStage(meshes,      nullptr, GetProgram_Wireframe());
-		graph.AddStage(sprites,     nullptr, GetProgram_Sprite());
+		//graph.AddStage(sprites,     nullptr, GetProgram_Sprite());
+		
+		graph.AddStage(new Stage_NewSpriteRender(), nullptr, nullptr);
+		
 		graph.AddStage(particles,   nullptr, GetProgram_Sprite());
 		
 		collisionInfo->Use();
