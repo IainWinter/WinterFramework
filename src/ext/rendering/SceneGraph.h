@@ -8,6 +8,8 @@
 
 struct SceneGraph;
 
+// these are too similar to systems
+
 struct RenderStage
 {
 	r<Level> level;
@@ -18,6 +20,7 @@ struct RenderStage
 
 public:
 	virtual void Draw() = 0;
+	virtual void UI() {}
 };
 
 struct SceneGraph
@@ -49,14 +52,20 @@ public:
 		if (stages.size() == 0) return;
 		
 		auto stage = stages.begin();
-
-		// assume opengl state could be anything
-		ForceUse(**stage);
+		ForceUse(**stage); // assume opengl state could be anything
 
 		for (; stage != stages.end(); ++stage)
 		{
 			UseDiff(**stage);
 			(*stage)->Draw();
+		}
+	}
+
+	void ExecuteUI()
+	{
+		for (auto stage = stages.begin(); stage != stages.end(); ++stage)
+		{
+			(*stage)->UI();
 		}
 	}
 

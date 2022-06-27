@@ -94,7 +94,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 {	
 	void Init()
 	{
-		Attach<event_WindowResize>();
+		//Attach<event_WindowResize>();
 		Attach<event_SandAddSprite>();
 		Attach<event_Sand_CreateCell>();
 
@@ -116,11 +116,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 		}
 	}
 
-	void on(event_WindowResize& e)
-	{
-		auto [sand, camera] = GetModules<SandWorld, Camera>();
-		sand.ResizeWorld(sand.cellsPerMeter, vec2(camera.w, camera.h));
-	}
+	//void on(event_WindowResize& e)
+	//{
+	//	auto [sand, camera] = GetModules<SandWorld, Camera>();
+	//	sand.ResizeWorld(sand.cellsPerMeter, vec2(camera.w, camera.h));
+	//}
 
 	void on(event_SandAddSprite& e)
 	{

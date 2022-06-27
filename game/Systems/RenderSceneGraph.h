@@ -9,6 +9,8 @@
 #include "ext/rendering/BatchSpriteRenderer.h"
 #include "GameRender.h"
 
+#include <algorithm>
+
 struct Stage_ClearTarget : RenderStage
 {
 	Color color;
@@ -73,11 +75,42 @@ public:
 	void Draw() override
 	{
 		render.Begin(level->GetApp()->GetModule<Camera>());
+		
 		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
 		{
 			render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), Color(255, 255, 255, 255));
 		}
+
+		std::vector<std::tuple<float, Transform2D*, Particle*>> toDraw; // will be sorted by age
+
+		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
+		{
+			toDraw.push_back({ particle.Age(), &transform, &particle });
+		}
+		
+		std::sort(toDraw.begin(), toDraw.end(), [](const auto& a, const auto& b) { return std::get<0>(a) > std::get<0>(b); });
+
+		for (auto& [age, t, p] : toDraw)
+		{
+			TextureAtlas::Bounds uv = p->GetCurrentFrameUV();
+			render.SubmitSprite(*t, p->atlas->source, uv.uvOffset, uv.uvScale, p->GetTint(age));
+		}
+
 		render.Draw();
+	}
+
+	void UI()
+	{
+		ImGui::Begin("Particle System");
+		int i = 0;
+
+		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
+		{
+			i++;
+		}
+
+		ImGui::Text("particles rendered %d", i);
+		ImGui::End();
 	}
 };
 
@@ -105,39 +138,39 @@ public:
 	}
 };
 
-struct Stage_Particles : RenderStage
-{
-private:
-	r<Mesh> m_quad;
-
-public:
-	Stage_Particles()
-	{
-		m_quad = GetQuadMesh2D();
-	}
-
-	void Draw() override
-	{
-		program->Set("projection", level->GetApp()->GetModule<Camera>().Projection());
-
-		float z = 2.f;
-
-		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
-		{
-			Transform2D t = transform;
-			t.z = z;
-			z += .01f;
-
-			program->Set("model",    t.World());
-			program->Set("sprite",   particle.GetTexture());
-			program->Set("uvOffset", particle.GetCurrentFrameUV().uvOffset);
-			program->Set("uvScale",  particle.GetCurrentFrameUV().uvScale);
-			program->Set("tint",     vec4(1, 1, 1, 1/* - particle.Age()*/));
-
-			m_quad->Draw();
-		}
-	}
-};
+//struct Stage_Particles : RenderStage
+//{
+//private:
+//	r<Mesh> m_quad;
+//
+//public:
+//	Stage_Particles()
+//	{
+//		m_quad = GetQuadMesh2D();
+//	}
+//
+//	void Draw() override
+//	{
+//		program->Set("projection", level->GetApp()->GetModule<Camera>().Projection());
+//
+//		float z = 2.f;
+//
+//		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
+//		{
+//			Transform2D t = transform;
+//			t.z = z;
+//			z += .01f;
+//
+//			program->Set("model",    t.World());
+//			program->Set("sprite",   particle.GetTexture());
+//			program->Set("uvOffset", particle.GetCurrentFrameUV().uvOffset);
+//			program->Set("uvScale",  particle.GetCurrentFrameUV().uvScale);
+//			program->Set("tint",     vec4(1, 1, 1, 1/* - particle.Age()*/));
+//
+//			m_quad->Draw();
+//		}
+//	}
+//};
 
 struct Stage_SandSpriteInfo : RenderStage
 {
@@ -196,8 +229,8 @@ struct System_RenderSceneGraph : SystemBase
 		
 		RenderStage*  clearScreen = new Stage_ClearTarget(Color(22, 22, 22, 22));
 		RenderStage*  meshes      = new Stage_Meshes();
-		RenderStage*  sprites     = new Stage_Sprites();
-		RenderStage*  particles   = new Stage_Particles();
+		//RenderStage*  sprites     = new Stage_Sprites();
+		//RenderStage*  particles   = new Stage_Particles();
 
 		RenderStage*  debugDrawSandSprites = new Stage_DebugSandSprites(collisionInfo->Get(Target::aColor));
 
@@ -208,10 +241,10 @@ struct System_RenderSceneGraph : SystemBase
 		graph.AddStage(clearScreen, nullptr);
 		graph.AddStage(meshes,      nullptr, GetProgram_Wireframe());
 		//graph.AddStage(sprites,     nullptr, GetProgram_Sprite());
+		//graph.AddStage(particles,   nullptr, GetProgram_Sprite());
 		
 		graph.AddStage(new Stage_NewSpriteRender(), nullptr, nullptr);
 		
-		graph.AddStage(particles,   nullptr, GetProgram_Sprite());
 		
 		collisionInfo->Use();
 		collisionInfo->Clear(Color(0, 0, 0, 0));
@@ -226,5 +259,10 @@ struct System_RenderSceneGraph : SystemBase
 	void Update()
 	{
 		graph.Execute();
+	}
+
+	void UI()
+	{
+		graph.ExecuteUI();
 	}
 };

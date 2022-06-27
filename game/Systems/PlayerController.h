@@ -11,7 +11,7 @@
 struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
-	Particle fireball;
+	Entity fireballEntity;
 
 	void Init()
 	{
@@ -19,9 +19,18 @@ struct System_PlayerController : System<System_PlayerController>
 		Attach<event_Mouse>();
 		playerEntity = FirstEntityWith<Player>();
 
-		fireball = Particle(
-			mkr<TextureAtlas>(mkr<Texture>(_a("fire_burst.png")), 9, 9), 75
-		);
+		Particle fireball = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
+		fireball.repeatCount = 10;
+		fireball.orignal.scale = vec2(1, .5f);
+		fireball.tints = {
+			Color( 10, 147, 255,   0),
+			Color(244,  86,  12, 153),
+			Color(255,  28,   0, 184)
+		};
+
+		fireballEntity = CreateEntity();
+		fireballEntity.Add<Transform2D>(vec3(20.f, 0, 4.f));
+		fireballEntity.Add<ParticleEmitter>().AddSpawner(fireball, 1.f);
 	}
 
 	void Update()
@@ -40,11 +49,12 @@ struct System_PlayerController : System<System_PlayerController>
 			Send(event_Sand_CreateCell(position, direction, Color(255, 255, 255), 5.f, [this](Entity e) 
 			{ 
 				e.Add<CellProjectile>(playerEntity.Id());
-				e.Add<Particle>(fireball);
 			}));
 		
 			//Send(event_SpawnExplosion{vec2(10, 0), 20.f});
 		}
+
+		//fireballEntity.Get<Transform2D>().position = player.AttackLocationInput;
 	}
 
 	void FixedUpdate()

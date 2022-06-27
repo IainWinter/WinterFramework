@@ -69,13 +69,17 @@ public:
 	vec2  GetVelocity()        const { return _fb(m_instance ? m_instance->GetLinearVelocity()  : m_body.linearVelocity); }
 	float GetAngle()           const { return     m_instance ? m_instance->GetAngle()           : m_body.angle; }
 	float GetAngularVelocity() const { return     m_instance ? m_instance->GetAngularVelocity() : m_body.angularVelocity; }
-	bool   IsFixedRotation()   const { return     m_instance ? m_instance->IsFixedRotation()    : m_body.fixedRotation; }
+	bool  IsFixedRotation()    const { return     m_instance ? m_instance->IsFixedRotation()    : m_body.fixedRotation; }
+	float GetDamping()         const { return     m_instance ? m_instance->GetLinearDamping()   : m_body.linearDamping; }
+	float GetAngularDamping()  const { return     m_instance ? m_instance->GetAngularDamping()  : m_body.angularDamping; }
 
-	void SetPosition(vec2 pos)          { if (m_instance) m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); else m_body.position = _tb(pos); }
-	void SetVelocity(vec2 vel)          { if (m_instance) m_instance->SetLinearVelocity (_tb(vel));                         else m_body.linearVelocity = _tb(vel); }
-	void SetAngle(float angle)          { if (m_instance) m_instance->SetTransform      (m_instance->GetPosition(), angle); else m_body.angle = angle; }
-	void SetAngularVelocity(float avel) { if (m_instance) m_instance->SetAngularVelocity(avel);                             else m_body.angularVelocity = avel; }
-	void SetFixedRotation(bool isFixed) { if (m_instance) m_instance->SetFixedRotation  (isFixed);                          else m_body.fixedRotation = isFixed;  }
+	void SetPosition       (vec2  pos)      { if (m_instance) m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); else m_body.position        = _tb(pos); }
+	void SetVelocity       (vec2  vel)      { if (m_instance) m_instance->SetLinearVelocity (_tb(vel));                         else m_body.linearVelocity  = _tb(vel); }
+	void SetAngle          (float angle)    { if (m_instance) m_instance->SetTransform      (m_instance->GetPosition(), angle); else m_body.angle           = angle; }
+	void SetAngularVelocity(float avel)     { if (m_instance) m_instance->SetAngularVelocity(avel);                             else m_body.angularVelocity = avel; }
+	void SetFixedRotation  (bool  isFixed)  { if (m_instance) m_instance->SetFixedRotation  (isFixed);                          else m_body.fixedRotation   = isFixed;  }
+	void SetDamping        (float damping)  { if (m_instance) m_instance->SetLinearDamping  (damping);                          else m_body.linearDamping   = damping; }
+	void SetAngularDamping (float adamping) { if (m_instance) m_instance->SetAngularDamping (adamping);                         else m_body.angularDamping  = adamping; }
 
 	void ApplyForce(vec2 force)                        { assert_in_world(); m_instance->ApplyForceToCenter(_tb(force), true); }
 	void ApplyForce(vec2 force, vec2 offsetFromCenter) { assert_in_world(); m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }

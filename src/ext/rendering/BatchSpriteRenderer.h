@@ -7,6 +7,9 @@
 
 struct BatchSpriteRenderer
 {
+private:
+	float z = 0;
+
 public:
 	BatchSpriteRenderer()
 	{
@@ -15,25 +18,30 @@ public:
 
 	void Begin(Camera& camera)
 	{
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
 		SetProjection(camera.Projection());
+		z = 0;
 	}
 
 	void SubmitSprite(const Transform2D& transform, const r<Texture>& texture, const vec2& uvOffset, const vec2& uvScale, const Color& tint)
 	{
+		glm::mat4 world = transform.World();
+		world[3][2] += z;
+		z += .001f;
+
 		BatchData& batch = m_batches[texture];
-		batch.model.push_back(transform.World());
+		batch.model.push_back(world);
 		batch.uv   .push_back(vec4(uvOffset, uvScale));
 		batch.tint .push_back(tint.as_v4());
 	}
 
 	void Draw()
 	{
-		for (auto& [texture, batch] : m_batches)
-		{
-			DrawBatch(texture, batch);
-		}
+		for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
+		m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 
-		EndFrame();
+
 	}
 
 private:
@@ -121,10 +129,5 @@ private:
 		m_quad.Get(Mesh::aCustom_a2)->Set(batch.tint);
 		m_quad.Get(Mesh::aCustom_b1)->Set(batch.model.size(), batch.model.data());
 		m_quad.DrawInstanced(batch.size());
-	}
-
-	void EndFrame()
-	{
-		m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 	}
 };
