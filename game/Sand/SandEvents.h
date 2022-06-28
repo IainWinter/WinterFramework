@@ -24,11 +24,11 @@ struct event_SandAddSprite
 
 struct event_Sand_CreateCell
 {
-	Cell cell;
+	CellDefinition cell;
 	std::function<void(Entity)> onCreate;
 
 	event_Sand_CreateCell(
-		Cell cell, 
+		CellDefinition cell,
 		std::function<void(Entity)> onCreate = {}
 	)
 		: cell           (cell)
@@ -42,7 +42,7 @@ struct event_Sand_CreateCell
 		float life,
 		std::function<void(Entity)> onCreate = {}
 	)
-		: cell           (Cell{ pos, vel, color, life })
+		: cell           (CellDefinition{ pos, vel, color, life })
 		, onCreate       (onCreate)
 	{}
 };
@@ -62,8 +62,8 @@ struct event_Sand_ExplodeToDust
 
 struct event_Sand_ProjectileHit
 {
-	EntityWith<Transform2D, Sprite, SandSprite> entity;
 	EntityWith<Cell, CellProjectile> projectile;
+	EntityWith<Transform2D, Sprite, SandSprite> entity;
 	ivec2 hitPosInSprite; // in pixels
-	vec2 hitPosInWorld;      // in meters
+	vec2 hitPosInWorld;   // in meters
 };

@@ -73,6 +73,9 @@ public:
 	float GetDamping()         const { return     m_instance ? m_instance->GetLinearDamping()   : m_body.linearDamping; }
 	float GetAngularDamping()  const { return     m_instance ? m_instance->GetAngularDamping()  : m_body.angularDamping; }
 
+	float GetSpeed()           const { return length(_fb(m_instance ? m_instance->GetLinearVelocity() : m_body.linearVelocity)); }
+
+
 	void SetPosition       (vec2  pos)      { if (m_instance) m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); else m_body.position        = _tb(pos); }
 	void SetVelocity       (vec2  vel)      { if (m_instance) m_instance->SetLinearVelocity (_tb(vel));                         else m_body.linearVelocity  = _tb(vel); }
 	void SetAngle          (float angle)    { if (m_instance) m_instance->SetTransform      (m_instance->GetPosition(), angle); else m_body.angle           = angle; }

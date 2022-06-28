@@ -1091,10 +1091,11 @@ public:
 		return *this; 
 	}
 
+
 	// instances a buffer
 	// if buffer->Repeat() returns more than 4, the attribs past 'name' are also linked to this buffer
 	// and their infos are set to reflect the offset inside each buffer element
-	Mesh& Add(AttribName name, int instancedStride, const r<Buffer>& buffer)
+	Mesh& Add(AttribName name, int instancedStride, int forceRepeat, const r<Buffer>& buffer)
 	{
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
@@ -1102,7 +1103,7 @@ public:
 		// if repeat is larger than 4, then use the next attribs
 		// add the same buffer ref, but change the offset and repeat of buffer info
 
-		int repeat = buffer->Repeat();
+		int repeat = forceRepeat;
 		
 		for (int i = 0; i < repeat; i += 4) // will always run once
 		{
@@ -1128,7 +1129,7 @@ public:
 		auto [repeat, type] = get_element_type_info<_t>();
 		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, isStatic == INHERIT_HOST ? IsStatic() : isStatic);
 		buffer->Set(data.size(), data.data());
-		return Add(name, instancedStride, buffer);
+		return Add(name, instancedStride, buffer->Repeat(), buffer);
 	}
 
 // shorthand for simple configs (no instancing)
@@ -1139,10 +1140,9 @@ public:
 		return Add<_t>(name, 0, INHERIT_HOST, data);
 	}
 
-	template<typename _t>
 	Mesh& Add(AttribName name, const r<Buffer>& buffer)
 	{
-		return Add<_t>(name, 0, buffer);
+		return Add(name, 0, buffer->Repeat(), buffer);
 	}
 
 	// setups a buffer without data

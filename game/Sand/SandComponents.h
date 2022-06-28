@@ -4,10 +4,16 @@
 #include "Rendering.h"
 #include <vector>
 
-struct Cell
+struct CellDefinition
 {
 	vec2 pos;
 	vec2 vel;
+	Color color;
+	float life = 0.f;
+};
+
+struct Cell
+{
 	Color color;
 	float life = 0.f;
 };

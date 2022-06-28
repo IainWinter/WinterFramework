@@ -26,7 +26,7 @@ private:
 		auto [transform, sprite] = explodeMe.GetAll<Transform2D, Sprite>();
 		Texture& tex = sprite.Get();
 		vec2 mid = vec2(tex.Width(), tex.Height()) / 2.f;
-		vec2 vel = projectile.IsAlive() ? projectile.Get<Cell>().vel : vec2(0.f, 0.f);
+		vec2 vel = projectile.IsAlive() ? projectile.Get<Rigidbody2D>().GetVelocity()  : vec2(0.f, 0.f);
 
 		SandWorld& sand = GetModule<SandWorld>(); // non threadsafe read
 

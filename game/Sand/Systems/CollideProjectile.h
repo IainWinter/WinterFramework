@@ -29,13 +29,14 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 		if (sprite.Get().At(index).a > 0)
 		{
-			Cell cell = e.projectile.Get<Cell>(); 
-			cell.vel = cell.vel / (get_rand(5.f) + 1.f);
-			cell.vel += get_randn(length(cell.vel) / 4.f);
-			cell.life = .2f;
-			cell.color = sprite.Get().At(index);
+			Rigidbody2D& body = e.projectile.Get<Rigidbody2D>();
+
+			vec2 pos = body.GetPosition();
+			vec2 vel = body.GetVelocity() / (get_rand(5.f) + 1.f) + get_randn(body.GetSpeed() / 4.f);
+			float life = .2f;
+			Color color = sprite.Get().At(index);
 	
-			Send(event_Sand_CreateCell(cell));
+			Send(event_Sand_CreateCell(pos, vel, color, life));
 
 			printf("spawnned particle %f\n", Time::TotalTime());
 

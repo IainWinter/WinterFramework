@@ -54,7 +54,7 @@ struct System_PlayerController : System<System_PlayerController>
 			//Send(event_SpawnExplosion{vec2(10, 0), 20.f});
 		}
 
-		//fireballEntity.Get<Transform2D>().position = player.AttackLocationInput;
+		fireballEntity.Get<Transform2D>().position = player.AttackLocationInput;
 	}
 
 	void FixedUpdate()

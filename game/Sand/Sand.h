@@ -25,6 +25,13 @@
 #include <functional>
 #include <unordered_set>
 
+struct CellCollisionInfo
+{
+	ivec2 spriteHitIndex;
+	int spriteEntityID;
+	int hasHit;
+};
+
 struct SandWorld
 {
 	ivec2 worldSizeCells;
@@ -35,8 +42,8 @@ struct SandWorld
 
 	SandWorld(int cellsPerMeter, vec2 camSize)
 	{
-		screenRead = mkr<Target>(false);
 		ResizeWorld(cellsPerMeter, camSize);
+		screenRead = mkr<Target>(false);
 		screenRead->Add(Target::aColor, worldSizeCells.x, worldSizeCells.y, Texture::uINT_32, false);
 	}
 
@@ -45,8 +52,6 @@ struct SandWorld
 		worldSizeCells = camSize * 2.f * (float)cellsPerMeter_;
 		cameraSizeMeters = camSize;
 		cellsPerMeter = cellsPerMeter_;
-
-		screenRead->Resize(worldSizeCells.x, worldSizeCells.y);
 	}
 
 	ivec2 ToScreenPos(vec2 posInMeters) const
@@ -54,15 +59,15 @@ struct SandWorld
 		return posInMeters * cellsPerMeter + vec2(worldSizeCells) / 2.f;
 	}
 
-	bool CollidePixel(vec2 pos) /*const*/
+	bool CollidePixel(vec2 pos) const
 	{
-		return GetCollisionInfo(pos)[3] > 0;
+		return GetCollisionInfo(pos).hasHit;
 	}
 
-	/*const*/ ivec4& GetCollisionInfo(vec2 pos) /*const*/
+	CellCollisionInfo GetCollisionInfo(vec2 pos) const
 	{
 		ivec2 p = ToScreenPos(pos);
-		return *(ivec4*)screenRead->Get(Target::aColor)->At<int>(p.x, p.y);
+		return *(CellCollisionInfo*)screenRead->Get(Target::aColor)->At<int>(p.x, p.y);
 	}
 
 	bool OnScreen(vec2 pos) const
@@ -108,7 +113,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_Sand_CreateCell& e)
 	{
-		Entity entity = CreateEntity().AddAll(e.cell);
+		Entity entity = CreateEntity();
+		entity.Add<Cell>(e.cell.color, e.cell.life);
+		entity.Add<Transform2D>(e.cell.pos);
+		GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(e.cell.vel);
 		
 		if (e.onCreate)
 		{
