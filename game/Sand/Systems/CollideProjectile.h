@@ -29,23 +29,19 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 		if (sprite.Get().At(index).a > 0)
 		{
-			Rigidbody2D& body = e.projectile.Get<Rigidbody2D>();
+			//vec2 pos = e.projectile.Get<Transform2D>().position;
+			//vec2 vel = e.projectile.Get<Cell>().vel;
+			//Color color = sprite.Get().At(index);
+			//float life = .2f;
+			//vel /= (get_rand(5.f) + 1.f) + get_randn(length(vel) / 4.f);
+			//Send(event_Sand_CreateCell(pos, vel, color, life));
 
-			vec2 pos = body.GetPosition();
-			vec2 vel = body.GetVelocity() / (get_rand(5.f) + 1.f) + get_randn(body.GetSpeed() / 4.f);
-			float life = .2f;
-			Color color = sprite.Get().At(index);
-	
-			Send(event_Sand_CreateCell(pos, vel, color, life));
+			//Entity entity = CreateEntity().AddAll(
+			//	Transform2D(vec3(e.hitPosInWorld, 2.f), vec2(1.5f, 1.5f), get_rand(2.f * pi<float>())),
+			//	Particle(smoke)
+			//);
 
-			printf("spawnned particle %f\n", Time::TotalTime());
-
-			Entity entity = CreateEntity().AddAll(
-				Transform2D(vec3(e.hitPosInWorld, 2.f), vec2(1.5f, 1.5f), get_rand(2.f * pi<float>())),
-				Particle(smoke)
-			);
-
-			GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(get_randn(2.f));
+			//GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(get_randn(2.f));
 		}
 		
 		sprite.Get().At(index).a = 0;

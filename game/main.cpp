@@ -149,7 +149,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
-		level->AddSystem(System_ParticleUpdate());
+		//level->AddSystem(System_ParticleUpdate());
 
 		level->AddSystem(MetricsSystem());
 

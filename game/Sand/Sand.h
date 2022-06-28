@@ -59,12 +59,12 @@ struct SandWorld
 		return posInMeters * cellsPerMeter + vec2(worldSizeCells) / 2.f;
 	}
 
-	bool CollidePixel(vec2 pos) const
+	bool CollidePixel(vec2 pos) /*const*/
 	{
 		return GetCollisionInfo(pos).hasHit;
 	}
 
-	CellCollisionInfo GetCollisionInfo(vec2 pos) const
+	CellCollisionInfo& GetCollisionInfo(vec2 pos) /*const*/
 	{
 		ivec2 p = ToScreenPos(pos);
 		return *(CellCollisionInfo*)screenRead->Get(Target::aColor)->At<int>(p.x, p.y);
@@ -114,9 +114,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_Sand_CreateCell& e)
 	{
 		Entity entity = CreateEntity();
-		entity.Add<Cell>(e.cell.color, e.cell.life);
+		entity.Add<Cell>(e.cell.vel, e.cell.color, e.cell.life);
 		entity.Add<Transform2D>(e.cell.pos);
-		GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(e.cell.vel);
 		
 		if (e.onCreate)
 		{
@@ -133,7 +132,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_SandAddSprite& e)
 	{
 		if (!e.entity.Has<KeepOnScreen>())
+		{
 			e.entity.Add<KeepOnScreen>();
+		}
 
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();

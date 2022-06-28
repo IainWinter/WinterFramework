@@ -55,9 +55,9 @@ struct event_Sand_CreateCollider
 struct event_Sand_ExplodeToDust
 {
 	EntityWith<Transform2D, Sprite, SandSprite> entity;
-	EntityWith<Cell, CellProjectile> projectile;
-
 	std::vector<int> onlyThisIndex; // if empty everything is blow
+	
+	//vec2 projectileVel;
 };
 
 struct event_Sand_ProjectileHit

@@ -8,10 +8,13 @@ struct Sand_System_UpdateLineProjectileMesh : SystemBase
 {
 private:
 	Entity meshEntity;
+	SandWorld* sand;
 
 public:
 	void Init()
 	{
+		sand = &GetModule<SandWorld>();
+
 		r<Buffer> float6 = mkr<Buffer>(Buffer(0, 6, Buffer::_f32, DYNAMIC_HOST));
 
 		Mesh mesh = Mesh(DYNAMIC_HOST)
@@ -33,19 +36,16 @@ public:
 		// delete old cells
 		for (auto [e, cell] : QueryWithEntity<Cell>())
 		{
-			if (cell.life > 0)
+			if (cell.life >= 0)
 			{
 				cell.life -= Time::DeltaTime();
-				if (cell.life <= 0) e.Destroy();
+				if (cell.life <= 0) e.DestroyAtEndOfFrame();
 			}
 		}
 	}
 
 	void FixedUpdate()
 	{
-		SandWorld& sand = GetModule<SandWorld>();
-		Texture& collisionMaskRender = *sand.screenRead->Get(Target::aColor); // sprite info / collision info, probally an index (or entity index) to an array of structs
-
 		struct LineToDraw
 		{
 			vec2 a; vec4 colorA;
@@ -54,67 +54,47 @@ public:
 
 		std::vector<LineToDraw> toDraw;
 
-		for (auto [e, tran, body, cell] : QueryWithEntity<Transform2D, Rigidbody2D, Cell>())
+		for (auto [e, tran, cell] : QueryWithEntity<Transform2D, Cell>())
 		{
 			LineToDraw draw;
-			draw.a = body.GetPosition();
-			draw.b = body.GetPosition() + body.GetVelocity() * Time::FixedTime();
+			draw.a = tran.position;
+			draw.b = tran.position + cell.vel * Time::FixedTime();
 			draw.colorA = cell.color.as_v4();
 			draw.colorB = cell.color.as_v4();
 
 			if (e.Has<CellProjectile>())
 			{
 				CellProjectile& proj = e.Get<CellProjectile>();
-				PokeLineResult result = PokeLine(draw.a, draw.b, proj.owner, proj.turnOnHitRate);
-
-				draw.b = result.finalPosition;
-				//body.SetVelocity(result.finalVelocity);
+				PokeLineResult result = PokeLine(draw.a, draw.b, proj.owner, proj.turnOnHitRate, proj.health);
 
 				for (const PokeHitInfo& info : result.hits)
 				{
 					Send(event_Sand_ProjectileHit{ e, info.hitEntity, info.hitIndex, info.hitPos });
-
-					proj.health -= 1;
-					if (proj.health <= 0)
-					{
-						e.Destroy();
-						break;
-					}
 				}
+
+				cell.vel = result.finalVelocity / Time::FixedTime();
+				proj.health = result.finalHealth;
+				
+				if (proj.health <= 0)
+				{
+					cell.life = 0;
+				}
+
+				draw.b = result.finalPosition;
+			}
+
+			tran.position = draw.b;
+
+			float dist = distance(draw.a, draw.b);
+			if (dist > 10)
+			{
+				continue;
 			}
 
 			toDraw.push_back(draw);
 		}
 
 		meshEntity.Get<Mesh>().Get(Mesh::aPosition)->Set(toDraw.size() * 2, toDraw.data());
-
-		//std::vector<vec2> verticesOfLines;
-		//std::vector<vec4>   colorsOfLines;
-
-		//for (auto [e, cell] : QueryWithEntity<Cell>())
-		//{
-		//	auto [a, b] = DrawLine(sand, e, cell);
-		//	float dist = distance(a, b);
-
-		//	vec2 smallest = vec2(1.f / sand.cellsPerMeter);
-		//	if (dist < length(smallest))
-		//	{
-		//		b += smallest;
-		//	}
-
-		//	verticesOfLines.push_back(a);
-		//	verticesOfLines.push_back(b);
-
-		//	colorsOfLines.push_back(cell.color.as_v4());
-		//	colorsOfLines.push_back(cell.color.as_v4());
-		//}
-
-		//Mesh& lines = entity.Get<Mesh>();
-		//lines.Get(Mesh::aPosition)->Set(verticesOfLines);
-		//lines.Get(Mesh::aColor)   ->Set(colorsOfLines);
-
-		//Transform2D& transform = entity.Get<Transform2D>();
-		//transform.scale = sand.worldScale;
 	}
 
 private:
@@ -126,71 +106,91 @@ private:
 		vec2 hitPos;
 	};
 
+	struct PokePointResult
+	{
+		bool onScreen;
+		bool hasHit;
+		int hitStrength;
+		PokeHitInfo hit;
+	};
+
 	struct PokeLineResult
 	{
+		int finalHealth;
 		vec2 finalPosition;
 		vec2 finalVelocity;
 		std::vector<PokeHitInfo> hits;
 	};
 
-	PokeHitInfo PokePoint(vec2 p, u32 owner)
+	PokePointResult PokePoint(vec2 p, u32 owner)
 	{
+		PokePointResult result;
+		result.onScreen = sand->OnScreen(p);
+		result.hasHit = false;
+		result.hitStrength = 0;
 
-	}
-
-	PokeLineResult PokeLine(vec2 a, vec2 b, u32 owner, float turnOnHitRate)
-	{
-		PokeLineResult out;
-
-		SandWorld& sand = GetModule<SandWorld>();
-
-		vec2 vel = b - a;
-		vec2 delta = vel;
-		float distance = length(delta);
-		
-		if (distance > .001f)
+		if (result.onScreen)
 		{
-			delta /= distance * sand.cellsPerMeter;
+			CellCollisionInfo& hitInfo = sand->GetCollisionInfo(p);
 
-			int i = 0, count = ceil(distance);
-			while (i <= count)
+			if (hitInfo.hasHit)
 			{
-				if (!sand.OnScreen(a))
+				hitInfo.hasHit = 0; // remove from this frame
+
+				Entity hitEntity = Wrap(hitInfo.spriteEntityID);
+
+				if (hitEntity.IsAlive() && hitEntity.Id() != owner)
 				{
-					break; // exit off screen
-				}
+					SandSprite& sprite = hitEntity.Get<SandSprite>();
 
-				CellCollisionInfo hitInfo = sand.GetCollisionInfo(a);
-
-				if (hitInfo.hasHit)
-				{
-					Entity hitEntity = Wrap(hitInfo.spriteEntityID);
-
-					if (hitEntity.IsAlive() && hitEntity.Id() != owner)
+					if (!sprite.invulnerable)
 					{
-						SandSprite& sprite = hitEntity.Get<SandSprite>();
-
-						if (sprite.invulnerable)
-						{
-							break; // exit at current position if hit invulnerable
-						}
-
-						out.hits.push_back({ hitEntity, hitInfo.spriteHitIndex, a }); // add to hits
-
-						// turn projectile a little
-						float len = length(vel);
-						vel = normalize(vel + get_randn(len * turnOnHitRate)) * len;
-						delta /= len * sand.cellsPerMeter;  // code reuse...
+						result.hasHit = true;
+						result.hit = PokeHitInfo{ hitEntity, hitInfo.spriteHitIndex, p };
+						result.hitStrength = sprite.cellStrength;
 					}
 				}
-
-				i += 1;
-				a += delta;
 			}
 		}
 
+		return result;
+	}
+
+	PokeLineResult PokeLine(vec2 a, vec2 b, u32 owner, float turnOnHitRate, int health)
+	{
+		PokeLineResult out;
+
+		vec2 vel = b - a;
+		float distance = length(vel);
+		float cellDistance = distance * sand->cellsPerMeter;
+
+		vec2 delta = vel;
+
+		if (distance > .001f)
+		{
+			delta /= cellDistance;
+
+			for (int i = 0; i <= ceil(cellDistance); i += 1, a += delta)
+			{
+				PokePointResult point = PokePoint(a, owner);
+
+				if (!point.onScreen) break;     // break if off screen
+				if (!point.hasHit)   continue;  // continue through air
+
+				out.hits.push_back(point.hit);  // add to hits
+
+				health -= point.hitStrength;
+				if (health <= 0) break;         // break if dead
+
+				// turn projectile a little
+
+				delta = normalize(vel + get_randn(distance * turnOnHitRate)) / sand->cellsPerMeter;
+			}
+		}
+
+		out.finalHealth = health;
 		out.finalPosition = a;
-		out.finalVelocity = vel;
+		out.finalVelocity = delta * cellDistance;
 		return out;
 	}
 

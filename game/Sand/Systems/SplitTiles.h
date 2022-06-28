@@ -16,7 +16,7 @@ struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 
 		for (const ToSplit& split : hits)
 		{
-			SplitSandSprite(split.hit, split.projectile);
+			SplitSandSprite(split.hit);
 		}
 
 		m_hits.clear();
@@ -24,7 +24,7 @@ struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 
 	void on(event_Sand_ProjectileHit& e)
 	{
-		m_hits.insert(ToSplit { e.entity, e.projectile, e.hitPosInSprite });
+		m_hits.insert(ToSplit { e.entity });
 	}
 
 private:
@@ -32,7 +32,6 @@ private:
 	struct ToSplit
 	{
 		Entity hit;
-		Entity projectile;
 		ivec2 locationInSprite;
 		bool operator==(const ToSplit& t) const { return hit.raw_id() == t.hit.raw_id(); }
 	};
@@ -57,7 +56,7 @@ private:
 
 			else if (cellCount < 15)
 			{
-				Send(event_Sand_ExplodeToDust{ split.hit, split.projectile });
+				Send(event_Sand_ExplodeToDust{ split.hit });
 			}
 
 			else 
@@ -69,7 +68,7 @@ private:
 		return valid;
 	}
 
-	void SplitSandSprite(Entity entity, Entity projectile)
+	void SplitSandSprite(Entity entity)
 	{
 		auto [transform, drawSprite, sandSprite] = entity.GetAll<Transform2D, Sprite, SandSprite>();
 		r<Texture> sprite = drawSprite.source;
@@ -101,7 +100,7 @@ private:
 
 			for (const std::vector<int>& island : islands.otherIslands)
 			{
-				SplitFromIsland(island, entity, projectile);
+				SplitFromIsland(island, entity);
 
 				for (const int& index : island)
 				{
@@ -126,11 +125,11 @@ private:
 		}
 	}
 
-	void SplitFromIsland(const std::vector<int>& island, Entity entity, Entity projectile)
+	void SplitFromIsland(const std::vector<int>& island, Entity entity)
 	{
 		if (island.size() < 15)
 		{
-			Send(event_Sand_ExplodeToDust{ entity, projectile, island });
+			Send(event_Sand_ExplodeToDust{ entity, island });
 		}
 
 		else
