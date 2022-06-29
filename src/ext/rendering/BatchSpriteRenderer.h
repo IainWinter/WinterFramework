@@ -18,8 +18,6 @@ public:
 
 	void Begin(Camera& camera)
 	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
 		SetProjection(camera.Projection());
 		z = 0;
 	}
@@ -40,8 +38,6 @@ public:
 	{
 		for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
 		m_batches.clear(); // can have a much better scheme for keeping vector memory alive
-
-
 	}
 
 private:

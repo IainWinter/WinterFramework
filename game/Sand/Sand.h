@@ -114,9 +114,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_Sand_CreateCell& e)
 	{
 		Entity entity = CreateEntity();
-		entity.Add<Cell>(e.cell.vel, e.cell.color, e.cell.life);
+		entity.Add<Cell>(e.cell.color, e.cell.life);
 		entity.Add<Transform2D>(e.cell.pos);
-		
+		GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(e.cell.vel);
+
 		if (e.onCreate)
 		{
 			e.onCreate(entity);

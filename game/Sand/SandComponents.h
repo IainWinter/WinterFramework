@@ -14,9 +14,6 @@ struct CellDefinition
 
 struct Cell
 {
-	vec2 vel; // dont use Rigidbody for velocity because on hit we need to 
-			  // change the position, this is annoying when not having control over the position directly
-
 	Color color;
 	float life = 0.f;
 };

@@ -6,11 +6,10 @@ struct Particle
 {
 	r<TextureAtlas> atlas;
 	
-	int framesPerSecond = 24;
-	int frameCount      =  0;
-	int repeatCount     =  1;
-
-	float frameCurrent  = 0.f;
+	int   repeatCount     =  1;
+	int   frameCount      =  0;
+	float framesPerSecond = 24.f;
+	float frameCurrent    =  0.f;
 
 	// could be in seperate component
 

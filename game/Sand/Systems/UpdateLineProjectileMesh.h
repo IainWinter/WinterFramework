@@ -43,15 +43,10 @@ public:
 			}
 		}
 
-		for (auto [transform, cell] : Query<Transform2D, Cell>())
-		{
-			transform.position += cell.vel * Time::DeltaTime();
-		}
-
 		for (auto [entity, transform, cell, proj] : QueryWithEntity<Transform2D, Cell, CellProjectile>())
 		{
 			Transform2D last = transform.LastTransform();
-			vec2 delta = (transform.position - last.position) * Time::DeltaTime();
+			vec2 delta = transform.position - last.position;
 
 			float ticks = length(delta) * 10.f; // todo: this is sand world cells per meter / 2
 			vec2 deltaTick = delta / ticks;
@@ -59,12 +54,11 @@ public:
 			for (float t = 0; t < ticks; t += 1.f)
 			{
 				last.position += deltaTick;
-				
-				PokePointResult result = PokePoint(last.position, proj.owner);
+								
+				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
+				for (const auto& result : results.hits)
 				if (result.hasHit)
 				{
-					printf("%f %f\n", last.position.x, last.position.y);
-					
 					Send(event_Sand_ProjectileHit{ 
 						entity, 
 						result.hit.hitEntity, 
@@ -75,59 +69,6 @@ public:
 			}
 		}
 	}
-
-	/*void FixedUpdate()
-	{
-		struct LineToDraw
-		{
-			vec2 a; vec4 colorA;
-			vec2 b; vec4 colorB;
-		};
-
-		std::vector<LineToDraw> toDraw;
-
-		for (auto [e, tran, cell] : QueryWithEntity<Transform2D, Cell>())
-		{
-			LineToDraw draw;
-			draw.a = tran.position;
-			draw.b = tran.position + cell.vel * Time::FixedTime();
-			draw.colorA = cell.color.as_v4();
-			draw.colorB = cell.color.as_v4();
-
-			if (e.Has<CellProjectile>())
-			{
-				CellProjectile& proj = e.Get<CellProjectile>();
-				PokeLineResult result = PokeLine(draw.a, draw.b, proj.owner, proj.turnOnHitRate, proj.health);
-
-				for (const PokeHitInfo& info : result.hits)
-				{
-					Send(event_Sand_ProjectileHit{ e, info.hitEntity, info.hitIndex, info.hitPos });
-				}
-
-				cell.vel = result.finalVelocity / Time::FixedTime();
-				proj.health = result.finalHealth;
-				
-				if (proj.health <= 0)
-				{
-					cell.life = 0;
-				}
-
-				draw.b = result.finalPosition;
-			}
-
-			tran.position = draw.b;
-
-			float dist = distance(draw.a, draw.b);
-			if (dist > 10)
-			{
-				continue;
-			}
-
-			toDraw.push_back(draw);
-		}
-
-		meshEntity.Get<Mesh>().Get(Mesh::aPosition)->Set(toDraw.size() * 2, toDraw.data());
-	}*/
 
 private:
 
@@ -144,6 +85,11 @@ private:
 		bool hasHit;
 		int hitStrength;
 		PokeHitInfo hit;
+	};
+
+	struct PokeCircleResult
+	{
+		std::vector<PokePointResult> hits;
 	};
 
 	struct PokeLineResult
@@ -182,6 +128,22 @@ private:
 						result.hitStrength = sprite.cellStrength;
 					}
 				}
+			}
+		}
+
+		return result;
+	}
+
+	PokeCircleResult PokeCircle(vec2 p, u32 owner, int radius)
+	{
+		PokeCircleResult result;
+
+		for (int y = -radius; y <= radius; y++)
+		{
+			int layerWidth = radius - abs(y);
+			for (int x = -layerWidth; x <= layerWidth; x++)
+			{
+				result.hits.push_back(PokePoint(p + vec2(x, y) / sand->cellsPerMeter, owner));
 			}
 		}
 

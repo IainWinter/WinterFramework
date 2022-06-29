@@ -75,27 +75,32 @@ public:
 	void Draw() override
 	{
 		render.Begin(level->GetApp()->GetModule<Camera>());
+
+		// draw sprites
+
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		
 		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
 		{
 			render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), Color(255, 255, 255, 255));
 		}
+		render.Draw();
+
+		// draw particles
+
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
 		std::vector<std::tuple<float, Transform2D*, Particle*>> toDraw; // will be sorted by age
-
 		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
 		{
 			toDraw.push_back({ particle.Age(), &transform, &particle });
 		}
-		
 		std::sort(toDraw.begin(), toDraw.end(), [](const auto& a, const auto& b) { return std::get<0>(a) > std::get<0>(b); });
-
 		for (auto& [age, t, p] : toDraw)
 		{
 			TextureAtlas::Bounds uv = p->GetCurrentFrameUV();
 			render.SubmitSprite(*t, p->atlas->source, uv.uvOffset, uv.uvScale, p->GetTint(age));
 		}
-
 		render.Draw();
 	}
 
