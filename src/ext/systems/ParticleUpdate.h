@@ -29,31 +29,26 @@ struct System_ParticleUpdate : SystemBase
 
 		for (auto [transform, emitter] : Query<Transform2D, ParticleEmitter>())
 		{
-			emitter.currentTime += Time::DeltaTime();
-			while (emitter.currentTime >= 0)
+			if (!emitter.enabled) continue;
+
+			Transform2D last = transform.LastTransform();
+			vec2 delta = transform.position - last.position;
+
+			float ticks = length(delta) * 10.f; // todo: this is sand world cells per meter / 2
+			vec2 deltaTick = delta / ticks;
+
+			for (float t = 0; t < ticks; t += 1.f)
 			{
-				emitter.currentTime -= emitter.timeBetweenSpawn;
-				SpawnParticle(transform, emitter);
+				last.position += deltaTick;
+				emitter.Emit(last);
 			}
+
+			//emitter.currentTime += Time::DeltaTime();
+			//while (emitter.currentTime >= 0)
+			//{
+			//	emitter.currentTime -= emitter.timeBetweenSpawn;
+			//	emitter.Emit(transform);
+			//}
 		}
-	}
-
-private:
-
-	void SpawnParticle(Transform2D& transform, ParticleEmitter& emitter)
-	{
-		Particle particle = emitter.Emit(transform);
-		
-		Entity entity = CreateEntity();
-		entity.Add<Particle>(particle);
-		entity.Add<Transform2D>(particle.orignal);
-
-		entity.Add<ParticleShrinkWithAge>();
-
-		Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-		body.SetAngularVelocity(get_randc(10.f));
-		body.SetAngle(get_rand(w2PI));
-		body.SetVelocity(get_randn(20.f));
-		body.SetDamping(5.f);
 	}
 };

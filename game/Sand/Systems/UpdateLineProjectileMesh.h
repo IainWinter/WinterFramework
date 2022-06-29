@@ -42,9 +42,41 @@ public:
 				if (cell.life <= 0) e.DestroyAtEndOfFrame();
 			}
 		}
+
+		for (auto [transform, cell] : Query<Transform2D, Cell>())
+		{
+			transform.position += cell.vel * Time::DeltaTime();
+		}
+
+		for (auto [entity, transform, cell, proj] : QueryWithEntity<Transform2D, Cell, CellProjectile>())
+		{
+			Transform2D last = transform.LastTransform();
+			vec2 delta = (transform.position - last.position) * Time::DeltaTime();
+
+			float ticks = length(delta) * 10.f; // todo: this is sand world cells per meter / 2
+			vec2 deltaTick = delta / ticks;
+
+			for (float t = 0; t < ticks; t += 1.f)
+			{
+				last.position += deltaTick;
+				
+				PokePointResult result = PokePoint(last.position, proj.owner);
+				if (result.hasHit)
+				{
+					printf("%f %f\n", last.position.x, last.position.y);
+					
+					Send(event_Sand_ProjectileHit{ 
+						entity, 
+						result.hit.hitEntity, 
+						result.hit.hitIndex, 
+						result.hit.hitPos 
+					});
+				}
+			}
+		}
 	}
 
-	void FixedUpdate()
+	/*void FixedUpdate()
 	{
 		struct LineToDraw
 		{
@@ -95,7 +127,7 @@ public:
 		}
 
 		meshEntity.Get<Mesh>().Get(Mesh::aPosition)->Set(toDraw.size() * 2, toDraw.data());
-	}
+	}*/
 
 private:
 

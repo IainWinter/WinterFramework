@@ -73,17 +73,20 @@ struct ParticleEmitter
 	{
 		Particle particle;
 		float weight;
+		std::function<void(Particle)> onCreate;
 	};
 
 	std::vector<Spawner> spawners;
 	float totalWeight = 0.f;
 
-	float timeBetweenSpawn = .001f;
+	float timeBetweenSpawn = .016f;
 	float currentTime = 0.f;
 
-	void AddSpawner(Particle particle, float weight)
+	bool enabled = true;
+
+	void AddSpawner(Particle particle, float weight, std::function<void(Particle)> onCreate)
 	{
-		spawners.push_back({ particle, weight });
+		spawners.push_back({ particle, weight, onCreate });
 		totalWeight += weight;
 	}
 
@@ -97,8 +100,16 @@ struct ParticleEmitter
 	// returns a particle at the index
 	Particle Emit(int index, Transform2D& emitterTransform) const
 	{
-		Particle p = spawners.at(index).particle;
+		const Spawner& spawner = spawners.at(index);
+		
+		Particle p = spawner.particle;
 		p.orignal *= emitterTransform;            // todo: should parent when that is a feature
+
+		if (spawner.onCreate)
+		{
+			spawner.onCreate(p);
+		}
+
 		return p;
 	}
 
@@ -110,7 +121,7 @@ struct ParticleEmitter
 		int i = 0;
 		for (; i < spawners.size(); i++)
 		{
-			auto& [particle, weight] = spawners.at(i);
+			auto& [particle, weight, _] = spawners.at(i);
 			if (pick <= weight) break;
 			pick -= weight;
 		}

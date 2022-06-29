@@ -20,5 +20,12 @@ struct System_EnemyController : System<System_EnemyController>
 		{
 			body.SetVelocity(safe_normalize(body.GetVelocity()) * 10.f); // set constant velocity for flockers
 		}
+
+		SandWorld& sand = GetModule<SandWorld>();
+
+		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, Cell>())
+		{
+			particle.enabled = sand.OnScreen(transform.position);
+		}
 	}
 };

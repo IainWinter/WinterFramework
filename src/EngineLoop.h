@@ -121,6 +121,8 @@ public:
 		TickDefered();
 		
 		TickFrame();
+
+		TickLastTransforms();
 	}
 
 	// Interface
@@ -191,6 +193,14 @@ private:
 	{
 		// technically the entityworld at the root App level should also get ticked, but I dont think it will ever be needed
 		LevelManager::CurrentLevel()->GetWorld()->ExecuteDeferdDeletions();
+	}
+
+	void TickLastTransforms()
+	{
+		for (auto [transform] : LevelManager::CurrentLevel()->GetWorld()->Query<Transform2D>())
+		{
+			transform.UpdateLastFrameData();
+		}
 	}
 
 #ifdef IW_METRICS_TIMER

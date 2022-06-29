@@ -149,11 +149,12 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
-		//level->AddSystem(System_ParticleUpdate());
 
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
+
+		level->AddSystem(System_ParticleUpdate());
 
 		//level->CreateEntity().AddAll(Transform2D(0, 0, -1, 30*1.8, 10*1.8), Sprite(_a("bg.png")));
 	}

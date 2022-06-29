@@ -202,12 +202,21 @@ struct Transform2D
 	float rotation;
 	float z;
 
+private:
+	vec2 positionLast;
+	vec2 scaleLast;
+	float rotationLast;
+	float zLast;
+
+public:
 	Transform2D()
 		: position (0.f, 0.f)
 		, scale    (1.f, 1.f)
 		, rotation (0.f)
 		, z        (0.f)
-	{}
+	{
+		UpdateLastFrameData();
+	}
 
 	Transform2D(
 		float x, float y, float z = 0.f, float sx = 1.f, float sy = 1.f, float r = 0.f
@@ -216,16 +225,20 @@ struct Transform2D
 		, scale    (sx, sy)
 		, rotation (r)
 		, z        (z)
-	{}
+	{
+		UpdateLastFrameData();
+	}
 
 	Transform2D(
-		vec2 position, vec2 scale = vec2(1.f, 1.f), float rotation = 0.f
+		vec2 position, vec2 scale = vec2(1.f, 1.f), float rotation = 0.f, float z = 0.f
 	)
 		: position (position)
 		, scale    (scale)
 		, rotation (rotation)
 		, z        (0.f)
-	{}
+	{
+		UpdateLastFrameData();
+	}
 
 	Transform2D(
 		vec3 position, vec2 scale = vec2(1.f, 1.f), float rotation = 0.f
@@ -234,7 +247,9 @@ struct Transform2D
 		, scale    (scale)
 		, rotation (rotation)
 		, z        (position.z)
-	{}
+	{
+		UpdateLastFrameData();
+	}
 
 	Transform2D& operator*=(const Transform2D& other)
 	{
@@ -258,5 +273,18 @@ struct Transform2D
 		world = glm::scale    (world, vec3(scale, 1.f));
 
 		return world;
+	}
+
+	void UpdateLastFrameData()
+	{
+		positionLast = position;
+		scaleLast    = scale;
+		rotationLast = rotation;
+		zLast        = z;
+	}
+
+	Transform2D LastTransform() const
+	{
+		return Transform2D(positionLast, scaleLast, rotationLast, zLast);
 	}
 };
