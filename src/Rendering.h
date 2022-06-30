@@ -60,7 +60,6 @@
 //#	define PICK_INHERIT isStatic == INHERIT_HOST ? IsStatic() : isStatic
 #endif
 
-
 struct IDeviceObject
 {
 	IDeviceObject(

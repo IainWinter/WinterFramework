@@ -1,26 +1,27 @@
 #pragma once
 
 #include "Leveling.h"
-#include "ext/Time.h"
+#include "Events.h"
+#include "Physics.h"
 
-#include "Components/EnemyAI.h"
-#include "Sand/SandEvents.h"
+#include "ext/Components.h"
+#include "ext/rendering/Particle.h"
+#include "Sand/SandComponents.h"
 
-struct System_FireWeaponAfterDelay : SystemBase
+#include "Prefabs.h"
+
+struct System_FireWeapon : System<System_FireWeapon>
 {
-	void Update()
+	void Init()
 	{
-		for (auto [entity, fire] : QueryWithEntity<FireWeaponAfterDelay>())
-		{
-			fire.m_timer -= Time::DeltaTime();
-			if (fire.m_timer <= 0.f)
-			{
-				fire.m_timer = fire.delay;
-				FireWeapon(entity, fire.target, fire.weapon);
-			}
-		}
+		Attach<event_FireWeapon>();
 	}
-	
+
+	void on(event_FireWeapon& e)
+	{
+		FireWeapon(e.owner, e.target, e.type);
+	}
+
 private:
 
 	void FireWeapon(Entity entity, Entity target, Weapon weapon)
@@ -34,10 +35,10 @@ private:
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Transform2D>(position);
-				entity.Add<Rigidbody2D>().SetPosition(position).SetVelocity(direction * 50.f);
 				entity.Add<DestroyInTime>(3.f);
 				entity.Add<CellProjectile>(entity.Id());
 				entity.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
 
 				break;
 			}

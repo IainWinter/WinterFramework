@@ -23,7 +23,7 @@ struct System_EnemyController : System<System_EnemyController>
 
 		SandWorld& sand = GetModule<SandWorld>();
 
-		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, Cell>())
+		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
 		{
 			particle.enabled = sand.OnScreen(transform.position);
 		}

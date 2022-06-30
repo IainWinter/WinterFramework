@@ -101,7 +101,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 	{
 		//Attach<event_WindowResize>();
 		Attach<event_SandAddSprite>();
-		Attach<event_Sand_CreateCell>();
+		//Attach<event_Sand_CreateCell>();
 
 		//auto [sand, camera] = GetModules<SandWorld, Camera>();
 		
@@ -111,18 +111,17 @@ struct Sand_System_Update : System<Sand_System_Update>
 		//);
 	}
 
-	void on(event_Sand_CreateCell& e)
-	{
-		Entity entity = CreateEntity();
-		entity.Add<Cell>(e.cell.color, e.cell.life);
-		entity.Add<Transform2D>(e.cell.pos);
-		GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(e.cell.vel);
+	//void on(event_Sand_CreateCell& e)
+	//{
+	//	Entity entity = CreateEntity();
+	//	entity.Add<Transform2D>(e.cell.pos);
+	//	GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(e.cell.vel);
 
-		if (e.onCreate)
-		{
-			e.onCreate(entity);
-		}
-	}
+	//	if (e.onCreate)
+	//	{
+	//		e.onCreate(entity);
+	//	}
+	//}
 
 	//void on(event_WindowResize& e)
 	//{

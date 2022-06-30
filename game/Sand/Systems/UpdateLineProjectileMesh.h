@@ -33,17 +33,7 @@ public:
 
 	void Update()
 	{
-		// delete old cells
-		for (auto [e, cell] : QueryWithEntity<Cell>())
-		{
-			if (cell.life >= 0)
-			{
-				cell.life -= Time::DeltaTime();
-				if (cell.life <= 0) e.DestroyAtEndOfFrame();
-			}
-		}
-
-		for (auto [entity, transform, cell, proj] : QueryWithEntity<Transform2D, Cell, CellProjectile>())
+		for (auto [entity, transform, proj] : QueryWithEntity<Transform2D, CellProjectile>())
 		{
 			Transform2D last = transform.LastTransform();
 			vec2 delta = transform.position - last.position;

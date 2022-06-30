@@ -12,12 +12,6 @@ struct CellDefinition
 	float life = -1.f; // negitive lifes forever
 };
 
-struct Cell
-{
-	Color color;
-	float life = 0.f;
-};
-
 struct CellProjectile
 {
 	u32 owner; // for no damage to who fired

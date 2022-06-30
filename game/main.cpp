@@ -22,9 +22,11 @@
 #include "Systems/KeepOnScreen.h"
 
 #include "Systems/FireWeaponAfterDelay.h"
+#include "Systems/FireWeapon.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
+#include "ext/systems/DestroyInTime.h"
 
 #include "Systems/RenderSceneGraph.h"
 
@@ -139,7 +141,8 @@ struct Regolith : EngineLoop
 
 		level->AddSystem(System_RenderSceneGraph());
 
-		level->AddSystem(PhysicsInterpolation());
+		level->AddSystem(System_PhysicsInterpolation());
+		level->AddSystem(System_DestroyInTime());
 
 		level->AddSystem(System_PlayerController());
 		level->AddSystem(System_TurnTwoardsTarget());
@@ -149,6 +152,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_EnemyController());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
+		level->AddSystem(System_FireWeapon());
 
 		level->AddSystem(MetricsSystem());
 

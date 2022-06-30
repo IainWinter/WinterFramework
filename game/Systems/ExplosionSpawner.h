@@ -38,7 +38,9 @@ private:
 		{
 			float speed = get_rand(radius) + radius / 3.f;
 			vec2 velocity = get_randn(speed);
-			Send(event_Sand_CreateCell(position, velocity, Color(205 + get_rand(50), 218, 20), .2f, onCreate));
+			//Send(event_Sand_CreateCell(position, velocity, Color(205 + get_rand(50), 218, 20), .2f, onCreate));
+		
+			// fire weapon bullets
 		}
 
 		CreateEntity().AddAll(

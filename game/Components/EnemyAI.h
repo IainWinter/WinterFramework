@@ -1,11 +1,7 @@
 #pragma once
 
 #include "Entity.h"
-
-enum Weapon
-{
-	LASER
-};
+#include "Weapons.h"
 
 struct TurnTwoardsTarget
 {
