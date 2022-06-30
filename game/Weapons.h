@@ -2,5 +2,6 @@
 
 enum Weapon
 {
-	LASER
+	LASER,
+	FUEL_SHOT
 };

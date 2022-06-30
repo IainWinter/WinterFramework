@@ -18,6 +18,7 @@ struct CellProjectile
 	int health = 5; // how many cells can this projectile destroy
 	float turnOnHitRate = .2f; // percent of velocity that should be used to turn on each cell hit
 	float trailLife = .02;
+	int size = 0;
 };
 
 struct SandSprite

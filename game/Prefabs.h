@@ -5,3 +5,4 @@
 #include "Leveling.h"
 
 ParticleEmitter GetPrefab_LaserEmitter();
+ParticleEmitter GetPrefab_FuelShotEmitter();

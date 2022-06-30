@@ -13,8 +13,6 @@
 struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
-	//Entity sandTestParticleEntity;
-
 	Entity target;
 
 	void Init()
@@ -22,51 +20,6 @@ struct System_PlayerController : System<System_PlayerController>
 		Attach<event_Input>();
 		Attach<event_Mouse>();
 		playerEntity = FirstEntityWith<Player>();
-
-		//Particle fireball = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
-		//fireball.repeatCount = 10;
-		//fireball.orignal.scale = vec2(1, .5f);
-		//fireball.tints = {
-		//	Color( 10, 147, 255,   0),
-		//	Color(244,  86,  12, 153),
-		//	Color(255,  28,   0, 184)
-		//};
-
-		//fireballEntity = CreateEntity();
-		//fireballEntity.Add<Transform2D>(vec3(20.f, 0, 4.f));
-		//fireballEntity.Add<ParticleEmitter>().AddSpawner(fireball, 1.f,
-		//	[this](Particle particle)
-		//	{
-		//		Entity entity = CreateEntity();
-		//		entity.Add<Particle>(particle);
-		//		entity.Add<Transform2D>(particle.orignal);
-
-		//		entity.Add<ParticleShrinkWithAge>();
-
-		//		Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-		//		body.SetAngularVelocity(get_randc(10.f));
-		//		body.SetAngle(get_rand(w2PI));
-		//		body.SetVelocity(get_randn(5.f));
-		//		body.SetDamping(5.f);
-		//	});
-
-
-		//SandWorld& sand = GetModule<SandWorld>();
-
-		//Particle sqr = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("sqr_small.png"))));
-		//sqr.framesPerSecond = 100;
-		//sqr.orignal.scale = vec2(1.f / sand.cellsPerMeter);
-
-		//sandTestParticleEntity = CreateEntity();
-		//sandTestParticleEntity.Add<ParticleEmitter>().AddSpawner(sqr, 1.f, 
-		//	[this](Particle particle)
-		//	{
-		//		Entity entity = CreateEntity();
-		//		entity.Add<Particle>(particle);
-		//		entity.Add<Transform2D>(particle.orignal);
-		//	});
-
-
 		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 	}
 
@@ -78,7 +31,7 @@ struct System_PlayerController : System<System_PlayerController>
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-			Send(event_FireWeapon{playerEntity, target, LASER});
+			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon});
 		}
 
 		target.Get<Transform2D>().position = player.AttackLocationInput;

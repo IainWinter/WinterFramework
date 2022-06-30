@@ -206,7 +206,7 @@ struct Regolith : EngineLoop
 		//level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
 		//level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
 
-		for (int i = 0; i < 0; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;
 
@@ -215,7 +215,7 @@ struct Regolith : EngineLoop
 				case 0: // fighter
 				{
 					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-					//entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
+					entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
 					entity.Add<Flocker>();
 

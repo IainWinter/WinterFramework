@@ -42,6 +42,18 @@ private:
 
 				break;
 			}
+
+			case FUEL_SHOT:
+			{
+				Entity entity = CreateEntity();
+				entity.Add<Transform2D>(position);
+				entity.Add<DestroyInTime>(3.f);
+				entity.Add<CellProjectile>(entity.Id());
+				entity.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
+				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
+
+				break;
+			}
 		}
 	}
 };
