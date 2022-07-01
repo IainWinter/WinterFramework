@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EnemyAI.h"
 #include "Leveling.h"
+#include "Components/EnemyAI.h"
 
 struct System_EnemyController : System<System_EnemyController>
 {
@@ -16,9 +16,16 @@ struct System_EnemyController : System<System_EnemyController>
 		//	}
 		//}
 
-		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
+		for (auto [body, flocker] : Query<Rigidbody2D, TurnTwoardsTarget>())
 		{
-			body.SetVelocity(normalize(body.GetVelocity()) * 15.f);
+			body.SetVelocity(safe_normalize(body.GetVelocity()) * 10.f); // set constant velocity for flockers
+		}
+
+		SandWorld& sand = GetModule<SandWorld>();
+
+		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
+		{
+			particle.enabled = sand.OnScreen(transform.position);
 		}
 	}
 };

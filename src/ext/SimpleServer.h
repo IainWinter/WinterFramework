@@ -224,7 +224,7 @@ struct server
 						}
 					}
 
-					std::shared_ptr<session<_id>> conn = std::make_shared<session<_id>>(std::move(socket), m_in);
+					std::shared_ptr<session<_id>> conn = std::mkr<session<_id>>(std::move(socket), m_in);
 					m_sessions.push_back(conn);
 					
 					conn->start_listening();

@@ -2,6 +2,9 @@
 
 #include "Defines.h"
 #include "entt/entity/registry.hpp"
+#include <unordered_set>
+#include <unordered_map>
+#include <mutex>
 
 // entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
 
@@ -34,7 +37,7 @@ namespace tuple_helpers
 	{
 		return pop_front_impl(tuple, std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
 	}
-};
+}
 
 template<typename... _t>
 struct EntityQuery
@@ -103,13 +106,19 @@ public:
 struct EntityWorld
 {
 private:
+	struct EntityState
+	{
+		std::function<void(Entity)> onDestroy;
+	};
+
 	entt::registry m_registry;
+	std::unordered_map<entt::entity, EntityState> m_events;
+	std::unordered_set<entt::entity> m_deferDelete;
+	std::mutex m_deferDeleteMutex;
 
 	friend struct Entity;
 
 public:
-	Entity Create();
-
 	template<typename... _t>
 	EntityQuery<_t...> Query()
 	{
@@ -121,6 +130,43 @@ public:
 	{
 		return EntityQueryWithEntity<_t...>(m_registry.view<_t...>().each(), this);
 	}
+
+	void ExecuteDeferdDeletions()
+	{
+		for (const entt::entity& handle : m_deferDelete)
+		{
+			DeleteEntityNow(handle);
+		}
+		m_deferDelete.clear();
+	}
+	
+	void Clear()
+	{
+		m_registry.clear();
+	}
+
+	Entity Create();
+	Entity Wrap(u32 id);
+
+// hidden entity functions, called from Entity
+
+private:
+	void DeleteEntityNow(entt::entity id);
+
+	void AddDeferedDelete(entt::entity id)
+	{
+		std::unique_lock lock(m_deferDeleteMutex);
+		m_deferDelete.insert(id);
+	}
+
+// events
+
+private:
+
+	void         RemoveState(entt::entity id) {        m_events.erase(id); }
+	bool         HasState   (entt::entity id) { return m_events.find(id) != m_events.end(); }
+	EntityState& AssureState(entt::entity id) { return m_events[id]; }
+	EntityState& GetState   (entt::entity id) { return m_events.at(id); }
 };
 
 struct Entity
@@ -152,20 +198,45 @@ public:
 	u32 Id() const
 	{
 		assert_is_valid();
+		return raw_id();
+	}
+
+	// doesnt check for if this id is valid or not
+	u32 raw_id() const
+	{
 		return (u32)m_handle; // isnt there like a smuggle functions for this?
+	}
+
+	bool IsAliveAtEndOfFrame() const
+	{
+		return IsAlive()
+			&& m_owning->m_deferDelete.find(m_handle) == m_owning->m_deferDelete.end();
 	}
 
 	bool IsAlive() const
 	{
-		return !!m_owning;
+		return !!m_owning && m_owning->m_registry.valid(m_handle);
+	}
+
+	void Destroy() const
+	{
+		assert_is_valid();
+		m_owning->DeleteEntityNow(m_handle);
 	}
 
 	void Destroy()
 	{
-		assert_is_valid();
-		m_owning->m_registry.destroy(m_handle);
+		const Entity* me = this;
+		me->Destroy();
+
 		m_owning = nullptr;
 		m_handle = entt::null;
+	}
+
+	// threadsafe and guards against double defer deletes
+	void DestroyAtEndOfFrame() const
+	{
+		m_owning->AddDeferedDelete(m_handle);
 	}
 
 	// could use template meta nonsense to remove Get/GetAll
@@ -248,6 +319,31 @@ public:
 		m_owning->m_registry.remove<_t...>(m_handle);
 	}
 
+	// Listeners
+
+	Entity& OnDestroy(const std::function<void(Entity)>& func)
+	{
+		m_owning->AssureState(m_handle).onDestroy = func;
+		return *this;
+	}
+
+	// Cloning
+
+	Entity Clone()
+	{
+		Entity entity;
+
+		for (auto [id, storage] : m_owning->m_registry.storage())  // like visit function
+		{
+			if (storage.contains(m_handle))
+			{
+				storage.emplace(entity.m_handle, storage.get(m_handle));
+			}
+		}
+
+		return entity;
+	}
+
 	// Asserts
 	                         void assert_is_valid()       const { assert(IsAlive()        && "Entity is not valid"); }
 	template<typename... _t> void assert_no_components()  const { assert(!HasAny<_t...>() && "Entity already contains one of these components"); }
@@ -282,13 +378,61 @@ public:
 	}
 };
 
+template<typename... _t>
+struct EntityWith : Entity
+{
+	EntityWith()
+	{
+		// no assurance on empty...
+	}
+
+	EntityWith(Entity&& move) noexcept
+		: Entity(std::move(move))
+	{
+		assert_has_components<_t...>();
+	}
+	EntityWith& operator=(Entity&& move) noexcept
+	{
+		*((Entity*)this) = std::move(move);
+		assert_has_components<_t...>();
+		return *this;
+	}
+	EntityWith(const Entity& copy)
+		: Entity(copy)
+	{
+		assert_has_components<_t...>();
+	}
+	EntityWith& operator=(const Entity& copy)
+	{
+		*((Entity*)this) = copy;
+		assert_has_components<_t...>();
+		return *this;
+	}
+};
+
 namespace std {
 	template<> struct hash<Entity> { size_t operator()(const Entity& x) const { return x.Id(); } };
 }
 
-// impl, could go into cpp but these funcs are tiny
+// impl here for Entity def
 
 inline Entity EntityWorld::Create()
 {
-	return Entity(m_registry.create(), this);
+	return Wrap((u32)m_registry.create());
+}
+
+inline Entity EntityWorld::Wrap(u32 id)
+{
+	return Entity((entt::entity)id, this);
+}
+
+inline void EntityWorld::DeleteEntityNow(entt::entity id)
+{
+	if (HasState(id))
+	{
+		GetState(id).onDestroy(Wrap((u32)id));
+		RemoveState(id);
+	}
+
+	m_registry.destroy(id);
 }

@@ -21,39 +21,13 @@
 // imgui is going to be the UI library for everything in the game
 // so hard commit to tieing it up with the renderer
 
+// could hide this in a cpp file
+// probally the best thing to do would be to put all the _XXXXX functions into a cpp
+// that way opengl is actually hidden
+
 #include "util/error_check.h" // gives gl
 #include "SDL2/SDL_surface.h"
-
-#define STB_IMAGE_IMPLEMENTATION // not great, I guess this should be in a cpp file
-#include "stb/stb_image.h"
-
-std::tuple<u8*, int, int, int> load_image_using_stb(const std::string& filepath)
-{
-	int width, height, channels, format;
-	stbi_info(filepath.c_str(), &width, &height, &channels);
-
-	switch (channels)
-	{
-		case 1: format = STBI_grey;       break;
-		case 2: format = STBI_grey_alpha; break;
-		case 3: format = STBI_rgb;        break;
-		case 4: format = STBI_rgb_alpha;  break;
-	}
-
-	u8* pixels = stbi_load(filepath.c_str(), &width, &height, &channels, format);
-
-	if (!pixels /*|| stbi_failure_reason()*/) // no SOI bug
-	{
-		printf("failed to load image '%s' reason: %s\n", filepath.c_str(), stbi_failure_reason());
-	}
-
-	return std::make_tuple(pixels, width, height, channels);
-}
-
-void free_image_using_stb(void* pixels)
-{
-	free(pixels); // stb calls free, doesnt HAVE to though so this is a lil jank
-}
+#include "stb/load_image.h"
 
 // I want to create the simplest graphics api that hides as much as possible away
 // I only need simple Texture/Mesh/Shader, I dont even need materials
@@ -79,6 +53,13 @@ void free_image_using_stb(void* pixels)
 // you cannot however, SendToDevice(), FreeHost(), SendToHost()
 // Sending to host requires it is never freeed, and therefore not static
 
+#ifndef STATIC_HOST
+#	define DYNAMIC_HOST 0
+#	define STATIC_HOST 1
+#	define INHERIT_HOST 2
+//#	define PICK_INHERIT isStatic == INHERIT_HOST ? IsStatic() : isStatic
+#endif
+
 struct IDeviceObject
 {
 	IDeviceObject(
@@ -86,7 +67,9 @@ struct IDeviceObject
 	)
 		: m_static   (is_static)
 		, m_outdated (true)
-	{} 
+	{}
+
+	virtual ~IDeviceObject() = default;
 
 	void FreeHost()
 	{
@@ -148,7 +131,7 @@ struct IDeviceObject
 		m_outdated = true;
 	}
 
-	// interface
+// interface
 
 public:
 	virtual bool OnHost() const = 0; 
@@ -161,18 +144,21 @@ protected:
 	virtual void _InitOnDevice() = 0;           // create device memory
 	virtual void _UpdateOnDevice() = 0;         // update device memory
 	virtual void _UpdateFromDevice() = 0;       // update host memory
+
 private:
 	bool m_static;
 	bool m_outdated;
 
-	// some helpers
-
-// these could be public
-protected:
+public:
 	void assert_on_host()    const { assert(OnHost()   && "Device object has no data on host"); }
 	void assert_on_device()  const { assert(OnDevice() && "Device object has no data on device"); }
 	void assert_is_static()  const { assert( m_static  && "Device object is static"); }
 	void assert_not_static() const { assert(!m_static  && "Device object is not static"); }
+
+// move & copy
+
+protected:
+	void copy_base(const IDeviceObject* move) { m_static = move->m_static; m_outdated = move->m_outdated; }
 };
 
 // textures are very simple
@@ -220,6 +206,8 @@ public:
 	int BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
 	int Length()          const { return Width() * Height(); }
 
+	vec2 Dimensions()     const { return vec2(Width(), Height()); }
+
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
 	// only r -> Channels() = 1
@@ -229,17 +217,18 @@ public:
 
 	// assumed non const At will be written to
 
-	      Color& At(int x, int y)       { assert_on_host(); MarkForUpdate(); return At(Index(x, y)); }
-	const Color& At(int x, int y) const { assert_on_host();                  return At(Index(x, y)); }
+	      Color& At(int x, int y)       { return At(Index32(x, y)); }
+	const Color& At(int x, int y) const { return At(Index32(x, y)); }
 
-		  Color& At(int index)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + index); }
-	const Color& At(int index) const { assert_on_host();                  return *(Color*)(Pixels() + index); }
+		  Color& At(int index32)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + Index(index32)); }
+	const Color& At(int index32) const { assert_on_host();                  return *(Color*)(Pixels() + Index(index32)); }
 
-	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
 	int Index32(int x, int y) const { return x + y * m_width; }
+	int Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
+	int Index  (int index32)  const { return index32 * m_channels * m_bytesPerChannel; }
 
-	template<typename _t> const _t* At(int x, int y) const { assert_on_host(); return (const _t*)&At(x, y).as_u32; }
-	template<typename _t>       _t* At(int x, int y)       { assert_on_host(); return (      _t*)&At(x, y).as_u32; }
+	template<typename _t> const _t* At(int x, int y) const { return (const _t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { return (      _t*)&At(x, y).as_u32; }
 
 	void ClearHost(Color color = Color(0, 0, 0, 0))
 	{
@@ -334,7 +323,7 @@ public:
 	)
 		: IDeviceObject (isStatic)
 	{
-		auto [pixels, width, height, channels] = load_image_using_stb(path);
+		auto [pixels, width, height, channels] = load_image(path);
 		assert(channels > 0 && channels <= 4 && "Invalid RGBA channel count created by stb");
 		init_texture_host_memory(pixels, width, height, (Usage)channels);
 	}
@@ -358,6 +347,59 @@ public:
 	{
 		init_texture_host_memory(pixels, width, height, usage);
 	}
+
+	~Texture() { Cleanup(); }
+
+	Texture           (      Texture&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Texture           (const Texture&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Texture& operator=(      Texture&& move) noexcept                                  { return move_into(std::move(move)); }
+	Texture& operator=(const Texture&  copy)                                           { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Texture& move_into(Texture&& move) noexcept
+	{
+		copy_base(&move);
+
+		m_width           = move.m_width;
+		m_height          = move.m_height;
+		m_channels        = move.m_channels;
+		m_bytesPerChannel = move.m_bytesPerChannel;
+		m_usage           = move.m_usage;
+
+		m_host            = move.m_host;
+		m_device          = move.m_device;
+
+		move.m_host = nullptr;
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	Texture& copy_into(const Texture& copy)
+	{
+		copy_base(&copy);
+
+		m_width           = copy.m_width;
+		m_height          = copy.m_height;
+		m_channels        = copy.m_channels;
+		m_bytesPerChannel = copy.m_bytesPerChannel;
+		m_usage           = copy.m_usage;
+
+		m_device          = 0;
+
+		if (copy.OnHost())
+		{
+			m_host = (u8*)malloc(BufferSize());
+			memcpy(m_host, copy.m_host, BufferSize());
+		}
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	void init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	{
@@ -509,7 +551,7 @@ public:
 	// creates an empty texture that is not static
 	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, bool isStatic = true)
 	{
-		r<Texture> texture = std::make_shared<Texture>(width, height, usage, isStatic);
+		r<Texture> texture = mkr<Texture>(width, height, usage, isStatic);
 		Add(name, texture);
 
 		return texture;
@@ -535,6 +577,12 @@ public:
 	static void UseDefault()
 	{
 		gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+	}
+
+	static void Clear(Color color)
+	{
+		gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
+		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	}
 
 	// interface
@@ -603,6 +651,53 @@ public:
 
 	// add instancing constructor
 
+	~Target() { Cleanup(); }
+
+	Target           (      Target&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Target           (const Target&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Target& operator=(      Target&& move) noexcept                                  { return move_into(std::move(move)); }
+	Target& operator=(const Target&  copy)                                           { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Target& move_into(Target&& move) noexcept
+	{
+		copy_base(&move);
+
+		m_width           = move.m_width;
+		m_height          = move.m_height;
+		m_attachments     = std::move(move.m_attachments);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Target& copy_into(const Target& copy)
+	{
+		copy_base(&copy);
+
+		m_width           = copy.m_width;
+		m_height          = copy.m_height;
+		m_device          = 0;
+
+		// copy the buffers, do not instance
+
+		for (const auto& [name, texture] : m_attachments)
+		{
+			m_attachments.emplace(name, mkr<Texture>(*texture));
+		}
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	GLenum gl_attachment(AttachmentName name) const // doesnt need to be here
 	{
@@ -643,6 +738,7 @@ private:
 // then a Mesh is just an instance of this, can swap out attribs as it likes
 
 // add std::enable_shared_from_this
+// add better support for length 0, right now it is a little unclear with malloc / realloc of size 0, should just set nullptr
 
 struct Buffer : IDeviceObject
 {
@@ -784,6 +880,58 @@ public:
 	{
 		m_host = malloc(length * repeat * element_type_size(type));
 	}
+
+	~Buffer() { Cleanup(); }
+
+	Buffer           (      Buffer&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Buffer           (const Buffer&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Buffer& operator=(      Buffer&& move) noexcept                                  { return move_into(std::move(move)); }
+	Buffer& operator=(const Buffer&  copy)                                           { return copy_into(copy); }
+
+// move & copy
+
+private:
+	Buffer& move_into(Buffer&& move) noexcept
+	{
+		copy_base(&move);
+
+		m_length		  = move.m_length;
+		m_repeat		  = move.m_repeat;
+		m_type            = move.m_type;
+
+		m_host  		  = move.m_host;
+		m_device		  = move.m_device;
+
+		move.m_host   = 0;
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Buffer& copy_into(const Buffer& copy)
+	{
+		copy_base(&copy);
+
+		m_length          = copy.m_length;
+		m_repeat          = copy.m_repeat;
+		m_type            = copy.m_type;
+
+		m_device          = 0;
+
+		if (copy.OnHost())
+		{
+			m_host = (u8*)malloc(Bytes());
+			memcpy(m_host, copy.m_host, Bytes());
+		}
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	int element_type_size(ElementType type) const // doesnt need to be here
 	{
@@ -804,6 +952,43 @@ private:
 	}
 };
 
+// tihs allows you to get the number of elements and element type from some glm types
+
+template<typename _t>
+std::pair<int, Buffer::ElementType> get_element_type_info()
+{
+	Buffer::ElementType type;
+	int repeat = 1; // deafult
+
+	constexpr bool isFloat = std::is_same<_t, float>::value;
+	constexpr bool isByte  = std::is_same<_t,  char>::value || std::is_same<_t, unsigned char>::value; // or bool?
+	constexpr bool isInt   = std::is_same<_t,   int>::value || std::is_same<_t, unsigned  int>::value;
+
+	if constexpr (!isFloat && !isByte && !isInt)
+	{
+		// assume has a value_type and length() like glm
+
+		constexpr bool _isFloat = std::is_same<typename _t::value_type, float>::value;
+		constexpr bool _isByte  = std::is_same<typename _t::value_type,  char>::value || std::is_same<typename _t::value_type, unsigned char>::value; // or bool?
+		constexpr bool _isInt   = std::is_same<typename _t::value_type,   int>::value || std::is_same<typename _t::value_type, unsigned  int>::value;
+
+		if constexpr (_isFloat) { type = Buffer::_f32; }
+		if constexpr (_isByte)  { type = Buffer::_u8;  }
+		if constexpr (_isInt)   { type = Buffer::_u32; }
+
+		repeat = sizeof(_t) / sizeof(_t::value_type);// _t::length();
+	}
+
+	if constexpr (isFloat) { type = Buffer::_f32; }
+	if constexpr (isByte)  { type = Buffer::_u8;  }
+	if constexpr (isInt)   { type = Buffer::_u32; }
+
+	//assert(repeat <= 4 && "vec4 is max data allowed in one VA attrib");
+	// attribs now auto expand to handle this
+
+	return { repeat, type };
+}
+
 // mesh data is a list of buffer objects bound together
 // by a vertex array
 // attribs in shaders need to be in the order of AttribName
@@ -819,12 +1004,23 @@ public:
 		aNormal,
 		aTangent,
 		aBiTangent,
-		aCustom1,
-		aCustom2,
-		aCustom3,
-		aCustom4,
-		aCustom5,
-		aCustom6,
+		
+		aColor,
+
+		aCustom_a1,
+		aCustom_a2,
+		aCustom_a3,
+		aCustom_a4,
+
+		aCustom_b1,
+		aCustom_b2,
+		aCustom_b3,
+		aCustom_b4,
+
+		aCustom_c1,
+		aCustom_c2,
+		aCustom_c3,
+		aCustom_c4,
 
 		aIndexBuffer // the index buffer
 	};
@@ -835,95 +1031,153 @@ public:
 		tLines,
 		tLoops
 	};
+
+	struct BufferInfo
+	{
+		int instancedStride;
+		int offset;            // this is used if the buffer is larger than a vec4
+		int repeat;            // so each buffer knows how many repeats (buffer with 5 repeats) first attrib has 4, next has 1
+	};
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
-	
+	using _info    = std::unordered_map<AttribName, BufferInfo>; // could change to a struct if there is other info
+																 // right now this is just the instanced stride
 	_buffers     m_buffers;            // deafult construction
+	_info        m_info;
 	GLuint       m_device   = 0;
+	int          m_hasInstance = 0;
 public:
 	Topology     topology   = tTriangles;
 
 // public mesh specific functions
 
 public:
-	int NumberOfBuffers() const { return m_buffers.size(); }
+	int  NumberOfBuffers()     const { return m_buffers.size(); }
+	bool HasInstancedBuffers() const { return m_hasInstance > 0; }
 
-	      r<Buffer>& Get(AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
-	const r<Buffer>& Get(AttribName name) const {                  return m_buffers.at(name); }
+	      r<Buffer>&  Get    (AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
+	      BufferInfo& GetInfo(AttribName name)       { MarkForUpdate(); return m_info.at(name); }
+	const r<Buffer>&  Get    (AttribName name) const {                  return m_buffers.at(name); }
+	const BufferInfo& GetInfo(AttribName name) const {                  return m_info.at(name); }
+
+	Mesh& SetTopology(Topology topology)
+	{
+		this->topology = topology;
+		return *this;
+	}
+
+	// set the instanced stride of a buffer
+	// if set to 0, instancing is disabled
+	// if any buffers are instanced, DrawInstanced is required to draw
+	// an assert will fire if this is not done
+	Mesh& SetInst(AttribName name, int instancedStride) 
+	{
+		if (instancedStride == 0) m_hasInstance -= GetInfo(name).instancedStride;
+		else                      m_hasInstance += instancedStride;
+
+		GetInfo(name).instancedStride = instancedStride; 
+		
+		return *this; 
+	}
+
+	// set the byte offset of an attribute
+	// a single buffer can be bound to many attribs, this allows use of differnt parts of the data
+	// for each attrib
+	// max size for each attrib element is a vec4, so for a mat4, offsets are requires to use a single buffer
+	Mesh& SetOffset(AttribName name, int offset) 
+	{
+		GetInfo(name).offset = offset;
+		return *this; 
+	}
+
 
 	// instances a buffer
-	void Add(AttribName name, const r<Buffer>& buffer)
+	// if buffer->Repeat() returns more than 4, the attribs past 'name' are also linked to this buffer
+	// and their infos are set to reflect the offset inside each buffer element
+	Mesh& Add(AttribName name, int instancedStride, int forceRepeat, const r<Buffer>& buffer)
 	{
 		assert(m_buffers.find(name) == m_buffers.end() && "Buffer already exists in mesh");
 		assert(name != aIndexBuffer || (buffer->Type() == Buffer::_u32 && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
-		m_buffers.emplace(name, buffer);
+	
+		// if repeat is larger than 4, then use the next attribs
+		// add the same buffer ref, but change the offset and repeat of buffer info
 
-		MarkForUpdate();
-	}
-
-	// creates an empty buffer
-	r<Buffer> Add(AttribName name, int length, int repeat, Buffer::ElementType type)
-	{
-		r<Buffer> buffer = std::make_shared<Buffer>(length, repeat, type, IsStatic());
-		Add(name, buffer);
-
-		return buffer;
-	}
-
-	// creates an empty buffer
-	// gets repeat from _t::length() or 1
-	// gets type from ::value_type or _t 
-	template<typename _t>
-	r<Buffer> Add(AttribName name, const std::vector<_t>& data)
-	{
-		Buffer::ElementType type;
-		int repeat = 1; // deafult
-
-		constexpr bool isFloat = std::is_same<_t, float>::value;
-		constexpr bool isByte  = std::is_same<_t,  char>::value || std::is_same<_t, unsigned char>::value; // or bool?
-		constexpr bool isInt   = std::is_same<_t,   int>::value || std::is_same<_t, unsigned  int>::value;
-
-		if constexpr (!isFloat && !isByte && !isInt)
+		int repeat = forceRepeat;
+		
+		for (int i = 0; i < repeat; i += 4) // will always run once
 		{
-			// assume has a value_type and length() like glm
+			BufferInfo info;
+			info.instancedStride = instancedStride;
+			info.offset = i * sizeof(f32);            // assuming that each element is a single p float, and split is every 4th
+			info.repeat = min(4, repeat);
 
-			constexpr bool _isFloat = std::is_same<typename _t::value_type, float>::value;
-			constexpr bool _isByte  = std::is_same<typename _t::value_type,  char>::value || std::is_same<typename _t::value_type, unsigned char>::value; // or bool?
-			constexpr bool _isInt   = std::is_same<typename _t::value_type,   int>::value || std::is_same<typename _t::value_type, unsigned  int>::value;
+			m_buffers.emplace(AttribName( (int)name + i/4 ), buffer);
+			m_info   .emplace(AttribName( (int)name + i/4 ), info);
 
-			if constexpr (_isFloat) { type = Buffer::_f32; }
-			if constexpr (_isByte)  { type = Buffer::_u8;  }
-			if constexpr (_isInt)   { type = Buffer::_u32; }
-
-			repeat = _t::length();
+			m_hasInstance += instancedStride;
 		}
-
-		if constexpr (isFloat) { type = Buffer::_f32; }
-		if constexpr (isByte)  { type = Buffer::_u8;  }
-		if constexpr (isInt)   { type = Buffer::_u32; }
-
-		r<Buffer> buffer = Add(name, data.size(), repeat, type);
-		buffer->Set(data.size(), data.data());
-
-		return buffer;
+	
+		MarkForUpdate();
+		return *this;
 	}
+
+	// constructs a buffer and sets its data
+	template<typename _t>
+	Mesh& Add(AttribName name, int instancedStride, int isStatic, const std::vector<_t>& data)
+	{
+		auto [repeat, type] = get_element_type_info<_t>();
+		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, isStatic == INHERIT_HOST ? IsStatic() : isStatic);
+		buffer->Set(data.size(), data.data());
+		return Add(name, instancedStride, buffer->Repeat(), buffer);
+	}
+
+// shorthand for simple configs (no instancing)
+
+	template<typename _t>
+	Mesh& Add(AttribName name, const std::vector<_t>& data)
+	{
+		return Add<_t>(name, 0, INHERIT_HOST, data);
+	}
+
+	Mesh& Add(AttribName name, const r<Buffer>& buffer)
+	{
+		return Add(name, 0, buffer->Repeat(), buffer);
+	}
+
+	// setups a buffer without data
+	template<typename _t>
+	Mesh& Setup(AttribName name, int instancedStride = 0, int isStatic = INHERIT_HOST)
+	{
+		Add<_t>(name, instancedStride, isStatic, {});
+		return *this;
+	}
+
+	// gl() calls cause nullptr exception
 
 	void Draw(Topology drawType = Topology::tTriangles)
 	{
+		assert(!HasInstancedBuffers() && "mesh has instanced buffers, need to call DrawInstanced");
+		bool hasIndex = SendBindAndReturnHasIndex();
+		if (hasIndex) { /*gl(*/glDrawElements(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr)/*)*/; }
+		else          { /*gl(*/glDrawArrays  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length())/*)*/; }
+	}
+
+	void DrawInstanced(int numberOfInstances, Topology drawType = Topology::tTriangles)
+	{
+		assert(HasInstancedBuffers() && "mesh has no instanced buffers, need to call Draw");
+		bool hasIndex = SendBindAndReturnHasIndex();
+		if (hasIndex) { /*gl(*/glDrawElementsInstanced(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr, numberOfInstances)/*)*/; }
+		else          { /*gl(*/glDrawArraysInstanced  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length(),                           numberOfInstances)/*)*/; }
+	}
+
+private:
+
+	// helper for Draw functions
+	bool SendBindAndReturnHasIndex()
+	{
 		if (!OnDevice() || Outdated()) SendToDevice();
-
 		gl(glBindVertexArray(m_device));
-
-		if (m_buffers.find(aIndexBuffer) != m_buffers.end())
-		{
-			r<Buffer> index = m_buffers.at(aIndexBuffer);
-			gl(glDrawElements(gl_drawtype(drawType), index->Length(), GL_UNSIGNED_INT, nullptr));
-		}
-
-		else
-		{
-			gl(glDrawArrays(gl_drawtype(drawType), 0, m_buffers.at(aPosition)->Length()));
-		}
+		return m_buffers.find(aIndexBuffer) != m_buffers.end();
 	}
 
 // interface
@@ -963,7 +1217,7 @@ protected:
 
 		for (auto& [attrib, buffer] : m_buffers)
 		{
- 			if (buffer->OnHost()) 
+ 			if (buffer->OnHost() && !buffer->OnDevice()) 
 			{
 				buffer->SendToDevice();
 			}
@@ -975,8 +1229,12 @@ protected:
 			}
 
 			gl(glBindBuffer(GL_ARRAY_BUFFER, buffer->DeviceHandle()));
-			gl(glVertexAttribPointer(attrib, buffer->Repeat(), gl_format(buffer->Type()), GL_FALSE, 0/*buffer->BytesPerElement()*/, nullptr));
+
+			BufferInfo& info = GetInfo(attrib);
+
 			gl(glEnableVertexAttribArray(attrib));
+			gl(glVertexAttribPointer(attrib, info.repeat, gl_format(buffer->Type()), GL_FALSE, buffer->BytesPerElement(), (void*)info.offset));
+			gl(glVertexAttribDivisor(attrib, info.instancedStride));
 		}
 	}
 
@@ -1000,6 +1258,73 @@ public:
 	{}
 
 	// add instancing constructor
+	
+	~Mesh() { Cleanup(); }
+
+	Mesh           (      Mesh&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	Mesh           (const Mesh&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	Mesh& operator=(      Mesh&& move) noexcept                                  { return move_into(std::move(move)); }
+	Mesh& operator=(const Mesh&  copy)                                           { return copy_into(copy); }
+
+	Mesh Copy()
+	{
+		return *this;
+	}
+
+// move & copy
+
+private:
+	Mesh& move_into(Mesh&& move) noexcept
+	{
+		copy_base(&move);
+
+		topology          = move.topology;
+		m_hasInstance     = move.m_hasInstance;
+		m_buffers         = std::move(move.m_buffers);
+		m_info            = std::move(move.m_info);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	Mesh& copy_into(const Mesh& copy)
+	{
+		copy_base(&copy);
+
+		topology          = copy.topology;
+		m_hasInstance     = copy.m_hasInstance;
+		m_info            = copy.m_info;
+		m_device          = 0;
+
+		std::unordered_map<r<Buffer>, std::vector<AttribName>> singleBuffers;
+		
+		// actually copy the data of the buffers, not just the references
+		// instancing can happen somewhere else, not in the copy constructor, this should make an independent copy
+		for (const auto& [name, buffer] : copy.m_buffers)
+		{
+			singleBuffers[buffer].push_back(name);
+		}
+
+		for (const auto& [buffer, names] : singleBuffers)
+		{
+			buffer->assert_on_host(); // needs to have some data on host for this to make sense
+			r<Buffer> copyBuffer = mkr<Buffer>(*buffer);
+
+			for (const AttribName& name : names)
+			{
+				m_buffers.emplace(name, copyBuffer);
+			}
+		}
+
+		return *this;
+	}
+
+// helpers
 
 private:
 	GLenum gl_format(Buffer::ElementType type) const // doesnt need to be here
@@ -1084,7 +1409,8 @@ public:
 	// think of another way to do this...
 
 	void Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
-	void Set(const std::string& name, const float& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
+	void Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); }
+	void Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); }
 	void Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); }
@@ -1178,6 +1504,45 @@ public:
 		: IDeviceObject (isStatic)
 	{}
 
+	~ShaderProgram() { Cleanup(); }
+
+	ShaderProgram           (      ShaderProgram&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
+	ShaderProgram           (const ShaderProgram&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
+	ShaderProgram& operator=(      ShaderProgram&& move) noexcept                                  { return move_into(std::move(move)); }
+	ShaderProgram& operator=(const ShaderProgram&  copy)                                           { return copy_into(copy); }
+
+// move & copy
+
+private:
+	ShaderProgram& move_into(ShaderProgram&& move)
+	{
+		copy_base(&move);
+
+		m_slot            = move.m_slot;
+		m_buffers         = std::move(move.m_buffers);
+		m_device          = 0;
+
+		move.m_device = 0;
+
+		return *this;
+	}
+
+	// makes instances of buffers
+	// not sure if this is the right behaviour
+
+	ShaderProgram& copy_into(const ShaderProgram& copy)
+	{
+		copy_base(&copy);
+
+		m_slot            = copy.m_slot;
+		m_buffers         = copy.m_buffers;
+		m_device          = 0;
+
+		return *this;
+	}
+
+// helpers
+
 private:
 	GLenum gl_type(ShaderName type) const // doesnt need to be here
 	{
@@ -1205,26 +1570,22 @@ private:
 	}
 };
 
-struct Camera
-{
-	float x, y, w, h;
+// Need a simple material system
+// needs particles that change a uniform every frame
+//
 
-	Camera()
-		: x(0), y(0), w(12), h(8) 
-	{}
+// each mesh needs a material
+// a model could be a list of meshes and materials
 
-	Camera(int x, int y, int w, int h)
-		: x(x), y(y), w(w), h(h)
-	{}
+// a sprite renderer takes a 
 
-	mat4 Projection() const
-	{
-		mat4 camera = ortho(-w, w, -h, h, -16.f, 16.f);
-		camera = translate(camera, vec3(x, y, 0.f));
+// 
 
-		return camera;
-	}
-};
+//
+// end device objects s
+//
+
+
 
 //struct Material
 //{
@@ -1268,190 +1629,3 @@ struct Camera
 //		}
 //	}
 //};
-
- struct Sprite
- {
- 	r<Texture> m_source;
-	Sprite() : m_source(nullptr) {}
-	Sprite(r<Texture> source) : m_source(source) {}
-	Sprite(const Texture& sourceToCopy) : m_source(std::make_shared<Texture>(sourceToCopy)) {}
- 	Texture& Get() { return *m_source; }
- };
-
- // shader is becomming geared twoards Sand btw
- // should split...
-
-struct SpriteRenderer2D
-{
-	ShaderProgram m_shader;
-	Mesh          m_quad;
-
-	// this gets run multiple times... should save static stuff like shaders
-	// drop raii just use init function or something
-
-	SpriteRenderer2D()
-	{
-		m_quad.Add<vec2>(Mesh::aPosition,
-		{
-			vec2(-1, -1),
-			vec2( 1, -1),
-			vec2( 1,  1),
-			vec2(-1,  1)
-		});
-
-		m_quad.Add<vec2>(Mesh::aTextureCoord,
-		{
-			vec2(0, 0),
-			vec2(1, 0),
-			vec2(1, 1),
-			vec2(0, 1)
-		});
-
-		m_quad.Add<int>(Mesh::aIndexBuffer,
-		{
-			0, 1, 2,
-			0, 2, 3
-		});
-
-		const char* source_vert = 
-								"#version 330 core\n"
-								"layout (location = 0) in vec2 pos;"
-								"layout (location = 1) in vec2 uv;"
-
-								"out vec2 TexCoords;"
-
-								"uniform mat4 model;"
-								"uniform mat4 projection;"
-
-								"void main()"
-								"{"
-									"TexCoords = uv;"
-									"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
-								"}";
-
-		const char* source_frag = 
-								"#version 330 core\n"
-								"in vec2 TexCoords;"
-
-								"out vec4 color;"
-								"out ivec4 spriteId;" // sprite (x, y) (entity index), (alpha for if its even there)
-
-								"uniform sampler2D sprite;"
-								"uniform vec2 spriteSize;"
-								"uniform int spriteIndex;"
-								"uniform vec4 tint;"
-
-								"void main()"
-								"{"
-									"vec4 spriteColor = texture(sprite, TexCoords);"
-									"if (spriteColor.a > .7) spriteColor.a = 1.f;" // round up for health thing
-									"color = tint * spriteColor;"
-									"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, spriteColor.a > 0);" // this is going to be an index to an array on the cpu or something like that
-								"}";
-
-		m_shader.Add(ShaderProgram::sVertex, source_vert);
-		m_shader.Add(ShaderProgram::sFragment, source_frag);
-	}
-
-	// I dont like clear here, it's dependent on the order of systems
-	// drawings, which will make odd behaviour
-	// I guess a wrapper with a queue system will abstract this so it doesnt really matter actually
-	//
-	// should queue and sort by least state change, could also instance
-	// but Ill just go with this until its a problem...
-
-	void Begin(Camera& camera, r<Target> target = nullptr)
-	{
-		if (target) target->Use();
-		else Target::UseDefault();
-
-		m_shader.Use();
-		m_shader.Set("projection", camera.Projection());
-
-		gl(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
-	}
-
-	void Clear(Color color = Color(22, 22, 22, 22))
-	{
-		gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
-		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-	}
-
-	void DrawSprite(const Transform2D& transform, Sprite& sprite)
-	{
-		DrawSprite(transform, sprite.Get());
-	}
-
-	void DrawSprite(const Transform2D& transform, Texture& sprite)
-	{
-		m_shader.Set("model",      transform.World());
-		m_shader.Set("tint",       Color().as_v4());
-		m_shader.Set("sprite",     sprite);
-		m_shader.Set("spriteSize", vec2(sprite.Width(), sprite.Height()));
-
-		m_quad.Draw();
-	}
-};
-
-struct MeshRenderer2D
-{
-	ShaderProgram m_shader;
-
-	struct
-	{
-		mat4 camera_proj;
-	}
-	m_render_state;
-
-	MeshRenderer2D()
-	{
-		const char* source_vert = 
-								"#version 330 core\n"
-								"layout (location = 0) in vec2 vertex;"
-								"uniform mat4 model;"
-								"uniform mat4 projection;"
-								"void main()"
-								"{"
-									"gl_Position = projection * model * vec4(vertex.xy, 0.0, 1.0);"
-								"}";
-
-		const char* source_frag = 
-								"#version 330 core\n"
-								"out vec4 color;"
-								"uniform vec4 tint;"
-								"void main()"
-								"{"
-									"color = tint;"  
-								"}";
-
-		m_shader.Add(ShaderProgram::sVertex, source_vert);
-		m_shader.Add(ShaderProgram::sFragment, source_frag);
-	}
-
-	void Begin(Camera& camera, bool clear) // include render target
-	{
-		m_render_state.camera_proj = camera.Projection();
-
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		
-		if (clear)
-		{
-			Color cc = Color(22, 22, 22, 22);
-			gl(glClearColor(cc.rf(), cc.gf(), cc.bf(), cc.af()));
-			gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-		}
-	}
-
-	// should queue and sort by least state change, could also instance
-	// but Ill just go with this until its a problem...
-
-	void DrawMesh(const Transform2D& transform, Mesh& mesh)
-	{
-		m_shader.Use();
-		m_shader.Set("projection", m_render_state.camera_proj);
-		m_shader.Set("model",      transform.World());
-		m_shader.Set("tint",       Color().as_v4());
-
-		mesh.Draw(mesh.topology);
-	}
-};

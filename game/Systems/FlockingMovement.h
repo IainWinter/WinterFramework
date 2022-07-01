@@ -2,7 +2,7 @@
 
 #include "Leveling.h"
 #include "Physics.h"
-#include "Flocker.h"
+#include "Components/Flocker.h"
 
 struct System_FlockingMovement : SystemBase
 {
@@ -16,7 +16,7 @@ struct System_FlockingMovement : SystemBase
 
 private:
 
-    // credit Daniel Shiffman (https://processing.org/examples/flocking.html)
+    // credit Daniel Shiffman (https://processing.org/examples/flocking.html) <3
 
 	vec2 CalcForces(const Rigidbody2D& body, const Flocker& flocker)
 	{
@@ -35,7 +35,7 @@ private:
 
             if (d < 0.001f) continue; // guard against self / boid too close
 
-            if (d < flocker.desiredSeparation)
+            if (d < flocker.desiredSeparation) // might want to add a bounding radius, then desired seperation would be the dist between the objs not centers
             {
                 forceSeperation  += normalize(pos - other) / d;
                 numberSeperation += 1;
@@ -58,7 +58,6 @@ private:
         forceCohesion   = limit(safe_normalize(forceCohesion)   * flocker.maxSpeed - body.GetVelocity(), flocker.maxForceFactor);
 
         // Arbitrarily weight these forces
-        // but actually should be based on the mass of the object...
 
         return 1.5f * forceSeperation + 1.f * forceAlign + 1.f * forceCohesion;
 	}

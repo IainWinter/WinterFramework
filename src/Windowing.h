@@ -98,7 +98,7 @@ struct WindowConfig
 
 struct Window
 {
-public:
+private:
 	SDL_Window* m_window;
 	SDL_GLContext m_opengl;
 	event_queue* m_events;
@@ -106,7 +106,6 @@ public:
 	WindowConfig m_config;
 	InputMapping m_input;
 
-private:
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;
 
@@ -136,6 +135,11 @@ public:
 		Dnit();
 	}
 
+	int                Width()  const { return m_config.Width; }
+	int                Height() const { return m_config.Height; }
+	const std::string& Title()  const { return m_config.Title; }
+	InputMapping&      Input()        { return m_input; }
+
 	void Init()
 	{
 		m_first_glsl_version = Window::Init_Video();
@@ -149,14 +153,15 @@ public:
 		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 
 		Resize(m_config.Width, m_config.Height);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glClearColor(1.f, 1.f, 1.f, 1.f);
 
 		// sand breaks because this isnt setup
-		//glEnable(GL_DEPTH_TEST);
-		//glDepthFunc(GL_GREATER);
+		glEnable(GL_DEPTH_TEST);
+
+		// enable transparency
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// vsync
 
@@ -312,7 +317,13 @@ public:
 
 	void BeginImgui()
 	{
-        ImGui_ImplOpenGL3_NewFrame();
+		// might want to allow user to configure this
+		// but 99% of the time you want to draw imgui 
+		// to the screen not some backbuffer
+		
+		gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+
+		ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(m_window);
         ImGui::NewFrame();
 	}
@@ -380,7 +391,6 @@ private:
 		// is this needed?
 
 #ifdef __APPLE__
-		// GL 3.2 Core + GLSL 150
 		SDL_GL_SetAttribute( // required on Mac OS
 			SDL_GL_CONTEXT_FLAGS,
 			SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
@@ -389,16 +399,14 @@ private:
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 		return "#version 150";
 #elif __linux__
-		// GL 3.2 Core + GLSL 150
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 		return "#version 150";
 #elif _WIN32
-		// GL 3.0 + GLSL 130
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
 		return "#version 130";
 #endif
 	}

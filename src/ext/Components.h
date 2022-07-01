@@ -9,3 +9,8 @@ struct NameComponent
 {
 	std::string Name;
 };
+
+struct DestroyInTime
+{
+	float InSeconds;
+};

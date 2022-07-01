@@ -4,7 +4,7 @@
 #include "Physics.h"
 #include "ext/Time.h"
 
-struct PhysicsInterpolation : SystemBase
+struct System_PhysicsInterpolation : SystemBase
 {
 	float m_acc = 0.f;
 

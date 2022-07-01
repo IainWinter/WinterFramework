@@ -128,29 +128,29 @@ std::vector<vec2> make_contour(const bool* mask_grid, int width, int height)
 
 	ivec2 start = ivec2(0, 0);
 
-	[&]() { // this is weird
-		for (start.y = 0; start.y < height - 1; start.y++)
-		for (start.x = 0; start.x < width  - 1; start.x++)
+	for (start.y = 0; start.y < height - 1; start.y++)
+	for (start.x = 0; start.x < width  - 1; start.x++)
+	{
+		if (   is_solid(start.x, start.y)
+			|| is_solid(start.x, start.y - 1))
 		{
-			if (   is_solid(start.x, start.y)
-				|| is_solid(start.x, start.y - 1))
-			{
-				--start.y;
-				return;
-			}
-
-			if (is_solid(start.x + 1, start.y))
-			{
-				return;
-			}
+			--start.y;
+			goto ok;
 		}
 
-		assert(false && "Found no starting point");
-		
-		// this causes inf loop sometimes...
-		//start = ivec2(0, 0);
-		//return;
-	}();
+		if (is_solid(start.x + 1, start.y))
+		{
+			goto ok;
+		}
+	}
+
+	goto error;
+
+ok:
+	goto skiperror;
+error:
+	return {};
+skiperror:
 
 	std::vector<vec2> contour; // out
 
@@ -515,8 +515,20 @@ std::vector<std::vector<vec2>> make_multiple(std::vector<vec2> polygon)
 
 std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* mask_grid, int width, int height, int accuracy)
 {
+	// library has issues with small dim size
+	if (width < 2 || height < 2) return {};
+
 	auto contour  = make_contour(mask_grid, width, height);
+
+	// no start point found, just exit
+	if (contour.size() == 0) return {};
+
 	auto bounds   = make_bounds(contour);
+
+	// infinte loop on bounds.x/y == 0 in make_polygon
+	if (bounds.Width() == 0 || bounds.Height() == 0)
+		return {};
+
 	auto polygons = make_multiple(make_polygon(contour, bounds, accuracy));
 	
 	float w = bounds.Width()  / 2;

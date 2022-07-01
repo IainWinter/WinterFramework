@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Weapons.h"
 
 struct Player
 {
@@ -10,7 +11,9 @@ struct Player
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;
-	float AttackTime = .4f;
+	float AttackTime = .04f;
 	float m_attackTimer = 0.f;
 	bool AttackFireInput;
+
+	Weapon CurrentWeapon = FUEL_SHOT;
 };

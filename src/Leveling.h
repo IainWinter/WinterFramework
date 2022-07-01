@@ -1,7 +1,11 @@
 #pragma once
 
-#include "Entity.h"
 #include "Common.h"
+#include "Entity.h"
+#include "Event.h"
+#include "Task.h"
+
+// might want to change the name of this file, it is a little confusing to include
 
 // This holds the global state for the program
 // each module represents a plugin / major piece of the framework
@@ -26,6 +30,8 @@ private:
 
 	event_manager m_rootBus; // all engine events + inter level comms
 	event_queue m_rootQueue;
+	
+	TaskPool m_task; // one thread pool per app makes the most sense
 
 public:
 	Application()
@@ -44,10 +50,17 @@ public:
 	template<typename    _t> void                   RemoveModule()             { m_modules.Remove<_t>(); }
 	template<typename    _t, typename... _args> _t& AddModule(_args&&... args) { return m_modules.Add<_t>(std::forward<_args>(args)...); }
 
-	event_queue* GetRootEventQueue() // window needs this, but annoying to have to expose like this
-	{
-		return &m_rootQueue;
-	}
+	// window needs this, but annoying to have to expose like this
+	// or maybe these are the only two access functions
+	// and the below are removed
+
+	event_queue* GetRootEventQueue() { return &m_rootQueue; }
+	TaskPool*    GetTaskPool()       { return &m_task; }
+
+	// subject to removal ? \/
+
+	// access to the root queue
+	// ideally these wouldnt be here and everything would be through systems
 
 	template<typename _t, typename _h> void Attach (_h*   handler) { m_rootBus.attach<_t, _h>(handler); }
 	template<typename _t>              void Detach (void* handler) { m_rootBus.detach<_t>(handler); }
@@ -66,11 +79,11 @@ struct Level
 private:
 	int m_levelId; // not really needed was for global ecs to mark entities
 	Application* m_app;
-
-	EntityWorld m_world;
+	
 	event_manager m_levelBus; // intra level comms
 	event_queue m_levelQueue; // intra level comms
 
+	EntityWorld m_world;
 	std::vector<SystemBase*> m_systems; // updater functions
 
 	bool m_initialized = false;
@@ -91,9 +104,13 @@ public:
 
 	int                             Id()                const { return m_levelId; }
 	const std::vector<SystemBase*>& GetSystems()        const { return m_systems; }
-	EntityWorld&                    GetWorld()                { return m_world; }
-	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	Entity                          CreateEntity()            { return m_world.Create(); }
+
+	// these should be removed to force use of systems for updating
+
+	EntityWorld*                    GetWorld()                { return &m_world; }
+	Application*                    GetApp()                  { return m_app; }
+	event_queue*                    GetLevelEventQueue()      { return &m_levelQueue; }
 	
 	// system constructors should be only default init of values
 	// wait until Start to do any work
@@ -136,12 +153,19 @@ protected:
 
 	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
 	template<typename _t> void SendNow      (_t&& event) { assert_init(); m_level->m_levelBus.send(event); }
-	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->m_rootQueue.send(event); }
-	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->m_rootBus.send(event); }
+	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->Send(event); }
+	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->SendNow(event); }
 
 	// Entities
 
 	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
+	Entity Wrap(u32 id)   { assert_init(); return m_level->GetWorld()->Wrap(id); }
+
+	// Threading
+	
+	void Thread   (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Thread(work); }
+	void Coroutine(const std::function<bool()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Coroutine(work); }
+	void Defer    (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Defer(work); }
 
 public:
 	virtual ~SystemBase()
@@ -197,6 +221,15 @@ public:
 		, m_app         (&owning)
 	{}
 
+	// dont worry about move / copies...
+	void Destroy()
+	{
+		while (m_levels.size() > 0)
+		{
+			DestroyLevel(m_levels.begin()->first);
+		}
+	}
+
 	// Creating levels
 	// this is where they would be loaded form file
 	// that would call CreateLevel and add all its Systems then call InitLevel
@@ -204,7 +237,7 @@ public:
 
 	r<Level> CreateLevel()
 	{
-		r<Level> level = std::make_shared<Level>(m_nextLevelId, m_app);
+		r<Level> level = mkr<Level>(m_nextLevelId, m_app);
 		m_levels.emplace(m_nextLevelId, level);
 		m_nextLevelId += 1;
 
@@ -218,6 +251,13 @@ public:
 	void DestroyLevel(int levelId)
 	{
 		r<Level> level = m_levels.at(levelId);
+		DnitLevel(level);
+
+		if (m_current == level)
+		{
+			m_current = nullptr;
+		}
+
 		m_levels.erase(levelId);
 		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
 	}

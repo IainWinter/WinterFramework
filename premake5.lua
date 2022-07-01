@@ -23,8 +23,8 @@ project "Framework"
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
-
-		"vendor/sqlite/src/sqlite3.c",
+		"vendor/stb/src/load_image.cpp",
+		--"vendor/sqlite/src/sqlite3.c",
 
 		-- these are game files, remove for just framework
 

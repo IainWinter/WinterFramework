@@ -20,12 +20,12 @@
 // functions for updating its state
 // this is where global events would attach...
 
-//#define IW_METRICS_TIMER
+#define IW_METRICS_TIMER
 
 enum MetricName
 {
-	TICK,               // value is DeltaTime
-	TICK_FIXED_TIME     // value is FixedTime
+	TICK,         // value is Delta time
+	TICK_FIXED    // value is Number of ticks in frame
 };
 
 struct event_RecordMetric
@@ -73,14 +73,17 @@ public:
 		// init the default level
 		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
 
-		// init UI, defered for Imgui config flags before calling init
+		// init UI, defered for user set Imgui config flags
 		m_app.GetModule<Window>().InitUI();
+
+		// send events from init functions before first tick
+		TickEvents();
 	}
 
 	void Dnit()
 	{
 		// doesnt dnit window, should this delete all modules?
-
+		m_app.GetModule<LevelManager>().Destroy(); // delete all entities before window (glcontext) is destroied
 		m_app.Detach(this);
 		_Dnit();
 	}
@@ -93,26 +96,33 @@ public:
 		LogMetric(TICK, Time::DeltaTime());
 #endif
 
+		float physicsTicks = 0;
+
 		m_fixedStepAcc += Time::DeltaTime();
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
-#ifdef IW_METRICS_TIMER
-			LogMetric(TICK_FIXED_TIME, Time::FixedTime());
-#endif
+			physicsTicks += 1;
 
-			m_fixedStepAcc = 0;
-			
+			m_fixedStepAcc -= Time::FixedTime();
+
 			TickLevelFixed();
 			TickPhysics();
 		}
 
+#ifdef IW_METRICS_TIMER
+		LogMetric(TICK_FIXED, physicsTicks);
+#endif
+
 		TickLevel();
 		TickLevelUI();
 		
+		TickTasks();
+		TickEvents();
+		TickDefered();
+		
 		TickFrame();
 
-		m_app.GetRootEventQueue()->execute();
-		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+		TickLastTransforms();
 	}
 
 	// Interface
@@ -166,6 +176,31 @@ private:
 	{
 		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
 		physics.Step(Time::FixedTime());
+	}
+
+	void TickEvents()
+	{
+		m_app.GetRootEventQueue()->execute();
+		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
+	}
+
+	void TickTasks()
+	{
+		m_app.GetTaskPool()->TickCoroutines();
+	}
+
+	void TickDefered()
+	{
+		// technically the entityworld at the root App level should also get ticked, but I dont think it will ever be needed
+		LevelManager::CurrentLevel()->GetWorld()->ExecuteDeferdDeletions();
+	}
+
+	void TickLastTransforms()
+	{
+		for (auto [transform] : LevelManager::CurrentLevel()->GetWorld()->Query<Transform2D>())
+		{
+			transform.UpdateLastFrameData();
+		}
 	}
 
 #ifdef IW_METRICS_TIMER

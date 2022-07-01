@@ -7,10 +7,14 @@
 // should allow for handlers to classes without an interface for every type of function
 // and events arent an interface
 
-#include <functional>
-#include <unordered_map>
+#include "util/tsque.h"
+
+#include <mutex>
 #include <vector>
 #include <stdint.h>
+#include <functional>
+#include <unordered_map>
+#include <assert.h>
 
 using hash_t = uint64_t;
 
@@ -243,7 +247,8 @@ struct event_queue
 	};
 
 	event_manager* m_manager;
-	std::vector<queued_event_base*> m_queue;
+	tsque<queued_event_base*> m_queue;
+
 	const char* m_where_current;
 
 	event_queue(
@@ -262,22 +267,31 @@ struct event_queue
 
 	void execute()
 	{
-		size_t i = 0;
-
-		do
+		while (m_queue.size() > 0)
 		{
-			size_t sizeThisIteration = m_queue.size();
-
-			for (; i < sizeThisIteration; i++)
-			{
-				queued_event_base* e = m_queue.at(i);
-				e->send(m_manager);
-				delete e;
-				m_queue.at(i) = nullptr; // debug
-			}
+			queued_event_base* e = m_queue.pop_front();
+			e->send(m_manager);
+			delete e;
 		}
-		while (i < m_queue.size());
 
-		m_queue.clear();
+		//size_t i = 0;
+
+
+
+		//do
+		//{
+		//	size_t sizeThisIteration = m_queue.size();
+
+		//	for (; i < sizeThisIteration; i++)
+		//	{
+		//		queued_event_base* e = m_queue.at(i);
+		//		e->send(m_manager);
+		//		delete e;
+		//		m_queue.at(i) = nullptr; // debug
+		//	}
+		//}
+		//while (i < m_queue.size());
+
+		//m_queue.clear();
 	}
 };

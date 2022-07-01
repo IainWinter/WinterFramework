@@ -1,46 +1,40 @@
 #pragma once
 
 #include "Leveling.h"
-#include "Player.h"
 #include "CoordTranslation.h"
 #include "Windowing.h"
-#include "Sand.h"
-
+#include "Sand/Sand.h"
 #include "Events.h"
+#include "ext/rendering/Particle.h"
+#include "Components/Player.h"
+#include "Components/EnemyAI.h"
+#include "Prefabs.h"
 
 struct System_PlayerController : System<System_PlayerController>
 {
 	Entity playerEntity;
+	Entity target;
 
 	void Init()
 	{
 		Attach<event_Input>();
 		Attach<event_Mouse>();
 		playerEntity = FirstEntityWith<Player>();
+		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 	}
 
 	void Update()
 	{
-		auto [player, transform, body] = playerEntity.GetAll<Player, Transform2D, Rigidbody2D>();
-
-		vec2 direction = safe_normalize(player.AttackLocationInput - transform.position);
-		vec2 position = transform.position + direction * 1.f;
+		Player& player = playerEntity.Get<Player>();
 		
-		direction *= 2000.f;
-
 		player.m_attackTimer -= Time::DeltaTime();
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-
-			GetModule<SandWorld>().CreateCell(position, direction, Color(255, 0, 0, 255))
-				.AddAll(CellLife{ 5.f }, CellProjectile{ playerEntity.Id() });
+			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon});
 		}
 
-		//if (player.AttackFireInput)
-		//{
-		//	Send(event_SpawnExplosion { vec2(20, 0), 20 });
-		//}
+		target.Get<Transform2D>().position = player.AttackLocationInput;
 	}
 
 	void FixedUpdate()
