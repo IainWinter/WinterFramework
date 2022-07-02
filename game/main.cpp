@@ -129,6 +129,19 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
+	void ConfigureModules()
+	{
+		m_app.AddModule<SpriteRenderer2D>();
+		m_app.AddModule<MeshRenderer2D>();
+		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
+		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
+
+		CoordTranslation coords;
+		coords.ScreenToWorld = vec2(32, 18);
+
+		m_app.AddModule<CoordTranslation>(coords);
+	}
+
 	void ConfigureLevel()
 	{
 		r<Level> level = LevelManager::CurrentLevel();

@@ -3,6 +3,39 @@
 #include "Leveling.h"
 #include "ext/Time.h"
 
+struct SpawningBounds
+{
+	vec2 min;
+	vec2 max;
+};
+
+// WorldSize is a scale from -x to x which originates at the center of the screen (0,0)
+// Example: if WorldSize = (10, 10) then the bounds of the screen go from (-5,-5) to (5,5)
+inline std::vector<SpawningBounds> GetSpawningBounds(vec2 worldSize, vec2 padding, int numberOfZonesPerSide)
+{
+	using namespace std;
+	vector <SpawningBounds> bounds;
+	vec2 directions[4] = {vec2(1,0), vec2(0,1), vec2(-1,0), vec2(0,-1)};
+	for (vec2& dir : directions) 
+	{
+		// do work here. to add to vector use ".push_back(bound)"
+		// Order
+		// Right Zone
+		// Top Zone
+		// Left Zone
+		// Bottom Zone
+
+		SpawningBounds bound;
+		bound.min = dir * worldSize;
+		bound.max = dir * worldSize + padding;
+		bounds.push_back(bound);
+
+		
+	}
+
+	return bounds;
+}
+
 struct System_SpawnerUpdate : System<System_SpawnerUpdate>
 {
 	int score = 0;
