@@ -3,6 +3,9 @@
 #include "ext/rendering/Particle.h"
 #include "Physics.h"
 #include "Leveling.h"
+#include "Rendering.h"
 
 ParticleEmitter GetPrefab_LaserEmitter();
 ParticleEmitter GetPrefab_FuelShotEmitter();
+
+r<Texture> GetPrefab_Sprite(const std::string& str, bool loadAsStatic = true);

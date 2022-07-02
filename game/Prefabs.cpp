@@ -3,6 +3,7 @@
 // could put this in an assets file
 
 std::unordered_map<std::string, r<ParticleEmitter>> emitters;
+std::unordered_map<std::string, r<Texture>> textures;
 
 // could put in globals file
 
@@ -89,5 +90,21 @@ ParticleEmitter GetPrefab_FuelShotEmitter()
 	}
 
 	return *emitter;
+}
+
+r<Texture> GetPrefab_Sprite(const std::string& str, bool loadAsStatic)
+{
+	r<Texture>& texture = textures[str];
+
+	if (!texture)
+	{
+		texture = mkr<Texture>(_a(str), loadAsStatic);
+		if (texture->Pixels() == nullptr)
+		{
+			textures.erase(str); // delete if fails to load
+		}
+	}
+
+	return texture;
 }
 

@@ -79,9 +79,10 @@ inline float get_randc(float x) { return x * rand() / (float)RAND_MAX - x / 2.f;
 // return a random integer between (0, x)
 inline int get_rand(int x) { return rand() % x; }
 
-inline vec2 get_rand (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
-inline vec2 get_randc(float x, float y) { return vec2(get_randc(x), get_randc(y)); }
-inline vec2 get_randn(float scale)      { return get_rand(scale) * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
+inline vec2 get_rand  (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
+inline vec2 get_randc (float x, float y) { return vec2(get_randc(x), get_randc(y)); }
+inline vec2 get_randn (float scale)      { return get_rand(scale) * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
+inline vec2 get_randnc(float scale)      { return           scale * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
 
 inline float lerp(float        a, float        b, float w) { return a + w * (b - a); }
 inline vec2  lerp(const vec2&  a, const vec2&  b, float w) { return a + w * (b - a); }

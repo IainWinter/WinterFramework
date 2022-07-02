@@ -150,11 +150,21 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		// setup collider if requested
 
-		Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e.entity);
-		body.SetVelocity(e.velocity);
-		body.SetAngularVelocity(e.aVelocity);
+		Rigidbody2D* body;
 
-		if (body.GetColliderCount() == 0)
+		if (e.entity.Has<Rigidbody2D>() && !e.entity.Get<Rigidbody2D>().InWorld())
+		{
+			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
+		}
+
+		else
+		{
+			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
+			body->SetVelocity(e.velocity);
+			body->SetAngularVelocity(e.aVelocity);
+		}
+
+		if (body->GetColliderCount() == 0)
 		{
 			SendNow(event_Sand_CreateCollider{ e.entity });
 		}

@@ -40,6 +40,8 @@ private:
 		auto [tran, body, sand] = entity.GetAll<Transform2D, Rigidbody2D, SandSprite>();
 		r<Texture>& mask = sand.colliderMask;
 
+		if (!body.InWorld()) GetModule<PhysicsWorld>().AddEntity(entity);
+
 		assert(mask->Channels() == 4 && "collider mask needs to be 32 bit right now");
 		assert(entity.IsAlive());
 

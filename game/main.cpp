@@ -21,6 +21,8 @@
 #include "Systems/EnemyController.h"
 #include "Systems/KeepOnScreen.h"
 
+#include "Systems/RockSpawner_Test.h"
+
 #include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
 
@@ -153,6 +155,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
 		level->AddSystem(System_FireWeapon());
+
+		level->AddSystem(System_RockSpawner_Test());
 
 		level->AddSystem(MetricsSystem());
 
