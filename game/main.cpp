@@ -57,12 +57,6 @@ struct MetricsSystem : System<MetricsSystem>
 		ImGui::SliderFloat("time scale", &timeScale, 0, 2);
 		Time::SetTimeScale(timeScale);
 
-		SandWorld& sand = GetModule<SandWorld>();
-
-		ImGui::SliderInt2("world size cells", &sand.worldSizeCells.x, 0, 10);
-		ImGui::SliderFloat2("cam size meters", &sand.cameraSizeMeters.x, 0, 40);
-		ImGui::SliderFloat("cells per meter", &sand.cellsPerMeter, 0, 40);
-
 		//for (auto [transform, flocker] : Query<Transform2D, Flocker>())
 		//{
 		//	ImGui::Text("x: %f y: %f", transform.position.x, transform.position.y);
@@ -77,13 +71,13 @@ struct MetricsSystem : System<MetricsSystem>
 
 		//m_cellCounts.push_back(cellCount);
 
-		//ImPlot::SetNextAxesToFit();
-		//if (ImPlot::BeginPlot("Times"))
-		//{
-		//	ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
-		//	ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
-		//	ImPlot::EndPlot();
-		//}
+		ImPlot::SetNextAxesToFit();
+		if (ImPlot::BeginPlot("Times"))
+		{
+			ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
+			ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
+			ImPlot::EndPlot();
+		}
 
 		ImGui::End();
 
@@ -107,7 +101,7 @@ struct MetricsSystem : System<MetricsSystem>
 			}
 			case TICK_FIXED: 
 			{
-				m_fixedTicks.push_back(e.value * Time::DeltaTime());
+				m_fixedTicks.push_back(e.value);
 				break;
 			}
 		}
@@ -137,6 +131,19 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
+	void ConfigureModules()
+	{
+		m_app.AddModule<SpriteRenderer2D>();
+		m_app.AddModule<MeshRenderer2D>();
+		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
+		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
+
+		CoordTranslation coords;
+		coords.ScreenToWorld = vec2(32, 18);
+
+		m_app.AddModule<CoordTranslation>(coords);
+	}
+
 	void ConfigureLevel()
 	{
 		r<Level> level = LevelManager::CurrentLevel();
@@ -155,16 +162,13 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_FireWeaponAfterDelay());
 		level->AddSystem(System_FireWeapon());
+		level->AddSystem(System_ParticleUpdate());
 
 		level->AddSystem(System_RockSpawner_Test());
 
 		level->AddSystem(MetricsSystem());
 
 		AddSandSystemsToLevel(level);
-
-		level->AddSystem(System_ParticleUpdate());
-
-		//level->CreateEntity().AddAll(Transform2D(0, 0, -1, 30*1.8, 10*1.8), Sprite(_a("bg.png")));
 	}
 
 	void ConfigureModules()

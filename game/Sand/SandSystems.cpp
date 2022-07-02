@@ -17,7 +17,7 @@ void AddSandSystemsToLevel(r<Level> level)
 
 	// reactive systems
 
-	//level->AddSystem(Sand_System_ExplodeToDust());
+	level->AddSystem(Sand_System_ExplodeToDust());
 	level->AddSystem(Sand_System_CollideProjectile());
 	level->AddSystem(Sand_System_CreateCollider());
 }
