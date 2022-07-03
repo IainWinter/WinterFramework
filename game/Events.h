@@ -16,6 +16,7 @@ struct event_FireWeapon
 	Entity owner;
 	Entity target;
 	Weapon type;
+	float inaccuracy;
 };
 
 struct event_Item_Spawn

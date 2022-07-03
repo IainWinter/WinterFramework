@@ -37,3 +37,9 @@ struct SandSprite
 	SandSprite(const Texture& collider) : colliderMask(mkr<Texture>(collider)) {}
 	SandSprite(r<Texture> collider)     : colliderMask(collider) {}
 };
+
+struct SandHealable
+{
+	std::vector<int> core;
+	std::vector<int> shell;
+};

@@ -13,7 +13,7 @@
 
 #include "Sand/SandSystems.h"
 
-#include "Systems//PlayerController.h"
+#include "Systems/PlayerController.h"
 #include "Systems/FlockingMovement.h"
 #include "Systems/TurnTwoardsTarget.h"
 #include "Systems/ExplodeNearTarget.h"
@@ -21,16 +21,18 @@
 #include "Systems/EnemyController.h"
 #include "Systems/KeepOnScreen.h"
 
-#include "Systems/RockSpawner_Test.h"
-
 #include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
+
+#include "Systems/ItemSystem.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
 #include "ext/systems/DestroyInTime.h"
 
 #include "Systems/RenderSceneGraph.h"
+
+#include "Systems/zTestingSystem.h"
 
 #include "GameRender.h"
 
@@ -131,19 +133,6 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
-	void ConfigureModules()
-	{
-		m_app.AddModule<SpriteRenderer2D>();
-		m_app.AddModule<MeshRenderer2D>();
-		m_app.AddModule<SandWorld>(1280, 720, 32, 18);
-		m_app.AddModule<Camera>(0, 0, 32, 18);          // this is bad but works ok for now...
-
-		CoordTranslation coords;
-		coords.ScreenToWorld = vec2(32, 18);
-
-		m_app.AddModule<CoordTranslation>(coords);
-	}
-
 	void ConfigureLevel()
 	{
 		r<Level> level = LevelManager::CurrentLevel();
@@ -163,10 +152,10 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_FireWeaponAfterDelay());
 		level->AddSystem(System_FireWeapon());
 		level->AddSystem(System_ParticleUpdate());
-
-		level->AddSystem(System_RockSpawner_Test());
+		level->AddSystem(System_Item());
 
 		level->AddSystem(MetricsSystem());
+		level->AddSystem(System_Testing());
 
 		AddSandSystemsToLevel(level);
 	}
@@ -204,16 +193,20 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
-		player.Get<SandSprite>().invulnerable = true;
 		player.Add<Player>();
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
+		player.Add<ItemSink>();
+		player.Add<SandHealable>();
+	
+		//player.Get<SandSprite>().invulnerable = true;
 
 		CreateSandSprite("test_line.png", "test_line.png");
 
 		//level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
 		//level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
 
+		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;
@@ -223,7 +216,7 @@ struct Regolith : EngineLoop
 				case 0: // fighter
 				{
 					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-					entity.Add<FireWeaponAfterDelay>(player, Weapon::LASER, 1.f + get_randc(.3f));
+					entity.Add<FireWeaponAfterDelay>(player, WEAPON_LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
 					entity.Add<Flocker>();
 

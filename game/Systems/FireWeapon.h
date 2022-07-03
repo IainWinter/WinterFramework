@@ -19,19 +19,33 @@ struct System_FireWeapon : System<System_FireWeapon>
 
 	void on(event_FireWeapon& e)
 	{
-		FireWeapon(e.owner, e.target, e.type);
+		FireWeapon(e.owner, e.target, e.type, e.inaccuracy);
 	}
 
 private:
 
-	void FireWeapon(Entity entity, Entity target, Weapon weapon)
+	void FireWeapon(Entity entity, Entity target, Weapon weapon, float inaccuracy)
 	{
 		vec2 position = entity.Get<Transform2D>().position;
-		vec2 direction = normalize(target.Get<Transform2D>().position - position);
+		vec2 direction = normalize(target.Get<Transform2D>().position - position + get_randn(inaccuracy));
 		
+		//position += direction;
+
 		switch (weapon)
 		{
-			case LASER: 
+			case WEAPON_CANNON: 
+			{
+				Entity entity = CreateEntity();
+				entity.Add<Transform2D>(position);
+				entity.Add<DestroyInTime>(3.f);
+				entity.Add<CellProjectile>(entity.Id());
+				entity.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
+				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
+
+				break;
+			}
+
+			case WEAPON_LASER: 
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Transform2D>(position);
@@ -43,7 +57,7 @@ private:
 				break;
 			}
 
-			case FUEL_SHOT:
+			case WEAPON_FUEL_SHOT:
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Transform2D>(position);

@@ -7,6 +7,7 @@
 #include "Sand/Systems/ExplodeToDust.h"
 #include "Sand/Systems/SplitTiles.h"
 #include "Sand/Systems/UpdateLineProjectileMesh.h"
+#include "Sand/Systems/RemoveCellFromSprite.h"
 
 void AddSandSystemsToLevel(r<Level> level)
 {
@@ -20,4 +21,5 @@ void AddSandSystemsToLevel(r<Level> level)
 	level->AddSystem(Sand_System_ExplodeToDust());
 	level->AddSystem(Sand_System_CollideProjectile());
 	level->AddSystem(Sand_System_CreateCollider());
+	level->AddSystem(Sand_System_RemoveCellsFromSprite());
 }

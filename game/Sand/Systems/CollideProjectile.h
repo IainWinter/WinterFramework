@@ -23,6 +23,12 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 	void on(event_Sand_ProjectileHit& e)
 	{
 		auto [sprite, mask] = e.entity.GetAll<Sprite, SandSprite>();
+
+		if (e.entity.Id() == e.projectile.Get<CellProjectile>().owner) // exit if owner
+		{
+			return;
+		}
+
 		int index = sprite.Get().Index32(e.hitPosInSprite.x, e.hitPosInSprite.y);
 		
 		// should make this cell slow down over time...
@@ -43,9 +49,7 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 			//GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(get_randn(2.f));
 		}
-		
-		sprite.Get().At(index).a = 0;
-		mask  .Get().At(index).a = 0;
-		mask.cellCount -= 1;
+
+		Send(event_Sand_RemoveCell{ e.entity, index } );
 	}
 };

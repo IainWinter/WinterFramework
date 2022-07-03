@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Entity.h"
-#include "Weapons.h"
+#include "Components/Weapon.h"
 
 struct TurnTwoardsTarget
 {
@@ -15,6 +15,7 @@ struct FireWeaponAfterDelay
 	Entity target;
 	Weapon weapon;
 	float delay;
+	float inaccuracy;
 	float m_timer;
 };
 

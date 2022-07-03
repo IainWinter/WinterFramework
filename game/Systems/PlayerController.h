@@ -19,19 +19,34 @@ struct System_PlayerController : System<System_PlayerController>
 	{
 		Attach<event_Input>();
 		Attach<event_Mouse>();
+		Attach<event_Item_Pickup>();
+
 		playerEntity = FirstEntityWith<Player>();
 		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
 	}
 
 	void Update()
 	{
+		if (!playerEntity.IsAlive()) return;
+
 		Player& player = playerEntity.Get<Player>();
-		
 		player.m_attackTimer -= Time::DeltaTime();
+		
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon});
+			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
+
+			player.CurrentWeaponAmmo -= 1;
+
+			if (player.CurrentWeaponAmmo < 0)
+			{
+				player.CurrentWeaponAmmo = 0;
+				player.CurrentWeapon = WEAPON_CANNON;
+				player.CurrentWeaponInaccuracy = 1;
+			}
+
+			//Send(event_Item_Spawn{ ITEM_HEALTH, target.Get<Transform2D>().position, 5 });
 		}
 
 		target.Get<Transform2D>().position = player.AttackLocationInput;
@@ -39,9 +54,9 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void FixedUpdate()
 	{
-		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
+		if (!playerEntity.IsAlive()) return;
 
-		// allow for collision response...
+		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
 
 		vec2 vel = lerp(
 			body.GetVelocity(),
@@ -53,18 +68,19 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void on(event_Input& e)
 	{
-		Player& player = playerEntity.Get<Player>();
+		if (!playerEntity.IsAlive()) return;
 
+		Player& player = playerEntity.Get<Player>();
 		switch (e.name)
 		{
-			case InputName::UP:    player.MovementInput.y += e.state; break;
-			case InputName::DOWN:  player.MovementInput.y -= e.state; break;
-			case InputName::RIGHT: player.MovementInput.x += e.state; break;
-			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
+			case InputName::UP:     player.MovementInput.y += e.state; break;
+			case InputName::DOWN:   player.MovementInput.y -= e.state; break;
+			case InputName::RIGHT:  player.MovementInput.x += e.state; break;
+			case InputName::LEFT:   player.MovementInput.x -= e.state; break;
 
 			case InputName::AIM_X:  player.AttackLocationInput.x = e.state;        break;
 			case InputName::AIM_Y:  player.AttackLocationInput.y = e.state;        break;
-			case InputName::ATTACK: player.AttackFireInput        = e.state != 0.f; break;
+			case InputName::ATTACK: player.AttackFireInput       = e.state != 0.f; break;
 		}
 	}
 
@@ -72,14 +88,49 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void on(event_Mouse& e)
 	{
-		Transform2D& transform = playerEntity.Get<Transform2D>();
-
-		// calculate the direction from the player to the target
 		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
-		//vec2 relitiveTarget = target - transform.position;
 
 		SendNow(event_Input{ InputName::AIM_X, target.x });
 		SendNow(event_Input{ InputName::AIM_Y, target.y });
 		SendNow(event_Input{ InputName::ATTACK, (float)e.button_left });
+	}
+
+	void on(event_Item_Pickup& e)
+	{
+		if (!playerEntity.IsAlive())      return;
+		if (e.sinkEntity != playerEntity) return;
+
+		Player& player = playerEntity.Get<Player>();
+
+		switch (e.item)
+		{
+			case ITEM_HEALTH: 
+			{
+				Send(event_Sand_HealCell{ e.sinkEntity, -1 }); 
+				break;
+			}
+
+			case ITEM_WEAPON_MINIGUN: 
+			{
+				player.CurrentWeapon = WEAPON_MINIGUN;
+				player.CurrentWeaponAmmo = 200;
+				player.CurrentWeaponInaccuracy = 3;
+				break;
+			}
+
+			case ITEM_WEAPON_WATTZ:
+			{
+				player.CurrentWeapon = WEAPON_WATTZ;
+				player.CurrentWeaponAmmo = 10;
+				break;
+			}
+
+			case ITEM_WEAPON_BOLTZ:
+			{
+				player.CurrentWeapon = WEAPON_BOLTZ;
+				player.CurrentWeaponAmmo = 1000;
+				break;
+			}
+		}
 	}
 };

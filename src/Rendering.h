@@ -220,6 +220,8 @@ public:
 	      Color& At(int x, int y)       { return At(Index32(x, y)); }
 	const Color& At(int x, int y) const { return At(Index32(x, y)); }
 
+	// !! need to add assert for invalid index !!!
+
 		  Color& At(int index32)       { assert_on_host(); MarkForUpdate(); return *(Color*)(Pixels() + Index(index32)); }
 	const Color& At(int index32) const { assert_on_host();                  return *(Color*)(Pixels() + Index(index32)); }
 

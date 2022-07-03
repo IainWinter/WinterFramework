@@ -104,8 +104,7 @@ private:
 
 				for (const int& index : island)
 				{
-					sprite->At(index) = Color(0);
-					mask  ->At(index) = Color(0);
+					Send(event_Sand_RemoveCell{ entity, index });
 				}
 			}
 		}

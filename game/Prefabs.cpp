@@ -18,6 +18,39 @@ _t& GetModule()
 	return LevelManager::CurrentLevel()->GetApp()->GetModule<_t>();
 }
 
+ParticleEmitter GetPrefab_BulletEmitter()
+{
+	r<ParticleEmitter>& emitter = emitters["bullet.emitter"];
+	
+	if (!emitter)
+	{
+		emitter = mkr<ParticleEmitter>();
+
+		Particle bullet = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
+		bullet.orignal.scale = vec2(.1, .1);
+		bullet.tints = {
+			Color(255, 200, 20, 255)
+		};
+
+		emitter->AddSpawner(bullet, 1.f,
+			[](Particle particle)
+			{
+				Entity entity = CreateEntity();
+				entity.Add<Particle>(particle);
+				entity.Add<Transform2D>(particle.orignal);
+
+				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
+				body.SetAngularVelocity(get_randc(3.f));
+				body.SetAngle(get_rand(w2PI));
+				body.SetVelocity(get_randn(1.f));
+				body.SetDamping(5.f);
+			}
+		);
+	}
+
+	return *emitter;
+}
+
 ParticleEmitter GetPrefab_LaserEmitter()
 {
 	r<ParticleEmitter>& emitter = emitters["lazer.emitter"];
@@ -92,7 +125,7 @@ ParticleEmitter GetPrefab_FuelShotEmitter()
 	return *emitter;
 }
 
-r<Texture> GetPrefab_Sprite(const std::string& str, bool loadAsStatic)
+r<Texture> GetPrefab_Texture(const std::string& str, bool loadAsStatic)
 {
 	r<Texture>& texture = textures[str];
 

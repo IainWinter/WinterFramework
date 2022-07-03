@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Entity.h"
-#include "Common.h"
+#include "ext/rendering/Sprite.h"
 #include "Sand/SandComponents.h"
 #include <functional>
 #include <vector>
@@ -66,4 +66,16 @@ struct event_Sand_ProjectileHit
 	EntityWith<Transform2D, Sprite, SandSprite> entity;
 	ivec2 hitPosInSprite; // in pixels
 	vec2 hitPosInWorld;   // in meters
+};
+
+struct event_Sand_RemoveCell
+{
+	EntityWith<Sprite, SandSprite> entity;
+	int index;
+};
+
+struct event_Sand_HealCell
+{
+	EntityWith<Sprite, SandSprite, SandHealable> entity;
+	int index;
 };
