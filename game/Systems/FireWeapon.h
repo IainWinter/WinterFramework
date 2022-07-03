@@ -26,45 +26,46 @@ private:
 
 	void FireWeapon(Entity entity, Entity target, Weapon weapon, float inaccuracy)
 	{
+		if (!target.IsAlive())
+		{
+			printf("Warning: Target is dead.\n");
+			return;
+		}
+
 		vec2 position = entity.Get<Transform2D>().position;
 		vec2 direction = normalize(target.Get<Transform2D>().position - position + get_randn(inaccuracy));
 		
 		//position += direction;
 
+		Entity e = CreateEntity();
+		e.Add<Transform2D>(position);
+		e.Add<CellProjectile>(entity.Id());
+		e.Add<DestroyInTime>(3.f);
+
+		Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e);
+
 		switch (weapon)
 		{
 			case WEAPON_CANNON: 
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Transform2D>(position);
-				entity.Add<DestroyInTime>(3.f);
-				entity.Add<CellProjectile>(entity.Id());
-				entity.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
-				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
+				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
+				body.SetVelocity(direction * 30.f);
 
 				break;
 			}
 
 			case WEAPON_LASER: 
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Transform2D>(position);
-				entity.Add<DestroyInTime>(3.f);
-				entity.Add<CellProjectile>(entity.Id());
-				entity.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
-				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
+				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+				body.SetVelocity(direction * 50.f);
 
 				break;
 			}
 
 			case WEAPON_FUEL_SHOT:
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Transform2D>(position);
-				entity.Add<DestroyInTime>(3.f);
-				entity.Add<CellProjectile>(entity.Id());
-				entity.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
-				GetModule<PhysicsWorld>().AddEntity(entity).SetVelocity(direction * 50.f);
+				e.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
+				body.SetVelocity(direction * 50.f);
 
 				break;
 			}

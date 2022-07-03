@@ -24,6 +24,8 @@
 #include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
 
+#include "Systems/RockSpawner_Test.h"
+
 #include "Systems/ItemSystem.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
@@ -157,6 +159,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(MetricsSystem());
 		level->AddSystem(System_Testing());
 
+		level->AddSystem(System_RockSpawner_Test());
+
 		AddSandSystemsToLevel(level);
 	}
 
@@ -198,15 +202,12 @@ struct Regolith : EngineLoop
 		player.Add<KeepOnScreen>();
 		player.Add<ItemSink>();
 		player.Add<SandHealable>();
-	
-		//player.Get<SandSprite>().invulnerable = true;
+
+		player.Get<SandSprite>().invulnerable = true;
 
 		CreateSandSprite("test_line.png", "test_line.png");
 
-		//level->CreateEntity().AddAll(Cell{ vec2(0, 0), vec2(0, 0), Color(255, 0, 0)});
-		//level->CreateEntity().AddAll(Cell{ vec2(1, 0), vec2(0, 0), Color(255, 0, 0) });
-
-		if (false)
+		//if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;

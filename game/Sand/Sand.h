@@ -131,11 +131,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void on(event_SandAddSprite& e)
 	{
-		if (!e.entity.Has<KeepOnScreen>())
-		{
-			e.entity.Add<KeepOnScreen>();
-		}
-
 		Texture& sprite = e.entity.Get<Sprite>().Get();
 		Transform2D& transform = e.entity.Get<Transform2D>();
 		transform.scale = sprite.Dimensions() / GetModule<SandWorld>().cellsPerMeter;

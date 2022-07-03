@@ -19,6 +19,12 @@ private:
 
 	vec2 CalcTurnedVelocity(const Rigidbody2D& body, const TurnTwoardsTarget& turn)
 	{
+		if (!turn.target.IsAlive())
+		{
+			printf("Warning: Target is dead.\n");
+			return body.GetVelocity();
+		}
+
 		vec2 targetVel = turn.target.Get<Transform2D>().position - body.GetPosition();
 		float speed = length(body.GetVelocity());
 
