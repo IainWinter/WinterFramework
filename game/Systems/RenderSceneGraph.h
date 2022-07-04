@@ -60,7 +60,7 @@ public:
 		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
 		{
 			program->Set("model",  transform.World());
-			program->Set("sprite", sprite.Get());
+			program->Set("sprite", *sprite.source);
 			m_quad->Draw();
 		}
 	}
@@ -98,8 +98,16 @@ public:
 		std::sort(toDraw.begin(), toDraw.end(), [](const auto& a, const auto& b) { return std::get<0>(a) > std::get<0>(b); });
 		for (auto& [age, t, p] : toDraw)
 		{
-			TextureAtlas::Bounds uv = p->GetCurrentFrameUV();
-			render.SubmitSprite(*t, p->atlas->source, uv.uvOffset, uv.uvScale, p->GetTint(age));
+			if (p->HasAtlas())
+			{
+				TextureAtlas::Bounds uv = p->GetCurrentFrameUV();
+				render.SubmitSprite(*t, p->atlas->source, uv.uvOffset, uv.uvScale, p->GetTint(age));
+			}
+
+			else
+			{
+				render.SubmitSprite(*t, p->GetTint(age));
+			}
 		}
 		render.Draw();
 	}
@@ -204,10 +212,10 @@ public:
 
 		for (auto [entity, transform, sandSprite] : level->GetWorld()->QueryWithEntity<Transform2D, SandSprite>())
 		{
-			program->Set("model",         transform.World());
+			program->Set("model",        transform.World());
 			program->Set("colliderMask", *sandSprite.colliderMask);
-			program->Set("spriteSize",    sandSprite.colliderMask->Dimensions());
-			program->Set("spriteIndex",   entity.Id());
+			program->Set("spriteSize",   sandSprite.colliderMask->Dimensions());
+			program->Set("spriteIndex",  entity.Id());
 
 			m_quad->Draw();
 		}

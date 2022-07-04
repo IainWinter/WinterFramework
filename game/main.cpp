@@ -159,7 +159,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(MetricsSystem());
 		level->AddSystem(System_Testing());
 
-		level->AddSystem(System_RockSpawner_Test());
+		//level->AddSystem(System_RockSpawner_Test());
 
 		AddSandSystemsToLevel(level);
 	}
@@ -205,9 +205,12 @@ struct Regolith : EngineLoop
 
 		player.Get<SandSprite>().invulnerable = true;
 
-		CreateSandSprite("test_line.png", "test_line.png");
+		Entity e = CreateSandSprite("test_line.png", "test_line.png");
+		e.Get<Transform2D>().rotation = wPI / 6.f;
 
-		//if (false)
+		m_app.GetRootEventQueue()->send(event_Sand_ExplodeToDust{ e });
+
+		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;
@@ -259,11 +262,6 @@ struct Regolith : EngineLoop
 		assert(sprite->Length() == mask->Length());
 
 		Transform2D transform;
-		//transform.scale.x = sprite->Width()  / sand.worldScale.x;
-		//transform.scale.y = sprite->Height() / sand.worldScale.y;
-
-		// collider should be 8 bit mask texture
-		// if its not then the color texture can be used actually so maybe this is fine
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
 		entity.Add<Transform2D>(transform);

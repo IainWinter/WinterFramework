@@ -143,7 +143,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		sandSprite.density = e.density;
 		sandSprite.cellCount = filled.size();
 
-		// setup collider if requested
+		// setup collider if requested, odd logic
 
 		Rigidbody2D* body;
 

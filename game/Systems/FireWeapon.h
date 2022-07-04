@@ -57,7 +57,7 @@ private:
 			case WEAPON_LASER: 
 			{
 				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
-				body.SetVelocity(direction * 50.f);
+				body.SetVelocity(direction * 25.f);
 
 				break;
 			}

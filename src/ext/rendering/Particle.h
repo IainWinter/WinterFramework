@@ -7,7 +7,7 @@ struct Particle
 	r<TextureAtlas> atlas;
 	
 	int   repeatCount     =  1;
-	int   frameCount      =  0;
+	int   frameCount      =  1;
 	float framesPerSecond = 24.f;
 	float frameCurrent    =  0.f;
 
@@ -28,6 +28,14 @@ struct Particle
 		, frameCount (frameCount)
 	{}
 
+	Particle& SetAtlas           (r<TextureAtlas>&          atlas)           { this->atlas           = atlas;           return *this; }
+	Particle& SetRepeatCount     (int                       repeatCount)     { this->repeatCount     = repeatCount;     return *this; }
+	Particle& SetFrameCount      (int                       frameCount)      { this->frameCount      = frameCount;      return *this; }
+	Particle& SetFramesPerSecond (float                     framesPerSecond) { this->framesPerSecond = framesPerSecond; return *this; }
+	Particle& SetFrameCurrent    (float                     frameCurrent)    { this->frameCurrent    = frameCurrent;    return *this; }
+	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
+	Particle& AddTint            (const Color& tint)                         { this->tints.push_back(tint);             return *this; }
+
 	void TickFrame(float dt)
 	{
 		frameCurrent += dt * framesPerSecond;
@@ -37,6 +45,7 @@ struct Particle
 	bool  EndOfLife()       const { return Age() >= 1.f; }
 	float Age()             const { return frameCurrent / float(frameCount * repeatCount); }
 	float AgeLeft()         const { return 1.f - Age(); }
+	bool  HasAtlas()        const { return atlas != nullptr; }
 
 	const TextureAtlas::Bounds& GetCurrentFrameUV() const { return atlas->GetUVForFrame(GetCurrentFrame() % frameCount); }
 	                   Texture& GetTexture()              { return *atlas->source; }

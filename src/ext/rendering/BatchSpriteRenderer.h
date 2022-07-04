@@ -22,6 +22,11 @@ public:
 		z = 0;
 	}
 
+	void SubmitSprite(const Transform2D& transform, const Color& tint)
+	{
+		SubmitSprite(transform, nullptr, vec2(0.f), vec2(0.f), tint);
+	}
+
 	void SubmitSprite(const Transform2D& transform, const r<Texture>& texture, const vec2& uvOffset, const vec2& uvScale, const Color& tint)
 	{
 		glm::mat4 world = transform.World();
@@ -43,6 +48,7 @@ public:
 private:
 	ShaderProgram m_program;
 	Mesh m_quad;
+	r<Texture> m_default;
 
 	void InitProgram()
 	{
@@ -94,6 +100,8 @@ private:
 			.Setup<vec4>(Mesh::aCustom_a1, 1)
 			.Setup<vec4>(Mesh::aCustom_a2, 1)
 			.Setup<mat4>(Mesh::aCustom_b1, 1);
+
+		m_default = mkr<Texture>(_a("white.png")); // todo: grab from prefab
 	}
 
 	struct BatchData
@@ -119,7 +127,8 @@ private:
 
 	void DrawBatch(r<Texture> texture, BatchData& batch)
 	{
-		m_program.Set("sprite", *texture);
+		if (texture) m_program.Set("sprite", *texture);
+		else         m_program.Set("sprite", *m_default);
 
 		m_quad.Get(Mesh::aCustom_a1)->Set(batch.uv);
 		m_quad.Get(Mesh::aCustom_a2)->Set(batch.tint);

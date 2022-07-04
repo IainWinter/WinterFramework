@@ -21,13 +21,13 @@ struct System_RockSpawner_Test : SystemBase
 		{
 			spawnTimer = spawnTime;
 			
-			vec2 pos = get_randnc(50.f);
+			vec2 pos = get_randnc(40.f);
 			vec2 vel = -normalize(pos) * rockSpeed;
 			r<Texture> texture = GetPrefab_Texture("asteroid_mid_1.png", false);
 
 			Entity rock = CreateEntity();
 			rock.Add<Transform2D>(pos);
-			rock.Add<Rigidbody2D>().SetPosition(pos).SetVelocity(vel);
+			rock.Add<Rigidbody2D>().SetPosition(pos).SetVelocity(vel).SetAngularVelocity(get_randc(w2PI/ 7.f));
 			rock.Add<Sprite>(texture);
 			rock.Add<SandSprite>(texture);
 
