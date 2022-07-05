@@ -11,7 +11,7 @@ struct System_ParticleUpdate : SystemBase
 
 		for (auto [transform, particle, shrink] : Query<Transform2D, Particle, ParticleShrinkWithAge>())
 		{
-			transform.scale = particle.orignal.scale * shrink.scale * particle.AgeLeft();
+			transform.scale = particle.original.scale * shrink.scale * particle.AgeLeft();
 		}
 
 		// particle frame update

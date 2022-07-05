@@ -93,7 +93,7 @@ public:
 		Time::UpdateTime();
 
 #ifdef IW_METRICS_TIMER
-		LogMetric(TICK, Time::DeltaTime());
+		LogMetric(TICK, Time::RawDeltaTime());
 #endif
 
 		float physicsTicks = 0;
@@ -102,7 +102,6 @@ public:
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
 			physicsTicks += 1;
-
 			m_fixedStepAcc -= Time::FixedTime();
 
 			TickLevelFixed();

@@ -27,7 +27,7 @@ ParticleEmitter GetPrefab_BulletEmitter()
 		emitter = mkr<ParticleEmitter>();
 
 		Particle bullet = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
-		bullet.orignal.scale = vec2(.1, .1);
+		bullet.original.scale = vec2(.05, .05);
 		bullet.tints = {
 			Color(255, 200, 20, 255)
 		};
@@ -37,7 +37,7 @@ ParticleEmitter GetPrefab_BulletEmitter()
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.orignal);
+				entity.Add<Transform2D>(particle.original);
 
 				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
 				body.SetAngularVelocity(get_randc(3.f));
@@ -61,7 +61,7 @@ ParticleEmitter GetPrefab_LaserEmitter()
 
 		Particle fireball = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
 		fireball.repeatCount = 10;
-		fireball.orignal.scale = vec2(.2, .1f);
+		fireball.original.scale = vec2(.2, .1f);
 		fireball.tints = {
 			Color(255, 66, 66, 150),
 			Color(220, 20, 20, 184)
@@ -72,7 +72,7 @@ ParticleEmitter GetPrefab_LaserEmitter()
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.orignal);
+				entity.Add<Transform2D>(particle.original);
 
 				entity.Add<ParticleShrinkWithAge>();
 
@@ -98,7 +98,7 @@ ParticleEmitter GetPrefab_FuelShotEmitter()
 
 		Particle fireball = Particle(mkr<TextureAtlas>(mkr<Texture>(_a("diamond.png"))));
 		fireball.repeatCount = 10;
-		fireball.orignal.scale = vec2(1, .5f);
+		fireball.original.scale = vec2(1, .5f);
 		fireball.tints = {
 			Color( 10, 147, 255,   0),
 			Color(244,  86,  12, 153),
@@ -110,7 +110,7 @@ ParticleEmitter GetPrefab_FuelShotEmitter()
 			{
 				Entity entity = CreateEntity();
 				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.orignal);
+				entity.Add<Transform2D>(particle.original);
 
 				entity.Add<ParticleShrinkWithAge>();
 

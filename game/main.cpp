@@ -208,9 +208,7 @@ struct Regolith : EngineLoop
 		Entity e = CreateSandSprite("test_line.png", "test_line.png");
 		e.Get<Transform2D>().rotation = wPI / 6.f;
 
-		m_app.GetRootEventQueue()->send(event_Sand_ExplodeToDust{ e });
-
-		if (false)
+		//if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;

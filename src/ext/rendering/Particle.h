@@ -13,7 +13,7 @@ struct Particle
 
 	// could be in seperate component
 
-	Transform2D orignal;      // for linear effects over time
+	Transform2D original;      // for linear effects over time
 	std::vector<Color> tints; // colors to fade between with AgeLeft
 
 	Particle() {}
@@ -35,6 +35,7 @@ struct Particle
 	Particle& SetFrameCurrent    (float                     frameCurrent)    { this->frameCurrent    = frameCurrent;    return *this; }
 	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
 	Particle& AddTint            (const Color& tint)                         { this->tints.push_back(tint);             return *this; }
+	Particle& SetOriginal        (const Transform2D& transform)              { this->original = transform;              return *this; }
 
 	void TickFrame(float dt)
 	{
@@ -111,7 +112,7 @@ struct ParticleEmitter
 		const Spawner& spawner = spawners.at(index);
 		
 		Particle p = spawner.particle;
-		p.orignal *= emitterTransform;            // todo: should parent when that is a feature
+		p.original *= emitterTransform;            // todo: should parent when that is a feature
 
 		if (spawner.onCreate)
 		{

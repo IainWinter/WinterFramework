@@ -144,6 +144,12 @@ private:
 			{
 				auto [t, s, ss] = split;
 				Entity e = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
+
+				if (island.size() < 50)
+				{
+					e.Add<SandTurnToDustInTime>(island.size() / 25.f);
+				}
+
 				SendNow(event_SandAddSprite { e, v, a, d });
 			});
 		}

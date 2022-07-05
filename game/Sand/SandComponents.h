@@ -43,3 +43,8 @@ struct SandHealable
 	std::vector<int> core;
 	std::vector<int> shell;
 };
+
+struct SandTurnToDustInTime
+{
+	float time;
+};

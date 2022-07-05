@@ -12,16 +12,28 @@ struct Sand_System_ExplodeToDust : System<Sand_System_ExplodeToDust>
 		Attach<event_Sand_ExplodeToDust>();
 	}
 
+	void Update()
+	{
+		for (auto [entity, dustInTime] : QueryWithEntity<SandTurnToDustInTime>())
+		{
+			dustInTime.time -= Time::DeltaTime();
+			if (dustInTime.time <= 0.f)
+			{
+				Send(event_Sand_ExplodeToDust{entity});
+			}
+		}
+	}
+
 	void on(event_Sand_ExplodeToDust& e)
 	{
 		bool destroyAll = e.onlyThisIndex.size() == 0;
 		if (destroyAll) e.onlyThisIndex = GetCorePixels(e.entity.Get<Sprite>().source).all;
-		ExplodeSpriteIntoDust(e.onlyThisIndex, e.entity, destroyAll);
+		ExplodeSpriteIntoDust(e.onlyThisIndex, e.entity, e.velocity, destroyAll);
 	}
 
 private:
 
-	void ExplodeSpriteIntoDust(const std::vector<int>& island, Entity explodeMe, bool destroyAll)
+	void ExplodeSpriteIntoDust(const std::vector<int>& island, Entity explodeMe, vec2 velocity, bool destroyAll)
 	{
 		auto [transform, sprite] = explodeMe.GetAll<Transform2D, Sprite>();
 		Texture& tex = sprite.Get();
@@ -30,43 +42,35 @@ private:
 		SandWorld& sand = GetModule<SandWorld>(); // non threadsafe read
 
 		// delta for each pixel in world space
-
-		vec2 scale = vec2(1.f) / sand.cellsPerMeter;
-		vec2 dx = rotate(vec2(1.f, 0.f), transform.rotation) * scale * 2.f;
-		vec2 dy = rotate(vec2(0.f, 1.f), transform.rotation) * scale * 2.f;
-
-		printf("%f %f\n", dx.x, dy.y);
+		
+		float s = 1.f / sand.cellsPerMeter;
+		float r = transform.rotation;
+		mat2 coord = mat2(cos(r), sin(r), -sin(r), cos(r))
+			       * mat2(2*s, 0, 0, 2*s);
 
 		for (const int& index : island)
 		{
 			auto [x, y] = get_xy(index, tex.Width());
-			vec2 pos = (vec2(x, y) - mid) * vec2(dx.x, dy.y) + transform.position;
+			vec2 pos = coord * (vec2(x, y) - mid);
 
 			Entity dust = CreateEntity();
-			dust.Add<Transform2D>(vec3(pos, transform.z), scale);
+			dust.Add<Transform2D>(vec3(pos + transform.position, transform.z), vec2(s), transform.rotation);
 			dust.Add<Particle>()
-				.AddTint(Color(255, 0, 0))
-				.SetRepeatCount(10000);
+				.AddTint(tex.At(x, y))
+				.SetRepeatCount(get_rand(50) + 10)
+				.SetOriginal(dust.Get<Transform2D>());
+
+			dust.Add<ParticleShrinkWithAge>();
+
+			vec2 vel = velocity;
+			if (explodeMe.Has<Rigidbody2D>())
+			{
+				vel += explodeMe.Get<Rigidbody2D>().GetVelocity();
+			}
+			vel += get_randn(length(vel) / 2.f + 1.f);
+
+			GetModule<PhysicsWorld>().AddEntity(dust).SetVelocity(vel);
 		}
-		
-		////if (false) // disable, should create particles
-		//for (const int& index : island)
-		//{
-		//	auto [x, y] = get_xy(index, tex.Width());
-
-		//	vec2 pos = (vec2(x, y) - mid) / 10.f;
-		//	rotate(pos, transform.rotation);
-		//	pos += transform.position;
-
-		//	vec2 scale = vec2(1.f / sand.cellsPerMeter); // non threadsafe read
-		//	Color& color = tex.At(x, y);
-
-		//	Entity dust = CreateEntity();
-		//	dust.Add<Transform2D>(vec3(pos, transform.z), scale);
-		//	dust.Add<Particle>()
-		//		.AddTint(Color(255, 0, 0))
-		//		.SetRepeatCount(10000);
-		//}
 
 		if (destroyAll)
 		{
