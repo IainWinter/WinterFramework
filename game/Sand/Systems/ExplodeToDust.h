@@ -51,7 +51,7 @@ private:
 		for (const int& index : island)
 		{
 			auto [x, y] = get_xy(index, tex.Width());
-			vec2 pos = coord * (vec2(x, y) - mid);
+			vec2 pos = coord * (vec2(x, y) - mid + vec2(.5f, .5f));
 
 			Entity dust = CreateEntity();
 			dust.Add<Transform2D>(vec3(pos + transform.position, transform.z), vec2(s), transform.rotation);
@@ -69,7 +69,9 @@ private:
 			}
 			vel += get_randn(length(vel) / 2.f + 1.f);
 
-			GetModule<PhysicsWorld>().AddEntity(dust).SetVelocity(vel);
+			GetModule<PhysicsWorld>().AddEntity(dust)
+				.SetVelocity(vel)
+				.SetAngularVelocity(get_randc(w2PI));
 		}
 
 		if (destroyAll)

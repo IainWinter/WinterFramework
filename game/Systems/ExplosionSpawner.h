@@ -11,9 +11,11 @@ struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 	{
 		Attach<event_SpawnExplosion>();
 
-		m_explosion = Particle(
-			mkr<TextureAtlas>(mkr<Texture>(_a("explosion.png")), 5, 5), 22
+		m_smoke = Particle(
+			mkr<TextureAtlas>(mkr<Texture>(_a("smoke.png")))
 		);
+
+		m_smoke.repeatCount = 50;
 	}
 
 	void on(event_SpawnExplosion& e)
@@ -23,7 +25,7 @@ struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 
 private:
 
-	Particle m_explosion;
+	Particle m_smoke;
 
 	void SpawnExplosion(vec2 position, float power)
 	{
@@ -32,20 +34,31 @@ private:
 			e.Add<CellProjectile>(0u, 35, .8f);
 		};
 
-		float radius = 700.f;
+		float radius = 10.f;
 
-		for (float i = 0; i < power; i += 1.f) // global power scale
+		for (float i = 0; i < power; i += .1f) // global power scale
 		{
-			float speed = get_rand(radius) + radius / 3.f;
-			vec2 velocity = get_randn(speed);
-			//Send(event_Sand_CreateCell(position, velocity, Color(205 + get_rand(50), 218, 20), .2f, onCreate));
-		
-			// fire weapon bullets
-		}
+			Entity e = CreateEntity();
+			e.Add<Transform2D>(position);
+			e.Add<CellProjectile>(u32(-1));
+			e.Add<DestroyInTime>(1.f);
 
-		CreateEntity().AddAll(
-			Transform2D (position, vec2(5.f, 5.f), get_rand(2.f * pi<float>())),
-			Particle    (m_explosion)
-		);
+			GetModule<PhysicsWorld>()
+				.AddEntity(e)
+				.SetVelocity(get_randn(radius))
+				.SetDamping(1.f);
+
+			e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());// .spawners.at(0).particle.original.scale = vec2(.4, .5);
+		
+			//Entity smoke = CreateEntity().AddAll(
+			//	Transform2D(position, vec2(.5f, .5f), get_rand(w2PI)),
+			//	Particle(m_smoke)
+			//);
+
+			//GetModule<PhysicsWorld>()
+			//	.AddEntity(smoke)
+			//	.SetVelocity(get_randn(radius / 2.f))
+			//	.SetDamping(4.f);
+		}
 	}
 };
