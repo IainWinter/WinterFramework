@@ -135,7 +135,6 @@ void InitCollisionInfoProgram()
 		"in vec2 TexCoords;"
 
 		"out ivec4 spriteId;" // sprite (x, y) (entity index), (alpha for if its even there)
-		"out vec4 spriteDebugColor;"
 
 		"uniform sampler2D colliderMask;"
 		"uniform vec2 spriteSize;"
@@ -147,7 +146,6 @@ void InitCollisionInfoProgram()
 			"if (mask.a > .7) mask.a = 1.f;" // round up for health thing
 			"if (mask.a == 0) discard;"
 			"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, 1);"
-			"spriteDebugColor = vec4(1, 1, 1, 1) * mask.a;"
 		"}";
 
 	g_collisionInfo = MakeVertexAndFragmentShader(source_vert, source_frag);

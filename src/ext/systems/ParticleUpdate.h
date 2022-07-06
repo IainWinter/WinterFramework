@@ -34,7 +34,7 @@ struct System_ParticleUpdate : SystemBase
 			Transform2D last = transform.LastTransform();
 			vec2 delta = transform.position - last.position;
 
-			float ticks = length(delta) * 10.f; // todo: this is sand world cells per meter / 2
+			float ticks = length(delta) * 15.f; // todo: this is sand world cells per meter / 2
 			vec2 deltaTick = delta / ticks;
 
 			for (float t = 0; t < ticks; t += 1.f)

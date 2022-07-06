@@ -17,7 +17,7 @@ struct System_Testing : SystemBase
 		target = CreateEntity();
 
 		entity.Add<Transform2D>(vec2(-10, 10));
-		target.Add<Transform2D>(vec2(10,  10));
+		target.Add<Transform2D>(vec2( 10, 10));
 	}
 
 	void Update()

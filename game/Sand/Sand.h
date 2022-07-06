@@ -45,7 +45,6 @@ struct SandWorld
 		ResizeWorld(cellsPerMeter, camSize);
 		screenRead = mkr<Target>(false);
 		screenRead->Add(Target::aColor,  worldSizeCells.x, worldSizeCells.y, Texture::uINT_32, false);
-		screenRead->Add(Target::aColor1, worldSizeCells.x, worldSizeCells.y, Texture::uRGBA,   true);
 	}
 
 	void ResizeWorld(int cellsPerMeter_, vec2 camSize)

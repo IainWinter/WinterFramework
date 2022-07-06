@@ -41,24 +41,28 @@ private:
 			Entity e = CreateEntity();
 			e.Add<Transform2D>(position);
 			e.Add<CellProjectile>(u32(-1));
-			e.Add<DestroyInTime>(1.f);
+			e.Add<DestroyInTime>(.1f + get_rand(.3f));
 
 			GetModule<PhysicsWorld>()
 				.AddEntity(e)
 				.SetVelocity(get_randn(radius))
-				.SetDamping(1.f);
+				.SetDamping(radius / 10.f);
 
-			e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());// .spawners.at(0).particle.original.scale = vec2(.4, .5);
-		
-			//Entity smoke = CreateEntity().AddAll(
-			//	Transform2D(position, vec2(.5f, .5f), get_rand(w2PI)),
-			//	Particle(m_smoke)
-			//);
+			e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 
-			//GetModule<PhysicsWorld>()
-			//	.AddEntity(smoke)
-			//	.SetVelocity(get_randn(radius / 2.f))
-			//	.SetDamping(4.f);
+		}
+
+		for (int i = 0; i < 5; i++)
+		{
+			Entity smoke = CreateEntity().AddAll(
+				Transform2D(position + get_randn(.1f), vec2(2.5f, 2.5f), get_rand(w2PI)),
+				Particle(m_smoke)
+			);
+
+			GetModule<PhysicsWorld>()
+				.AddEntity(smoke)
+				.SetVelocity(get_randn(radius))
+				.SetDamping(3.f);
 		}
 	}
 };

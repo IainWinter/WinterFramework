@@ -35,7 +35,7 @@ struct System_PlayerController : System<System_PlayerController>
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.AttackTime;
-			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
+			//Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
 
 			player.CurrentWeaponAmmo -= 1;
 
@@ -46,6 +46,15 @@ struct System_PlayerController : System<System_PlayerController>
 				player.CurrentWeaponInaccuracy = 1;
 			}
 
+			CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
+			if (info.hasHit)
+			{
+				Entity e = Wrap(info.spriteEntityID);
+				SandSprite& ssprite = e.Get<SandSprite>();
+				Send(event_Sand_RemoveCell{ Wrap(info.spriteEntityID), ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y) });
+			}
+
+			//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});
 			//Send(event_Item_Spawn{ ITEM_HEALTH, target.Get<Transform2D>().position, 5 });
 		}
 

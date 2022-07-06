@@ -165,7 +165,7 @@ struct Regolith : EngineLoop
 		vec2 screenSize = vec2(window.Width(), window.Height());
 		vec2 cameraSize = vec2(16 * 2, 9 * 2);
 
-		m_app.AddModule<SandWorld>(16, vec2(cameraSize.x, cameraSize.y));
+		m_app.AddModule<SandWorld>(4/*16*/, vec2(cameraSize.x, cameraSize.y));
 		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
 		CoordTranslation coords;
@@ -202,7 +202,7 @@ struct Regolith : EngineLoop
 		//Entity e = CreateSandSprite("test_line.png", "test_line.png");
 		//e.Get<Transform2D>().rotation = wPI / 6.f;
 
-		//if (false)
+		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;

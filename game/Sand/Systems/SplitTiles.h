@@ -7,7 +7,7 @@ struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 {
 	void Init()
 	{
-		Attach<event_Sand_ProjectileHit>();
+		Attach<event_Sand_RemoveCell>();
 	}
 
 	void Update()
@@ -22,7 +22,7 @@ struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 		m_hits.clear();
 	}
 
-	void on(event_Sand_ProjectileHit& e)
+	void on(event_Sand_RemoveCell& e)
 	{
 		m_hits.insert(ToSplit { e.entity });
 	}
