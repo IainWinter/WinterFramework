@@ -82,11 +82,14 @@ private:
 	{
 		if (stage.target)
 		{
+			glViewport(0, 0, stage.target->Width(), stage.target->Height());
 			stage.target->Use();
 		}
 
 		else
 		{
+			Window& window = m_level->GetApp()->GetModule<Window>();
+			glViewport(0, 0, window.Width(), window.Height());
 			Target::UseDefault();
 		}
 	}

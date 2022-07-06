@@ -12,7 +12,6 @@
 // systems
 
 #include "Sand/SandSystems.h"
-
 #include "Systems/PlayerController.h"
 #include "Systems/FlockingMovement.h"
 #include "Systems/TurnTwoardsTarget.h"
@@ -20,21 +19,16 @@
 #include "Systems/ExplosionSpawner.h"
 #include "Systems/EnemyController.h"
 #include "Systems/KeepOnScreen.h"
-
 #include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
-
 #include "Systems/RockSpawner_Test.h"
-
 #include "Systems/ItemSystem.h"
+#include "Systems/RenderSceneGraph.h"
+#include "Systems/zTestingSystem.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
 #include "ext/systems/DestroyInTime.h"
-
-#include "Systems/RenderSceneGraph.h"
-
-#include "Systems/zTestingSystem.h"
 
 #include "GameRender.h"
 
@@ -48,7 +42,7 @@ struct MetricsSystem : System<MetricsSystem>
 
 	void Init()
 	{
-		Attach<event_RecordMetric>();
+		//Attach<event_RecordMetric>();
 	}
 
 	void UI()
@@ -75,13 +69,13 @@ struct MetricsSystem : System<MetricsSystem>
 
 		//m_cellCounts.push_back(cellCount);
 
-		ImPlot::SetNextAxesToFit();
-		if (ImPlot::BeginPlot("Times"))
-		{
-			ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
-			ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
-			ImPlot::EndPlot();
-		}
+		//ImPlot::SetNextAxesToFit();
+		//if (ImPlot::BeginPlot("Times"))
+		//{
+		//	ImPlot::PlotLine("Delta time", m_time.data(), m_deltaTime .data(), m_time.size());
+		//	ImPlot::PlotLine("Fixed time", m_time.data(), m_fixedTicks.data(), m_time.size());
+		//	ImPlot::EndPlot();
+		//}
 
 		ImGui::End();
 
@@ -171,7 +165,7 @@ struct Regolith : EngineLoop
 		vec2 screenSize = vec2(window.Width(), window.Height());
 		vec2 cameraSize = vec2(16 * 2, 9 * 2);
 
-		m_app.AddModule<SandWorld>(20, vec2(cameraSize.x, cameraSize.y));
+		m_app.AddModule<SandWorld>(10, vec2(cameraSize.x, cameraSize.y));
 		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
 		CoordTranslation coords;
@@ -203,12 +197,12 @@ struct Regolith : EngineLoop
 		player.Add<ItemSink>();
 		player.Add<SandHealable>();
 
-		player.Get<SandSprite>().invulnerable = true;
+		//player.Get<SandSprite>().invulnerable = true;
 
-		Entity e = CreateSandSprite("test_line.png", "test_line.png");
-		e.Get<Transform2D>().rotation = wPI / 6.f;
+		//Entity e = CreateSandSprite("test_line.png", "test_line.png");
+		//e.Get<Transform2D>().rotation = wPI / 6.f;
 
-		//if (false)
+		if (false)
 		for (int i = 0; i < 10; i++)
 		{
 			Entity entity;

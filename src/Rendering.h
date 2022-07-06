@@ -53,6 +53,8 @@
 // you cannot however, SendToDevice(), FreeHost(), SendToHost()
 // Sending to host requires it is never freeed, and therefore not static
 
+// ended up using RAII, using shared pointers for most things is really what you want to instance
+
 #ifndef STATIC_HOST
 #	define DYNAMIC_HOST 0
 #	define STATIC_HOST 1
@@ -282,6 +284,8 @@ protected:
 		gl(glBindTexture(GL_TEXTURE_2D, m_device));
 		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
 		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
+		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+		gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 		gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(), Width(), Height(), 0, gl_format(), gl_type(), Pixels()));
 	}
 
@@ -545,6 +549,19 @@ public:
 	// instances a buffer
 	void Add(AttachmentName name, const r<Texture>& texture)
 	{
+		// only support same sized textures
+
+		if (m_attachments.size() == 0)
+		{
+			m_width  = texture->Width();
+			m_height = texture->Height();
+		}
+
+		else
+		{
+			assert(m_width == texture->Width() && m_height == texture->Height() && "All attachments must be of equal size");
+		}
+
 		assert(m_attachments.find(name) == m_attachments.end() && "Attachment already exists in target");
 		// should put asserts for depth and spencil for what rgb values they need
 		m_attachments.emplace(name, texture);
@@ -639,7 +656,7 @@ protected:
 
 	void _UpdateFromDevice() override
 	{
-		for (auto& [_, texture] : m_attachments) if (texture->OnDevice()) texture->SendToHost();
+		for (auto& [_, texture] : m_attachments) if (texture->OnDevice() && !texture->IsStatic()) texture->SendToHost();
 	}
 
 	// construction
@@ -798,7 +815,7 @@ public:
 
 	// length is number of elements
 	// offset is the number of elements from the start
-	// offset must be positive and adjacent or inside of the buffer
+	// offset must be positive and adjacent or inside the buffer
 	// if the length + offset is larger than the buffer, it is realloced and appended to
 	// data is left uninitalized if there are gaps between offsets
 	void Append(int length, const void* data, int offset)
@@ -1407,9 +1424,6 @@ public:
 		gl(glUseProgram(m_device));
 	}
 
-	// these could be const if texture didnt get sent here
-	// think of another way to do this...
-
 	void Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
 	void Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); }
 	void Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
@@ -1571,63 +1585,3 @@ private:
 		return location;
 	}
 };
-
-// Need a simple material system
-// needs particles that change a uniform every frame
-//
-
-// each mesh needs a material
-// a model could be a list of meshes and materials
-
-// a sprite renderer takes a 
-
-// 
-
-//
-// end device objects s
-//
-
-
-
-//struct Material
-//{
-//private:
-//	struct Prop
-//	{
-//		std::string name;
-//		virtual void SetOnDevice(ShaderProgram* program) = 0;
-//	};
-//
-//	template<typename _t>
-//	struct PropValue : Prop
-//	{
-//		_t value;
-//		void SetOnDevice(ShaderProgram* program)
-//		{
-//			program->Set(name, value);
-//		}
-//	};
-//
-//	std::unordered_map<std::string, Prop*> m_properties;
-//
-//public:
-//	template<typename _t>
-//	void Set(const std::string& name, const _t& value)
-//	{
-//		auto itr = m_properties.find(name);
-//		if (itr == m_properties.end())
-//		{
-//			m_properties[name] = new PropValue();
-//		}
-//
-//		m_properties[name].value = value;
-//	}
-//
-//	void SendToDevice(ShaderProgram* program)
-//	{
-//		for (auto& [name, prop] : m_properties)
-//		{
-//			prop->SetOnDevice(program);
-//		}
-//	}
-//};

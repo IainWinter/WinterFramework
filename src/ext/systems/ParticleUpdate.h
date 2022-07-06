@@ -7,13 +7,6 @@ struct System_ParticleUpdate : SystemBase
 {
 	void Update()
 	{
-		// engine effects
-
-		for (auto [transform, particle, shrink] : Query<Transform2D, Particle, ParticleShrinkWithAge>())
-		{
-			transform.scale = particle.original.scale * shrink.scale * particle.AgeLeft();
-		}
-
 		// particle frame update
 
 		for (auto [entity, particle] : QueryWithEntity<Particle>())
@@ -23,6 +16,13 @@ struct System_ParticleUpdate : SystemBase
 			{
 				entity.Destroy();
 			}
+		}
+
+		// engine effects
+
+		for (auto [transform, particle, shrink] : Query<Transform2D, Particle, ParticleShrinkWithAge>())
+		{
+			transform.scale = particle.original.scale * shrink.scale * particle.AgeLeft();
 		}
 
 		// emitter update

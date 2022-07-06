@@ -39,33 +39,6 @@ struct Stage_Meshes : RenderStage
 	}
 };
 
-struct Stage_Sprites : RenderStage
-{
-private:
-	r<Mesh> m_quad;
-
-public:
-	Stage_Sprites()
-	{
-		m_quad = GetQuadMesh2D();
-	}
-
-	void Draw() override
-	{
-		program->Set("projection", level->GetApp()->GetModule<Camera>().Projection());
-		program->Set("uvOffset", vec2(0.f, 0.f));
-		program->Set("uvScale",  vec2(1.f, 1.f));
-		program->Set("tint",     vec4(1, 1, 1, 1));
-
-		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
-		{
-			program->Set("model",  transform.World());
-			program->Set("sprite", *sprite.source);
-			m_quad->Draw();
-		}
-	}
-};
-
 struct Stage_NewSpriteRender : RenderStage
 {
 private:
@@ -151,40 +124,6 @@ public:
 	}
 };
 
-//struct Stage_Particles : RenderStage
-//{
-//private:
-//	r<Mesh> m_quad;
-//
-//public:
-//	Stage_Particles()
-//	{
-//		m_quad = GetQuadMesh2D();
-//	}
-//
-//	void Draw() override
-//	{
-//		program->Set("projection", level->GetApp()->GetModule<Camera>().Projection());
-//
-//		float z = 2.f;
-//
-//		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
-//		{
-//			Transform2D t = transform;
-//			t.z = z;
-//			z += .01f;
-//
-//			program->Set("model",    t.World());
-//			program->Set("sprite",   particle.GetTexture());
-//			program->Set("uvOffset", particle.GetCurrentFrameUV().uvOffset);
-//			program->Set("uvScale",  particle.GetCurrentFrameUV().uvScale);
-//			program->Set("tint",     vec4(1, 1, 1, 1/* - particle.Age()*/));
-//
-//			m_quad->Draw();
-//		}
-//	}
-//};
-
 struct Stage_SandSpriteInfo : RenderStage
 {
 private:
@@ -200,15 +139,7 @@ public:
 	{
 		auto [camera, sand] = level->GetApp()->GetModules<Camera, SandWorld>();
 		
-		vec2 offset = sand.cameraSizeMeters / 2.f;
-
-		Camera adjusted = camera;
-		//adjusted.x -= offset.x;
-		//adjusted.y -= offset.y;
-		//adjusted.w *= 2;
-		//adjusted.h *= 2;
-		
-		program->Set("projection", adjusted.Projection());
+		program->Set("projection", camera.Projection());
 
 		for (auto [entity, transform, sandSprite] : level->GetWorld()->QueryWithEntity<Transform2D, SandSprite>())
 		{
@@ -239,34 +170,16 @@ struct System_RenderSceneGraph : SystemBase
 		graph = SceneGraph(LevelManager::CurrentLevel());
 
 		r<Target> collisionInfo = LevelManager::CurrentLevel()->GetApp()->GetModule<SandWorld>().screenRead;
-		
-		RenderStage*  clearScreen = new Stage_ClearTarget(Color(22, 22, 22, 22));
-		RenderStage*  meshes      = new Stage_Meshes();
-		//RenderStage*  sprites     = new Stage_Sprites();
-		//RenderStage*  particles   = new Stage_Particles();
-
-		RenderStage*  debugDrawSandSprites = new Stage_DebugSandSprites(collisionInfo->Get(Target::aColor));
-
-		RenderStage*  clearSandSprites = new Stage_ClearTarget(Color(0, 0, 0, 0));
-		RenderStage*  sandSprites      = new Stage_SandSpriteInfo();
-		RenderStage* getCollisionInfo  = new Stage_SendTargetToHost();
-
-		graph.AddStage(clearScreen, nullptr);
-		graph.AddStage(meshes,      nullptr, GetProgram_Wireframe());
-		//graph.AddStage(sprites,     nullptr, GetProgram_Sprite());
-		//graph.AddStage(particles,   nullptr, GetProgram_Sprite());
-		
-		graph.AddStage(new Stage_NewSpriteRender(), nullptr, nullptr);
-		
-		
 		collisionInfo->Use();
 		collisionInfo->Clear(Color(0, 0, 0, 0));
+		
+		graph.AddStage(new Stage_ClearTarget(Color(22, 22, 22, 22)), nullptr);
+		graph.AddStage(new Stage_Meshes(),                           nullptr, GetProgram_Wireframe());
+		graph.AddStage(new Stage_NewSpriteRender(),                  nullptr);
 
-		graph.AddStage(clearSandSprites, collisionInfo);
-		graph.AddStage(sandSprites,      collisionInfo, GetProgram_SandSpriteInfo());
-		graph.AddStage(getCollisionInfo, collisionInfo);
-
-		//graph.AddStage(debugDrawSandSprites, nullptr, GetProgram_Debug_DisplayCollisionInfo());
+		graph.AddStage(new Stage_ClearTarget(Color(0, 0, 0, 0)), collisionInfo);
+		graph.AddStage(new Stage_SandSpriteInfo(),               collisionInfo, GetProgram_SandSpriteInfo());
+		graph.AddStage(new Stage_SendTargetToHost(),             collisionInfo);
 	}
 
 	void Update()

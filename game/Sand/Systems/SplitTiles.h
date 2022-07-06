@@ -147,7 +147,7 @@ private:
 
 				if (island.size() < 50)
 				{
-					e.Add<SandTurnToDustInTime>(island.size() / 25.f);
+					e.Add<SandTurnToDustInTime>(island.size() / 10.f);
 				}
 
 				SendNow(event_SandAddSprite { e, v, a, d });

@@ -23,7 +23,7 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 		
 		if (sprite.Get().At(index).a > 0) // projectiles hit mask sprite
 		{
-			Send(event_Sand_ExplodeToDust{ e.entity, {index}, e.projectile.Get<Rigidbody2D>().GetVelocity() / 3.f });
+			Send(event_Sand_ExplodeToDust{ e.entity, {index}, sqrt(e.projectile.Get<Rigidbody2D>().GetVelocity()) });
 		}
 
 		Send(event_Sand_RemoveCell{ e.entity, index } );
