@@ -47,9 +47,9 @@ std::vector<flood_fill_cell_state> GetSpriteStates(const r<Texture>& mask)
 	);
 }
 
-void AddSingleIsland(int seed, const r<Texture>& mask, std::vector<flood_fill_cell_state>& state, std::vector<std::vector<int>>& islands)
+void AddSingleIsland(int seed, const r<Texture>& mask, bool diags, std::vector<flood_fill_cell_state>& state, std::vector<std::vector<int>>& islands)
 {
-	auto island = flood_fill(seed, mask->Width(), mask->Height(), state);
+	auto island = flood_fill(seed, mask->Width(), mask->Height(), state, diags);
 	if (island.size() > 0)
 	{
 		islands.emplace_back(std::move(island));
@@ -64,14 +64,14 @@ Islands GetIslands(const SandSprite& sprite)
 
 	for (int seed : sprite.core)
 	{
-		AddSingleIsland(seed, sprite.colliderMask, state, islands.coreIslands);
+		AddSingleIsland(seed, sprite.colliderMask, sprite.isCircle, state, islands.coreIslands);
 	}
 
 	for (int i = 0; i < state.size(); i++)
 	{
 		if (state.at(i) == flood_fill_cell_state::FILLED)
 		{
-			AddSingleIsland(i, sprite.colliderMask, state, islands.otherIslands);
+			AddSingleIsland(i, sprite.colliderMask, sprite.isCircle, state, islands.otherIslands);
 		}
 	}
 

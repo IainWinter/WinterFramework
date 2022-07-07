@@ -190,13 +190,13 @@ struct Regolith : EngineLoop
 	{ 
 		r<Level> level = LevelManager::CurrentLevel();
 
-		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
+		Entity player = CreateTexturedCircle("player.png");
 		player.Add<Player>();
-		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Add<KeepOnScreen>();
 		player.Add<ItemSink>();
 		player.Add<SandHealable>();
 
+		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Get<SandSprite>().invulnerable = true;
 
 		//Entity e = CreateSandSprite("test_line.png", "test_line.png");
@@ -253,10 +253,8 @@ struct Regolith : EngineLoop
 
 		assert(sprite->Length() == mask->Length());
 
-		Transform2D transform;
-
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-		entity.Add<Transform2D>(transform);
+		entity.Add<Transform2D>();
 		entity.Add<SandSprite>(mask);
 		entity.Add<Sprite>(sprite);
 
@@ -265,30 +263,16 @@ struct Regolith : EngineLoop
 		return entity;
 	}
 
-	Entity CreateTexturedCircle(const std::string& path, const std::string& path_mask)
+	Entity CreateTexturedCircle(const std::string& path)
 	{
 		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
 
 		r<Texture> sprite = mkr<Texture>(_a(path), false);
-		r<Texture> mask   = mkr<Texture>(_a(path_mask), false);
-		
-		assert(sprite->Length() == mask->Length());
-
-		Transform2D transform;
-		//transform.scale = vec2(sprite->Width(), sprite->Height()) * sand.worldScale;
 
 		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-		entity.Add<Transform2D>(transform);
-		entity.Add<SandSprite>(mask);
+		entity.Add<Transform2D>();
+		entity.Add<SandSprite>(sprite).isCircle = true;
 		entity.Add<Sprite>(sprite);
-
-		Rigidbody2D& body = physics.AddEntity(entity);
-
-		b2CircleShape shape;
-		shape.m_radius = max(transform.scale);
-		
-		b2Fixture* collider = body.AddCollider(shape, 100.f);
-		collider->SetRestitution(.5f);
 
 		m_app.GetRootEventQueue()->send(event_SandAddSprite{ entity });
 

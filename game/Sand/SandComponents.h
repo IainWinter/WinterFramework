@@ -30,6 +30,8 @@ struct SandSprite
 
 	int cellStrength = 0;
 	int cellCount = 0;
+	
+	bool isCircle = false;
 
 	Texture& Get() { return *colliderMask; }
 

@@ -146,10 +146,10 @@ struct Sand_System_Update : System<Sand_System_Update>
 		// setup collider if requested, odd logic
 
 		Rigidbody2D* body;
-
-		if (e.entity.Has<Rigidbody2D>() && !e.entity.Get<Rigidbody2D>().InWorld())
+	
+		if (e.entity.Has<Rigidbody2D>())
 		{
-			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
+			body = &e.entity.Get<Rigidbody2D>();
 		}
 
 		else
@@ -159,9 +159,9 @@ struct Sand_System_Update : System<Sand_System_Update>
 			body->SetAngularVelocity(e.aVelocity);
 		}
 
-		if (body->GetColliderCount() == 0)
-		{
+		//if (body->GetColliderCount() == 0)
+		//{
 			SendNow(event_Sand_CreateCollider{ e.entity });
-		}
+		//}
 	}
 };

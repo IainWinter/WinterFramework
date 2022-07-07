@@ -23,7 +23,7 @@ std::vector<flood_fill_cell_state> flood_fill_get_states_from_array(_t* arr, siz
 }
 
 inline
-std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<flood_fill_cell_state>& cells)
+std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<flood_fill_cell_state>& cells, bool diagonals = false)
 {
 	std::vector<int> island;
 
@@ -54,12 +54,13 @@ std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<flood_
 			              queue.push_back(index + size_x);
 			              queue.push_back(index - size_x);
 
-			// diags
-
-			//if (natRight) queue.push_back(index + 1 + size_x);
-			//if (natRight) queue.push_back(index + 1 - size_x);
-			//if (natLeft)  queue.push_back(index - 1 + size_x);
-			//if (natLeft)  queue.push_back(index - 1 - size_x);
+			if (diagonals)
+			{
+				if (natRight) queue.push_back(index + 1 + size_x);
+				if (natRight) queue.push_back(index + 1 - size_x);
+				if (natLeft)  queue.push_back(index - 1 + size_x);
+				if (natLeft)  queue.push_back(index - 1 - size_x);
+			}
 		}
 	}
 

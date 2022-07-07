@@ -20,22 +20,45 @@ struct Sand_System_CreateCollider : System<Sand_System_CreateCollider>
 
 	void on(event_Sand_CreateCollider& e)
 	{
-		bool hasCollider = SetPolygonColliderOnSprite(e.entity);
-
-		if (!hasCollider)
+		if (!e.entity.Get<Rigidbody2D>().InWorld()) // annoying, should be automatic
 		{
-			// fail case: if no colliders just explode, not sure why hitbox fails sometimes, 
-			//            mostly only with really small shapes, so not a big deal
+			GetModule<PhysicsWorld>().AddEntity(e.entity);
+		}
 
-			printf("Error: failed to create collider\n");
-
-			Send(event_Sand_ExplodeToDust{ e.entity });
+		if (!TrySetCircleColliderOnSprite(e.entity))
+		{
+			if (!TrySetPolygonColliderOnSprite(e.entity))
+			{
+				// fail case: if no colliders just explode, not sure why hitbox fails sometimes, 
+				printf("Error: failed to create collider\n");
+				Send(event_Sand_ExplodeToDust{ e.entity });
+			}
 		}
 	}
 
 private:
 
-	bool SetPolygonColliderOnSprite(Entity entity)
+	bool TrySetCircleColliderOnSprite(Entity entity)
+	{
+		auto [tran, body, sand] = entity.GetAll<Transform2D, Rigidbody2D, SandSprite>();
+
+		if (sand.isCircle)
+		{
+			if (body.GetColliderCount() == 0)
+			{
+				body.AddCollider(b2CircleShape());
+			}
+
+			tran.scale = sand.colliderMask->Dimensions() / GetModule<SandWorld>().cellsPerMeter;
+			body.SetTransform(tran);
+		}
+
+		return sand.isCircle;
+	}
+
+	// need to recalc the cricle
+
+	bool TrySetPolygonColliderOnSprite(Entity entity)
 	{
 		auto [tran, body, sand] = entity.GetAll<Transform2D, Rigidbody2D, SandSprite>();
 		r<Texture>& mask = sand.colliderMask;
