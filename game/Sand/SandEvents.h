@@ -65,6 +65,7 @@ struct event_Sand_ProjectileHit
 {
 	EntityWith<CellProjectile> projectile;
 	EntityWith<Transform2D, Sprite, SandSprite> entity;
+	int index;
 	ivec2 hitPosInSprite; // in pixels
 	vec2 hitPosInWorld;   // in meters
 };
@@ -73,10 +74,12 @@ struct event_Sand_RemoveCell
 {
 	EntityWith<Sprite, SandSprite> entity;
 	int index;
+	vec2 hitPosInWorld;
 };
 
 struct event_Sand_HealCell
 {
 	EntityWith<Sprite, SandSprite, SandHealable> entity;
 	int index;
+	bool healCore = false;
 };

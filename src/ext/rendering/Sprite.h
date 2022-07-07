@@ -5,6 +5,7 @@
 struct Sprite
 {
 	r<Texture> source;
+	Color tint = Color(255, 255, 255, 255);
 
 	// used to be just particles that had this, but everything can use it
 	vec2 uvOffset = vec2(0.f, 0.f);

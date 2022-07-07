@@ -62,7 +62,7 @@ Islands GetIslands(const SandSprite& sprite)
 
 	std::vector<flood_fill_cell_state> state = GetSpriteStates(sprite.colliderMask);
 
-	for (int seed : sprite.core)
+	for (int seed : sprite.initalCore)
 	{
 		AddSingleIsland(seed, sprite.colliderMask, sprite.isCircle, state, islands.coreIslands);
 	}

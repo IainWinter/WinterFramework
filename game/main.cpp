@@ -23,7 +23,10 @@
 #include "Systems/FireWeapon.h"
 #include "Systems/RockSpawner_Test.h"
 #include "Systems/ItemSystem.h"
+#include "Systems/ItemSpawner.h"
+#include "Systems/ItemPickup.h"
 #include "Systems/RenderSceneGraph.h"
+#include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
@@ -149,6 +152,9 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_FireWeapon());
 		level->AddSystem(System_ParticleUpdate());
 		level->AddSystem(System_Item());
+		level->AddSystem(System_ItemSpawner());
+		level->AddSystem(System_ItemPickup());
+		level->AddSystem(System_LowCorePixelDeath());
 
 		level->AddSystem(MetricsSystem());
 		level->AddSystem(System_Testing());
@@ -165,11 +171,12 @@ struct Regolith : EngineLoop
 		vec2 screenSize = vec2(window.Width(), window.Height());
 		vec2 cameraSize = vec2(16 * 2, 9 * 2);
 
-		m_app.AddModule<SandWorld>(4/*16*/, vec2(cameraSize.x, cameraSize.y));
+		m_app.AddModule<SandWorld>(16, vec2(cameraSize.x, cameraSize.y));
 		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
 		CoordTranslation coords;
 		coords.ScreenToWorld = cameraSize;
+		coords.CellsToMeters = 1.f / 16;
 
 		m_app.AddModule<CoordTranslation>(coords);
 	}
@@ -198,6 +205,8 @@ struct Regolith : EngineLoop
 
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Get<SandSprite>().invulnerable = true;
+
+		player.Add<SandDieInTimeWithLowCoreCount>();
 
 		//Entity e = CreateSandSprite("test_line.png", "test_line.png");
 		//e.Get<Transform2D>().rotation = wPI / 6.f;

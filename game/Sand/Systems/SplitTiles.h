@@ -47,7 +47,7 @@ private:
 		{
 			if (!split.hit.IsAlive()) continue; // I think this is an error
 
-			int cellCount = split.hit.Get<SandSprite>().cellCount;
+			int cellCount = split.hit.Get<SandSprite>().CellCount();
 
 			if (cellCount == 0)
 			{

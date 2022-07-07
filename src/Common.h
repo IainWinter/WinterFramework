@@ -172,6 +172,9 @@ struct Color
 	float bf() const { return b / (float)255.f; }
 	float af() const { return a / (float)255.f; }
 
+	Color  operator* (const Color& other) const { return fromv4(as_v4() * other.rf()); }
+	Color& operator*=(const Color& other)       { return *this = operator*(other); }
+
 	glm::vec4 as_v4() const
 	{
 		return { rf(), gf(), bf(), af() };

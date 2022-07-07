@@ -52,8 +52,9 @@ public:
 					Send(event_Sand_ProjectileHit{ 
 						entity, 
 						result.hit.hitEntity, 
-						result.hit.hitIndex, 
-						result.hit.hitPos 
+						result.hit.hitIndex,
+						result.hit.hitIndex2D,
+						result.hit.hitPos
 					});
 				}
 			}
@@ -65,7 +66,8 @@ private:
 	struct PokeHitInfo
 	{
 		Entity hitEntity;
-		ivec2 hitIndex;
+		ivec2 hitIndex2D;
+		int hitIndex;
 		vec2 hitPos;
 	};
 
@@ -113,8 +115,10 @@ private:
 
 					if (!sprite.invulnerable)
 					{
+						int index1d = sprite.Get().Index32(hitInfo.spriteHitIndex.x, hitInfo.spriteHitIndex.y);
+
 						result.hasHit = true;
-						result.hit = PokeHitInfo{ hitEntity, hitInfo.spriteHitIndex, p };
+						result.hit = PokeHitInfo{ hitEntity, hitInfo.spriteHitIndex, index1d, p };
 						result.hitStrength = sprite.cellStrength;
 					}
 				}

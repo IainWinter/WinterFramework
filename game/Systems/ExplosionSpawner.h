@@ -15,6 +15,9 @@ struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 			mkr<TextureAtlas>(mkr<Texture>(_a("smoke.png")))
 		);
 
+		m_smoke.AddTint(Color(255, 255, 255, 255));
+		m_smoke.AddTint(Color(255, 255, 255, 0));
+
 		m_smoke.repeatCount = 50;
 	}
 

@@ -7,14 +7,6 @@
 
 #include "Sand/SandComponents.h"
 
-struct CorePixels
-{
-	std::vector<int> core;
-	std::vector<int> all;
-	bool hasCore;
-	bool hasAny;
-};
-
 struct Islands
 {
 	using Group = std::vector<std::vector<int>>;

@@ -55,7 +55,7 @@ public:
 		
 		for (auto [transform, sprite] : level->GetWorld()->Query<Transform2D, Sprite>())
 		{
-			render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), Color(255, 255, 255, 255));
+			render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), sprite.tint);
 		}
 		render.Draw();
 

@@ -13,7 +13,9 @@ struct Particle
 
 	// could be in seperate component
 
-	Transform2D original;      // for linear effects over time
+	Transform2D original;     // for linear effects over time
+	Color tint;               // overall tint
+
 	std::vector<Color> tints; // colors to fade between with AgeLeft
 
 	Particle() {}
@@ -33,9 +35,11 @@ struct Particle
 	Particle& SetFrameCount      (int                       frameCount)      { this->frameCount      = frameCount;      return *this; }
 	Particle& SetFramesPerSecond (float                     framesPerSecond) { this->framesPerSecond = framesPerSecond; return *this; }
 	Particle& SetFrameCurrent    (float                     frameCurrent)    { this->frameCurrent    = frameCurrent;    return *this; }
+	Particle& SetOriginal        (const Transform2D&        transform)       { this->original        = transform;       return *this; }
+	Particle& SetTint            (const Color&              tint)            { this->tint            = tint;           return *this; }
 	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
-	Particle& AddTint            (const Color& tint)                         { this->tints.push_back(tint);             return *this; }
-	Particle& SetOriginal        (const Transform2D& transform)              { this->original = transform;              return *this; }
+	Particle& AddTint            (const Color&              tint)            { this->tints.push_back(tint);             return *this; }
+
 
 	void TickFrame(float dt)
 	{
@@ -73,7 +77,7 @@ struct Particle
 
 struct ParticleShrinkWithAge
 {
-	float scale = 1.f;
+	int _pad;
 };
 
 struct ParticleEmitter

@@ -19,13 +19,12 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 		}
 
 		auto [sprite, mask] = e.entity.GetAll<Sprite, SandSprite>();
-		int index = sprite.Get().Index32(e.hitPosInSprite.x, e.hitPosInSprite.y);
-		
-		if (sprite.Get().At(index).a > 0) // projectiles hit mask sprite
+
+		if (sprite.Get().At(e.index).a > 0) // projectiles hit mask sprite
 		{
-			Send(event_Sand_ExplodeToDust{ e.entity, {index}, sqrt(e.projectile.Get<Rigidbody2D>().GetVelocity()) });
+			Send(event_Sand_ExplodeToDust{ e.entity, {e.index}, sqrt(e.projectile.Get<Rigidbody2D>().GetVelocity()) });
 		}
 
-		Send(event_Sand_RemoveCell{ e.entity, index } );
+		Send(event_Sand_RemoveCell{ e.entity, e.index, e.hitPosInWorld } );
 	}
 };

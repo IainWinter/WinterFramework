@@ -23,7 +23,7 @@ struct event_Item_Spawn
 {
 	ItemType type;
 	vec2 pos;
-	int count;
+	int count = 1;
 };
 
 struct event_Item_Pickup

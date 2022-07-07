@@ -51,7 +51,11 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				Entity e = Wrap(info.spriteEntityID);
 				SandSprite& ssprite = e.Get<SandSprite>();
-				Send(event_Sand_RemoveCell{ Wrap(info.spriteEntityID), ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y) });
+				Send(event_Sand_RemoveCell{ 
+					Wrap(info.spriteEntityID), 
+					ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
+					player.AttackLocationInput
+				});
 			}
 
 			//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});

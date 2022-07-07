@@ -21,18 +21,25 @@ struct CellProjectile
 	int size = 0;
 };
 
+struct CorePixels
+{
+	std::vector<int> core;
+	std::vector<int> all;
+	bool hasCore;
+	bool hasAny;
+};
+
 struct SandSprite
 {
 	float density = 100.f;
 	bool invulnerable = false;
 	r<Texture> colliderMask;
-	std::vector<int> core;
-
+	std::vector<int> initalCore;
 	int cellStrength = 0;
-	int cellCount = 0;
-	
 	bool isCircle = false;
+	CorePixels pixels;
 
+	int CellCount() const { return pixels.all.size(); }
 	Texture& Get() { return *colliderMask; }
 
 	SandSprite() = default;
@@ -42,11 +49,20 @@ struct SandSprite
 
 struct SandHealable
 {
-	std::vector<int> core;
-	std::vector<int> shell;
+	std::vector<int> removedFromCore;
+	std::vector<int> removedFromShell;
 };
 
 struct SandTurnToDustInTime
 {
 	float time;
+};
+
+struct SandDieInTimeWithLowCoreCount
+{
+	float initalTimeToDie = 4.f;
+	float jitterInMeters = 1.f;
+	
+	float m_timeToDie;
+	bool m_runTimer = false;
 };

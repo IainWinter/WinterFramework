@@ -76,9 +76,8 @@ private:
 		);
 
 		std::vector<int> filledIndex = GetCorePixels(mask).all;
-		sand.cellCount = filledIndex.size();
 
-		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(filledIndex, mask->Width());
+		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(sand.pixels.all, mask->Width());
 		
 		vec2 sizeIsland = vec2(maxX - minX + 1, maxY - minY + 1);
 		vec2 sizeMask   = vec2(mask->Width(), mask->Height());
