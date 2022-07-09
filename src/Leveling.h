@@ -129,6 +129,12 @@ public:
 		return (Order)*m_systems.emplace(itr, NewSystem(system_toCopy));
 	}
 
+	void RemoveSystem(Order order)
+	{
+		auto itr = std::find(m_systems.begin(), m_systems.end(), order);
+		m_systems.erase(itr);
+	}
+
 private:
 	template<typename _t>
 	SystemBase* NewSystem(const _t& system_toCopy);

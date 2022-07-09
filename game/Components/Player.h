@@ -18,4 +18,6 @@ struct Player
 	int CurrentWeaponAmmo = 0;
 	float CurrentWeaponInaccuracy = 0;
 	float CurrentWeaponAttackTime = .4f;
+
+	int Score = 0; // storing this here for simplicity
 };

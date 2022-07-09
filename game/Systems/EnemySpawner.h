@@ -70,50 +70,11 @@ struct System_EnemySpawner : SystemBase
 		if (time < 0)
 		{
 			time = delay;
-			SpawnRandomEnemy(m_zones.at(get_rand((int)m_zones.size() - 1)));
+
+			SpawningZone& zone = m_zones.at(get_rand((int)m_zones.size() - 1));
+			vec2 position = zone.min + vec2(get_rand(m_zoneSize.x), get_rand(m_zoneSize.y));
+
+			Send(event_Enemy_Spawn{ (EnemyType)get_rand(2), position, true });
 		}
-	}
-
-
-private:
-
-	void SpawnRandomEnemy(const SpawningZone& zone)
-	{
-		Entity entity;
-		
-		switch (get_rand(2))
-		{
-			case 0: // fighter
-			{
-				entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-				entity.Add<FireWeaponAfterDelay>(FirstEntityWith<Player>(), WEAPON_LASER, 1.f + get_randc(.3f));
-				entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
-				entity.Add<Flocker>();
-
-				break;
-			}
-
-			case 1: // bomb
-			{
-				entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
-				entity.Add<TurnTwoardsTarget>(FirstEntityWith<Player>());
-
-				break;
-			}
-
-			case 2: // station
-			{
-				entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
-				entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18))));
-				entity.Add<Flocker>();
-
-				break;
-			}
-		}
-
-		Transform2D& transform = entity.Get<Transform2D>();
-		transform.position = zone.min + vec2(get_rand(m_zoneSize.x), get_rand(m_zoneSize.y));
-
-		entity.Add<Rigidbody2D>(transform).SetFixedRotation(true).SetVelocity(get_randn(5.f));
 	}
 };

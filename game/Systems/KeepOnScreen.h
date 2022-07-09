@@ -8,11 +8,18 @@
 
 struct System_KeepOnScreen : SystemBase
 {
-	vec2 screen;
+	vec4 screen; // (min x/y, max x/y)
 
 	void Init()
 	{
-		screen = GetModule<Camera>().ScreenSize();
+		vec2 camera = GetModule<Camera>().ScreenSize();
+
+		// needs to be adjusted for UI
+
+		screen.x = camera.x * .7; // .15 * 2 for the UI size in PlayerHUD.h
+		screen.y = camera.y;
+		screen.z = camera.x;
+		screen.w = camera.y;
 	}
 
 	void FixedUpdate()
@@ -24,9 +31,9 @@ struct System_KeepOnScreen : SystemBase
 			vec2 vel = body.GetVelocity();
 
 			if (pos.x + vel.x * Time::DeltaTime() < -screen.x + m.x) { pos.x = -screen.x + m.x; vel.x = 0.f; }
-			if (pos.x + vel.x * Time::DeltaTime() >  screen.x - m.x) { pos.x =  screen.x - m.x; vel.x = 0.f; }
+			if (pos.x + vel.x * Time::DeltaTime() >  screen.z - m.x) { pos.x =  screen.z - m.x; vel.x = 0.f; }
 			if (pos.y + vel.y * Time::DeltaTime() < -screen.y + m.y) { pos.y = -screen.y + m.y; vel.y = 0.f; }
-			if (pos.y + vel.y * Time::DeltaTime() >  screen.y - m.y) { pos.y =  screen.y - m.y; vel.y = 0.f; }
+			if (pos.y + vel.y * Time::DeltaTime() >  screen.w - m.y) { pos.y =  screen.w - m.y; vel.y = 0.f; }
 			
 			if (body.GetPosition() != pos) body.SetPosition(pos);
 			if (body.GetVelocity() != vel) body.SetVelocity(vel);

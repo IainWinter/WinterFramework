@@ -3,6 +3,14 @@
 #include "Entity.h"
 #include "Components/Weapon.h"
 
+enum EnemyType
+{
+	ENEMY_FIGHTER,
+	ENEMY_BOMB,
+	ENEMY_STATION,
+	ENEMY_BASE
+};
+
 struct TurnTwoardsTarget
 {
 	EntityWith<Transform2D> target; // only needs Transform2D, could just be an empty point that only has a Transform2D

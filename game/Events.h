@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Components/Weapon.h"
 #include "Components/Item.h"
+#include "Components/EnemyAI.h"
 
 struct event_SpawnExplosion
 {
@@ -30,4 +31,11 @@ struct event_Item_Pickup
 {
 	Entity sinkEntity;
 	ItemType item;
+};
+
+struct event_Enemy_Spawn
+{
+	EnemyType enemy;
+	vec2 position;
+	bool enableAi;
 };

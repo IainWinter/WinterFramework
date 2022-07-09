@@ -76,6 +76,8 @@ public:
 		// init UI, defered for user set Imgui config flags
 		m_app.GetModule<Window>().InitUI();
 
+		_InitUI();
+
 		// send events from init functions before first tick
 		TickEvents();
 	}
@@ -128,6 +130,7 @@ public:
 
 protected:
 	virtual void _Init() {};
+	virtual void _InitUI() {}; // for loading fonts n such after flags have been set
 	virtual void _Dnit() {};
 
 private:

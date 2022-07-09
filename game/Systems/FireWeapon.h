@@ -46,7 +46,7 @@ private:
 
 		switch (weapon)
 		{
-			case WEAPON_CANNON: 
+			case WEAPON_CANNON:
 			{
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				body.SetVelocity(direction * 100.f);

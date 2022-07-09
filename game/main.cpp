@@ -22,6 +22,8 @@
 #include "Systems/ExplodeNearTarget.h"
 #include "Systems/ExplosionSpawner.h"
 #include "Systems/EnemyController.h"
+#include "Systems/EnemySpawner.h"
+#include "Systems/EnemySystem.h"
 #include "Systems/KeepOnScreen.h"
 #include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
@@ -32,7 +34,6 @@
 #include "Systems/RenderSceneGraph.h"
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
-#include "Systems/EnemySpawner.h"
 
 #include "UI/PlayerHUD.h"
 
@@ -116,6 +117,8 @@ struct MetricsSystem : System<MetricsSystem>
 
 struct Regolith : EngineLoop
 {
+	std::vector<Order> removeOnDeath;
+
 	void _Init()
 	{
 		ConfigureWindow();
@@ -127,13 +130,20 @@ struct Regolith : EngineLoop
 		ConfigureMainGameLevel();
 	}
 
+	void _InitUI()
+	{
+		UIFonts& fonts = m_app.GetModule<Window>().Fonts();
+		fonts.Load("Roboto", 18, "Roboto.ttf");
+		fonts.Load("Pixel",  28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+	}
+
 	// Init
 
 	void ConfigureWindow()
 	{
 		Window& window = m_app.GetModule<Window>();
 
-		window.Resize(1280, 720);
+		window.Resize(1920, 1080);
 		window.SetTitle("Windowing Test");
 	}
 
@@ -142,31 +152,36 @@ struct Regolith : EngineLoop
 		r<Level> level = LevelManager::CurrentLevel();
 
 		level->AddSystem(System_RenderSceneGraph());
-
 		level->AddSystem(System_PhysicsInterpolation());
+		level->AddSystem(MetricsSystem());
+
+		level->AddSystem(System_TurnTwoardsTarget());
+		level->AddSystem(System_LowCorePixelDeath());
 		level->AddSystem(System_DestroyInTime());
 
-		level->AddSystem(System_PlayerController());
-		level->AddSystem(System_TurnTwoardsTarget());
-		level->AddSystem(System_FlockingMovement());
-		level->AddSystem(System_ExplodeNearTarget());
-		level->AddSystem(System_ExplosionSpawner());
-		level->AddSystem(System_EnemyController());
-		level->AddSystem(System_KeepOnScreen());
-		level->AddSystem(System_FireWeaponAfterDelay());
-		level->AddSystem(System_FireWeapon());
-		level->AddSystem(System_ParticleUpdate());
-		level->AddSystem(System_Item());
-		level->AddSystem(System_ItemSpawner());
-		level->AddSystem(System_ItemPickup());
-		level->AddSystem(System_LowCorePixelDeath());
-		level->AddSystem(System_EnemySpawner());
+		removeOnDeath = 
+		{
+			level->AddSystem(System_PlayerController()),
+			level->AddSystem(System_FireWeaponAfterDelay()),
+			level->AddSystem(System_ItemSpawner()),
+			level->AddSystem(System_ItemPickup()),
+			//level->AddSystem(System_EnemySpawner()),
+			level->AddSystem(System_Enemy()),
+			level->AddSystem(System_ExplodeNearTarget()),
+			level->AddSystem(System_FireWeapon())
+		};
 
+		level->AddSystem(System_EnemyController());
+		level->AddSystem(System_FlockingMovement());
+		level->AddSystem(System_ExplosionSpawner());
+		level->AddSystem(System_KeepOnScreen());
+		level->AddSystem(System_ParticleUpdate());
+		
+		level->AddSystem(System_Item());
+		
 		level->AddSystem(System_UI_PlayerHUD());
 
-		level->AddSystem(MetricsSystem());
-		
-		//level->AddSystem(System_Testing());
+		level->AddSystem(System_Testing());
 		//level->AddSystem(System_RockSpawner_Test());
 
 		AddSandSystemsToLevel(level);
@@ -217,8 +232,22 @@ struct Regolith : EngineLoop
 		player.Add<Rigidbody2D>().SetFixedRotation(true);
 		player.Get<SandSprite>().isHardCore = true;
 
+		player.OnDestroy([this](Entity) {
+			RemoveSystemsForPlayerDeath();
+		});
+
 		//Entity e = CreateSandSprite("test_sqr.png", "test_sqr.png");
 		//e.Get<Transform2D>().rotation = wPI / 6.f;
+	}
+
+	void RemoveSystemsForPlayerDeath()
+	{
+		r<Level> level = LevelManager::CurrentLevel();
+
+		for (Order system : removeOnDeath)
+		{
+			level->RemoveSystem(system);
+		}
 	}
 };
 

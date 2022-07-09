@@ -108,7 +108,7 @@ struct EntityWorld
 private:
 	struct EntityState
 	{
-		std::function<void(Entity)> onDestroy;
+		std::vector<std::function<void(Entity)>> onDestroy;
 	};
 
 	entt::registry m_registry;
@@ -323,7 +323,7 @@ public:
 
 	Entity& OnDestroy(const std::function<void(Entity)>& func)
 	{
-		m_owning->AssureState(m_handle).onDestroy = func;
+		m_owning->AssureState(m_handle).onDestroy.push_back(func);
 		return *this;
 	}
 
@@ -430,7 +430,8 @@ inline void EntityWorld::DeleteEntityNow(entt::entity id)
 {
 	if (HasState(id))
 	{
-		GetState(id).onDestroy(Wrap((u32)id));
+		Entity e = Wrap((u32)id);
+		for (auto& func : GetState(id).onDestroy) func(e);
 		RemoveState(id);
 	}
 

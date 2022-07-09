@@ -11,6 +11,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 #include "Common.h"
 #include "Event.h"
@@ -86,7 +87,7 @@ struct event_Input
 
 /*
 
-	Window and Renderer
+	Window and UI
 
 */
 
@@ -95,6 +96,28 @@ struct WindowConfig
 	std::string Title = "Welcome to Winter Framework";
 	int Width = 640;
 	int Height = 480;
+};
+
+struct UIFontScope
+{
+	UIFontScope(ImFont* font) { ImGui::PushFont(font); }
+	~UIFontScope() { ImGui::PopFont(); }
+};
+
+struct UIFonts
+{
+	std::unordered_map<std::string, ImFont*> Fonts;
+
+	void Load(const std::string& name, float size, const std::string& path)
+	{
+		ImFont* font = ImGui::GetIO().Fonts->AddFontFromFileTTF(_a(path).c_str(), size);
+		Fonts.emplace(name, font);
+	}
+
+	UIFontScope Use(const std::string& name_size) const
+	{
+		return UIFontScope(Fonts.at(name_size));
+	}
 };
 
 struct Window
@@ -106,6 +129,7 @@ private:
 
 	WindowConfig m_config;
 	InputMapping m_input;
+	UIFonts      m_fonts;
 
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;
@@ -142,6 +166,8 @@ public:
 	const std::string&  Title()      const { return m_config.Title; }
 	const InputMapping& Input()      const { return m_input; }
 	InputMapping&       Input()            { return m_input; }
+	const UIFonts&      Fonts()      const { return m_fonts; }
+	UIFonts&            Fonts()            { return m_fonts; }
 
 	void Init()
 	{

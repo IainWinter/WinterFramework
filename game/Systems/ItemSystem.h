@@ -84,6 +84,7 @@ struct System_Item : System<System_Item>
 		{
 			case ItemType::ITEM_HEALTH:         itemTexture = GetPrefab_Texture("item_health.png");                   break;
 			case ItemType::ITEM_ENERGY:         itemTexture = GetPrefab_Texture("item_energy.png");                   break;
+			case ItemType::ITEM_REGOLITH:       itemTexture = GetPrefab_Texture("item_regolith.png");                 break;
 			case ItemType::ITEM_CORE_SHARD:     itemTexture = GetPrefab_Texture("item_coreShard.png"); damping = 0.f; break;
 			case ItemType::ITEM_WEAPON_MINIGUN: itemTexture = GetPrefab_Texture("item_minigun.png");                  break;
 			case ItemType::ITEM_WEAPON_BOLTZ:   itemTexture = GetPrefab_Texture("item_boltz.png");                    break;
@@ -98,7 +99,7 @@ struct System_Item : System<System_Item>
 			entity.Add<Sprite>(itemTexture);
 
 			GetModule<PhysicsWorld>().AddEntity(entity)
-				.SetVelocity(get_randnc(12.f))
+				.SetVelocity(get_randn(12.f))
 				.SetAngularVelocity(get_rand(w2PI))
 				.SetDamping(damping)
 				.SetAngularDamping(damping);

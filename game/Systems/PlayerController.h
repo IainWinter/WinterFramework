@@ -59,7 +59,6 @@ struct System_PlayerController : System<System_PlayerController>
 			//}
 
 			//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});
-			//Send(event_Item_Spawn{ ITEM_HEALTH, target.Get<Transform2D>().position, 5 });
 		}
 
 		target.Get<Transform2D>().position = player.AttackLocationInput;
@@ -129,6 +128,7 @@ struct System_PlayerController : System<System_PlayerController>
 				player.CurrentWeaponAmmo = 0;
 				player.CurrentWeaponInaccuracy = 1;
 				player.CurrentWeaponAttackTime = .4;
+				break;
 			}
 
 			case ITEM_WEAPON_MINIGUN: 
@@ -155,6 +155,12 @@ struct System_PlayerController : System<System_PlayerController>
 				player.CurrentWeaponAmmo = 1000;
 				player.CurrentWeaponInaccuracy = 3;
 				player.CurrentWeaponAttackTime = .004;
+				break;
+			}
+
+			case ITEM_REGOLITH:
+			{
+				player.Score += 1;
 				break;
 			}
 		}
