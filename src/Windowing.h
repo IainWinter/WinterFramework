@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <string>
 
+#include "Common.h"
 #include "Event.h"
 #include "util/error_check.h"
 
@@ -135,10 +136,12 @@ public:
 		Dnit();
 	}
 
-	int                Width()  const { return m_config.Width; }
-	int                Height() const { return m_config.Height; }
-	const std::string& Title()  const { return m_config.Title; }
-	InputMapping&      Input()        { return m_input; }
+	int                 Width()      const { return m_config.Width; }
+	int                 Height()     const { return m_config.Height; }
+	vec2                Dimensions() const { return vec2(Width(), Height()); }
+	const std::string&  Title()      const { return m_config.Title; }
+	const InputMapping& Input()      const { return m_input; }
+	InputMapping&       Input()            { return m_input; }
 
 	void Init()
 	{

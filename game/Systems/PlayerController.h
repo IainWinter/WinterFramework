@@ -34,29 +34,29 @@ struct System_PlayerController : System<System_PlayerController>
 		
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
-			player.m_attackTimer = player.AttackTime;
-			//Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
+			player.m_attackTimer = player.CurrentWeaponAttackTime;
+			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
 
-			player.CurrentWeaponAmmo -= 1;
-
-			if (player.CurrentWeaponAmmo < 0)
+			if (player.CurrentWeapon != WEAPON_CANNON)
 			{
-				player.CurrentWeaponAmmo = 0;
-				player.CurrentWeapon = WEAPON_CANNON;
-				player.CurrentWeaponInaccuracy = 1;
+				player.CurrentWeaponAmmo -= 1;
+				if (player.CurrentWeaponAmmo <= 0)
+				{
+					Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
+				}
 			}
 
-			CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
-			if (info.hasHit)
-			{
-				Entity e = Wrap(info.spriteEntityID);
-				SandSprite& ssprite = e.Get<SandSprite>();
-				Send(event_Sand_RemoveCell{ 
-					Wrap(info.spriteEntityID), 
-					ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
-					player.AttackLocationInput
-				});
-			}
+			//CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
+			//if (info.hasHit)
+			//{
+			//	Entity e = Wrap(info.spriteEntityID);
+			//	SandSprite& ssprite = e.Get<SandSprite>();
+			//	Send(event_Sand_RemoveCell{ 
+			//		Wrap(info.spriteEntityID), 
+			//		ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
+			//		player.AttackLocationInput
+			//	});
+			//}
 
 			//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});
 			//Send(event_Item_Spawn{ ITEM_HEALTH, target.Get<Transform2D>().position, 5 });
@@ -123,11 +123,20 @@ struct System_PlayerController : System<System_PlayerController>
 				break;
 			}
 
+			case ITEM_WEAPON_CANNON:
+			{
+				player.CurrentWeapon = WEAPON_CANNON;
+				player.CurrentWeaponAmmo = 0;
+				player.CurrentWeaponInaccuracy = 1;
+				player.CurrentWeaponAttackTime = .4;
+			}
+
 			case ITEM_WEAPON_MINIGUN: 
 			{
 				player.CurrentWeapon = WEAPON_MINIGUN;
 				player.CurrentWeaponAmmo = 200;
 				player.CurrentWeaponInaccuracy = 3;
+				player.CurrentWeaponAttackTime = .04;
 				break;
 			}
 
@@ -135,6 +144,8 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				player.CurrentWeapon = WEAPON_WATTZ;
 				player.CurrentWeaponAmmo = 10;
+				player.CurrentWeaponInaccuracy = 0;
+				player.CurrentWeaponAttackTime = 1.f;
 				break;
 			}
 
@@ -142,6 +153,8 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				player.CurrentWeapon = WEAPON_BOLTZ;
 				player.CurrentWeaponAmmo = 1000;
+				player.CurrentWeaponInaccuracy = 3;
+				player.CurrentWeaponAttackTime = .004;
 				break;
 			}
 		}

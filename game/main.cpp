@@ -2,7 +2,11 @@
 #include "Common.h"
 #include "Rendering.h"
 
+#include "GameRender.h"
+
 #include "Sand/Sand.h"
+#include "Sand/SandEntity.h"
+
 #include "ext/Time.h"
 #include "ext/MeshGenerators.h"
 #include "ext/Components.h"
@@ -28,12 +32,13 @@
 #include "Systems/RenderSceneGraph.h"
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
+#include "Systems/EnemySpawner.h"
+
+#include "UI/PlayerHUD.h"
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
 #include "ext/systems/DestroyInTime.h"
-
-#include "GameRender.h"
 
 struct MetricsSystem : System<MetricsSystem>
 {
@@ -155,10 +160,13 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_ItemSpawner());
 		level->AddSystem(System_ItemPickup());
 		level->AddSystem(System_LowCorePixelDeath());
+		level->AddSystem(System_EnemySpawner());
+
+		level->AddSystem(System_UI_PlayerHUD());
 
 		level->AddSystem(MetricsSystem());
-		level->AddSystem(System_Testing());
-
+		
+		//level->AddSystem(System_Testing());
 		//level->AddSystem(System_RockSpawner_Test());
 
 		AddSandSystemsToLevel(level);
@@ -171,12 +179,14 @@ struct Regolith : EngineLoop
 		vec2 screenSize = vec2(window.Width(), window.Height());
 		vec2 cameraSize = vec2(16 * 2, 9 * 2);
 
-		m_app.AddModule<SandWorld>(16, vec2(cameraSize.x, cameraSize.y));
+		int cellsPerMeter = 18;
+
+		m_app.AddModule<SandWorld>(cellsPerMeter, vec2(cameraSize.x, cameraSize.y));
 		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
 		CoordTranslation coords;
 		coords.ScreenToWorld = cameraSize;
-		coords.CellsToMeters = 1.f / 16;
+		coords.CellsToMeters = 1.f / cellsPerMeter;
 
 		m_app.AddModule<CoordTranslation>(coords);
 	}
@@ -197,95 +207,18 @@ struct Regolith : EngineLoop
 	{ 
 		r<Level> level = LevelManager::CurrentLevel();
 
-		Entity player = CreateTexturedCircle("player.png");
+		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
 		player.Add<Player>();
 		player.Add<KeepOnScreen>();
 		player.Add<ItemSink>();
 		player.Add<SandHealable>();
-
-		player.Add<Rigidbody2D>().SetFixedRotation(true);
-		player.Get<SandSprite>().invulnerable = true;
-
 		player.Add<SandDieInTimeWithLowCoreCount>();
 
-		//Entity e = CreateSandSprite("test_line.png", "test_line.png");
+		player.Add<Rigidbody2D>().SetFixedRotation(true);
+		player.Get<SandSprite>().isHardCore = true;
+
+		//Entity e = CreateSandSprite("test_sqr.png", "test_sqr.png");
 		//e.Get<Transform2D>().rotation = wPI / 6.f;
-
-		if (false)
-		for (int i = 0; i < 10; i++)
-		{
-			Entity entity;
-
-			switch (get_rand(2))
-			{
-				case 0: // fighter
-				{
-					entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
-					entity.Add<FireWeaponAfterDelay>(player, WEAPON_LASER, 1.f + get_randc(.3f));
-					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
-					entity.Add<Flocker>();
-
-					break;
-				}
-
-				case 1: // bomb
-				{
-					entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
-					entity.Add<TurnTwoardsTarget>(player);
-
-					break;
-				}
-
-				case 2: // station
-				{
-					entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
-					entity.Add<TurnTwoardsTarget>(level->CreateEntity().AddAll(Transform2D(get_rand(32, 18))));
-					entity.Add<Flocker>();
-
-					break;
-				}
-			}
-
-			Transform2D& transform = entity.Get<Transform2D>();
-			transform.position = get_randc(20.f, 20.f);
-
-			entity.Add<Rigidbody2D>(transform).SetFixedRotation(true);
-		}
-	}
-
-	Entity CreateSandSprite(const std::string& path, const std::string& collider_mask_path)
-	{
-		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
-
-		r<Texture> sprite = mkr<Texture>(_a(path), false);
-		r<Texture> mask   = mkr<Texture>(_a(collider_mask_path), false);
-
-		assert(sprite->Length() == mask->Length());
-
-		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-		entity.Add<Transform2D>();
-		entity.Add<SandSprite>(mask);
-		entity.Add<Sprite>(sprite);
-
-		m_app.GetRootEventQueue()->send(event_SandAddSprite { entity });
-
-		return entity;
-	}
-
-	Entity CreateTexturedCircle(const std::string& path)
-	{
-		auto [sand, physics] = m_app.GetModules<SandWorld, PhysicsWorld>();
-
-		r<Texture> sprite = mkr<Texture>(_a(path), false);
-
-		Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-		entity.Add<Transform2D>();
-		entity.Add<SandSprite>(sprite).isCircle = true;
-		entity.Add<Sprite>(sprite);
-
-		m_app.GetRootEventQueue()->send(event_SandAddSprite{ entity });
-
-		return entity;
 	}
 };
 

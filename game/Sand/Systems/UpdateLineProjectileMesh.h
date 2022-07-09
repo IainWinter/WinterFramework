@@ -33,7 +33,7 @@ public:
 
 	void Update()
 	{
-		for (auto [entity, transform, proj] : QueryWithEntity<Transform2D, CellProjectile>())
+		for (auto [entity, transform, body, proj] : QueryWithEntity<Transform2D, Rigidbody2D, CellProjectile>())
 		{
 			Transform2D last = transform.LastTransform();
 			vec2 delta = transform.position - last.position;
@@ -44,7 +44,9 @@ public:
 			for (float t = 0; t < ticks; t += 1.f)
 			{
 				last.position += deltaTick;
-								
+				
+				bool hasHit = false;
+
 				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
 				for (const auto& result : results.hits)
 				if (result.hasHit)
@@ -56,6 +58,23 @@ public:
 						result.hit.hitIndex2D,
 						result.hit.hitPos
 					});
+
+					hasHit |= result.hasHit;
+
+					const SandSprite& ssprite = result.hit.hitEntity.Get<SandSprite>();
+					if (ssprite.isHardCore && ssprite.pixels.IsInCore(result.hit.hitIndex))
+					{
+						entity.DestroyAtEndOfFrame();
+						break;
+					}
+				}
+
+				if (hasHit)
+				{
+					vec2 vel = body.GetVelocity();
+					float dist = length(vel);
+					vel = dist * safe_normalize(vel + get_randnc(dist * proj.turnOnHitRate));
+					body.SetVelocity(vel);
 				}
 			}
 		}

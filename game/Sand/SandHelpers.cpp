@@ -77,4 +77,3 @@ Islands GetIslands(const SandSprite& sprite)
 
 	return islands;
 }
-

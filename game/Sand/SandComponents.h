@@ -23,10 +23,29 @@ struct CellProjectile
 
 struct CorePixels
 {
-	std::vector<int> core;
+	std::vector<int> core; // should use unordered sets
 	std::vector<int> all;
 	bool hasCore;
 	bool hasAny;
+
+	bool IsInCore(int index) const
+	{
+		return std::find(core.begin(), core.end(), index) != core.end();
+	}
+
+	bool IsInAll(int index) const
+	{
+		return  std::find(all.begin(), all.end(), index) != all.end();
+	}
+
+	void Remove(int index)
+	{
+		auto itrCore = std::find(core.begin(), core.end(), index);
+		auto itrAll  = std::find(all .begin(), all .end(), index);
+
+		if (itrCore != core.end()) core.erase(itrCore);
+		if (itrAll  != all .end()) all .erase(itrAll);
+	}
 };
 
 struct SandSprite
@@ -36,8 +55,10 @@ struct SandSprite
 	r<Texture> colliderMask;
 	std::vector<int> initalCore;
 	int cellStrength = 0;
-	bool isCircle = false;
 	CorePixels pixels;
+
+	bool isCircle = false;
+	bool isHardCore = false;
 
 	int CellCount() const { return pixels.all.size(); }
 	Texture& Get() { return *colliderMask; }

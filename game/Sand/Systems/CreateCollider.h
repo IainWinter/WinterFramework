@@ -3,10 +3,10 @@
 #include "Leveling.h"
 #include "Physics.h"
 #include "Rendering.h"
-
 #include "ext/marching_cubes.h"
 
-#include "Sand/Sand.h"
+#include "CoordTranslation.h"
+
 #include "Sand/SandEvents.h"
 #include "Sand/SandComponents.h"
 #include "Sand/SandHelpers.h"
@@ -49,7 +49,7 @@ private:
 				body.AddCollider(b2CircleShape());
 			}
 
-			tran.scale = sand.colliderMask->Dimensions() / GetModule<SandWorld>().cellsPerMeter;
+			tran.scale = sand.colliderMask->Dimensions() * GetModule<CoordTranslation>().CellsToMeters;
 			body.SetTransform(tran);
 		}
 
@@ -75,15 +75,13 @@ private:
 			[](const u32& color) { return (color & 0xff000000) > 0; }
 		);
 
-		std::vector<int> filledIndex = GetCorePixels(mask).all;
-
 		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(sand.pixels.all, mask->Width());
 		
 		vec2 sizeIsland = vec2(maxX - minX + 1, maxY - minY + 1);
 		vec2 sizeMask   = vec2(mask->Width(), mask->Height());
 		
 		vec2 offset = sizeMask / sizeIsland - vec2(1.f, 1.f);
-		vec2 scale = sizeIsland / (float)GetModule<SandWorld>().cellsPerMeter;
+		vec2 scale = sizeIsland * GetModule<CoordTranslation>().CellsToMeters;
 
 		// scale and move origin of polygons
 		for (std::vector<vec2>& polygon : polygons.first)

@@ -24,12 +24,8 @@ struct Sand_System_RemoveCellsFromSprite : System<Sand_System_RemoveCellsFromSpr
 			else        healable.removedFromShell.push_back(e.index);
 		}
 
-		auto itrCore = std::find(mask.pixels.core.begin(), mask.pixels.core.end(), e.index);
-		auto itrAll  = std::find(mask.pixels.all .begin(), mask.pixels.all .end(), e.index);
-
-		if (itrCore != mask.pixels.core.end() && isCore) mask.pixels.core.erase(itrCore);
-		if (itrAll  != mask.pixels.all .end())           mask.pixels.all .erase(itrAll);
-
+		mask.pixels.Remove(e.index);
+		
 		sprite.Get().At(e.index).a = 0;
 		mask  .Get().At(e.index).a = 0;
 	}

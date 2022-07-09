@@ -14,7 +14,7 @@ struct System_ItemSpawner : System<System_ItemSpawner>
 
 	void on(event_Sand_RemoveCell& e)
 	{
-		CorePixels p = GetCorePixels(e.entity.Get<Sprite>().source);
+		const CorePixels& p = e.entity.Get<SandSprite>().pixels;
 		if (std::find(p.core.begin(), p.core.end(), e.index) != p.core.end())
 		{
 			Send(event_Item_Spawn{ ITEM_CORE_SHARD, e.hitPosInWorld });

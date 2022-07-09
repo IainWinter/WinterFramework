@@ -11,11 +11,11 @@ struct Player
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;
-	float AttackTime = .04f;
 	float m_attackTimer = 0.f;
 	bool AttackFireInput;
 
-	Weapon CurrentWeapon = WEAPON_LASER;
+	Weapon CurrentWeapon = WEAPON_CANNON;
 	int CurrentWeaponAmmo = 0;
 	float CurrentWeaponInaccuracy = 0;
+	float CurrentWeaponAttackTime = .4f;
 };
