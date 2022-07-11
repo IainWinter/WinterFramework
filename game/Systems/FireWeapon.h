@@ -39,9 +39,10 @@ private:
 		
 		position += direction * .5f;
 
-		Entity e = CreateEntity();
-		e.Add<Transform2D>(position);
+		vec2 normal = vec2(direction.y, -direction.x) * get_randc(2.f);
 
+		Entity e = CreateEntity();
+		Transform2D& transform = e.Add<Transform2D>(position);
 
 		switch (weapon)
 		{
@@ -51,6 +52,8 @@ private:
 				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
+				transform.position += normal * .05f;
+
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 100.f);
 
@@ -63,6 +66,8 @@ private:
 				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
+				transform.position += normal * .07f;
+
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 40.f);
 
@@ -74,9 +79,25 @@ private:
 				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+
+				transform.position += normal * .02f;
 				
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 25.f);
+
+				break;
+			}
+
+			case WEAPON_LASER_LARGE:
+			{
+				e.Add<CellProjectile>(entity.Id());
+				e.Add<DestroyInTime>(5.f);
+				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+
+				transform.position += normal * .5f;
+
+				GetModule<PhysicsWorld>().AddEntity(e)
+					.SetVelocity(direction * 60.f);
 
 				break;
 			}
@@ -86,7 +107,7 @@ private:
 				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
-				
+
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 50.f);
 

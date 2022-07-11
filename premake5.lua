@@ -71,6 +71,10 @@ project "Framework"
 		"IW_DEBUG"
 	}
 
+	buildoptions {
+		"/bigobj" -- for issue with C1128, is this a sign something is incorrect? maybe too many headers I havent been using cpp files too much for simplicity
+	}
+
 	filter "system:Windows"
 		includedirs {
 			"vendor/sdl/include"

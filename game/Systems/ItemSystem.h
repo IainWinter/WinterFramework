@@ -78,7 +78,7 @@ struct System_Item : System<System_Item>
 	void on(event_Item_Spawn& e)
 	{
 		r<Texture> itemTexture;
-		float damping = 5.f;
+		float damping = 4.f;
 
 		switch (e.type)
 		{

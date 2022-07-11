@@ -2,6 +2,7 @@
 
 #include "Entity.h"
 #include "Components/Weapon.h"
+#include "Components/Item.h"
 
 enum EnemyType
 {
@@ -9,6 +10,11 @@ enum EnemyType
 	ENEMY_BOMB,
 	ENEMY_STATION,
 	ENEMY_BASE
+};
+
+struct Enemy
+{
+	int itemGas;
 };
 
 struct TurnTwoardsTarget

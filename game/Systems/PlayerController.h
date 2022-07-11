@@ -8,6 +8,7 @@
 #include "ext/rendering/Particle.h"
 #include "Components/Player.h"
 #include "Components/EnemyAI.h"
+#include "Components/FuelTank.h"
 #include "Prefabs.h"
 
 struct System_PlayerController : System<System_PlayerController>
@@ -23,6 +24,10 @@ struct System_PlayerController : System<System_PlayerController>
 
 		playerEntity = FirstEntityWith<Player>();
 		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
+
+		playerEntity.Get<Player>().Alt = { WEAPON_LASER_LARGE, 0, 0, .001f };
+
+		Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
 	}
 
 	void Update()
@@ -30,35 +35,36 @@ struct System_PlayerController : System<System_PlayerController>
 		if (!playerEntity.IsAlive()) return;
 
 		Player& player = playerEntity.Get<Player>();
-		player.m_attackTimer -= Time::DeltaTime();
-		
-		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
-		{
-			player.m_attackTimer = player.CurrentWeaponAttackTime;
-			Send(event_FireWeapon{ playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
 
-			if (player.CurrentWeapon != WEAPON_CANNON)
+		player.m_attackTimer    -= Time::DeltaTime();
+		player.m_attackTimerAlt -= Time::DeltaTime();
+		
+		FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
+
+		if (   player.AttackFireInputAlt 
+			&& player.m_attackTimerAlt <= 0.f 
+			&& player.AttackFuelAlt > 0)
+		{
+			player.m_attackTimerAlt = player.Alt.AttackTime;
+			player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
+			Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
+		}
+
+		else 
+		if (   player.AttackFireInput 
+			&& player.m_attackTimer <= 0.f)
+		{
+			player.m_attackTimer = player.Current.AttackTime;
+			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
+
+			if (player.Current.Weapon != WEAPON_CANNON)
 			{
-				player.CurrentWeaponAmmo -= 1;
-				if (player.CurrentWeaponAmmo <= 0)
+				player.Current.Ammo -= 1;
+				if (player.Current.Ammo <= 0)
 				{
 					Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
 				}
 			}
-
-			//CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
-			//if (info.hasHit)
-			//{
-			//	Entity e = Wrap(info.spriteEntityID);
-			//	SandSprite& ssprite = e.Get<SandSprite>();
-			//	Send(event_Sand_RemoveCell{ 
-			//		Wrap(info.spriteEntityID), 
-			//		ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
-			//		player.AttackLocationInput
-			//	});
-			//}
-
-			//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});
 		}
 
 		target.Get<Transform2D>().position = player.AttackLocationInput;
@@ -85,14 +91,15 @@ struct System_PlayerController : System<System_PlayerController>
 		Player& player = playerEntity.Get<Player>();
 		switch (e.name)
 		{
-			case InputName::UP:     player.MovementInput.y += e.state; break;
-			case InputName::DOWN:   player.MovementInput.y -= e.state; break;
-			case InputName::RIGHT:  player.MovementInput.x += e.state; break;
-			case InputName::LEFT:   player.MovementInput.x -= e.state; break;
+			case InputName::UP:    player.MovementInput.y += e.state; break;
+			case InputName::DOWN:  player.MovementInput.y -= e.state; break;
+			case InputName::RIGHT: player.MovementInput.x += e.state; break;
+			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
 
-			case InputName::AIM_X:  player.AttackLocationInput.x = e.state;        break;
-			case InputName::AIM_Y:  player.AttackLocationInput.y = e.state;        break;
-			case InputName::ATTACK: player.AttackFireInput       = e.state != 0.f; break;
+			case InputName::AIM_X:      player.AttackLocationInput.x =   e.state; break;
+			case InputName::AIM_Y:      player.AttackLocationInput.y =   e.state; break;
+			case InputName::ATTACK:     player.AttackFireInput       = !!e.state; break;
+			case InputName::ATTACK_ALT: player.AttackFireInputAlt    = !!e.state; break;
 		}
 	}
 
@@ -104,7 +111,8 @@ struct System_PlayerController : System<System_PlayerController>
 
 		SendNow(event_Input{ InputName::AIM_X, target.x });
 		SendNow(event_Input{ InputName::AIM_Y, target.y });
-		SendNow(event_Input{ InputName::ATTACK, (float)e.button_left });
+		SendNow(event_Input{ InputName::ATTACK,     (float)e.button_left });
+		SendNow(event_Input{ InputName::ATTACK_ALT, (float)e.button_right });
 	}
 
 	void on(event_Item_Pickup& e)
@@ -116,45 +124,27 @@ struct System_PlayerController : System<System_PlayerController>
 
 		switch (e.item)
 		{
-			case ITEM_HEALTH: 
-			{
-				Send(event_Sand_HealCell{ e.sinkEntity, -1 }); 
-				break;
-			}
-
 			case ITEM_WEAPON_CANNON:
 			{
-				player.CurrentWeapon = WEAPON_CANNON;
-				player.CurrentWeaponAmmo = 0;
-				player.CurrentWeaponInaccuracy = .01;
-				player.CurrentWeaponAttackTime = .4;
+				player.Current = { WEAPON_CANNON, 0, .01f, .4f };
 				break;
 			}
 
 			case ITEM_WEAPON_MINIGUN: 
 			{
-				player.CurrentWeapon = WEAPON_MINIGUN;
-				player.CurrentWeaponAmmo = 200;
-				player.CurrentWeaponInaccuracy = .1;
-				player.CurrentWeaponAttackTime = .04;
+				player.Current = { WEAPON_MINIGUN, 200, .1f, .04f };
 				break;
 			}
 
 			case ITEM_WEAPON_WATTZ:
 			{
-				player.CurrentWeapon = WEAPON_WATTZ;
-				player.CurrentWeaponAmmo = 10;
-				player.CurrentWeaponInaccuracy = 0;
-				player.CurrentWeaponAttackTime = 1.f;
+				player.Current = { WEAPON_WATTZ, 10, 0, 1.0f };
 				break;
 			}
 
 			case ITEM_WEAPON_BOLTZ:
 			{
-				player.CurrentWeapon = WEAPON_BOLTZ;
-				player.CurrentWeaponAmmo = 1000;
-				player.CurrentWeaponInaccuracy = 1;
-				player.CurrentWeaponAttackTime = .01;
+				player.Current = { WEAPON_BOLTZ, 1000, 1, .01f };
 				break;
 			}
 
@@ -163,6 +153,32 @@ struct System_PlayerController : System<System_PlayerController>
 				player.Score += 1;
 				break;
 			}
+
+			case ITEM_HEALTH: 
+			{
+				Send(event_Sand_HealCell{ e.sinkEntity, -1 }); 
+				break;
+			}
+
+			case ITEM_ENERGY:
+			{
+				FirstEntityWith<LaserTank>().Get<FuelTank>().feed.push_back(Color(255, 0, 0));
+				break;
+			}
 		}
 	}
 };
+
+//CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
+//if (info.hasHit)
+//{
+//	Entity e = Wrap(info.spriteEntityID);
+//	SandSprite& ssprite = e.Get<SandSprite>();
+//	Send(event_Sand_RemoveCell{ 
+//		Wrap(info.spriteEntityID), 
+//		ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
+//		player.AttackLocationInput
+//	});
+//}
+
+//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});

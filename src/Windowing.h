@@ -60,6 +60,7 @@ enum class InputName
 	AIM_Y,
 
 	ATTACK,
+	ATTACK_ALT,
 
 	ESCAPE
 };
@@ -239,6 +240,8 @@ public:
 				case SDL_MOUSEBUTTONUP: // can these be combined?
 				case SDL_MOUSEBUTTONDOWN:
 				{
+					bool pressed = event.button.state == SDL_PRESSED;
+
 					m_events->send(event_Mouse {
 						event.button.x,                                                           // position as (0, width/height)
 						event.button.y,
@@ -246,11 +249,11 @@ public:
 						((m_config.Height -  event.button.y) / (float)m_config.Height) * 2 - 1,
 						0.f,                                                                      // velocity
 						0.f,
-						event.button.state == SDL_BUTTON_LEFT,
-						event.button.state == SDL_BUTTON_MIDDLE,
-						event.button.state == SDL_BUTTON_RIGHT,
-						event.button.state == SDL_BUTTON_X1, // no x1 x2?
-						event.button.state == SDL_BUTTON_X2,
+						bool( pressed * (event.button.button == SDL_BUTTON_LEFT) ),
+						bool( pressed * (event.button.button == SDL_BUTTON_MIDDLE) ),
+						bool( pressed * (event.button.button == SDL_BUTTON_RIGHT) ),
+						bool( pressed * (event.button.button == SDL_BUTTON_X1) ),
+						bool( pressed * (event.button.button == SDL_BUTTON_X2) ),
 						event.button.clicks
 					});	
 					break;

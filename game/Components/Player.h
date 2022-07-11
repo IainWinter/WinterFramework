@@ -3,6 +3,14 @@
 #include "Common.h"
 #include "Components/Weapon.h"
 
+struct WeaponProps
+{
+	Weapon Weapon;
+	int Ammo;
+	float Inaccuracy;
+	float AttackTime;
+};
+
 struct Player
 {
 	vec2 MovementInput;
@@ -11,13 +19,18 @@ struct Player
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;
-	float m_attackTimer = 0.f;
 	bool AttackFireInput;
+	bool AttackFireInputAlt;
 
-	Weapon CurrentWeapon = WEAPON_CANNON;
-	int CurrentWeaponAmmo = 0;
-	float CurrentWeaponInaccuracy = 0;
-	float CurrentWeaponAttackTime = .4f;
+	float AttackFuelAlt; // gets incremented in the UI system :yuk: and decremented in the player system
+	float AttackFuelConsumptionAlt = .05;
+	float AttackFuelAdditionAlt = .1;
+
+	WeaponProps Current;
+	WeaponProps Alt;
 
 	int Score = 0; // storing this here for simplicity
+
+	float m_attackTimer = 0.f;
+	float m_attackTimerAlt = 0.f;
 };

@@ -35,6 +35,7 @@
 #include "Systems/RenderSceneGraph.h"
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/LightningSystem.h"
+#include "Systems/TankSystem.h"
 #include "Systems/zTestingSystem.h"
 
 #include "UI/PlayerHUD.h"
@@ -146,7 +147,7 @@ struct Regolith : EngineLoop
 	{
 		Window& window = m_app.GetModule<Window>();
 
-		window.Resize(1920, 1080);
+		window.Resize(1280, 720);
 		window.SetTitle("Windowing Test");
 	}
 
@@ -172,7 +173,8 @@ struct Regolith : EngineLoop
 			level->AddSystem(System_Enemy()),
 			level->AddSystem(System_ExplodeNearTarget()),
 			level->AddSystem(System_FireWeapon()),
-			level->AddSystem(System_AllowPauseMenu())
+			level->AddSystem(System_AllowPauseMenu()),
+			level->AddSystem(System_FuelTank())
 		};
 
 		level->AddSystem(System_EnemyController());
