@@ -28,3 +28,6 @@ std::tuple<int, int, int, int> GetBoundingBoxOfIsland(const std::vector<int>& is
 CorePixels GetCorePixels(const r<Texture>& texture);
 
 Islands GetIslands(const SandSprite& sprite);
+
+//mat2 GetCoord(const Transform2D& transform, int cellsPerMeter);
+//vec2 GetLocalPosOfPixel(mat2 coord, int index, const r<Texture>& texture);

@@ -201,6 +201,12 @@ public:
 		return raw_id();
 	}
 
+	EntityWorld* Owning() const
+	{
+		assert_is_valid();
+		return m_owning;
+	}
+
 	// doesnt check for if this id is valid or not
 	u32 raw_id() const
 	{

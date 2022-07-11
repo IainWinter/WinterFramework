@@ -64,8 +64,12 @@ struct System_EnemySpawner : SystemBase
 	float delay = 2.f;
 	float time  = 2.f;
 
+	bool enabled;
+
 	void Update()
 	{
+		if (!enabled) return;
+
 		time -= Time::DeltaTime();
 		if (time < 0)
 		{
@@ -76,5 +80,12 @@ struct System_EnemySpawner : SystemBase
 
 			Send(event_Enemy_Spawn{ (EnemyType)get_rand(2), position, true });
 		}
+	}
+
+	void UI()
+	{
+		ImGui::Begin("Enemy Spawner");
+		ImGui::Checkbox("Enable Enemy Spawning", &enabled);
+		ImGui::End();
 	}
 };

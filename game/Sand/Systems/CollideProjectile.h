@@ -13,7 +13,8 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 	void on(event_Sand_ProjectileHit& e)
 	{
-		if (e.entity.Id() == e.projectile.Get<CellProjectile>().owner) // exit if owner
+		if (  !e.entity.IsAlive() 
+			&& e.entity.Id() == e.projectile.Get<CellProjectile>().owner) // exit if owner or dead?
 		{
 			return;
 		}
@@ -25,6 +26,6 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 			Send(event_Sand_ExplodeToDust{ e.entity, {e.index}, sqrt(e.projectile.Get<Rigidbody2D>().GetVelocity()) });
 		}
 
-		Send(event_Sand_RemoveCell{ e.entity, e.index, e.hitPosInWorld } );
+		Send(event_Sand_RemoveCell{ e.entity, e.index, e.hitPosInWorld });
 	}
 };

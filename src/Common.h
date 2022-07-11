@@ -61,9 +61,6 @@ template<typename _t, typename... _args> r<_t> mkr(_args&&... args) { return std
 // be ingrained into the framework at a core level
 using namespace glm;
 
-#define wPI 3.1415926535f
-#define w2PI wPI * 2.f
-
 inline vec2 safe_normalize(const vec2& p)
 {
 	float n = sqrt((float)(p.x * p.x + p.y * p.y));
@@ -77,7 +74,7 @@ inline float get_rand(float x) { return x * rand() / (float)RAND_MAX; }
 inline float get_randc(float x) { return x * rand() / (float)RAND_MAX - x / 2.f; }
 
 // return a random integer between (0, x)
-inline int get_rand(int x) { return rand() % x; }
+inline int get_rand(int x) { return x == 0 ? 0 : rand() % x; }
 
 inline vec2 get_rand  (float x, float y) { return vec2(get_rand(x), get_rand(y)); }
 inline vec2 get_randc (float x, float y) { return vec2(get_randc(x), get_randc(y)); }

@@ -31,6 +31,7 @@
 ///
 
 /// Define this macro in your build if you want to override settings
+
 #ifdef B2_USER_SETTINGS
 
 /// This is a user file that includes custom definitions of the macros, structs, and functions
@@ -64,6 +65,10 @@ struct B2_API b2BodyUserData
 
 	/// For legacy compatibility
 	uintptr_t pointer;
+
+	/// To return Entities from the world Queries
+	uint32 entityId;
+	void*  entityOwning;
 };
 
 /// You can define this to inject whatever data you want in b2Fixture

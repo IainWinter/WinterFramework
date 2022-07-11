@@ -4,6 +4,8 @@
 #include "Events.h"
 #include "Physics.h"
 
+#include "Components/Lightning.h"
+
 #include "ext/Components.h"
 #include "ext/rendering/Particle.h"
 #include "Sand/SandComponents.h"
@@ -33,41 +35,68 @@ private:
 		}
 
 		vec2 position = entity.Get<Transform2D>().position;
-		vec2 direction = normalize(target.Get<Transform2D>().position - position + get_randn(inaccuracy));
+		vec2 direction = normalize(target.Get<Transform2D>().position - position) + get_randn(inaccuracy);
 		
-		//position += direction;
+		position += direction * .5f;
 
 		Entity e = CreateEntity();
 		e.Add<Transform2D>(position);
-		e.Add<CellProjectile>(entity.Id());
-		e.Add<DestroyInTime>(3.f);
 
-		Rigidbody2D& body = GetModule<PhysicsWorld>().AddEntity(e);
 
 		switch (weapon)
 		{
 			case WEAPON_CANNON:
 			{
+				e.Add<CellProjectile>(entity.Id());
+				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
-				body.SetVelocity(direction * 100.f);
+				
+				GetModule<PhysicsWorld>().AddEntity(e)
+					.SetVelocity(direction * 100.f);
+
+				break;
+			}
+			
+			case WEAPON_MINIGUN:
+			{
+				e.Add<CellProjectile>(entity.Id());
+				e.Add<DestroyInTime>(5.f);
+				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
+				
+				GetModule<PhysicsWorld>().AddEntity(e)
+					.SetVelocity(direction * 40.f);
 
 				break;
 			}
 
 			case WEAPON_LASER: 
 			{
+				e.Add<CellProjectile>(entity.Id());
+				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
-				body.SetVelocity(direction * 25.f);
+				
+				GetModule<PhysicsWorld>().AddEntity(e)
+					.SetVelocity(direction * 25.f);
 
 				break;
 			}
 
 			case WEAPON_FUEL_SHOT:
 			{
+				e.Add<CellProjectile>(entity.Id());
+				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
-				body.SetVelocity(direction * 50.f);
+				
+				GetModule<PhysicsWorld>().AddEntity(e)
+					.SetVelocity(direction * 50.f);
 
 				break;
+			}
+
+			case WEAPON_BOLTZ:
+			{
+				e.Add<ParticleEmitter>(GetPrefab_LightningEmitter()).enableAutoEmit = false;
+				e.Add<Lightning>(entity, target);
 			}
 		}
 	}

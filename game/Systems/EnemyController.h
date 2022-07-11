@@ -25,7 +25,7 @@ struct System_EnemyController : System<System_EnemyController>
 
 		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
 		{
-			particle.enabled = sand.OnScreen(transform.position);
+			particle.enableAutoEmit = sand.OnScreen(transform.position);
 		}
 	}
 };

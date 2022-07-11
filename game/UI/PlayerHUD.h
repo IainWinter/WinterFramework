@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Leveling.h"
-#include "Prefabs.h"
+#include "Windowing.h"
 #include "imgui/imgui.h"
+#include "Prefabs.h"
 #include "Components/Player.h"
 
 struct System_UI_PlayerHUD : System<System_UI_PlayerHUD>
@@ -22,14 +23,6 @@ struct System_UI_PlayerHUD : System<System_UI_PlayerHUD>
 
 	void UI()
 	{
-		ImGui::SetNextWindowPos(ImVec2(200, 0));
-		ImGui::Begin("asdasd");
-
-		//ImGui::SliderFloat("asdasd", &fontOffset, -2, 2);
-		ImGui::End();
-
-		// sizes of elements
-
 		vec2 screen = GetModule<Window>().Dimensions();
 		vec2 hud = screen * vec2(.15, 1);
 		vec2 scale = hud / background->Dimensions();
@@ -39,7 +32,7 @@ struct System_UI_PlayerHUD : System<System_UI_PlayerHUD>
 
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(hud.x, hud.y));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,    ImVec2(0, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 

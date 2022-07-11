@@ -110,8 +110,8 @@ public:
 
 	b2Fixture* AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); return m_instance->CreateFixture(&shape, density); }
 	
-	      b2Fixture* GetCollider(int i = 0)       { assert_in_world(); return m_instance->GetFixtureList() + i; }
-	const b2Fixture* GetCollider(int i = 0) const { assert_in_world(); return m_instance->GetFixtureList() + i; }
+	      b2Fixture* GetCollider(int i = 0)       { return GetCol(i); }
+	const b2Fixture* GetCollider(int i = 0) const { return GetCol(i); }
 
 	float GetMass()  const { assert_in_world(); return m_instance->GetMass(); }
 	float GetSpeed() const { return length(_fb(m_instance ? m_instance->GetLinearVelocity() : m_body.linearVelocity)); }
@@ -121,6 +121,50 @@ private:
 	{
 		assert(InWorld() && "Physics object has not been added to the world");
 	}
+
+	b2Fixture* GetCol(int index) const
+	{
+		assert_in_world();
+		b2Fixture* fix = m_instance->GetFixtureList();
+		for (int i = 0; i < index; i++) fix = fix->GetNext();
+		return fix;
+	}
+};
+
+struct PointQueryResult
+{
+	struct Result
+	{
+		Entity entity;
+		float distance;
+	};
+
+	std::vector<Result> results;
+
+	bool          HasResult()     const { return results.size() > 0; }
+	const Result& FirstResult()   const { return results.at(0); }
+	Entity        FirstEntiy()    const { return FirstResult().entity; }
+	float         FirstDistance() const { return FirstResult().distance; }
+};
+
+struct RayQueryResult
+{
+	struct Result
+	{
+		Entity entity;
+		float distance;
+		vec2 point;
+		vec2 normal;
+	};
+
+	std::vector<Result> results;
+
+	bool          HasResult()     const { return results.size() > 0; }
+	const Result& FirstResult()   const { return results.at(0); }
+	Entity        FirstEntiy()    const { return FirstResult().entity; }
+	float         FirstDistance() const { return FirstResult().distance; }
+	vec2          FirstPoint()    const { return FirstResult().point; }
+	vec2          FirstNormal()   const { return FirstResult().normal; }
 };
 
 struct PhysicsWorld
@@ -152,6 +196,10 @@ struct PhysicsWorld
 		Rigidbody2D& body = e.Get<Rigidbody2D>();
 		body.m_instance = m_world->CreateBody(&body.m_body);
 
+		b2BodyUserData& data = body.m_instance->GetUserData();
+		data.entityId     = e.Id();
+		data.entityOwning = e.Owning();
+
 		return body;
 	}
 	
@@ -165,6 +213,46 @@ struct PhysicsWorld
 	void Step(float dt)
 	{
 		m_world->Step(dt, 8, 3);
+	}
+
+	RayQueryResult QueryRay(vec2 point, vec2 direction, float distance) const
+	{
+		return QueryRay(point, point + direction * distance);
+	}
+
+	RayQueryResult QueryRay(vec2 point, vec2 target) const
+	{
+		b2Vec2 a = _tb(point);
+		b2Vec2 b = _tb(target);
+
+		RayQueryCallback query(distance(target, point));
+		m_world->RayCast(&query, a, b);
+		std::sort(
+			query.result.results.begin(),
+			query.result.results.end(),
+			[](const auto& a, const auto& b) { return a.distance < b.distance; }
+		);
+
+		return query.result;
+	}
+
+
+	// query an AABB
+	PointQueryResult QueryPoint(vec2 point, float radius) const
+	{
+		b2AABB aabb;
+		aabb.lowerBound = b2Vec2(point.x - radius, point.y - radius);
+		aabb.upperBound = b2Vec2(point.x + radius, point.y + radius);
+
+		PointQueryCallback query(point);
+		m_world->QueryAABB(&query, aabb);
+		std::sort(
+			query.result.results.begin(),
+			query.result.results.end(),
+			[](const auto& a, const auto& b) { return a.distance < b.distance; }
+		);
+		
+		return query.result;
 	}
 
 	// yes moves
@@ -182,5 +270,53 @@ struct PhysicsWorld
 	}
 	PhysicsWorld(const PhysicsWorld& move) = delete;
 	PhysicsWorld& operator=(const PhysicsWorld& move) = delete;
+
+private:
+
+	struct PointQueryCallback : b2QueryCallback
+	{
+		PointQueryResult result;
+		vec2 point;
+
+		PointQueryCallback(vec2 point)
+			: point(point) {}
+
+		bool ReportFixture(b2Fixture* fixture)
+		{
+			b2BodyUserData& data = fixture->GetBody()->GetUserData();
+			EntityWorld* world = (EntityWorld*)data.entityOwning;
+
+			result.results.push_back({
+				world->Wrap(data.entityId),
+				distance(_fb(fixture->GetBody()->GetPosition()), point)
+			});
+
+			return false;
+		}
+	};
+
+	struct RayQueryCallback : b2RayCastCallback
+	{
+		RayQueryResult result;
+		float length;
+
+		RayQueryCallback(float length)
+			: length(length) {}
+
+		float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
+		{
+			b2BodyUserData& data = fixture->GetBody()->GetUserData();
+			EntityWorld* world = (EntityWorld*)data.entityOwning;
+			
+			result.results.push_back({
+				world->Wrap(data.entityId),
+				fraction * length,
+				_fb(point),
+				_fb(normal)
+			});
+
+			return -1;
+		}
+	};
 };
 

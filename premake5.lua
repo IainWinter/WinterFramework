@@ -19,6 +19,7 @@ project "Framework"
 		"src/**.h",
 
 		"src/ext/cpp/Time.cpp",
+		"src/ext/cpp/physics/ClosestPointOnShape.cpp",
 
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",

@@ -35,7 +35,7 @@ struct System_PlayerController : System<System_PlayerController>
 		if (player.AttackFireInput && player.m_attackTimer <= 0.f)
 		{
 			player.m_attackTimer = player.CurrentWeaponAttackTime;
-			Send(event_FireWeapon{playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
+			Send(event_FireWeapon{ playerEntity, target, player.CurrentWeapon, player.CurrentWeaponInaccuracy });
 
 			if (player.CurrentWeapon != WEAPON_CANNON)
 			{
@@ -126,7 +126,7 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				player.CurrentWeapon = WEAPON_CANNON;
 				player.CurrentWeaponAmmo = 0;
-				player.CurrentWeaponInaccuracy = 1;
+				player.CurrentWeaponInaccuracy = .01;
 				player.CurrentWeaponAttackTime = .4;
 				break;
 			}
@@ -135,7 +135,7 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				player.CurrentWeapon = WEAPON_MINIGUN;
 				player.CurrentWeaponAmmo = 200;
-				player.CurrentWeaponInaccuracy = 3;
+				player.CurrentWeaponInaccuracy = .1;
 				player.CurrentWeaponAttackTime = .04;
 				break;
 			}
@@ -153,8 +153,8 @@ struct System_PlayerController : System<System_PlayerController>
 			{
 				player.CurrentWeapon = WEAPON_BOLTZ;
 				player.CurrentWeaponAmmo = 1000;
-				player.CurrentWeaponInaccuracy = 3;
-				player.CurrentWeaponAttackTime = .004;
+				player.CurrentWeaponInaccuracy = 1;
+				player.CurrentWeaponAttackTime = .01;
 				break;
 			}
 

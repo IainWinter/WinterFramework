@@ -36,7 +36,7 @@ struct Particle
 	Particle& SetFramesPerSecond (float                     framesPerSecond) { this->framesPerSecond = framesPerSecond; return *this; }
 	Particle& SetFrameCurrent    (float                     frameCurrent)    { this->frameCurrent    = frameCurrent;    return *this; }
 	Particle& SetOriginal        (const Transform2D&        transform)       { this->original        = transform;       return *this; }
-	Particle& SetTint            (const Color&              tint)            { this->tint            = tint;           return *this; }
+	Particle& SetTint            (const Color&              tint)            { this->tint            = tint;            return *this; }
 	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
 	Particle& AddTint            (const Color&              tint)            { this->tints.push_back(tint);             return *this; }
 
@@ -95,7 +95,7 @@ struct ParticleEmitter
 	float timeBetweenSpawn = .016f;
 	float currentTime = 0.f;
 
-	bool enabled = true;
+	bool enableAutoEmit = true;
 
 	void AddSpawner(Particle particle, float weight, std::function<void(Particle)> onCreate)
 	{
@@ -111,12 +111,12 @@ struct ParticleEmitter
 	}
 
 	// returns a particle at the index
-	Particle Emit(int index, Transform2D& emitterTransform) const
+	Particle Emit(int index, vec2 position) const
 	{
 		const Spawner& spawner = spawners.at(index);
 		
 		Particle p = spawner.particle;
-		p.original *= emitterTransform;            // todo: should parent when that is a feature
+		p.original.position += position; // *= emitterTransform;            // todo: should parent when that is a feature
 
 		if (spawner.onCreate)
 		{
@@ -127,7 +127,7 @@ struct ParticleEmitter
 	}
 
 	// returns a random particle with their weighted probability
-	Particle Emit(Transform2D& emitterTransform) const
+	Particle Emit(vec2 position) const
 	{
 		float pick = get_rand(totalWeight);
 
@@ -139,6 +139,20 @@ struct ParticleEmitter
 			pick -= weight;
 		}
 
-		return Emit(i, emitterTransform);
+		return Emit(i, position);
+	}
+
+	// could return a vector of particles
+	void EmitLine(vec2 a, vec2 b) const
+	{
+		vec2 delta = b - a;
+		float ticks = length(delta) * 15.f;
+		vec2 deltaTick = delta / ticks;
+
+		for (float t = 0; t < ticks; t += 1.f)
+		{
+			a += deltaTick;
+			Emit(a);
+		}
 	}
 };

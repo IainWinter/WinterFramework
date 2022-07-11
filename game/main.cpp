@@ -16,6 +16,7 @@
 // systems
 
 #include "Sand/SandSystems.h"
+#include "Systems/AllowPauseMenu.h"
 #include "Systems/PlayerController.h"
 #include "Systems/FlockingMovement.h"
 #include "Systems/TurnTwoardsTarget.h"
@@ -33,6 +34,7 @@
 #include "Systems/ItemPickup.h"
 #include "Systems/RenderSceneGraph.h"
 #include "Systems/LowCorePixelDeath.h"
+#include "Systems/LightningSystem.h"
 #include "Systems/zTestingSystem.h"
 
 #include "UI/PlayerHUD.h"
@@ -133,8 +135,9 @@ struct Regolith : EngineLoop
 	void _InitUI()
 	{
 		UIFonts& fonts = m_app.GetModule<Window>().Fonts();
-		fonts.Load("Roboto", 18, "Roboto.ttf");
-		fonts.Load("Pixel",  28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+		fonts.Load("Roboto",      18, "Roboto.ttf");
+		fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+		fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
 	}
 
 	// Init
@@ -159,16 +162,17 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_LowCorePixelDeath());
 		level->AddSystem(System_DestroyInTime());
 
-		removeOnDeath = 
+		removeOnDeath =
 		{
 			level->AddSystem(System_PlayerController()),
 			level->AddSystem(System_FireWeaponAfterDelay()),
 			level->AddSystem(System_ItemSpawner()),
 			level->AddSystem(System_ItemPickup()),
-			//level->AddSystem(System_EnemySpawner()),
+			level->AddSystem(System_EnemySpawner()),
 			level->AddSystem(System_Enemy()),
 			level->AddSystem(System_ExplodeNearTarget()),
-			level->AddSystem(System_FireWeapon())
+			level->AddSystem(System_FireWeapon()),
+			level->AddSystem(System_AllowPauseMenu())
 		};
 
 		level->AddSystem(System_EnemyController());
@@ -176,6 +180,7 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_ExplosionSpawner());
 		level->AddSystem(System_KeepOnScreen());
 		level->AddSystem(System_ParticleUpdate());
+		level->AddSystem(System_Lightning());
 		
 		level->AddSystem(System_Item());
 		
@@ -212,10 +217,11 @@ struct Regolith : EngineLoop
 	{
 		InputMapping& input = m_app.GetModule<Window>().Input();
 
-		input.m_keyboard[SDL_SCANCODE_W] = InputName::UP;
-		input.m_keyboard[SDL_SCANCODE_S] = InputName::DOWN;
-		input.m_keyboard[SDL_SCANCODE_D] = InputName::RIGHT;
-		input.m_keyboard[SDL_SCANCODE_A] = InputName::LEFT;
+		input.m_keyboard[SDL_SCANCODE_W]      = InputName::UP;
+		input.m_keyboard[SDL_SCANCODE_S]      = InputName::DOWN;
+		input.m_keyboard[SDL_SCANCODE_D]      = InputName::RIGHT;
+		input.m_keyboard[SDL_SCANCODE_A]      = InputName::LEFT;
+		input.m_keyboard[SDL_SCANCODE_ESCAPE] = InputName::ESCAPE;
 	}
 
 	void ConfigureMainGameLevel()
@@ -236,8 +242,7 @@ struct Regolith : EngineLoop
 			RemoveSystemsForPlayerDeath();
 		});
 
-		//Entity e = CreateSandSprite("test_sqr.png", "test_sqr.png");
-		//e.Get<Transform2D>().rotation = wPI / 6.f;
+		//CreateSandSprite("test_sqr.png", "test_sqr.png");
 	}
 
 	void RemoveSystemsForPlayerDeath()

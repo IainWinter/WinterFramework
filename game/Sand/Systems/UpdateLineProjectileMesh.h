@@ -38,16 +38,17 @@ public:
 			Transform2D last = transform.LastTransform();
 			vec2 delta = transform.position - last.position;
 
-			float ticks = length(delta) * 10.f; // todo: this is sand world cells per meter / 2
+			float dist = length(delta);
+			float ticks = dist * 10.f; // todo: this is sand world cells per meter / 2
 			vec2 deltaTick = delta / ticks;
 
 			for (float t = 0; t < ticks; t += 1.f)
 			{
 				last.position += deltaTick;
 				
-				bool hasHit = false;
-
 				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
+				bool hasHit = false;
+				
 				for (const auto& result : results.hits)
 				if (result.hasHit)
 				{
@@ -71,11 +72,26 @@ public:
 
 				if (hasHit)
 				{
-					vec2 vel = body.GetVelocity();
-					float dist = length(vel);
-					vel = dist * safe_normalize(vel + get_randnc(dist * proj.turnOnHitRate));
-					body.SetVelocity(vel);
+					delta = dist * safe_normalize(delta + get_randn(dist * proj.turnOnHitRate));
+					//deltaTick = delta / ticks;
+
+					// causes issues with the exit pos not equal to the actual pos
+
+					proj.health -= results.hits.at(0).hit.hitEntity.Get<SandSprite>().cellStrength; // circle could hit multiple, just take first
+					if (proj.health <= 0)
+					{
+						entity.DestroyAtEndOfFrame();
+						break;
+					}
 				}
+			}
+
+			// set exit velocity to the turned delta
+
+			if (ticks > 0)
+			{
+				//body.SetPosition(last.position);
+				body.SetVelocity(length(body.GetVelocity()) * safe_normalize(delta));
 			}
 		}
 	}

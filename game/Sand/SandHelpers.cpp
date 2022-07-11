@@ -77,3 +77,18 @@ Islands GetIslands(const SandSprite& sprite)
 
 	return islands;
 }
+
+//mat2 GetCoord(const Transform2D& transform, int cellsPerMeter)
+//{
+//	float s = 1.f / cellsPerMeter;
+//	float r = transform.rotation;
+//	return mat2(cos(r), sin(r), -sin(r), cos(r))
+//		 * mat2(2*s, 0, 0, 2*s);
+//}
+//
+//vec2 GetWorldPosOfPixel(mat2 coord, int index, const r<Texture>& texture)
+//{
+//	auto [x, y] = get_xy(index, texture->Width());
+//	vec2 pos = coord * (vec2(x, y) - texture->Dimensions() / 2.f + vec2(.5f, .5f));
+//	return vec2();
+//}
