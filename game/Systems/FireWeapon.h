@@ -118,6 +118,7 @@ private:
 			{
 				e.Add<ParticleEmitter>(GetPrefab_LightningEmitter()).enableAutoEmit = false;
 				e.Add<Lightning>(entity, target);
+				e.Add<LightningDamage>(5);
 			}
 		}
 	}

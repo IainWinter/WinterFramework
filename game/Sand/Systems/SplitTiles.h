@@ -2,6 +2,7 @@
 
 #include "Leveling.h"
 #include "Sand/SandEvents.h"
+#include "Components/Throwable.h"
 
 struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 {
@@ -154,6 +155,8 @@ private:
 				{
 					e.Add<SandTurnToDustInTime>(island.size() / 10.f);
 				}
+
+				e.Add<Throwable>();
 
 				SendNow(event_SandAddSprite { e, v, a, d });
 			});

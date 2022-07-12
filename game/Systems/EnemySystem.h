@@ -6,14 +6,18 @@
 #include "Components/EnemyAI.h"
 #include "Components/Flocker.h"
 #include "Components/Player.h"
+#include "Components/Throwable.h"
 
 #include "util/random.h"
 
 struct System_Enemy : System<System_Enemy>
 {
+	Entity player;
+
 	void Init()
 	{
 		Attach<event_Enemy_Spawn>();
+		player = FirstEntityWith<Player>();
 	}
 
 	void on(event_Enemy_Spawn& e)
@@ -26,7 +30,7 @@ private:
 	void SpawnEnemy(EnemyType type, vec2 position, bool enableAI)
 	{
 		Entity entity;
-		
+
 		switch (type)
 		{
 			case ENEMY_FIGHTER:
@@ -34,9 +38,13 @@ private:
 				entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
 				entity.Add<Enemy>(10 + get_rand(10));
 
+				entity.Add<Rigidbody2D>()
+					.SetFixedRotation(true)
+					.SetDensity(30.f);
+
 				if (enableAI)
 				{
-					entity.Add<FireWeaponAfterDelay>(FirstEntityWith<Player>(), WEAPON_LASER, 1.f + get_randc(.3f));
+					entity.Add<FireWeaponAfterDelay>(player, WEAPON_LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
 					entity.Add<Flocker>();
 				}
@@ -49,9 +57,19 @@ private:
 				entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
 				entity.Add<Enemy>(20 + get_rand(20));
 
+				entity.Add<Rigidbody2D>()
+					.SetFixedRotation(false)
+					.SetVelocity(vec2(5.f))
+					.SetAngularVelocity(get_randc(wPI / 3.f))
+					.SetAngularDamping(0.5f)
+					.SetDensity(10.f);
+
 				if (enableAI)
 				{
-					entity.Add<TurnTwoardsTarget>(FirstEntityWith<Player>());
+					//entity.Add<TurnTwoardsTarget>(player);
+					//entity.Add<ExplodeNearTarget>(player);
+
+					entity.Add<Throwable>();
 				}
 
 				break;
@@ -62,10 +80,30 @@ private:
 				entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
 				entity.Add<Enemy>(100 + get_rand(100));
 
+				entity.Add<Rigidbody2D>()
+					.SetFixedRotation(false)
+					.SetAngularDamping(1.f)
+					.SetDensity(400.f);
+
 				if (enableAI)
 				{
-					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18))));
-					entity.Add<Flocker>();
+					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18)))); // leaks entity
+					
+					entity.Add<Flocker>()
+						.SetMaxSpeed(5.f);
+
+					entity.Add<EnemySpawner>()
+						.SetDelay(4.f)
+						.SetSpawners({
+							{ vec2( 1,  0), ENEMY_BOMB },
+							{ vec2( 1,  0), ENEMY_FIGHTER },
+							{ vec2(-1,  0), ENEMY_BOMB },
+							{ vec2(-1,  0), ENEMY_FIGHTER },
+							{ vec2( 0,  1), ENEMY_BOMB },
+							{ vec2( 0,  1), ENEMY_FIGHTER },
+							{ vec2( 0, -1), ENEMY_BOMB },
+							{ vec2( 0, -1), ENEMY_FIGHTER },
+						});
 				}
 
 				break;
@@ -76,42 +114,59 @@ private:
 				entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
 				entity.Add<Enemy>(1000 + get_rand(1000));
 
+				entity.Add<Rigidbody2D>()
+					.SetFixedRotation(false)
+					.SetAngularDamping(1.f)
+					.SetDensity(1000.f);
+
 				if (enableAI)
 				{
-					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18))));
-					entity.Add<Flocker>();
+					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18)))); // leaks entity
+					
+					entity.Add<Flocker>()
+						.SetMaxSpeed(3.f);
+
+					entity.Add<Thrower>()
+						.SetTarget(player);
 				}
 
 				break;
 			}
 		}
 
-		Transform2D& transform = entity.Get<Transform2D>();
-		transform.position = position;
+		float rot = entity.Get<Rigidbody2D>().IsFixedRotation() ? 0 : get_rand(w2PI);
 
-		entity.Add<Rigidbody2D>(transform).SetFixedRotation(true);// .SetVelocity(get_randn(5.f));
+		entity.Get<Transform2D>().SetPosition(position).SetRotation(rot);
+		entity.Get<Rigidbody2D>().SetTransform(entity.Get<Transform2D>());
 
 		entity.OnDestroy([this](Entity e)
 		{
-				std::vector<ItemSpawn> item_table =
-				{
-					{ ITEM_HEALTH, 5, 10 }
-				};
-
-
-			int itemGas = e.Get<Enemy>();
-
 			std::vector<std::pair<ItemSpawn, float>> item_weights {
-				{ {ITEM_HEALTH,         10}, 50 },
-				{ {ITEM_ENERGY,         10}, 50 },
-				{ {ITEM_WEAPON_MINIGUN,  1},  3 },
-				{ {ITEM_WEAPON_BOLTZ,    1},  2 },
-				{ {ITEM_WEAPON_WATTZ,    1},  2 },
+				{ {ITEM_REGOLITH,        1,    1}, 1000 },
+				{ {ITEM_HEALTH,          1,   10},  60 },
+				{ {ITEM_ENERGY,          1,   10},  50 },
+				{ {ITEM_WEAPON_MINIGUN,  1, 1000},   3 },
+				{ {ITEM_WEAPON_BOLTZ,    1, 1800},   2 },
+				{ {ITEM_WEAPON_WATTZ,    1, 2000},   2 },
 			};
 
-			ItemSpawn item = choose(item_weights);
+			int gas = e.Get<Enemy>().itemGas;
 
-			Send(event_Item_Spawn{ item.type, e.Get<Transform2D>().position, item.count });
+			while (gas > 1)
+			{
+				size_t itemIndex = choosei(item_weights);
+				ItemSpawn& item = item_weights.at(itemIndex).first;
+				
+				if (item.gas > gas)
+				{
+					item_weights.erase(item_weights.begin() + itemIndex);
+					continue;
+				}
+
+				gas -= item.gas;
+
+				Send(event_Item_Spawn{ item.type, e.Get<Transform2D>().position, item.count });
+			}
 		});
 	}
 

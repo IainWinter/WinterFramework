@@ -68,7 +68,7 @@ struct System_Testing : SystemBase
 
 			if (enemy != -1)
 			{
-				Send(event_Enemy_Spawn{ enemy, vec2(10, 0), false });
+				Send(event_Enemy_Spawn{ enemy, vec2(10, 0), true });
 			}
 		}
 

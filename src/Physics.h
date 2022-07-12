@@ -39,9 +39,10 @@ public:
 	Transform2D LastTransform;
 	
 private:
-	b2BodyDef m_body; // Init values for Physics Add
+	b2BodyDef m_body;   // Init values for Physics Add
 	b2Body* m_instance; // If null, not in physics world
-	
+	float m_density;    // deafult value on each new collider, if the new collider had 0 density
+
 	friend struct PhysicsWorld;
 
 public:
@@ -49,6 +50,7 @@ public:
 		Transform2D transform = {}
 	)
 		: m_instance    (nullptr)
+		, m_density     (1.f)
 		, LastTransform (transform) 
 	{
 		m_body.type = b2_dynamicBody;
@@ -79,7 +81,8 @@ public:
 	Rigidbody2D& SetAngularVelocity(float avel)     { if (m_instance) m_instance->SetAngularVelocity(avel);                             else m_body.angularVelocity = avel;     return *this; }
 	Rigidbody2D& SetFixedRotation  (bool  isFixed)  { if (m_instance) m_instance->SetFixedRotation  (isFixed);                          else m_body.fixedRotation   = isFixed;  return *this; }
 	Rigidbody2D& SetDamping        (float damping)  { if (m_instance) m_instance->SetLinearDamping  (damping);                          else m_body.linearDamping   = damping;  return *this; }
-	Rigidbody2D& SetAngularDamping (float adamping) { if (m_instance) m_instance->SetAngularDamping(adamping);                          else m_body.angularDamping = adamping; return *this; }
+	Rigidbody2D& SetAngularDamping (float adamping) { if (m_instance) m_instance->SetAngularDamping (adamping);                         else m_body.angularDamping  = adamping; return *this; }
+	Rigidbody2D& SetDensity        (float density)  { m_density = density;                                                                                                      return *this; }
 
 	void ApplyForce(vec2 force)                        { assert_in_world(); m_instance->ApplyForceToCenter(_tb(force), true); }
 	void ApplyForce(vec2 force, vec2 offsetFromCenter) { assert_in_world(); m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }
@@ -108,7 +111,8 @@ public:
 		return count;
 	}
 
-	b2Fixture* AddCollider(const b2Shape& shape, float density = 1.f) { assert_in_world(); return m_instance->CreateFixture(&shape, density); }
+	b2Fixture* AddCollider(const b2Shape& shape)                { return AddCollider(shape, m_density); }
+	b2Fixture* AddCollider(const b2Shape& shape, float density) { assert_in_world(); return m_instance->CreateFixture(&shape, density); }
 	
 	      b2Fixture* GetCollider(int i = 0)       { return GetCol(i); }
 	const b2Fixture* GetCollider(int i = 0) const { return GetCol(i); }

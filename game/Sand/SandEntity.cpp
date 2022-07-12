@@ -8,7 +8,7 @@ Entity CreateSandSprite(const std::string& path, const std::string& collider_mas
 	assert(sprite->Length() == mask->Length());
 
 	Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-	entity.Add<Transform2D>();
+	if (!entity.Has<Transform2D>()) entity.Add<Transform2D>();
 	entity.Add<SandSprite>(mask);
 	entity.Add<Sprite>(sprite);
 
@@ -24,7 +24,7 @@ Entity CreateTexturedCircle(const std::string& path)
 	r<Texture> sprite = mkr<Texture>(_a(path), false);
 
 	Entity entity = LevelManager::CurrentLevel()->CreateEntity();
-	entity.Add<Transform2D>();
+	if (!entity.Has<Transform2D>()) entity.Add<Transform2D>();
 	entity.Add<SandSprite>(sprite).isCircle = true;
 	entity.Add<Sprite>(sprite);
 

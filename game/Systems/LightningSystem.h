@@ -56,8 +56,11 @@ struct System_Lightning : SystemBase
 
 								if (info.hasHit)
 								{
-									int index1d = sprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y);
-									Send(event_Sand_RemoveCell{ Wrap(info.spriteEntityID), index1d, p });
+									if (entity.Has<LightningDamage>())
+									{
+										int index1d = sprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y);
+										Send(event_Sand_RemoveCell{ Wrap(info.spriteEntityID), index1d, p });
+									}
 
 									targetPosition = p;
 									goto exit;

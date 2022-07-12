@@ -78,14 +78,15 @@ struct System_Item : System<System_Item>
 	void on(event_Item_Spawn& e)
 	{
 		r<Texture> itemTexture;
-		float damping = 4.f;
+		float r = 2.f;
+		float d = 4.f;
 
 		switch (e.type)
 		{
 			case ItemType::ITEM_HEALTH:         itemTexture = GetPrefab_Texture("item_health.png");                   break;
 			case ItemType::ITEM_ENERGY:         itemTexture = GetPrefab_Texture("item_energy.png");                   break;
-			case ItemType::ITEM_REGOLITH:       itemTexture = GetPrefab_Texture("item_regolith.png");                 break;
-			case ItemType::ITEM_CORE_SHARD:     itemTexture = GetPrefab_Texture("item_coreShard.png"); damping = 0.f; break;
+			case ItemType::ITEM_REGOLITH:       itemTexture = GetPrefab_Texture("item_regolith.png");  r = 10.f;      break;
+			case ItemType::ITEM_CORE_SHARD:     itemTexture = GetPrefab_Texture("item_coreShard.png"); d = 0.f;       break;
 			case ItemType::ITEM_WEAPON_MINIGUN: itemTexture = GetPrefab_Texture("item_minigun.png");                  break;
 			case ItemType::ITEM_WEAPON_BOLTZ:   itemTexture = GetPrefab_Texture("item_boltz.png");                    break;
 			case ItemType::ITEM_WEAPON_WATTZ:   itemTexture = GetPrefab_Texture("item_wattz.png");                    break;
@@ -93,16 +94,22 @@ struct System_Item : System<System_Item>
 
 		for (int i = 0; i < e.count; i++)
 		{
+			d *= 0.5f + get_rand(1.5f);
+
 			Entity entity = CreateEntity();
 			entity.Add<Transform2D>(vec3(e.pos, 10.f), itemTexture->Dimensions() * GetModule<CoordTranslation>().CellsToMeters);
-			entity.Add<Item>(e.type);
 			entity.Add<Sprite>(itemTexture);
+
+			entity.Add<Item>()
+				.SetType(e.type)
+				.SetPickupRadius(r + get_rand(2.f))
+				.SetLife(4.f + get_rand(4.f));
 
 			GetModule<PhysicsWorld>().AddEntity(entity)
 				.SetVelocity(get_randn(12.f))
 				.SetAngularVelocity(get_rand(w2PI))
-				.SetDamping(damping)
-				.SetAngularDamping(damping);
+				.SetDamping(d)
+				.SetAngularDamping(d);
 
 			entity.Get<Item>().m_initScale = entity.Get<Transform2D>().scale;
 		}

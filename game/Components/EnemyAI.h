@@ -30,7 +30,7 @@ struct FireWeaponAfterDelay
 	Weapon weapon;
 	float delay;
 	float inaccuracy;
-	float m_timer;
+	float m_timer = 3.f;
 };
 
 struct ExplodeNearTarget
@@ -45,5 +45,17 @@ struct ExplodeNearTarget
 
 struct EnemySpawner
 {
-	//
+	struct LocalSpawnPoint
+	{
+		vec2 point;
+		EnemyType type;
+	};
+
+	std::vector<LocalSpawnPoint> spawners;
+	float delay = 2.f;
+	float timer = 0.f;
+
+	EnemySpawner& AddSpawner (const LocalSpawnPoint& spawner)               { spawners.push_back(spawner); return *this; }
+	EnemySpawner& SetSpawners(const std::vector<LocalSpawnPoint>& spawners) { this->spawners = spawners;   return *this; }
+	EnemySpawner& SetDelay   (float delay)                                  { this->delay = delay;         return *this; }
 };

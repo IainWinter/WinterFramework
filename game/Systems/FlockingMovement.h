@@ -11,6 +11,11 @@ struct System_FlockingMovement : SystemBase
 		for (auto [body, flocker] : Query<Rigidbody2D, Flocker>())
 		{
 			body.ApplyForce(body.GetMass() * CalcForces(body, flocker));
+
+            if (body.GetSpeed() > flocker.maxSpeed)
+            {
+                body.SetVelocity(limit(body.GetVelocity(), flocker.maxSpeed));
+            }
 		}
 	}
 

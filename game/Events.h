@@ -37,5 +37,7 @@ struct event_Enemy_Spawn
 {
 	EnemyType enemy;
 	vec2 position;
-	bool enableAi;
+	bool enableAi = true;
+
+	vec2 initialVel;
 };

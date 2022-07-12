@@ -20,6 +20,11 @@ struct Item
 	float pickupDelay = .2f;
 	float life = 4.f;
 
+	Item& SetType        (ItemType type)      { this->type         = type; return *this; }
+	Item& SetPickupRadius(float pickupRadius) { this->pickupRadius = pickupRadius; return *this; }
+	Item& SetPickupDelay (float pickupDelay)  { this->pickupDelay  = pickupDelay; return *this; }
+	Item& SetLife        (float life)         { this->life         = life; return *this; }
+
 	bool  m_hasSink = false;
 	float m_timeToSink = 1.f;  // has to be between 0-1 for lerp
 	vec2  m_initPosSink;        // once hasSink has been set, this is the inital position of the item

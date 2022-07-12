@@ -129,6 +129,13 @@ inline float max(const vec2& v)
 	return max(v.x, v.y);
 }
 
+inline vec2 rotate(const vec2& v, float a)
+{
+	float s = sin(a);
+	float c = cos(a);
+	return vec2(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
 template<typename _t>
 std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 {
@@ -251,6 +258,10 @@ public:
 	{
 		UpdateLastFrameData();
 	}
+
+	Transform2D& SetPosition(vec2 position)  { this->position = position; return *this; }
+	Transform2D& SetScale   (vec2 scale)     { this->scale    = scale;    return *this; }
+	Transform2D& SetRotation(float rotation) { this->rotation = rotation; return *this; }
 
 	Transform2D& operator*=(const Transform2D& other)
 	{
