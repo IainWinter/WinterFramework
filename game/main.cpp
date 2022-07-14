@@ -174,7 +174,8 @@ struct Regolith : EngineLoop
 			level->AddSystem(System_ExplodeNearTarget()),
 			level->AddSystem(System_FireWeapon()),
 			level->AddSystem(System_AllowPauseMenu()),
-			level->AddSystem(System_FuelTank())
+			level->AddSystem(System_FuelTank()),
+			level->AddSystem(System_RockSpawner_Test())
 		};
 
 		level->AddSystem(System_EnemyController());
@@ -189,7 +190,6 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_UI_PlayerHUD());
 
 		level->AddSystem(System_Testing());
-		//level->AddSystem(System_RockSpawner_Test());
 
 		AddSandSystemsToLevel(level);
 	}

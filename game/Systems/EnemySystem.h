@@ -46,7 +46,8 @@ private:
 				{
 					entity.Add<FireWeaponAfterDelay>(player, WEAPON_LASER, 1.f + get_randc(.3f));
 					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_randc(32), get_randc(18))));
-					entity.Add<Flocker>();
+					entity.Add<Flocker>()
+						.SetMaxSpeed(15.f);
 				}
 
 				break;
@@ -66,8 +67,8 @@ private:
 
 				if (enableAI)
 				{
-					//entity.Add<TurnTwoardsTarget>(player);
-					//entity.Add<ExplodeNearTarget>(player);
+					entity.Add<TurnTwoardsTarget>(player);
+					entity.Add<ExplodeNearTarget>(player);
 
 					entity.Add<Throwable>();
 				}
