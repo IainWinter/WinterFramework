@@ -87,7 +87,7 @@ private:
 
 				if (enableAI)
 				{
-					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18)))); // leaks entity
+					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_randc(32, 18)))); // leaks entity
 					
 					entity.Add<Flocker>()
 						.SetMaxSpeed(5.f);
@@ -112,7 +112,7 @@ private:
 			case ENEMY_BASE:
 			{
 				entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
-				entity.Add<Enemy>(1000 + get_rand(1000));
+				entity.Add<Enemy>(200 + get_rand(200));
 
 				entity.Add<Rigidbody2D>()
 					.SetFixedRotation(false)
@@ -121,7 +121,7 @@ private:
 
 				if (enableAI)
 				{
-					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_rand(32, 18)))); // leaks entity
+					entity.Add<TurnTwoardsTarget>(CreateEntity().AddAll(Transform2D(get_randc(32, 18)))); // leaks entity
 					
 					entity.Add<Flocker>()
 						.SetMaxSpeed(3.f);
@@ -142,12 +142,12 @@ private:
 		entity.OnDestroy([this](Entity e)
 		{
 			std::vector<std::pair<ItemSpawn, float>> item_weights {
-				{ {ITEM_REGOLITH,        1,    1}, 1000 },
-				{ {ITEM_HEALTH,          1,   10},  60 },
-				{ {ITEM_ENERGY,          1,   10},  50 },
-				{ {ITEM_WEAPON_MINIGUN,  1, 1000},   3 },
-				{ {ITEM_WEAPON_BOLTZ,    1, 1800},   2 },
-				{ {ITEM_WEAPON_WATTZ,    1, 2000},   2 },
+				{ {ITEM_REGOLITH,        1,   1}, 100 },
+				{ {ITEM_HEALTH,          1,  10},  60 },
+				{ {ITEM_ENERGY,          1,  10},  50 },
+				{ {ITEM_WEAPON_MINIGUN,  1, 100},  20 },
+				{ {ITEM_WEAPON_BOLTZ,    1, 180},  20 },
+				{ {ITEM_WEAPON_WATTZ,    1, 200},  20 },
 			};
 
 			int gas = e.Get<Enemy>().itemGas;

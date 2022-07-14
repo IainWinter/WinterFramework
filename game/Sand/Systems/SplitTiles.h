@@ -148,8 +148,8 @@ private:
 				auto [t, s, ss] = split;
 				Entity e = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 
-				//vec2 vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
-				//float ang = a + get_randc(wPI);
+				vec2  vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
+				float ang = a + get_randc(wPI);
 
 				if (island.size() < 50)
 				{
@@ -158,7 +158,7 @@ private:
 
 				e.Add<Throwable>();
 
-				SendNow(event_SandAddSprite { e, v, a, d });
+				SendNow(event_SandAddSprite { e, vel, ang, d });
 			});
 		}
 	}

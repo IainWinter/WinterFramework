@@ -79,8 +79,8 @@ struct System_EnemyController : System<System_EnemyController>
 				{    //a little, but this needs more work, for now just apply force
 
 					vec2 delta = safe_normalize(thrower.target.Get<Transform2D>().position - throwingPos);
-					thrower.throwing.Get<Rigidbody2D>().ApplyForce(delta * thrower.throwingForce);
-
+					Rigidbody2D& body = thrower.throwing.Get<Rigidbody2D>();
+					body.ApplyForce(delta * thrower.throwingForce * body.GetMass() / 2.f);
 
 					// spawn lightning connecting the two shapes
 

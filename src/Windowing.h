@@ -218,6 +218,8 @@ public:
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
+			printf("event: %d\n", event.type);
+
 			ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
 
 			if (!m_events)
@@ -304,6 +306,23 @@ public:
 					}
 					break;
 				}
+
+				case SDL_CONTROLLERBUTTONDOWN:
+				case SDL_CONTROLLERBUTTONUP:
+					printf("controller button %d %d\n", event.cbutton.button, event.cbutton.state);
+					break;
+
+				case SDL_CONTROLLERAXISMOTION:
+					printf("controller axis %d %f\n", event.caxis.axis, event.caxis.value);
+					break;
+
+				case SDL_CONTROLLERDEVICEADDED:
+					printf("controller plugged in\n");
+					break;
+
+				case SDL_CONTROLLERDEVICEREMOVED:
+					printf("controller unplugged\n");
+					break;
 			}
 		}
 	}
@@ -408,9 +427,12 @@ public:
 // init funcs
 
 private:
+
+	SDL_GameController* m_controller = nullptr;
+
 	static const char* Init_Video()
 	{
-		SDL_Init(SDL_INIT_VIDEO);
+		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 
 		// set OpenGL attributes
 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
