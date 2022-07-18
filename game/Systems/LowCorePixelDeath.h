@@ -24,7 +24,7 @@ struct System_LowCorePixelDeath : SystemBase
 			}
 
 			else
-			if (ssprite.pixels.core.size() < ssprite.initalCore.size() / 2)
+			if (ssprite.pixels.CoreSize() < ssprite.initalCore.size() / 2)
 			{
 				dieInTime.m_runTimer = true;
 				dieInTime.m_timeToDie = dieInTime.initalTimeToDie;

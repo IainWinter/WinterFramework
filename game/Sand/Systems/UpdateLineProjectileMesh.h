@@ -7,28 +7,12 @@
 struct Sand_System_UpdateLineProjectileMesh : SystemBase
 {
 private:
-	Entity meshEntity;
 	SandWorld* sand;
 
 public:
 	void Init()
 	{
 		sand = &GetModule<SandWorld>();
-
-		r<Buffer> float6 = mkr<Buffer>(Buffer(0, 6, Buffer::_f32, DYNAMIC_HOST));
-
-		Mesh mesh = Mesh(DYNAMIC_HOST)
-			.SetTopology(Mesh::tLines)
-			.Add(Mesh::aPosition, 0, 2, float6)
-			.Add(Mesh::aColor, 0, 4, float6)
-			.SetOffset(Mesh::aColor, sizeof(vec2));
-
-		meshEntity = CreateEntity().AddAll(Transform2D(), Mesh(mesh));
-	}
-
-	void Dnit()
-	{
-		meshEntity.Destroy();
 	}
 
 	void Update()
@@ -49,10 +33,13 @@ public:
 				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
 				bool hasHit = false;
 				
+				float totalHitStrength = 0.f;
+				int hitCount = 0;
+
 				for (const auto& result : results.hits)
 				if (result.hasHit)
 				{
-					Send(event_Sand_ProjectileHit{ 
+					SendNow(event_Sand_ProjectileHit{ 
 						entity, 
 						result.hit.hitEntity, 
 						result.hit.hitIndex,
@@ -62,10 +49,13 @@ public:
 
 					hasHit |= result.hasHit;
 
+					totalHitStrength += result.hitStrength;
+					hitCount += 1;
+
 					const SandSprite& ssprite = result.hit.hitEntity.Get<SandSprite>();
 					if (ssprite.isHardCore && ssprite.pixels.IsInCore(result.hit.hitIndex))
 					{
-						entity.DestroyAtEndOfFrame();
+						entity.Destroy();
 						break;
 					}
 				}
@@ -77,10 +67,10 @@ public:
 
 					// causes issues with the exit pos not equal to the actual pos
 
-					proj.health -= results.hits.at(0).hit.hitEntity.Get<SandSprite>().cellStrength; // circle could hit multiple, just take first
+					proj.health -= totalHitStrength / hitCount; // take average
 					if (proj.health <= 0)
 					{
-						entity.DestroyAtEndOfFrame();
+						entity.Destroy();
 						break;
 					}
 				}
@@ -110,7 +100,7 @@ private:
 	{
 		bool onScreen;
 		bool hasHit;
-		int hitStrength;
+		float hitStrength;
 		PokeHitInfo hit;
 	};
 
@@ -121,7 +111,7 @@ private:
 
 	struct PokeLineResult
 	{
-		int finalHealth;
+		float finalHealth;
 		vec2 finalPosition;
 		vec2 finalVelocity;
 		std::vector<PokeHitInfo> hits;
@@ -179,7 +169,7 @@ private:
 		return result;
 	}
 
-	PokeLineResult PokeLine(vec2 a, vec2 b, u32 owner, float turnOnHitRate, int health)
+	PokeLineResult PokeLine(vec2 a, vec2 b, u32 owner, float turnOnHitRate, float health)
 	{
 		PokeLineResult out;
 

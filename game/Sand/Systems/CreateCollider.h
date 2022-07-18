@@ -75,7 +75,7 @@ private:
 			[](const u32& color) { return (color & 0xff000000) > 0; }
 		);
 
-		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(sand.pixels.all, mask->Width());
+		auto [minX, minY, maxX, maxY] = GetBoundingBoxOfIsland(sand.pixels.GetAll(), mask->Width()); // just track in CorePixels as added and removed
 		
 		vec2 sizeIsland = vec2(maxX - minX + 1, maxY - minY + 1);
 		vec2 sizeMask   = vec2(mask->Width(), mask->Height());
@@ -100,7 +100,7 @@ private:
 			}
 			shape.Set(shape.m_vertices, polygon.size());
 
-			assert(polygon.size() < 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
+			assert(polygon.size() <= 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
 			body.AddCollider(shape, sand.density);
 		}
 

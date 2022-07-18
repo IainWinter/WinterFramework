@@ -263,7 +263,7 @@ void b2ContactManager::AddPair(void* proxyUserDataA, void* proxyUserDataB)
 	}
 	m_contactList = c;
 
-	// Connect to island graph.
+	// Connect to island scene.
 
 	// Connect to body A
 	c->m_nodeA.contact = c;

@@ -82,6 +82,9 @@ struct System_PlayerController : System<System_PlayerController>
 			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
 
 		body.SetVelocity(vel);
+
+
+		SendNow(event_Item_Pickup{ playerEntity, ITEM_ENERGY }); // debug
 	}
 
 	void on(event_Input& e)

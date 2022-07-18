@@ -4,15 +4,17 @@
 
 namespace Time
 {
-	static auto now        = std::chrono::high_resolution_clock::now();
-	static auto deltaTime  = std::chrono::high_resolution_clock::duration::zero();
-	static size_t ticks    = 0;
-	static float time      = 0.0f;
-	static float rawtime   = 0.0f;
-	static float fixedTime = 0.02f;
-	static float timeScale = 1.0f;
+	auto start      = std::chrono::high_resolution_clock::now();
 
-	static std::vector<float> pastDt;
+	auto now        = std::chrono::high_resolution_clock::now();
+	auto deltaTime  = std::chrono::high_resolution_clock::duration::zero();
+	size_t ticks    = 0;
+	float time      = 0.0f;
+	float rawtime   = 0.0f;
+	float fixedTime = 0.02f;
+	float timeScale = 1.0f;
+
+	std::vector<float> pastDt;
 	float smoothDeltaTime;
 
 	void SetDeltaTime(float dt)
@@ -48,6 +50,7 @@ namespace Time
 
 	uint64_t Ticks() { return ticks; }
 	float TotalTime() { return time; }
+	float TotalTimeNow() { return (std::chrono::high_resolution_clock::now() - start).count() / 1000000000.0f; } // would be good to remove these divisions and use the std::ratio construct
 	float RawTotalTime() { return rawtime; }
 	float RawDeltaTime() { return deltaTime.count() / 1000000000.0f; }
 	float DeltaTime() { return RawDeltaTime() * TimeScale(); }

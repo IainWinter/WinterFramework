@@ -21,6 +21,12 @@ struct System_Testing : SystemBase
 	{
 		ImGui::Begin("indev");
 
+		float timeScale = Time::TimeScale();
+		ImGui::SliderFloat("time scale", &timeScale, 0, 2);
+		Time::SetTimeScale(timeScale);
+
+		ImGui::Separator();
+
 		{
 			ItemType item = (ItemType)-1;
 

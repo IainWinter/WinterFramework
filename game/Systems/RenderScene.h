@@ -2,7 +2,7 @@
 
 #include "Leveling.h"
 #include "Rendering.h"
-#include "ext/rendering/SceneGraph.h"
+#include "ext/rendering/Scene.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Particle.h"
@@ -161,34 +161,101 @@ struct Stage_SendTargetToHost : RenderStage
 	}
 };
 
-struct System_RenderSceneGraph : SystemBase
-{
-	SceneGraph graph;
+// this should be in the ext/systems folder
 
+struct System_RenderScene : SystemBase
+{
+private:
+	Scene scene;
+	r<Target> m_lastTarget;
+	r<ShaderProgram> m_lastProgram;
+
+public:
 	void Init()
 	{
-		graph = SceneGraph(LevelManager::CurrentLevel());
+		SetName("Render Scene");
+
+		scene = Scene(LevelManager::CurrentLevel());
 
 		r<Target> collisionInfo = LevelManager::CurrentLevel()->GetApp()->GetModule<SandWorld>().screenRead;
 		collisionInfo->Use();
 		collisionInfo->Clear(Color(0, 0, 0, 0));
 		
-		graph.AddStage(new Stage_ClearTarget(Color(22, 22, 22, 22)), nullptr);
-		graph.AddStage(new Stage_Meshes(),                           nullptr, GetProgram_Wireframe());
-		graph.AddStage(new Stage_NewSpriteRender(),                  nullptr);
+		scene.AddStage("Clear Screen", new Stage_ClearTarget(Color(22, 22, 22, 22)), nullptr);
+		scene.AddStage("Draw Meshes",  new Stage_Meshes(),                           nullptr, GetProgram_Wireframe());
+		scene.AddStage("Draw Sprites", new Stage_NewSpriteRender(),                  nullptr);
 
-		graph.AddStage(new Stage_ClearTarget(Color(0, 0, 0, 0)), collisionInfo);
-		graph.AddStage(new Stage_SandSpriteInfo(),               collisionInfo, GetProgram_SandSpriteInfo());
-		graph.AddStage(new Stage_SendTargetToHost(),             collisionInfo);
+		scene.AddStage("Clear Sand Collision Info",        new Stage_ClearTarget(Color(0, 0, 0, 0)), collisionInfo);
+		scene.AddStage("Draw Sand Collision Info",         new Stage_SandSpriteInfo(),               collisionInfo, GetProgram_SandSpriteInfo());
+		scene.AddStage("Copy Sand Collision Info to Host", new Stage_SendTargetToHost(),             collisionInfo);
 	}
 
 	void Update()
 	{
-		graph.Execute();
+		if (scene.stages.size() == 0) return;
+
+		auto itr = scene.stages.begin();
+		RenderStage* stage = *itr;
+
+		ForceUse(stage); // assume opengl state could be anything
+
+		for (; itr != scene.stages.end(); ++itr)
+		{
+			stage = *itr;
+
+			scope_timer timer = TimeScope(stage->name);
+
+			UseDiff(stage);
+			stage->Draw();
+		}
 	}
 
 	void UI()
 	{
-		graph.ExecuteUI();
+		for (auto stage = scene.stages.begin(); stage != scene.stages.end(); ++stage)
+		{
+			(*stage)->UI();
+		}
 	}
+
+private:
+	void UseProgram(RenderStage* stage)
+	{
+		if (stage->program)
+		{
+			stage->program->Use();
+		}
+	}
+	
+	void UseTarget(RenderStage* stage)
+	{
+		if (stage->target)
+		{
+			glViewport(0, 0, stage->target->Width(), stage->target->Height());
+			stage->target->Use();
+		}
+
+		else
+		{
+			Window& window = GetModule<Window>();
+			glViewport(0, 0, window.Width(), window.Height());
+			Target::UseDefault();
+		}
+	}
+	
+	void ForceUse(RenderStage* stage)
+	{
+		UseProgram(stage);
+		UseTarget (stage);
+	}
+
+	void UseDiff(RenderStage* stage)
+	{
+		if (m_lastProgram != stage->program) UseProgram(stage);
+		if (m_lastTarget  != stage->target)  UseTarget (stage);
+
+		m_lastProgram = stage->program;
+		m_lastTarget  = stage->target;
+	}
+
 };

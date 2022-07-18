@@ -48,10 +48,12 @@ private:
 		{
 			case WEAPON_CANNON:
 			{
-				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
+				e.Add<CellProjectile>(entity.Id())
+					.SetHealth(5);
+
 				transform.position += normal * .05f;
 
 				GetModule<PhysicsWorld>().AddEntity(e)
@@ -62,11 +64,13 @@ private:
 			
 			case WEAPON_MINIGUN:
 			{
-				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
 				transform.position += normal * .07f;
+
+				e.Add<CellProjectile>(entity.Id())
+					.SetHealth(5);
 
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 40.f);
@@ -76,9 +80,11 @@ private:
 
 			case WEAPON_LASER: 
 			{
-				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+
+				e.Add<CellProjectile>(entity.Id())
+					.SetHealth(50);
 
 				transform.position += normal * .02f;
 				
@@ -90,9 +96,11 @@ private:
 
 			case WEAPON_LASER_LARGE:
 			{
-				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(5.f);
 				e.Add<ParticleEmitter>(GetPrefab_LaserEmitter());
+
+				e.Add<CellProjectile>(entity.Id())
+					.SetHealth(50);
 
 				transform.position += normal * .5f;
 
@@ -104,9 +112,12 @@ private:
 
 			case WEAPON_FUEL_SHOT:
 			{
-				e.Add<CellProjectile>(entity.Id());
 				e.Add<DestroyInTime>(3.f);
 				e.Add<ParticleEmitter>(GetPrefab_FuelShotEmitter());
+
+				e.Add<CellProjectile>(entity.Id())
+					.SetHealth(15)
+					.SetSize(3);
 
 				GetModule<PhysicsWorld>().AddEntity(e)
 					.SetVelocity(direction * 50.f);

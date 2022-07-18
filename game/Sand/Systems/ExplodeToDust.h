@@ -27,7 +27,7 @@ struct Sand_System_ExplodeToDust : System<Sand_System_ExplodeToDust>
 	void on(event_Sand_ExplodeToDust& e)
 	{
 		bool destroyAll = e.onlyThisIndex.size() == 0;
-		if (destroyAll) e.onlyThisIndex = GetCorePixels(e.entity.Get<Sprite>().source).all;
+		if (destroyAll) e.onlyThisIndex = GetCorePixels(e.entity.Get<Sprite>().source).GetAllAsVec();
 		ExplodeSpriteIntoDust(e.onlyThisIndex, e.entity, e.velocity, destroyAll);
 	}
 

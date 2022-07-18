@@ -4,6 +4,7 @@
 #include "Common.h"
 #include <vector>
 #include <tuple>
+#include <unordered_set>
 
 #include "Sand/SandComponents.h"
 
@@ -20,7 +21,25 @@ struct Islands
 	}
 };
 
-std::tuple<int, int, int, int> GetBoundingBoxOfIsland(const std::vector<int>& island, int width);
+template<typename _t>
+std::tuple<int, int, int, int> GetBoundingBoxOfIsland(const _t& island, int width)
+{
+	int minX =  INT_MAX;
+	int minY =  INT_MAX;
+	int maxX = -INT_MAX;
+	int maxY = -INT_MAX;
+
+	for (const int& index : island)
+	{
+		auto [x, y] = get_xy(index, width);
+		if (x < minX) minX = x;
+		if (y < minY) minY = y;
+		if (x > maxX) maxX = x;
+		if (y > maxY) maxY = y;
+	}
+
+	return { minX, minY, maxX, maxY };
+}
 
 // returns only health pixels, or all pixels if there are none
 // a health pixel has an alpha not equal to 0 or 255, 

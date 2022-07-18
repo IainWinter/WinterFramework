@@ -64,7 +64,7 @@ struct System_EnemySpawner : SystemBase
 	float delay = 2.f;
 	float time  = 2.f;
 
-	bool enabled;
+	bool enabled = true;
 
 	void Update()
 	{

@@ -65,13 +65,14 @@ struct Sand_System_RemoveCellsFromSprite : System<Sand_System_RemoveCellsFromSpr
 		if (sc.as_u32 != 0) sc.a = e.healCore ? 254 : 255; // this doesnt work for some reason
 		if (mc.as_u32 != 0) mc.a = 255;
 
+		// create Heal function
+
 		if (e.healCore)
 		{
 			auto itr = std::find(healable.removedFromCore.begin(), healable.removedFromCore.end(), index);
 			if (itr != healable.removedFromCore.end()) {
 				healable.removedFromCore.erase(itr);
 			}
-			mask.pixels.core.push_back(index);
 		}
 
 		else
@@ -82,6 +83,6 @@ struct Sand_System_RemoveCellsFromSprite : System<Sand_System_RemoveCellsFromSpr
 			}
 		}
 		
-		mask.pixels.all.push_back(index);
+		mask.pixels.Add(index, e.healCore);
 	}
 };

@@ -5,6 +5,9 @@
 #include "Event.h"
 #include "Task.h"
 
+#include "util/metrics.h" // beings time into Leveling.h, before this it wasnt needed...
+						  // should bring time into the main lib though, no reason for it to be an ext
+
 // might want to change the name of this file, it is a little confusing to include
 
 // This holds the global state for the program
@@ -33,6 +36,8 @@ private:
 	
 	TaskPool m_task; // one thread pool per app makes the most sense
 
+	metrics_log m_metrics;
+
 public:
 	Application()
 		: m_rootQueue (&m_rootBus)
@@ -56,6 +61,11 @@ public:
 
 	event_queue* GetRootEventQueue() { return &m_rootQueue; }
 	TaskPool*    GetTaskPool()       { return &m_task; }
+
+	// Debugging metrics
+
+	scope_timer  TimeScope (const char* name) { return scope_timer(name, &m_metrics); };
+	metrics_log* GetMetrics()                 { return &m_metrics; }
 
 	// subject to removal ? \/
 
@@ -144,7 +154,8 @@ struct SystemBase
 {
 private:
 	Level* m_level = nullptr; // get set in Level::NewSystem
-	
+	const char* m_name = nullptr; // ONLY for metrics, going to use an function in Init, not force through a constructor
+
 	template<typename _t> friend struct System;
 	                      friend struct Level;
 
@@ -154,7 +165,8 @@ protected:
 	template<typename    _t> _t&                          GetModule()       { assert_init(); return m_level->m_app->GetModule<_t>(); }
 	template<typename... _t> std::tuple<_t&...>           GetModules()      { assert_init(); return m_level->m_app->GetModules<_t...>(); }
 
-	// some helpers
+// some helpers
+
 	template<typename... _t> Entity                       FirstEntityWith() { assert_init(); return std::get<0>(*m_level->m_world.QueryWithEntity<_t...>().begin()); }
 
 	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
@@ -162,16 +174,32 @@ protected:
 	template<typename _t> void SendToRoot   (_t&& event) { assert_init(); m_level->m_app->Send(event); }
 	template<typename _t> void SendToRootNow(_t&& event) { assert_init(); m_level->m_app->SendNow(event); }
 
-	// Entities
+// Entities
 
 	Entity CreateEntity() { assert_init(); return m_level->CreateEntity(); }
 	Entity Wrap(u32 id)   { assert_init(); return m_level->GetWorld()->Wrap(id); }
 
-	// Threading
+// Threading
 	
 	void Thread   (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Thread(work); }
 	void Coroutine(const std::function<bool()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Coroutine(work); }
 	void Defer    (const std::function<void()>& work) { assert_init(); m_level->m_app->GetTaskPool()->Defer(work); }
+
+// Instead of accessing global LevelManager::CurrentLevel
+
+	Level* GetLevel() { return m_level; }
+
+// Debugging metrics
+
+	scope_timer TimeScope(const char* name) { return m_level->m_app->TimeScope(name); };
+
+// Metadata
+
+public:
+	void        SetName(const char* name) { m_name = name; }
+	const char* GetName() { return m_name; }
+
+// Interface
 
 public:
 	virtual ~SystemBase()
@@ -306,5 +334,6 @@ inline SystemBase* Level::NewSystem(const _t& system_toCopy)
 {
 	SystemBase* system = new _t(system_toCopy);
 	system->m_level = this;
+	system->SetName(typeid(_t).name()); // default name, can set a pritty name in the Init function of system
 	return system;
 }

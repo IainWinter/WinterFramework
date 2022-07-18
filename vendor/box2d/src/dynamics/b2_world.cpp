@@ -303,7 +303,7 @@ void b2World::DestroyJoint(b2Joint* j)
 		m_jointList = j->m_next;
 	}
 
-	// Disconnect from island graph.
+	// Disconnect from island scene.
 	b2Body* bodyA = j->m_bodyA;
 	b2Body* bodyB = j->m_bodyB;
 
@@ -445,7 +445,7 @@ void b2World::Solve(const b2TimeStep& step)
 		stack[stackCount++] = seed;
 		seed->m_flags |= b2Body::e_islandFlag;
 
-		// Perform a depth first search (DFS) on the constraint graph.
+		// Perform a depth first search (DFS) on the constraint scene.
 		while (stackCount > 0)
 		{
 			// Grab the next body off the stack and add it to the island.

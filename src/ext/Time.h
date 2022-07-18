@@ -13,6 +13,7 @@ namespace Time
 
 	size_t Ticks();
 	float TotalTime();
+	float TotalTimeNow();
 	float RawTotalTime();
 
 	float RawDeltaTime();

@@ -15,25 +15,11 @@
 #include "Leveling.h"
 #include "Physics.h"
 #include "ext/Time.h" // Time shouldnt be an ext...
+#include "util/metrics.h"
 
 // holds the application and has some
 // functions for updating its state
-// this is where global events would attach...
-
-#define IW_METRICS_TIMER
-
-enum MetricName
-{
-	TICK,         // value is Delta time
-	TICK_FIXED    // value is Number of ticks in frame
-};
-
-struct event_RecordMetric
-{
-	MetricName metric; // name
-	float timePoint;   // TotalTime
-	float value;       // whatever value for metric, see metric name
-};
+// this is where global events attach...
 
 struct EngineLoop
 {
@@ -94,10 +80,6 @@ public:
 	{
 		Time::UpdateTime();
 
-#ifdef IW_METRICS_TIMER
-		LogMetric(TICK, Time::RawDeltaTime());
-#endif
-
 		float physicsTicks = 0;
 
 		m_fixedStepAcc += Time::DeltaTime();
@@ -109,10 +91,6 @@ public:
 			TickLevelFixed();
 			TickPhysics();
 		}
-
-#ifdef IW_METRICS_TIMER
-		LogMetric(TICK_FIXED, physicsTicks);
-#endif
 
 		TickLevel();
 		TickLevelUI();
@@ -136,29 +114,42 @@ protected:
 private:
 	// Level Updates
 
+#define TIME_SCOPE(name) scope_timer temp_scope_time_a = m_app.TimeScope(name)
+#define TIME_SCOPE2(name) scope_timer temp_scope_time_b = m_app.TimeScope(name)
+#define TIME_SCOPE3(name) scope_timer temp_scope_time_c = m_app.TimeScope(name)
+
 	void TickLevel()
 	{
+		TIME_SCOPE("Tick Level");
+
 		for (SystemBase* system : LevelManager::CurrentLevel()->GetSystems())
 		{
+			TIME_SCOPE2(system->GetName());
 			system->Update();
 		}
 	}
 
 	void TickLevelFixed()
 	{
+		TIME_SCOPE("Tick Level Fixed");
+
 		for (SystemBase* system : LevelManager::CurrentLevel()->GetSystems())
 		{
+			TIME_SCOPE2(system->GetName());
 			system->FixedUpdate();
 		}
 	}
 
 	void TickLevelUI()
 	{
+		TIME_SCOPE("Tick Level UI");
+
 		Window& window = m_app.GetModule<Window>();
 
 		window.BeginImgui();
 		for (SystemBase* system : LevelManager::CurrentLevel()->GetSystems())
 		{
+			TIME_SCOPE2(system->GetName());
 			system->UI();
 		}
 		window.EndImgui();
@@ -168,6 +159,8 @@ private:
 
 	void TickFrame()
 	{
+		TIME_SCOPE("Tick Window");
+
 		Window& window = m_app.GetModule<Window>();
 
 		window.EndFrame();
@@ -176,44 +169,42 @@ private:
 
 	void TickPhysics()
 	{
+		TIME_SCOPE("Tick Physics");
+
 		PhysicsWorld& physics = m_app.GetModule<PhysicsWorld>();
 		physics.Step(Time::FixedTime());
 	}
 
 	void TickEvents()
 	{
+		TIME_SCOPE("Tick Events");
+
 		m_app.GetRootEventQueue()->execute();
 		LevelManager::CurrentLevel()->GetLevelEventQueue()->execute(); // might be issue while loading/unloading in background...
 	}
 
 	void TickTasks()
 	{
+		TIME_SCOPE("Tick Tasks");
 		m_app.GetTaskPool()->TickCoroutines();
 	}
 
 	void TickDefered()
 	{
+		TIME_SCOPE("Tick Defered");
 		// technically the entityworld at the root App level should also get ticked, but I dont think it will ever be needed
 		LevelManager::CurrentLevel()->GetWorld()->ExecuteDeferdDeletions();
 	}
 
 	void TickLastTransforms()
 	{
+		TIME_SCOPE("Tick Last Transform Update");
+
 		for (auto [transform] : LevelManager::CurrentLevel()->GetWorld()->Query<Transform2D>())
 		{
 			transform.UpdateLastFrameData();
 		}
 	}
-
-#ifdef IW_METRICS_TIMER
-	// debug
-
-	void LogMetric(MetricName name, float value)
-	{
-		m_app.GetRootEventQueue()->send(event_RecordMetric{ name, Time::TotalTime(), value });
-	}
-
-#endif
 };
 
 template<typename _engine_loop>

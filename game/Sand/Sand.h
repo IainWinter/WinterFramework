@@ -103,7 +103,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
 		sandSprite.pixels = GetCorePixels(sprite);
-		sandSprite.initalCore = sandSprite.pixels.core;
+		sandSprite.initalCore = sandSprite.pixels.GetCoreAsVec();
 		sandSprite.density = e.density;
 
 		Rigidbody2D* body;

@@ -23,12 +23,22 @@ struct System_RockSpawner_Test : SystemBase
 			
 			vec2 pos = get_randnc(40.f);
 			vec2 vel = -normalize(pos) * rockSpeed;
-			r<Texture> texture = mkr<Texture>(_a("asteroid_mid_1.png"), false);
+
+			std::string asterName = choose<const char*>({
+				{"asteroid_mid_1.png", 10},
+				{"asteroid_mid_2.png", 20},
+				{"asteroid_mid_3.png", 30},
+				{"asteroid_mid_4.png", 40},
+				{"asteroid_mid_5.png", 50}
+			});
+
+			r<Texture> texture = mkr<Texture>(_a(asterName), false);
 
 			Entity rock = CreateEntity();
 			rock.Add<Transform2D>(pos);
 			rock.Add<Sprite>(texture);
-			rock.Add<SandSprite>(texture);
+			rock.Add<SandSprite>(texture)
+				.SetCellStrength(.2f);
 
 			rock.Add<Rigidbody2D>()
 				.SetPosition(pos)

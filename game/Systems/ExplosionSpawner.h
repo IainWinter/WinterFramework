@@ -32,18 +32,13 @@ private:
 
 	void SpawnExplosion(vec2 position, float power)
 	{
-		const auto onCreate = [](Entity& e)
-		{
-			e.Add<CellProjectile>(0u, 35, .8f);
-		};
-
 		float radius = 10.f;
 
 		for (float i = 0; i < power; i += .1f) // global power scale
 		{
 			Entity e = CreateEntity();
 			e.Add<Transform2D>(position);
-			e.Add<CellProjectile>(u32(-1));
+			e.Add<CellProjectile>();
 			e.Add<DestroyInTime>(.1f + get_rand(.3f));
 
 			GetModule<PhysicsWorld>()

@@ -14,58 +14,77 @@ struct CellDefinition
 
 struct CellProjectile
 {
-	u32 owner; // for no damage to who fired
-	int health = 15; // how many cells can this projectile destroy
+	u32   owner = 0u; // for no damage to who fired
+	float health = 15; // how many cells can this projectile destroy
 	float turnOnHitRate = .2f; // percent of velocity that should be used to turn on each cell hit
 	float trailLife = .02;
-	int size = 0;
+	int   size = 0;
+
+	CellProjectile& SetOwner     (u32   owner)         { this->owner = owner;              return *this; }
+	CellProjectile& SetHealth    (float health)        { this->health = health;               return *this; }
+	CellProjectile& SetTurnRate  (float turnOnHitRate) { this->turnOnHitRate = turnOnHitRate; return *this; }
+	CellProjectile& SetTrailLife (float trailLife)     { this->trailLife = trailLife;         return *this; }
+	CellProjectile& SetSize      (int   size)          { this->size = size;                   return *this; }
 };
 
 struct CorePixels
 {
-	std::vector<int> core; // should use unordered sets
-	std::vector<int> all;
-	bool hasCore;
-	bool hasAny;
+private:
+	std::unordered_set<int> core; // should use unordered sets
+	std::unordered_set<int> all;
 
-	bool IsInCore(int index) const
-	{
-		return std::find(core.begin(), core.end(), index) != core.end();
-	}
+public:
+	size_t CoreSize()  const { return core.size(); }
+	size_t TotalSize() const { return all.size(); }
+	bool   HasCore()   const { return CoreSize () > 0; }
+	bool   HasAny()    const { return TotalSize() > 0; }
 
-	bool IsInAll(int index) const
+	bool IsInCore(int index) const { return core.find(index) != core.end(); }
+	bool IsInAll (int index) const { return all .find(index) != all .end(); }
+
+	std::vector<int> GetCoreAsVec() const { return std::vector<int>(core.begin(), core.end()); }
+	std::vector<int> GetAllAsVec()  const { return std::vector<int>(all .begin(), all .end()); }
+	
+	const std::unordered_set<int>& GetCore() const { return core; }
+	const std::unordered_set<int>& GetAll()  const { return all; }
+
+
+	void Add(int index, bool isCore)
 	{
-		return  std::find(all.begin(), all.end(), index) != all.end();
+		all.insert(index);
+		if (isCore) core.insert(index);
 	}
 
 	void Remove(int index)
 	{
-		auto itrCore = std::find(core.begin(), core.end(), index);
-		auto itrAll  = std::find(all .begin(), all .end(), index);
-
-		if (itrCore != core.end()) core.erase(itrCore);
-		if (itrAll  != all .end()) all .erase(itrAll);
+		if (IsInCore(index)) core.erase(index);
+		if (IsInAll (index)) all .erase(index);
 	}
 };
 
 struct SandSprite
 {
 	float density = 100.f;
+	float cellStrength = 1.f;
 	bool invulnerable = false;
 	r<Texture> colliderMask;
 	std::vector<int> initalCore;
-	int cellStrength = 1;
 	CorePixels pixels;
 
 	bool isCircle = false;
 	bool isHardCore = false;
 
-	int CellCount() const { return pixels.all.size(); }
+	int CellCount() const { return pixels.TotalSize(); }
 	Texture& Get() { return *colliderMask; }
 
 	SandSprite() = default;
 	SandSprite(const Texture& collider) : colliderMask(mkr<Texture>(collider)) {}
 	SandSprite(r<Texture> collider)     : colliderMask(collider) {}
+
+
+	SandSprite& SetDensity       (float density)      { this->density = density;           return *this; }
+	SandSprite& SetCellStrength  (float cellStrength) { this->cellStrength = cellStrength; return *this; }
+	SandSprite& SetIsInvulnerable(bool invulnerable)  { this->invulnerable = invulnerable; return *this; }
 };
 
 struct SandHealable

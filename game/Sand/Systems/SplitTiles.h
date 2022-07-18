@@ -143,22 +143,27 @@ private:
 			float a = body.GetAngularVelocity();
 			float d = body.GetCollider()->GetDensity(); // should test if body has collider, 
 														// they should have to because if not they explode
+			float cellsStrength = entity.Get<SandSprite>().cellStrength;
+
 			Defer([=]()
 			{
 				auto [t, s, ss] = split;
-				Entity e = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
+				Entity splitEntity = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 
-				vec2  vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
-				float ang = a + get_randc(wPI);
+				splitEntity.Get<SandSprite>()
+					.SetCellStrength(cellsStrength);
+
+				vec2  vel = v;// +safe_normalize(t.position - body.GetPosition()) * 2.f;
+				float ang = a;// +get_randc(wPI);
 
 				if (island.size() < 50)
 				{
-					e.Add<SandTurnToDustInTime>(island.size() / 10.f);
+					splitEntity.Add<SandTurnToDustInTime>(island.size() / 10.f);
 				}
 
-				e.Add<Throwable>();
+				splitEntity.Add<Throwable>();
 
-				SendNow(event_SandAddSprite { e, vel, ang, d });
+				SendNow(event_SandAddSprite { splitEntity, vel, ang, d });
 			});
 		}
 	}
