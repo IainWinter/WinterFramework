@@ -279,12 +279,16 @@ public:
 
 	glm::mat4 World() const
 	{
-		glm::mat4 world = glm::mat4(1.f);
-		world = glm::translate(world, vec3(position, z));
-		world = glm::rotate   (world, rotation, vec3(0.f, 0.f, 1.f));
-		world = glm::scale    (world, vec3(scale, 1.f));
+		float sr = sin(rotation);
+		float cr = cos(rotation);
 
-		return world;
+		return glm::mat4
+		(
+			scale.x *  cr, scale.x * sr,   0,   0,
+			scale.y * -sr, scale.y * cr,   0,   0,
+			            0,            0,   1,   0,
+			   position.x,   position.y,   z,   1
+		);
 	}
 
 	void UpdateLastFrameData()
