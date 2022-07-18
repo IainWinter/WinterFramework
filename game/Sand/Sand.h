@@ -95,6 +95,16 @@ struct Sand_System_Update : System<Sand_System_Update>
 		Attach<event_SandAddSprite>();
 	}
 
+	void Update()
+	{
+		//SandWorld& sand = GetModule<SandWorld>();
+
+		//for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
+		//{
+		//	particle.enableAutoEmit = sand.OnScreen(transform.position);
+		//}
+	}
+
 	void on(event_SandAddSprite& e)
 	{
 		r<Texture> sprite = e.entity.Get<Sprite>().source;

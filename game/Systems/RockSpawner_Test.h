@@ -38,7 +38,8 @@ struct System_RockSpawner_Test : SystemBase
 			rock.Add<Transform2D>(pos);
 			rock.Add<Sprite>(texture);
 			rock.Add<SandSprite>(texture)
-				.SetCellStrength(.2f);
+				.SetCellStrength(.2f)
+				.SetDensity(1000.f);
 
 			rock.Add<Rigidbody2D>()
 				.SetPosition(pos)
