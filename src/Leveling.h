@@ -218,6 +218,7 @@ public:
 	virtual void Update() {}
 	virtual void FixedUpdate() {}
 	virtual void UI() {}
+	virtual void Debug() {}
 
 private:
 	void assert_init()

@@ -86,20 +86,6 @@ public:
 		}
 		render.Draw();
 	}
-
-	void UI()
-	{
-		ImGui::Begin("Particle System");
-		int i = 0;
-
-		for (auto [transform, particle] : level->GetWorld()->Query<Transform2D, Particle>())
-		{
-			i++;
-		}
-
-		ImGui::Text("particles rendered %d", i);
-		ImGui::End();
-	}
 };
 
 struct Stage_DebugSandSprites : RenderStage

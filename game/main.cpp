@@ -175,7 +175,7 @@ struct Regolith : EngineLoop
 			level->AddSystem(System_AllowPauseMenu()),
 			level->AddSystem(System_FuelTank()),
 			
-			//level->AddSystem(System_EnemySpawner()),
+			level->AddSystem(System_EnemySpawner()),
 			level->AddSystem(System_RockSpawner_Test())
 		};
 
@@ -191,8 +191,8 @@ struct Regolith : EngineLoop
 
 		level->AddSystem(System_UI_PlayerHUD());
 
-		level->AddSystem(System_Metrics());
-		level->AddSystem(System_Testing());
+		//level->AddSystem(System_Metrics());
+		//level->AddSystem(System_Testing());
 	}
 
 	void ConfigureModules()

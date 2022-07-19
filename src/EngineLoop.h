@@ -151,6 +151,7 @@ private:
 		{
 			TIME_SCOPE2(system->GetName());
 			system->UI();
+			system->Debug();
 		}
 		window.EndImgui();
 	}

@@ -13,6 +13,7 @@
 #include "ext/Components.h"
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Camera.h"
+#include "ext/rendering/Particle.h"
 
 #include "Components/KeepOnScreen.h"
 #include "CoordTranslation.h"
@@ -97,12 +98,37 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void Update()
 	{
-		//SandWorld& sand = GetModule<SandWorld>();
+		SandWorld& sand = GetModule<SandWorld>();
 
-		//for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
-		//{
-		//	particle.enableAutoEmit = sand.OnScreen(transform.position);
-		//}
+		// turn off emitter when off screen
+
+		for (auto [transform, particle, cell] : Query<Transform2D, ParticleEmitter, CellProjectile>())
+		{
+			if (!sand.OnScreen(transform.position))
+			{
+				cell.timeOffscreen += Time::DeltaTime();
+				particle.enableAutoEmit = cell.timeOffscreen < .1f; // wait a few frames to allow some particles from offscreen, and stop early delete
+			}
+		}
+
+		// remove sand sprites that are off screen
+
+		for (auto [entity, transform, sprite] : QueryWithEntity<Transform2D, SandSprite>())
+		{
+			if (sand.OnScreen(transform.position))
+			{
+				sprite.hasBeenOnScreenOnce = true;
+			}
+
+			else if (sprite.hasBeenOnScreenOnce)
+			{
+				sprite.timeOffscreen += Time::DeltaTime();
+				if (sprite.timeOffscreen > 4.f)
+				{
+					entity.DestroyAtEndOfFrame();
+				}
+			}
+		}
 	}
 
 	void on(event_SandAddSprite& e)

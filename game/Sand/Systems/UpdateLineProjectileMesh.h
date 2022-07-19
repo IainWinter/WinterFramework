@@ -55,7 +55,7 @@ public:
 					const SandSprite& ssprite = result.hit.hitEntity.Get<SandSprite>();
 					if (ssprite.isHardCore && ssprite.pixels.IsInCore(result.hit.hitIndex))
 					{
-						entity.Destroy();
+						entity.DestroyAtEndOfFrame();
 						break;
 					}
 				}
@@ -70,7 +70,7 @@ public:
 					proj.health -= totalHitStrength / hitCount; // take average
 					if (proj.health <= 0)
 					{
-						entity.Destroy();
+						entity.DestroyAtEndOfFrame();
 						break;
 					}
 				}

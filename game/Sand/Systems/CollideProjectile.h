@@ -13,8 +13,9 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 	void on(event_Sand_ProjectileHit& e)
 	{
-		if (  !e.entity.IsAlive() 
-			&& e.entity.Id() == e.projectile.Get<CellProjectile>().owner) // exit if owner or dead?
+		if (   !e.entity.IsAlive()
+			|| !e.projectile.IsAlive()
+			||  e.entity.Id() == e.projectile.Get<CellProjectile>().owner) // exit if owner or dead?
 		{
 			return;
 		}

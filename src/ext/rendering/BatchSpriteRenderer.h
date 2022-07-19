@@ -5,6 +5,13 @@
 #include "ext/rendering/Camera.h"
 #include <unordered_map>
 
+// could use major improvments !!!
+// 
+// 1. dont realloc memory every frame
+// 2. clump draws by multiple textures (bind more than one at a time and add tex index to vertex info)
+// 3. write directly to buffer memory (maybe make a buffer a vector?)
+// 4. create all batches and upload at once, while draws are happening
+
 struct BatchSpriteRenderer
 {
 private:

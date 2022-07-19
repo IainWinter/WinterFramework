@@ -20,6 +20,8 @@ struct CellProjectile
 	float trailLife = .02;
 	int   size = 0;
 
+	float timeOffscreen = 0.f;
+
 	CellProjectile& SetOwner     (u32   owner)         { this->owner = owner;              return *this; }
 	CellProjectile& SetHealth    (float health)        { this->health = health;               return *this; }
 	CellProjectile& SetTurnRate  (float turnOnHitRate) { this->turnOnHitRate = turnOnHitRate; return *this; }
@@ -73,6 +75,9 @@ struct SandSprite
 
 	bool isCircle = false;
 	bool isHardCore = false;
+
+	bool hasBeenOnScreenOnce = false;
+	float timeOffscreen = 0.f;
 
 	int CellCount() const { return pixels.TotalSize(); }
 	Texture& Get() { return *colliderMask; }
