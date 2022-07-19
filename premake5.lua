@@ -68,7 +68,8 @@ project "Framework"
 	}
 
 	defines { 
-		"IW_DEBUG"
+		"IW_DEBUG",
+		"SDL_MAIN_HANDLED"
 	}
 
 	buildoptions {

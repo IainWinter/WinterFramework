@@ -20,8 +20,8 @@ struct Player
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;
-	bool AttackFireInput;
-	bool AttackFireInputAlt;
+	float AttackFireInput;
+	float AttackFireInputAlt;
 
 	float AttackFuelAlt; // gets incremented in the UI system :yuk: and decremented in the player system
 	float AttackFuelConsumptionAlt = .05;

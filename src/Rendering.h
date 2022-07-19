@@ -539,7 +539,7 @@ private:
 	// public target specific functions
 
 public:
-	int NumberOfAttachments() const { return m_attachments.size(); }
+	int NumberOfAttachments() const { return (int)m_attachments.size(); }
 	int Width()               const { return m_width; }
 	int Height()              const { return m_height; }
 
@@ -640,7 +640,7 @@ protected:
 			gl(glFramebufferTexture(GL_FRAMEBUFFER, gl_attachment(name), texture->DeviceHandle(), 0));
 		}
 
-		gl(glDrawBuffers(toDraw.size(), toDraw.data()));
+		gl(glDrawBuffers((GLsizei)toDraw.size(), toDraw.data()));
 
 		GLint err = gl(glCheckFramebufferStatus(GL_FRAMEBUFFER));
 		if (err != GL_FRAMEBUFFER_COMPLETE)
@@ -1146,7 +1146,7 @@ public:
 	{
 		auto [repeat, type] = get_element_type_info<_t>();
 		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, isStatic == INHERIT_HOST ? IsStatic() : isStatic);
-		buffer->Set(data.size(), data.data());
+		buffer->Set((int)data.size(), data.data());
 		return Add(name, instancedStride, buffer->Repeat(), buffer);
 	}
 
@@ -1410,7 +1410,7 @@ public:
 		bool new_text = m_buffers.find(name) == m_buffers.end();
 		if (new_text) m_buffers.emplace(name, Buffer(1, 1, Buffer::_u8));
 		Buffer& buffer = m_buffers.at(name);
-		buffer.Append(strlen(str) + 1, str, buffer.Length() - 1); // +1 copies null and -1 removes it
+		buffer.Append((int)strlen(str) + 1, str, buffer.Length() - 1); // +1 copies null and -1 removes it
 	}
 
 	void Add(ShaderName name, const std::string& str)

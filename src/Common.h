@@ -151,17 +151,6 @@ void pop_erase(std::vector<_t>& list, size_t index)
 	list.pop_back();
 }
 
-// asset
-
-#ifndef ASSET_ROOT_PATH
-#	define ASSET_ROOT_PATH "../assets/"
-#endif
-
-inline std::string _a(const std::string& path)
-{
-	return ASSET_ROOT_PATH + path;
-}
-
 // common components
 
 struct Color
@@ -197,7 +186,7 @@ struct Color
 	static Color fromv4(const vec4& v4)
 	{
 		vec4 v = clamp(v4, vec4(0.f, 0.f, 0.f, 0.f), vec4(1.f, 1.f, 1.f, 1.f));
-		return Color(255 * v.x, 255 * v.y, 255 * v.z, 255 * v.w);
+		return Color(u8(255 * v.x), u8(255 * v.y), u8(255 * v.z), u8(255 * v.w));
 	}
 };
 
@@ -303,4 +292,9 @@ public:
 	{
 		return Transform2D(positionLast, scaleLast, rotationLast, zLast);
 	}
+};
+
+struct DestroyInTime
+{
+	float InSeconds;
 };

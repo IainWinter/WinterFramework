@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Windowing.h"
-#include "imgui/imgui.h"
+#include "app/FontMap.h"
 #include "Prefabs.h"
 #include "Components/Player.h"
 
@@ -33,7 +33,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 
-		UIFontScope font = GetModule<Window>().Fonts().Use("Pixel");
+		ImGui::PushFont(GetModule<FontMap>().Get("Pixel"));
 
 		ImGui::Begin("Player HUD", 0, 
 			  ImGuiWindowFlags_NoResize 
@@ -55,6 +55,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		ImGui::End();
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor(1);
+		ImGui::PopFont();
 	}
 
 	int GetScoreCount() const

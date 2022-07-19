@@ -17,7 +17,7 @@ struct CellProjectile
 	u32   owner = 0u; // for no damage to who fired
 	float health = 15; // how many cells can this projectile destroy
 	float turnOnHitRate = .2f; // percent of velocity that should be used to turn on each cell hit
-	float trailLife = .02;
+	float trailLife = .02f;
 	int   size = 0;
 
 	float timeOffscreen = 0.f;
@@ -36,10 +36,10 @@ private:
 	std::unordered_set<int> all;
 
 public:
-	size_t CoreSize()  const { return core.size(); }
-	size_t TotalSize() const { return all.size(); }
-	bool   HasCore()   const { return CoreSize () > 0; }
-	bool   HasAny()    const { return TotalSize() > 0; }
+	int  CoreSize()  const { return (int)core.size(); }
+	int  TotalSize() const { return (int)all.size(); }
+	bool HasCore()   const { return CoreSize () > 0; }
+	bool HasAny()    const { return TotalSize() > 0; }
 
 	bool IsInCore(int index) const { return core.find(index) != core.end(); }
 	bool IsInAll (int index) const { return all .find(index) != all .end(); }

@@ -59,8 +59,8 @@ struct pool_allocator : allocator
 			page = new linear_allocator(m_next_page_size);
 			page->m_block_size = m_block_size;
 
-			int start_block_index = m_pages.size() == 0 ? 0 : m_pages.back().first + m_pages.back().second->block_capacity();
-			m_pages.emplace_back(start_block_index, page);
+			size_t start_block_index = m_pages.size() == 0 ? 0 : m_pages.back().first + m_pages.back().second->block_capacity();
+			m_pages.emplace_back((int)start_block_index, page);
 
 			assert(m_next_page_mult > 0 && "Next page expansion is invalid");
 			m_next_page_size *= m_next_page_mult;

@@ -1,21 +1,19 @@
 #pragma once
 
+#include "Common.h"
+#include "Event.h"
+
+#include "util/error_check.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_sdl.h"
-
 #include "imgui/implot.h"
 
 #include "SDL2/SDL.h"
 #include "glad/glad.h"
 
-#include <unordered_map>
 #include <string>
-#include <sstream>
-
-#include "Common.h"
-#include "Event.h"
-#include "util/error_check.h"
 
 /*
 
@@ -48,44 +46,17 @@ struct event_Mouse
 	int button_repeat;
 };
 
-enum class InputName
+struct event_Key
 {
-	_NONE,
-	UP,
-	DOWN,
-	RIGHT,
-	LEFT,
+	SDL_Scancode keycode;
+	char key;
 
-	AIM_X,
-	AIM_Y,
+	bool state;
+	int repeat;
 
-	ATTACK,
-	ATTACK_ALT,
-
-	ESCAPE
-};
-
-struct InputMapping
-{
-	std::unordered_map<SDL_Scancode, InputName> m_keyboard;
-
-	InputName Map(SDL_Scancode code)
-	{
-		InputName name = InputName::_NONE;
-		auto itr = m_keyboard.find(code);
-		if (itr != m_keyboard.end())
-		{
-			name = itr->second;
-		}
-
-		return name;
-	}
-};
-
-struct event_Input
-{
-	InputName name;
-	float state;
+	bool key_shift;
+	bool key_ctrl;
+	bool key_alt;
 };
 
 /*
@@ -101,28 +72,6 @@ struct WindowConfig
 	int Height = 480;
 };
 
-struct UIFontScope
-{
-	UIFontScope(ImFont* font) { ImGui::PushFont(font); }
-	~UIFontScope() { ImGui::PopFont(); }
-};
-
-struct UIFonts
-{
-	std::unordered_map<std::string, ImFont*> Fonts;
-
-	void Load(const std::string& name, float size, const std::string& path)
-	{
-		ImFont* font = ImGui::GetIO().Fonts->AddFontFromFileTTF(_a(path).c_str(), size);
-		Fonts.emplace(name, font);
-	}
-
-	UIFontScope Use(const std::string& name_size) const
-	{
-		return UIFontScope(Fonts.at(name_size));
-	}
-};
-
 struct Window
 {
 private:
@@ -131,8 +80,6 @@ private:
 	event_queue* m_events;
 
 	WindowConfig m_config;
-	InputMapping m_input;
-	UIFonts      m_fonts;
 
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;
@@ -167,10 +114,6 @@ public:
 	int                 Height()     const { return m_config.Height; }
 	vec2                Dimensions() const { return vec2(Width(), Height()); }
 	const std::string&  Title()      const { return m_config.Title; }
-	const InputMapping& Input()      const { return m_input; }
-	InputMapping&       Input()            { return m_input; }
-	const UIFonts&      Fonts()      const { return m_fonts; }
-	UIFonts&            Fonts()            { return m_fonts; }
 
 	void Init()
 	{
@@ -297,32 +240,34 @@ public:
 				case SDL_KEYDOWN:
 				case SDL_KEYUP:
 				{
-					if (event.key.repeat == 0)
-					{
-						m_events->send(event_Input { 
-							m_input.Map(event.key.keysym.scancode),
-							event.key.state == SDL_PRESSED ? 1.f : -1.f // -1 for += e.state math, check for > 0 for is pressed
-						});
-					}
+					m_events->send(event_Key {
+						event.key.keysym.scancode,
+						(char)event.key.keysym.sym,
+						(bool)event.key.state,
+						(int)event.key.repeat,
+						bool(event.key.keysym.mod & KMOD_SHIFT), // doesn't handle right/left
+						bool(event.key.keysym.mod & KMOD_CTRL),
+						bool(event.key.keysym.mod & KMOD_ALT)
+					});
 					break;
 				}
 
-				case SDL_CONTROLLERBUTTONDOWN:
-				case SDL_CONTROLLERBUTTONUP:
-					printf("controller button %d %d\n", event.cbutton.button, event.cbutton.state);
-					break;
+				//case SDL_CONTROLLERBUTTONDOWN:
+				//case SDL_CONTROLLERBUTTONUP:
+				//	printf("controller button %d %d\n", event.cbutton.button, event.cbutton.state);
+				//	break;
 
-				case SDL_CONTROLLERAXISMOTION:
-					printf("controller axis %d %f\n", event.caxis.axis, event.caxis.value);
-					break;
+				//case SDL_CONTROLLERAXISMOTION:
+				//	printf("controller axis %d %f\n", event.caxis.axis, event.caxis.value);
+				//	break;
 
-				case SDL_CONTROLLERDEVICEADDED:
-					printf("controller plugged in\n");
-					break;
+				//case SDL_CONTROLLERDEVICEADDED:
+				//	printf("controller plugged in\n");
+				//	break;
 
-				case SDL_CONTROLLERDEVICEREMOVED:
-					printf("controller unplugged\n");
-					break;
+				//case SDL_CONTROLLERDEVICEREMOVED:
+				//	printf("controller unplugged\n");
+				//	break;
 			}
 		}
 	}
@@ -403,7 +348,6 @@ public:
 		, m_opengl (move.m_opengl)
 		, m_events (move.m_events)
 		, m_config (move.m_config)
-		, m_input  (move.m_input)
 	{
 		move.m_window = nullptr;
 		move.m_opengl = nullptr;
@@ -415,7 +359,6 @@ public:
 		m_opengl = move.m_opengl;
 		m_events = move.m_events;
 		m_config = move.m_config;
-		m_input  = move.m_input;
 		move.m_window = nullptr;
 		move.m_opengl = nullptr;
 		move.m_events = nullptr;

@@ -1,4 +1,3 @@
-#include "EngineLoop.h"
 #include "Common.h"
 #include "Rendering.h"
 
@@ -7,9 +6,8 @@
 #include "Sand/Sand.h"
 #include "Sand/SandEntity.h"
 
-#include "ext/Time.h"
+#include "app/EngineLoop.h"
 #include "ext/MeshGenerators.h"
-#include "ext/Components.h"
 
 #include "imgui/implot.h"
 
@@ -141,10 +139,24 @@ struct Regolith : EngineLoop
 
 	void _InitUI()
 	{
-		UIFonts& fonts = m_app.GetModule<Window>().Fonts();
+		FontMap& fonts = m_app.GetModule<FontMap>();
 		fonts.Load("Roboto",      18, "Roboto.ttf");
 		fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
 		fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+	}
+
+	// this should load from a file that the user can configure in a settings menu...
+
+	void ConfigureInputMapping()
+	{
+		InputMap& inputs = m_app.GetModule<InputMap>();
+
+		inputs.Set(SDL_SCANCODE_UP,     InputName::UP);
+		inputs.Set(SDL_SCANCODE_DOWN,   InputName::DOWN);
+		inputs.Set(SDL_SCANCODE_RIGHT,  InputName::RIGHT);
+		inputs.Set(SDL_SCANCODE_LEFT,   InputName::LEFT);
+		inputs.Set(SDL_SCANCODE_SPACE,  InputName::ATTACK);
+		inputs.Set(SDL_SCANCODE_ESCAPE, InputName::ESCAPE);
 	}
 
 	// Init
@@ -222,27 +234,6 @@ struct Regolith : EngineLoop
 		coords.CellsToMeters = 1.f / cellsPerMeter;
 
 		m_app.AddModule<CoordTranslation>(coords);
-	}
-
-	// this should load from a file that the user can configure in a settings menu...
-
-	void ConfigureInputMapping()
-	{
-		InputMapping& input = m_app.GetModule<Window>().Input();
-
-
-		input.m_keyboard[SDL_SCANCODE_UP]    = InputName::UP;
-		input.m_keyboard[SDL_SCANCODE_DOWN]  = InputName::DOWN;
-		input.m_keyboard[SDL_SCANCODE_RIGHT] = InputName::RIGHT;
-		input.m_keyboard[SDL_SCANCODE_LEFT]  = InputName::LEFT;
-		input.m_keyboard[SDL_SCANCODE_SPACE] = InputName::ATTACK;
-
-		//input.m_keyboard[SDL_SCANCODE_W]      = InputName::UP;
-		//input.m_keyboard[SDL_SCANCODE_S]      = InputName::DOWN;
-		//input.m_keyboard[SDL_SCANCODE_D]      = InputName::RIGHT;
-		//input.m_keyboard[SDL_SCANCODE_A]      = InputName::LEFT;
-		input.m_keyboard[SDL_SCANCODE_ESCAPE] = InputName::ESCAPE;
-
 	}
 
 	void ConfigureMainGameLevel()

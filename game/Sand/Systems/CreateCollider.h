@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Physics.h"
 #include "Rendering.h"
-#include "ext/marching_cubes.h"
+#include "ext/algo/marching_cubes.h"
 
 #include "CoordTranslation.h"
 
@@ -98,7 +98,7 @@ private:
 			{
 				shape.m_vertices[i] = _tb(polygon.at(i));
 			}
-			shape.Set(shape.m_vertices, polygon.size());
+			shape.Set(shape.m_vertices, (int)polygon.size());
 
 			assert(polygon.size() <= 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
 			body.AddCollider(shape, sand.density);

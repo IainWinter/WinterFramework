@@ -273,25 +273,5 @@ struct event_queue
 			e->send(m_manager);
 			delete e;
 		}
-
-		//size_t i = 0;
-
-
-
-		//do
-		//{
-		//	size_t sizeThisIteration = m_queue.size();
-
-		//	for (; i < sizeThisIteration; i++)
-		//	{
-		//		queued_event_base* e = m_queue.at(i);
-		//		e->send(m_manager);
-		//		delete e;
-		//		m_queue.at(i) = nullptr; // debug
-		//	}
-		//}
-		//while (i < m_queue.size());
-
-		//m_queue.clear();
 	}
 };
