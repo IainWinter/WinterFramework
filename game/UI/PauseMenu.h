@@ -22,24 +22,21 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, .4f));
+		ImGui::PushFont(GetModule<Window>().Fonts().Get("Pixel Title"));
 
-		{
-			UIFontScope titleFont = GetModule<Window>().Fonts().Use("Pixel Title");
+		ImGui::Begin("Pause Menu", 0, 
+				ImGuiWindowFlags_NoResize 
+			| ImGuiWindowFlags_NoTitleBar
+			| ImGuiWindowFlags_NoScrollbar
+		);
 
-			ImGui::Begin("Pause Menu", 0, 
-				  ImGuiWindowFlags_NoResize 
-				| ImGuiWindowFlags_NoTitleBar
-				| ImGuiWindowFlags_NoScrollbar
-			);
+		ImGui::PushFont(GetModule<Window>().Fonts().Get("Pixel"));
+		ImGui::Text("Paused");
+		ImGui::PopFont();
 
-			{
-				UIFontScope textFont = GetModule<Window>().Fonts().Use("Pixel");
-				ImGui::Text("Paused");
-			}
-
-			ImGui::End();
-			ImGui::PopStyleVar(2);
-			ImGui::PopStyleColor(2);
-		}
+		ImGui::End();
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(2);
+		ImGui::PopFont();
 	}
 };

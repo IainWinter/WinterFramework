@@ -58,6 +58,8 @@ private:
 				entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
 				entity.Add<Enemy>(20 + get_rand(20));
 
+				entity.Get<SandSprite>().SetCellStrength(.8f);
+
 				entity.Add<Rigidbody2D>()
 					.SetFixedRotation(false)
 					.SetVelocity(vec2(5.f))

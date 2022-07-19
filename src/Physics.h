@@ -61,6 +61,8 @@ public:
 	{
 		SetPosition(transform.position);
 		SetAngle   (transform.rotation);
+
+		LastTransform = transform;
 	}
 
 	// functions for setting properties for box2d...

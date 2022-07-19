@@ -49,15 +49,20 @@ private:
 			case WEAPON_CANNON:
 			{
 				e.Add<DestroyInTime>(3.f);
-				e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
+				//e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
+				e.Add<Sprite>(GetPrefab_Texture("diamond.png"));
+
 				e.Add<CellProjectile>(entity.Id())
-					.SetHealth(5);
+					.SetHealth(100)
+					.SetSize(0)
+					.SetTurnRate(0.5f);
 
 				transform.position += normal * .05f;
+				transform.scale = vec2(GetModule<CoordTranslation>().CellsToMeters * 4);
 
 				GetModule<PhysicsWorld>().AddEntity(e)
-					.SetVelocity(direction * 100.f);
+					.SetVelocity(direction * 24.f);
 
 				break;
 			}

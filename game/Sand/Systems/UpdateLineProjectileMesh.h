@@ -30,7 +30,7 @@ public:
 			{
 				last.position += deltaTick;
 				
-				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
+				PokeCircleResult results = PokeCircle(last.position, proj.owner, proj.size);
 				bool hasHit = false;
 				
 				float totalHitStrength = 0.f;

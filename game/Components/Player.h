@@ -15,7 +15,8 @@ struct Player
 {
 	vec2 MovementInput;
 	float MovementAccelerationScaleFactor = 15.f;
-	float MovementSpeed = 40.f;
+	float MovementSpeed = 35.f;// 40.f;
+	float RotationSpeed = wPI * 1.2f;
 
 	//vec2 AttackDirectionInput;
 	vec2 AttackLocationInput;

@@ -16,7 +16,7 @@ struct System_KeepOnScreen : SystemBase
 
 		// needs to be adjusted for UI
 
-		screen.x = camera.x * .7; // .15 * 2 for the UI size in PlayerHUD.h
+		screen.x = camera.x;// *.7; // .15 * 2 for the UI size in PlayerHUD.h
 		screen.y = camera.y;
 		screen.z = camera.x;
 		screen.w = camera.y;
@@ -37,6 +37,23 @@ struct System_KeepOnScreen : SystemBase
 			
 			if (body.GetPosition() != pos) body.SetPosition(pos);
 			if (body.GetVelocity() != vel) body.SetVelocity(vel);
+		}
+
+		for (auto [transform, body, wrapOnScreen] : Query<Transform2D, Rigidbody2D, WrapOnScreen>())
+		{
+			vec2 m = wrapOnScreen.margin;
+			vec2 pos = transform.position;
+		
+			if (pos.x < -screen.x - m.x) { pos.x =  screen.x; }
+			if (pos.x >  screen.z + m.x) { pos.x = -screen.z; }
+			if (pos.y < -screen.y - m.y) { pos.y =  screen.y; }
+			if (pos.y >  screen.w + m.y) { pos.y = -screen.w; }
+
+			if (pos != transform.position)
+			{
+				transform.position = pos;
+				body.SetTransform(transform);
+			}
 		}
 	}
 };

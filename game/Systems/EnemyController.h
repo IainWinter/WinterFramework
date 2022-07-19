@@ -24,6 +24,16 @@ struct System_EnemyController : System<System_EnemyController>
 			body.SetVelocity(safe_normalize(body.GetVelocity()) * 10.f); // set constant velocity for flockers
 		}
 
+	// bomb, remove turn twoards target when fuse is lit
+
+		for (auto [entity, transform, bomb, turn] : QueryWithEntity<Transform2D, ExplodeNearTarget, TurnTwoardsTarget>())
+		{
+			if (bomb.m_tickFuse)
+			{
+				entity.Remove<TurnTwoardsTarget>();
+			}
+		}
+
 	// enemy spawner (station)
 
 		for (auto [transform, spawner] : Query<Transform2D, EnemySpawner>())
