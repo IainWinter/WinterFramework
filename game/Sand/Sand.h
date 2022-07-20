@@ -151,8 +151,8 @@ struct Sand_System_Update : System<Sand_System_Update>
 		else
 		{
 			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
-			body->SetVelocity(e.velocity);
-			body->SetAngularVelocity(e.aVelocity);
+			body->ApplyForce(e.velocity);
+			body->ApplyTorque(e.aVelocity);
 		}
 
 		e.entity.Add<WrapOnScreen>();

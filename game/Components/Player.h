@@ -31,6 +31,7 @@ struct Player
 	WeaponProps Alt;
 
 	int Score = 0; // storing this here for simplicity
+	int Lives = 3;
 
 	float m_attackTimer = 0.f;
 	float m_attackTimerAlt = 0.f;

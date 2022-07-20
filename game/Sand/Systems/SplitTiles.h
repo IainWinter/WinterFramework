@@ -3,6 +3,7 @@
 #include "app/System.h"
 #include "Sand/SandEvents.h"
 #include "Components/Throwable.h"
+#include <algorithm>
 
 struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 {
@@ -86,7 +87,7 @@ private:
 
 		if (split)
 		{
-			if (islands.coreIslands.size() > 1)
+			if (islands.coreIslands.size() > 1) // explode split cores, should tune
 			{
 				Send(event_SpawnExplosion{ transform.position, 10.f });
 
@@ -98,6 +99,27 @@ private:
 
 				islands.coreIslands.clear();
 			}
+
+			// remove all small islands
+
+			for (const std::vector<int>& island : islands.otherIslands)
+			{
+				if (island.size() < 25)
+				{
+					Send(event_Sand_ExplodeToDust{ entity, island });
+				}
+			}
+
+			// sort the set of islands
+
+			std::sort(
+				islands.otherIslands.begin(), 
+				islands.otherIslands.end(), 
+				[](auto& a, auto& b) { return a.size() < b.size(); });
+
+			// remove the largest one, just remove pixels from it
+
+			islands.otherIslands.pop_back();
 
 			for (const std::vector<int>& island : islands.otherIslands)
 			{
@@ -112,60 +134,40 @@ private:
 			}
 		}
 
-		// destroy if there was a split, and it included two cores
-		// or it was a sprite without a core, so got removed
-
-		if (split && islands.coreIslands.size() != 1)
-		{
-			entity.DestroyAtEndOfFrame();
-		}
-
-		// if not, recalculate the collider
-		else
-		{
-			Send(event_Sand_CreateCollider{ entity });
-		}
+		Send(event_Sand_CreateCollider{ entity });
 	}
 
 	void SplitFromIsland(const std::vector<int>& island, Entity entity)
 	{
-		if (island.size() < 15)
+		auto split = SplitSpriteInTwo(island, entity);
+		Rigidbody2D& body = entity.Get<Rigidbody2D>();
+
+		vec2  v = body.GetVelocity();
+		float a = body.GetAngularVelocity();
+		float d = body.GetCollider()->GetDensity(); // should test if body has collider, 
+													// they should have to because if not they explode
+		float cellsStrength = entity.Get<SandSprite>().cellStrength;
+
+		Defer([=]()
 		{
-			Send(event_Sand_ExplodeToDust{ entity, island });
-		}
+			auto [t, s, ss] = split;
+			Entity splitEntity = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 
-		else
-		{
-			auto split = SplitSpriteInTwo(island, entity);
-			Rigidbody2D& body = entity.Get<Rigidbody2D>();
+			splitEntity.Get<SandSprite>()
+				.SetCellStrength(cellsStrength);
 
-			vec2  v = body.GetVelocity();
-			float a = body.GetAngularVelocity();
-			float d = body.GetCollider()->GetDensity(); // should test if body has collider, 
-														// they should have to because if not they explode
-			float cellsStrength = entity.Get<SandSprite>().cellStrength;
+			vec2  vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
+			float ang = a + get_randc(wPI);
 
-			Defer([=]()
+			if (island.size() < 50)
 			{
-				auto [t, s, ss] = split;
-				Entity splitEntity = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
+				splitEntity.Add<SandTurnToDustInTime>(island.size() / 10.f);
+			}
 
-				splitEntity.Get<SandSprite>()
-					.SetCellStrength(cellsStrength);
+			splitEntity.Add<Throwable>();
 
-				vec2  vel = v;// +safe_normalize(t.position - body.GetPosition()) * 2.f;
-				float ang = a;// +get_randc(wPI);
-
-				if (island.size() < 50)
-				{
-					splitEntity.Add<SandTurnToDustInTime>(island.size() / 10.f);
-				}
-
-				splitEntity.Add<Throwable>();
-
-				SendNow(event_SandAddSprite { splitEntity, vel, ang, d });
-			});
-		}
+			SendNow(event_SandAddSprite { splitEntity, vel, ang, d });
+		});
 	}
 
 	std::tuple<Transform2D, r<Texture>, r<Texture>> SplitSpriteInTwo(const std::vector<int>& island, Entity entity)

@@ -17,6 +17,7 @@ project "Framework"
 
 	files { 
 		"src/**.h",
+		"src/impl/**.cpp",
 
 		"src/ext/cpp/Time.cpp",
 		"src/ext/cpp/physics/ClosestPointOnShape.cpp",
