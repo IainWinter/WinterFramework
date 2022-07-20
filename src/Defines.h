@@ -21,6 +21,8 @@ using u32 = unsigned int;
 using u8  = unsigned char;
 using f32 = float;
 
+using Order = void*;
+
 struct pair_hash
 {
     template <class T1, class T2>

@@ -128,6 +128,8 @@ private:
 		{
 			CellCollisionInfo& hitInfo = sand->GetCollisionInfo(p);
 
+			printf("%d %d %d %d\n", hitInfo.hasHit, hitInfo.spriteEntityID, hitInfo.spriteHitIndex.x, hitInfo.spriteHitIndex.y);
+
 			if (hitInfo.hasHit)
 			{
 				hitInfo.hasHit = 0; // remove from this frame

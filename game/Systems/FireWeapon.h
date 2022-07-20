@@ -57,6 +57,8 @@ private:
 					.SetSize(0)
 					.SetTurnRate(0.5f);
 
+				e.Add<WrapOnScreen>();
+
 				transform.position += normal * .05f;
 				transform.scale = vec2(GetModule<CoordTranslation>().CellsToMeters * 4);
 
