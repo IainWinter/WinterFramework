@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "UI/PauseMenu.h"
 
 struct System_AllowPauseMenu : System<System_AllowPauseMenu>

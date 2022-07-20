@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Sand/SandEvents.h"
 #include "Sand/Sand.h"
 #include "Sand/SandHelpers.h"
@@ -57,10 +57,16 @@ private:
 			dust.Add<Transform2D>(vec3(pos + transform.position, transform.z), vec2(s), transform.rotation);
 			dust.Add<Particle>()
 				.AddTint(tex.At(x, y))
-				.SetRepeatCount(get_rand(50) + 10)
+				.SetFramesPerSecond(0)
 				.SetOriginal(dust.Get<Transform2D>());
 
-			dust.Add<ParticleShrinkWithAge>();
+			//dust.Add<ParticleShrinkWithAge>();
+
+			dust.Add<Item>()
+				.SetType(ITEM_REGOLITH)
+				.SetPickupRadius(8.f)
+				.SetLife(4.f + get_rand(4.f))
+				.SetPickupDelay(.1f + get_rand(.5f));
 
 			vec2 vel = velocity;
 			if (explodeMe.Has<Rigidbody2D>())

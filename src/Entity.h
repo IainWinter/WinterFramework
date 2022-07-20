@@ -6,11 +6,7 @@
 #include <unordered_map>
 #include <mutex>
 
-// entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
-
-struct Entity;
-struct EntityWorld;
-using Order = void*;
+// bug: entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
 
 namespace tuple_helpers
 {
@@ -38,6 +34,9 @@ namespace tuple_helpers
 		return pop_front_impl(tuple, std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
 	}
 }
+
+struct Entity;
+struct EntityWorld;
 
 template<typename... _t>
 struct EntityQuery
@@ -131,42 +130,24 @@ public:
 		return EntityQueryWithEntity<_t...>(m_registry.view<_t...>().each(), this);
 	}
 
-	void ExecuteDeferdDeletions()
-	{
-		for (const entt::entity& handle : m_deferDelete)
-		{
-			DeleteEntityNow(handle);
-		}
-		m_deferDelete.clear();
-	}
-	
-	void Clear()
-	{
-		m_registry.clear();
-	}
-
 	Entity Create();
 	Entity Wrap(u32 id);
+	void ExecuteDeferdDeletions();
+	void Clear();
+
+private:
 
 // hidden entity functions, called from Entity
 
-private:
-	void DeleteEntityNow(entt::entity id);
-
-	void AddDeferedDelete(entt::entity id)
-	{
-		std::unique_lock lock(m_deferDeleteMutex);
-		m_deferDelete.insert(id);
-	}
+	void DeleteEntityNow (entt::entity id);
+	void AddDeferedDelete(entt::entity id);
 
 // events
 
-private:
-
-	void         RemoveState(entt::entity id) {        m_events.erase(id); }
-	bool         HasState   (entt::entity id) { return m_events.find(id) != m_events.end(); }
-	EntityState& AssureState(entt::entity id) { return m_events[id]; }
-	EntityState& GetState   (entt::entity id) { return m_events.at(id); }
+	void         RemoveState(entt::entity id);
+	bool         HasState   (entt::entity id);
+	EntityState& AssureState(entt::entity id);
+	EntityState& GetState   (entt::entity id);
 };
 
 struct Entity
@@ -176,79 +157,35 @@ private:
 	EntityWorld* m_owning;
 
 public:
-	Entity()
-		: m_handle (entt::null)
-		, m_owning (nullptr)
-	{}
+	Entity();
+	Entity(entt::entity handle, EntityWorld* owning);
+	~Entity();
 
-	Entity(entt::entity handle, EntityWorld* owning)
-		: m_handle (handle)
-		, m_owning (owning)
-	{}
+	Entity(Entity&& move) noexcept;
+	Entity(const Entity& move);
+	Entity& operator=(Entity&& move) noexcept;
+	Entity& operator=(const Entity& move);
 
-	~Entity() // not needed but will causes proper assert to be called if used after delete
-	{
-		m_owning = nullptr;
-		m_handle = entt::null;
-	}
+	bool operator==(const Entity& other) const;
+	bool operator!=(const Entity& other) const;
 
-	bool operator==(const Entity& other) const { return Id() == other.Id(); }
-	bool operator!=(const Entity& other) const { return Id() != other.Id(); }
+	Entity Clone();
+	
+	u32 Id() const;
+	u32 raw_id() const; // doesnt check for if this id is valid or not
+	EntityWorld* Owning() const;
+	
+	bool IsAlive() const;
+	void Destroy() const;
+	void Destroy();
 
-	u32 Id() const
-	{
-		assert_is_valid();
-		return raw_id();
-	}
+	bool IsAliveAtEndOfFrame() const;
+	void DestroyAtEndOfFrame() const; // threadsafe and guards against double defer deletes
 
-	EntityWorld* Owning() const
-	{
-		assert_is_valid();
-		return m_owning;
-	}
-
-	// doesnt check for if this id is valid or not
-	u32 raw_id() const
-	{
-		return (u32)m_handle; // isnt there like a smuggle functions for this?
-	}
-
-	bool IsAliveAtEndOfFrame() const
-	{
-		return IsAlive()
-			&& m_owning->m_deferDelete.find(m_handle) == m_owning->m_deferDelete.end();
-	}
-
-	bool IsAlive() const
-	{
-		return !!m_owning && m_owning->m_registry.valid(m_handle);
-	}
-
-	void Destroy() const
-	{
-		assert_is_valid();
-		m_owning->DeleteEntityNow(m_handle);
-	}
-
-	void Destroy()
-	{
-		const Entity* me = this;
-		me->Destroy();
-
-		m_owning = nullptr;
-		m_handle = entt::null;
-	}
-
-	// threadsafe and guards against double defer deletes
-	void DestroyAtEndOfFrame() const
-	{
-		m_owning->AddDeferedDelete(m_handle);
-	}
+	Entity& OnDestroy(const std::function<void(Entity)>& func);
 
 	// could use template meta nonsense to remove Get/GetAll
-	// this api isnt the best :(s
-
-	// Testing components
+	// this api isnt the best :(
 
 	template<typename... _t>
 	bool Has() const
@@ -264,23 +201,10 @@ public:
 		return m_owning->m_registry.any_of<_t...>(m_handle);
 	}
 
-	// Getting components
-
 	template<typename _t>
 	_t& Get()
 	{
 		return const_cast<_t&>(std::as_const(*this).Get<_t>());
-	}
-
-	template<typename... _t>
-	std::tuple<_t&...> GetAll()
-	{
-		//return const_cast<std::tuple<_t&...>>(std::as_const(*this).GetAll<_t...>());
-		// annoying
-
-		assert_is_valid();
-		assert_has_components<_t...>();
-		return m_owning->m_registry.get<_t...>(m_handle);
 	}
 
 	template<typename _t>
@@ -292,14 +216,20 @@ public:
 	}
 
 	template<typename... _t>
-	std::tuple<const _t&...> GetAll() const
+	std::tuple<_t&...> GetAll()
 	{
 		assert_is_valid();
 		assert_has_components<_t...>();
 		return m_owning->m_registry.get<_t...>(m_handle);
 	}
 
-	// Adding components
+	template<typename... _t>
+	std::tuple<const _t&...> GetAll() const
+	{
+		assert_is_valid();
+		assert_has_components<_t...>();
+		return m_owning->m_registry.get<_t...>(m_handle);
+	}
 
 	template<typename _t, typename... _args>
 	_t& Add(_args&&... args)
@@ -316,8 +246,6 @@ public:
 		return *this;
 	}
 
-	// Removing compoennts
-
 	template<typename... _t>
 	void Remove()
 	{
@@ -325,63 +253,10 @@ public:
 		m_owning->m_registry.remove<_t...>(m_handle);
 	}
 
-	// Listeners
-
-	Entity& OnDestroy(const std::function<void(Entity)>& func)
-	{
-		m_owning->AssureState(m_handle).onDestroy.push_back(func);
-		return *this;
-	}
-
-	// Cloning
-
-	Entity Clone()
-	{
-		Entity entity;
-
-		for (auto [id, storage] : m_owning->m_registry.storage())  // like visit function
-		{
-			if (storage.contains(m_handle))
-			{
-				storage.emplace(entity.m_handle, storage.get(m_handle));
-			}
-		}
-
-		return entity;
-	}
-
 	// Asserts
 	                         void assert_is_valid()       const { assert(IsAlive()        && "Entity is not valid"); }
 	template<typename... _t> void assert_no_components()  const { assert(!HasAny<_t...>() && "Entity already contains one of these components"); }
 	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contain one of these components"); }
-
-	// Copy and Move
-
-	Entity(Entity&& move) noexcept
-		: m_handle (move.m_handle)
-		, m_owning (move.m_owning)
-	{
-		move.m_handle = entt::null;
-		move.m_owning = nullptr;
-	}
-	Entity& operator=(Entity&& move) noexcept
-	{
-		m_handle = move.m_handle;
-		m_owning = move.m_owning;
-		move.m_handle = entt::null;
-		move.m_owning = nullptr;
-		return *this;
-	}
-	Entity(const Entity& move)
-		: m_handle(move.m_handle)
-		, m_owning(move.m_owning)
-	{}
-	Entity& operator=(const Entity& move)
-	{
-		m_handle = move.m_handle;
-		m_owning = move.m_owning;
-		return *this;
-	}
 };
 
 template<typename... _t>
@@ -417,29 +292,10 @@ struct EntityWith : Entity
 };
 
 namespace std {
-	template<> struct hash<Entity> { size_t operator()(const Entity& x) const { return x.Id(); } };
-}
-
-// impl here for Entity def
-
-inline Entity EntityWorld::Create()
-{
-	return Wrap((u32)m_registry.create());
-}
-
-inline Entity EntityWorld::Wrap(u32 id)
-{
-	return Entity((entt::entity)id, this);
-}
-
-inline void EntityWorld::DeleteEntityNow(entt::entity id)
-{
-	if (HasState(id))
-	{
-		Entity e = Wrap((u32)id);
-		for (auto& func : GetState(id).onDestroy) func(e);
-		RemoveState(id);
-	}
-
-	m_registry.destroy(id);
+	template<> 
+	struct hash<Entity> { 
+		size_t operator()(const Entity& x) const { 
+			return x.Id(); 
+		} 
+	};
 }

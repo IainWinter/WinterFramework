@@ -1,4 +1,3 @@
-#include "EngineLoop.h"
 #include "Common.h"
 #include "Rendering.h"
 
@@ -7,9 +6,8 @@
 #include "Sand/Sand.h"
 #include "Sand/SandEntity.h"
 
-#include "ext/Time.h"
+#include "app/EngineLoop.h"
 #include "ext/MeshGenerators.h"
-#include "ext/Components.h"
 
 #include "imgui/implot.h"
 
@@ -18,27 +16,29 @@
 #include "Sand/SandSystems.h"
 #include "Systems/AllowPauseMenu.h"
 #include "Systems/PlayerController.h"
-#include "Systems/FlockingMovement.h"
-#include "Systems/TurnTwoardsTarget.h"
-#include "Systems/ExplodeNearTarget.h"
-#include "Systems/ExplosionSpawner.h"
-#include "Systems/EnemyController.h"
-#include "Systems/EnemySpawner.h"
-#include "Systems/EnemySystem.h"
 #include "Systems/KeepOnScreen.h"
-#include "Systems/FireWeaponAfterDelay.h"
 #include "Systems/FireWeapon.h"
 #include "Systems/RockSpawner_Test.h"
 #include "Systems/ItemSystem.h"
-#include "Systems/ItemSpawner.h"
 #include "Systems/ItemPickup.h"
 #include "Systems/RenderScene.h"
 #include "Systems/LowCorePixelDeath.h"
-#include "Systems/LightningSystem.h"
-#include "Systems/TankSystem.h"
 #include "Systems/zTestingSystem.h"
+#include "UI/AsteroidsHUD.h"
 
-#include "UI/PlayerHUD.h"
+//#include "Systems/FlockingMovement.h"
+//#include "Systems/TurnTwoardsTarget.h"
+//#include "Systems/ExplodeNearTarget.h"
+//#include "Systems/ExplosionSpawner.h"
+//#include "Systems/EnemyController.h"
+//#include "Systems/EnemySpawner.h"
+//#include "Systems/EnemySystem.h"
+//#include "Systems/FireWeaponAfterDelay.h"
+//#include "Systems/ItemSpawner.h"
+//#include "Systems/LightningSystem.h"
+//#include "Systems/TankSystem.h"
+//#include "UI/PlayerHUD.h"
+
 
 #include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
@@ -119,6 +119,9 @@
 //	}
 //};
 
+
+// Idea: Make a polished version of asteroids to completion, then iterate with enemies and damage system
+
 struct Regolith : EngineLoop
 {
 	std::vector<Order> removeOnDeath;
@@ -136,10 +139,24 @@ struct Regolith : EngineLoop
 
 	void _InitUI()
 	{
-		UIFonts& fonts = m_app.GetModule<Window>().Fonts();
+		FontMap& fonts = m_app.GetModule<FontMap>();
 		fonts.Load("Roboto",      18, "Roboto.ttf");
 		fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
 		fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+	}
+
+	// this should load from a file that the user can configure in a settings menu...
+
+	void ConfigureInputMapping()
+	{
+		InputMap& inputs = m_app.GetModule<InputMap>();
+
+		inputs.Set(SDL_SCANCODE_UP,     InputName::UP);
+		inputs.Set(SDL_SCANCODE_DOWN,   InputName::DOWN);
+		inputs.Set(SDL_SCANCODE_RIGHT,  InputName::RIGHT);
+		inputs.Set(SDL_SCANCODE_LEFT,   InputName::LEFT);
+		inputs.Set(SDL_SCANCODE_SPACE,  InputName::ATTACK);
+		inputs.Set(SDL_SCANCODE_ESCAPE, InputName::ESCAPE);
 	}
 
 	// Init
@@ -159,37 +176,42 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_RenderScene());
 		level->AddSystem(System_PhysicsInterpolation());
 	
-		level->AddSystem(System_TurnTwoardsTarget());
 		level->AddSystem(System_LowCorePixelDeath());
 		level->AddSystem(System_DestroyInTime());
 
+		level->AddSystem(System_KeepOnScreen());
+		level->AddSystem(System_Item());
+		level->AddSystem(System_ParticleUpdate());
+
+		level->AddSystem(System_UI_AsteroidsHUD());
+
 		removeOnDeath =
 		{
+			// asteroids mode
+
 			level->AddSystem(System_PlayerController()),
-			level->AddSystem(System_FireWeaponAfterDelay()),
-			level->AddSystem(System_ItemSpawner()),
 			level->AddSystem(System_ItemPickup()),
-			level->AddSystem(System_Enemy()),
-			level->AddSystem(System_ExplodeNearTarget()),
 			level->AddSystem(System_FireWeapon()),
-			level->AddSystem(System_AllowPauseMenu()),
-			level->AddSystem(System_FuelTank()),
-			
-			level->AddSystem(System_EnemySpawner()),
 			level->AddSystem(System_RockSpawner_Test())
+
+			//level->AddSystem(System_ItemSpawner()),
+			//level->AddSystem(System_FireWeaponAfterDelay()),
+			//level->AddSystem(System_Enemy()),
+			//level->AddSystem(System_ExplodeNearTarget()),
+			//level->AddSystem(System_AllowPauseMenu()),
+			//level->AddSystem(System_FuelTank()),
+			
+			//level->AddSystem(System_EnemySpawner()),
 		};
 
 		AddSandSystemsToLevel(level);
 		
-		level->AddSystem(System_EnemyController());
-		level->AddSystem(System_FlockingMovement());
-		level->AddSystem(System_ExplosionSpawner());
-		level->AddSystem(System_KeepOnScreen());
-		level->AddSystem(System_Lightning());
-		level->AddSystem(System_Item());
-		level->AddSystem(System_ParticleUpdate());
-
-		level->AddSystem(System_UI_PlayerHUD());
+		//level->AddSystem(System_TurnTwoardsTarget());
+		//level->AddSystem(System_EnemyController());
+		//level->AddSystem(System_FlockingMovement());
+		//level->AddSystem(System_ExplosionSpawner());
+		//level->AddSystem(System_Lightning());
+		//level->AddSystem(System_UI_PlayerHUD());
 
 		//level->AddSystem(System_Metrics());
 		//level->AddSystem(System_Testing());
@@ -214,31 +236,22 @@ struct Regolith : EngineLoop
 		m_app.AddModule<CoordTranslation>(coords);
 	}
 
-	// this should load from a file that the user can configure in a settings menu...
-
-	void ConfigureInputMapping()
-	{
-		InputMapping& input = m_app.GetModule<Window>().Input();
-
-		input.m_keyboard[SDL_SCANCODE_W]      = InputName::UP;
-		input.m_keyboard[SDL_SCANCODE_S]      = InputName::DOWN;
-		input.m_keyboard[SDL_SCANCODE_D]      = InputName::RIGHT;
-		input.m_keyboard[SDL_SCANCODE_A]      = InputName::LEFT;
-		input.m_keyboard[SDL_SCANCODE_ESCAPE] = InputName::ESCAPE;
-	}
-
 	void ConfigureMainGameLevel()
 	{ 
 		r<Level> level = LevelManager::CurrentLevel();
 
 		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
 		player.Add<Player>();
-		player.Add<KeepOnScreen>();
+		//player.Add<KeepOnScreen>();
 		player.Add<ItemSink>();
 		player.Add<SandHealable>();
 		player.Add<SandDieInTimeWithLowCoreCount>();
 
-		player.Add<Rigidbody2D>().SetFixedRotation(true);
+		//player.Add<Rigidbody2D>()
+		//	//.SetFixedRotation(true)
+		//	.SetAngularDamping(1.f)
+		//	.SetDamping(.1f);
+			
 		player.Get<SandSprite>().isHardCore = true;
 
 		player.OnDestroy([this](Entity) {

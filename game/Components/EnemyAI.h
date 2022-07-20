@@ -38,7 +38,7 @@ struct ExplodeNearTarget
 	Entity target;
 	float explosionPower = 200;
 	float distanceToStartFuse = 5.f;
-	float fuse = 2.f;
+	float fuse = 1.4f;
 	bool m_tickFuse = false;
 	bool m_exploded = false;
 };

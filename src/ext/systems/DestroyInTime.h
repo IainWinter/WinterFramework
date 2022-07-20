@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
-#include "ext/Components.h"
+#include "app/System.h"
 
 struct System_DestroyInTime : SystemBase
 {

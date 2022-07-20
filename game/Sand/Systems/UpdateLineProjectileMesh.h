@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Rendering.h"
 #include "Sand/Sand.h"
 
@@ -30,7 +30,7 @@ public:
 			{
 				last.position += deltaTick;
 				
-				PokeCircleResult results = PokeCircle(last.position, proj.owner, 0);
+				PokeCircleResult results = PokeCircle(last.position, proj.owner, proj.size);
 				bool hasHit = false;
 				
 				float totalHitStrength = 0.f;
@@ -127,6 +127,8 @@ private:
 		if (result.onScreen)
 		{
 			CellCollisionInfo& hitInfo = sand->GetCollisionInfo(p);
+
+			printf("%d %d %d %d\n", hitInfo.hasHit, hitInfo.spriteEntityID, hitInfo.spriteHitIndex.x, hitInfo.spriteHitIndex.y);
 
 			if (hitInfo.hasHit)
 			{

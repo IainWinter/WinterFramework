@@ -3,8 +3,7 @@
 #include "Common.h"
 #include "Entity.h"
 #include "Event.h"
-#include "Task.h"
-
+#include "ext/Task.h"
 #include "util/metrics.h" // beings time into Leveling.h, before this it wasnt needed...
 						  // should bring time into the main lib though, no reason for it to be an ext
 

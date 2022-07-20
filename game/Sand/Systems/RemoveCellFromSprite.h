@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Sand/SandEvents.h"
 
 struct Sand_System_RemoveCellsFromSprite : System<Sand_System_RemoveCellsFromSprite>
@@ -49,7 +49,7 @@ struct Sand_System_RemoveCellsFromSprite : System<Sand_System_RemoveCellsFromSpr
 				auto [x, y] = get_xy(i, dim.x);
 				int dx = cx - x;
 				int dy = cy - y;
-				float dist = sqrt(dx*dx + dy*dy);
+				float dist = sqrtf(dx*dx + dy*dy);
 						
 				if (dist < minDist)
 				{

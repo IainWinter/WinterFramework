@@ -17,6 +17,7 @@ project "Framework"
 
 	files { 
 		"src/**.h",
+		"src/impl/**.cpp",
 
 		"src/ext/cpp/Time.cpp",
 		"src/ext/cpp/physics/ClosestPointOnShape.cpp",
@@ -68,7 +69,8 @@ project "Framework"
 	}
 
 	defines { 
-		"IW_DEBUG"
+		"IW_DEBUG",
+		"SDL_MAIN_HANDLED"
 	}
 
 	buildoptions {

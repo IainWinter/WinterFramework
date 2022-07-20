@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "CoordTranslation.h"
 #include "Windowing.h"
 #include "Sand/Sand.h"
@@ -19,7 +19,7 @@ struct System_PlayerController : System<System_PlayerController>
 	void Init()
 	{
 		Attach<event_Input>();
-		Attach<event_Mouse>();
+		//Attach<event_Mouse>();
 		Attach<event_Item_Pickup>();
 
 		playerEntity = FirstEntityWith<Player>();
@@ -39,7 +39,7 @@ struct System_PlayerController : System<System_PlayerController>
 		player.m_attackTimer    -= Time::DeltaTime();
 		player.m_attackTimerAlt -= Time::DeltaTime();
 		
-		FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
+		//FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
 
 		if (   player.AttackFireInputAlt 
 			&& player.m_attackTimerAlt <= 0.f 
@@ -48,12 +48,15 @@ struct System_PlayerController : System<System_PlayerController>
 			player.m_attackTimerAlt = player.Alt.AttackTime;
 			player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
 			Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
+
 		}
 
 		else 
 		if (   player.AttackFireInput 
 			&& player.m_attackTimer <= 0.f)
 		{
+			player.AttackFireInput = false;
+
 			player.m_attackTimer = player.Current.AttackTime;
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
 
@@ -67,7 +70,13 @@ struct System_PlayerController : System<System_PlayerController>
 			}
 		}
 
-		target.Get<Transform2D>().position = player.AttackLocationInput;
+		target.Get<Transform2D>().position = playerEntity.Get<Transform2D>().position + PlayerHeading(); // shoot forward
+	}
+
+	vec2 PlayerHeading() const
+	{
+		float angle = playerEntity.Get<Rigidbody2D>().GetAngle();
+		return vec2(cos(angle + wPI / 2), sin(angle + wPI / 2)); // sprite heading is 90 above real heading
 	}
 
 	void FixedUpdate()
@@ -76,15 +85,26 @@ struct System_PlayerController : System<System_PlayerController>
 
 		auto [player, body] = playerEntity.GetAll<Player, Rigidbody2D>();
 
-		vec2 vel = lerp(
-			body.GetVelocity(),
-			safe_normalize(player.MovementInput) * player.MovementSpeed,
-			Time::DeltaTime() * player.MovementAccelerationScaleFactor);
+		// tank controls
 
-		body.SetVelocity(vel);
+		float moveForward = player.MovementInput.y;
+		if (moveForward == -1.f) moveForward = 0.f; // dont allow moving backwards
 
+		float angle = body.GetAngle() + -player.MovementInput.x * player.RotationSpeed * Time::FixedTime(); // radians per second
+		vec2 force = PlayerHeading() * player.MovementSpeed * moveForward;
 
-		SendNow(event_Item_Pickup{ playerEntity, ITEM_ENERGY }); // debug
+		body.SetAngle(angle);
+		body.ApplyForce(force);
+		body.SetAngularVelocity(0);
+
+		// absolute controls
+
+		//vec2 vel = lerp(
+		//	body.GetVelocity(),
+		//	safe_normalize(player.MovementInput) * player.MovementSpeed,
+		//	Time::DeltaTime() * player.MovementAccelerationScaleFactor);
+
+		//body.SetVelocity(vel);
 	}
 
 	void on(event_Input& e)
@@ -99,24 +119,24 @@ struct System_PlayerController : System<System_PlayerController>
 			case InputName::RIGHT: player.MovementInput.x += e.state; break;
 			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
 
-			case InputName::AIM_X:      player.AttackLocationInput.x =   e.state; break;
-			case InputName::AIM_Y:      player.AttackLocationInput.y =   e.state; break;
-			case InputName::ATTACK:     player.AttackFireInput       = !!e.state; break;
-			case InputName::ATTACK_ALT: player.AttackFireInputAlt    = !!e.state; break;
+			case InputName::AIM_X:      player.AttackLocationInput.x  = e.state; break;
+			case InputName::AIM_Y:      player.AttackLocationInput.y  = e.state; break;
+			case InputName::ATTACK:     player.AttackFireInput       += e.state; break;
+			case InputName::ATTACK_ALT: player.AttackFireInputAlt    += e.state; break;
 		}
 	}
 
 	// translates mouse to controller
 
-	void on(event_Mouse& e)
-	{
-		vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
+	//void on(event_Mouse& e)
+	//{
+	//	vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
 
-		SendNow(event_Input{ InputName::AIM_X, target.x });
-		SendNow(event_Input{ InputName::AIM_Y, target.y });
-		SendNow(event_Input{ InputName::ATTACK,     (float)e.button_left });
-		SendNow(event_Input{ InputName::ATTACK_ALT, (float)e.button_right });
-	}
+	//	SendNow(event_Input{ InputName::AIM_X, target.x });
+	//	SendNow(event_Input{ InputName::AIM_Y, target.y });
+	//	SendNow(event_Input{ InputName::ATTACK,     (float)e.button_left });
+	//	SendNow(event_Input{ InputName::ATTACK_ALT, (float)e.button_right });
+	//}
 
 	void on(event_Item_Pickup& e)
 	{
@@ -129,7 +149,7 @@ struct System_PlayerController : System<System_PlayerController>
 		{
 			case ITEM_WEAPON_CANNON:
 			{
-				player.Current = { WEAPON_CANNON, 0, .01f, .4f };
+				player.Current = { WEAPON_CANNON, 0, .01f, .1f };
 				break;
 			}
 
@@ -163,11 +183,11 @@ struct System_PlayerController : System<System_PlayerController>
 				break;
 			}
 
-			case ITEM_ENERGY:
-			{
-				FirstEntityWith<LaserTank>().Get<FuelTank>().feed.push_back(Color(255, 0, 0));
-				break;
-			}
+			//case ITEM_ENERGY:
+			//{
+			//	FirstEntityWith<LaserTank>().Get<FuelTank>().feed.push_back(Color(255, 0, 0));
+			//	break;
+			//}
 		}
 	}
 };

@@ -104,9 +104,9 @@ private:
 		r<Buffer> models = mkr<Buffer>(Buffer(0, 16, Buffer::_f32, DYNAMIC_HOST));
 
 		m_quad = InitQuadMesh2D(Mesh(DYNAMIC_HOST))
-			.Setup<vec4>(Mesh::aCustom_a1, 1)
-			.Setup<vec4>(Mesh::aCustom_a2, 1)
-			.Setup<mat4>(Mesh::aCustom_b1, 1);
+			.Add<vec4>(Mesh::aCustom_a1, 1)
+			.Add<vec4>(Mesh::aCustom_a2, 1)
+			.Add<mat4>(Mesh::aCustom_b1, 1);
 
 		m_default = mkr<Texture>(_a("white.png")); // todo: grab from prefab
 	}

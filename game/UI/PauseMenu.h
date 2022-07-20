@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Leveling.h"
 #include "Windowing.h"
-#include "imgui/imgui.h"
+#include "app/System.h"
+#include "app/FontMap.h"
 #include "ext/Time.h"
 
 struct System_UI_PauseMenu : System<System_UI_PauseMenu>
@@ -14,7 +14,7 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 		vec2 screen = GetModule<Window>().Dimensions();
 		vec2 pause = screen * vec2(.4, 1);
 		
-		offset = lerp(offset, screen.x * .15, Time::RawDeltaTime() * 20.f);
+		offset = lerp(offset, screen.x * .15f, Time::RawDeltaTime() * 20.f);
 
 		ImGui::SetNextWindowPos(ImVec2(offset, 0));
 		ImGui::SetNextWindowSize(ImVec2(pause.x, pause.y));
@@ -22,24 +22,21 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, .4f));
+		ImGui::PushFont(GetModule<FontMap>().Get("Pixel Title"));
 
-		{
-			UIFontScope titleFont = GetModule<Window>().Fonts().Use("Pixel Title");
+		ImGui::Begin("Pause Menu", 0, 
+				ImGuiWindowFlags_NoResize 
+			| ImGuiWindowFlags_NoTitleBar
+			| ImGuiWindowFlags_NoScrollbar
+		);
 
-			ImGui::Begin("Pause Menu", 0, 
-				  ImGuiWindowFlags_NoResize 
-				| ImGuiWindowFlags_NoTitleBar
-				| ImGuiWindowFlags_NoScrollbar
-			);
+		ImGui::PushFont(GetModule<FontMap>().Get("Pixel"));
+		ImGui::Text("Paused");
+		ImGui::PopFont();
 
-			{
-				UIFontScope textFont = GetModule<Window>().Fonts().Use("Pixel");
-				ImGui::Text("Paused");
-			}
-
-			ImGui::End();
-			ImGui::PopStyleVar(2);
-			ImGui::PopStyleColor(2);
-		}
+		ImGui::End();
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(2);
+		ImGui::PopFont();
 	}
 };

@@ -12,10 +12,14 @@
 #undef IW_NOLOOP
 
 #include "Windowing.h"
-#include "Leveling.h"
 #include "Physics.h"
+
+#include "app/System.h"
+#include "app/FontMap.h"
+#include "app/InputMap.h"
+
 #include "ext/Time.h" // Time shouldnt be an ext...
-#include "util/metrics.h"
+#include "util/metrics.h" // this should only be in iw_debugger mode
 
 // holds the application and has some
 // functions for updating its state
@@ -30,7 +34,21 @@ protected:
 	float m_fixedStepAcc = 0.f;
 
 public:
-	void on(event_Shutdown& e) { m_running = false; }
+	void on(event_Shutdown& e)
+	{
+		m_running = false;
+	}
+
+	void on(event_Key& e)
+	{
+		if (e.repeat == 0)
+		{
+			// this may not want to send on root queue?
+
+			InputName input = m_app.GetModule<InputMap>().Map(e.keycode);
+			m_app.Send(event_Input{ input, e.state ? 1.f : -1.f });
+		}
+	}
 
 	bool Running()
 	{
@@ -41,11 +59,14 @@ public:
 	{
 		// attach system events
 		m_app.Attach<event_Shutdown>(this);
+		m_app.Attach<event_Key>(this);
 
 		// default app
 		m_app.AddModule<Window>(WindowConfig{ "Untitled", 400, 400 }, m_app.GetRootEventQueue());
 		m_app.AddModule<LevelManager>(m_app);
 		m_app.AddModule<PhysicsWorld>();
+		m_app.AddModule<FontMap>();
+		m_app.AddModule<InputMap>();
 
 		// default level
 		m_app.GetModule<LevelManager>().CreateLevel();

@@ -1,5 +1,5 @@
 #include "Sand/SandHelpers.h"
-#include "ext/flood_fill.h"
+#include "ext/algo/flood_fill.h"
 
 CorePixels GetCorePixels(const r<Texture>& texture)
 {

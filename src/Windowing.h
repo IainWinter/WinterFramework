@@ -1,21 +1,22 @@
 #pragma once
 
+#include "Common.h"
+#include "Event.h"
+
+#include "util/error_check.h"
+
+// imgui is going to be the UI library for everything in the game
+// so hard commit to tieing it up with the window
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
 #include "imgui/imgui_impl_sdl.h"
-
 #include "imgui/implot.h"
 
 #include "SDL2/SDL.h"
 #include "glad/glad.h"
 
-#include <unordered_map>
 #include <string>
-#include <sstream>
-
-#include "Common.h"
-#include "Event.h"
-#include "util/error_check.h"
 
 /*
 
@@ -48,44 +49,17 @@ struct event_Mouse
 	int button_repeat;
 };
 
-enum class InputName
+struct event_Key
 {
-	_NONE,
-	UP,
-	DOWN,
-	RIGHT,
-	LEFT,
+	SDL_Scancode keycode;
+	char key;
 
-	AIM_X,
-	AIM_Y,
+	bool state;
+	int repeat;
 
-	ATTACK,
-	ATTACK_ALT,
-
-	ESCAPE
-};
-
-struct InputMapping
-{
-	std::unordered_map<SDL_Scancode, InputName> m_keyboard;
-
-	InputName Map(SDL_Scancode code)
-	{
-		InputName name = InputName::_NONE;
-		auto itr = m_keyboard.find(code);
-		if (itr != m_keyboard.end())
-		{
-			name = itr->second;
-		}
-
-		return name;
-	}
-};
-
-struct event_Input
-{
-	InputName name;
-	float state;
+	bool key_shift;
+	bool key_ctrl;
+	bool key_alt;
 };
 
 /*
@@ -101,28 +75,6 @@ struct WindowConfig
 	int Height = 480;
 };
 
-struct UIFontScope
-{
-	UIFontScope(ImFont* font) { ImGui::PushFont(font); }
-	~UIFontScope() { ImGui::PopFont(); }
-};
-
-struct UIFonts
-{
-	std::unordered_map<std::string, ImFont*> Fonts;
-
-	void Load(const std::string& name, float size, const std::string& path)
-	{
-		ImFont* font = ImGui::GetIO().Fonts->AddFontFromFileTTF(_a(path).c_str(), size);
-		Fonts.emplace(name, font);
-	}
-
-	UIFontScope Use(const std::string& name_size) const
-	{
-		return UIFontScope(Fonts.at(name_size));
-	}
-};
-
 struct Window
 {
 private:
@@ -131,296 +83,44 @@ private:
 	event_queue* m_events;
 
 	WindowConfig m_config;
-	InputMapping m_input;
-	UIFonts      m_fonts;
 
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;
 
 public:
-	Window()
-		: m_window (nullptr)
-		, m_opengl (nullptr)
-		, m_events (nullptr)
-	{}
+	Window();
+	Window(const WindowConfig& config, event_queue* events = nullptr);
+	~Window();
 
-	Window(
-		const WindowConfig& config,
-		event_queue* events = nullptr
-	)
-		: m_events (events)
-		, m_config (config)
-		, m_window (nullptr)
-		, m_opengl (nullptr)
-	{
-		if (s_first) s_first = false;
-		else assert(false && "Only a single window has been tested");
-	}
+	int                Width()      const;
+	int                Height()     const;
+	vec2               Dimensions() const;
+	const std::string& Title()      const;
 
-	~Window()
-	{
-		if (!m_window) return;
-		Dnit();
-	}
-
-	int                 Width()      const { return m_config.Width; }
-	int                 Height()     const { return m_config.Height; }
-	vec2                Dimensions() const { return vec2(Width(), Height()); }
-	const std::string&  Title()      const { return m_config.Title; }
-	const InputMapping& Input()      const { return m_input; }
-	InputMapping&       Input()            { return m_input; }
-	const UIFonts&      Fonts()      const { return m_fonts; }
-	UIFonts&            Fonts()            { return m_fonts; }
-
-	void Init()
-	{
-		m_first_glsl_version = Window::Init_Video();
-
-		m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
-		m_opengl = SDL_GL_CreateContext(m_window);
-
-		SDL_GL_MakeCurrent(m_window, m_opengl);
-		SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-
-		gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-
-		Resize(m_config.Width, m_config.Height);
-
-		glClearColor(1.f, 1.f, 1.f, 1.f);
-
-		// sand breaks because this isnt setup
-		glEnable(GL_DEPTH_TEST);
-
-		// enable transparency
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-		// vsync
-
-		SDL_GL_SetSwapInterval(1);
-	}
-
-	void InitUI()
-	{
-		Init_Imgui(m_first_glsl_version);
-	}
-
-	void Dnit()
-	{
-		Dnit_Imgui();
-		SDL_GL_DeleteContext(m_opengl);
-		SDL_DestroyWindow(m_window);
-		m_window = nullptr;
-	}
-
-	void PumpEvents()
-	{
-		SDL_Event event;
-		while (SDL_PollEvent(&event))
-		{
-			printf("event: %d\n", event.type);
-
-			ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
-
-			if (!m_events)
-			{
-				if (event.type == SDL_QUIT)
-				{
-					SDL_Quit(); // allow for quit without events
-				}
-
-				continue; // pump but do nothing, maybe log
-			} 
-
-			switch (event.type)
-			{
-				case SDL_QUIT: 
-				{
-					m_events->send(event_Shutdown {});
-					break;
-				}
-				case SDL_MOUSEBUTTONUP: // can these be combined?
-				case SDL_MOUSEBUTTONDOWN:
-				{
-					bool pressed = event.button.state == SDL_PRESSED;
-
-					m_events->send(event_Mouse {
-						event.button.x,                                                           // position as (0, width/height)
-						event.button.y,
-						(                    event.button.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
-						((m_config.Height -  event.button.y) / (float)m_config.Height) * 2 - 1,
-						0.f,                                                                      // velocity
-						0.f,
-						bool( pressed * (event.button.button == SDL_BUTTON_LEFT) ),
-						bool( pressed * (event.button.button == SDL_BUTTON_MIDDLE) ),
-						bool( pressed * (event.button.button == SDL_BUTTON_RIGHT) ),
-						bool( pressed * (event.button.button == SDL_BUTTON_X1) ),
-						bool( pressed * (event.button.button == SDL_BUTTON_X2) ),
-						event.button.clicks
-					});	
-					break;
-				}
-				case SDL_MOUSEMOTION:
-				{
-					m_events->send(event_Mouse { 
-						event.motion.x,                                                          // position as (0, width/height)
-						event.motion.y,
-						(                   event.motion.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
-						((m_config.Height - event.button.y) / (float)m_config.Height) * 2 - 1,
-						(event.motion.xrel / (float)m_config.Width)  * 2 - 1,                    // velocity
-						(event.motion.yrel / (float)m_config.Height) * 2 - 1,
-						bool(event.motion.state & SDL_BUTTON_LMASK),
-						bool(event.motion.state & SDL_BUTTON_MMASK),
-						bool(event.motion.state & SDL_BUTTON_RMASK),
-						bool(event.motion.state & SDL_BUTTON_X1MASK),
-						bool(event.motion.state & SDL_BUTTON_X2MASK),
-						0
-					});
-					break;
-				}
-				case SDL_WINDOWEVENT:
-				{
-					switch (event.window.event)
-					{
-						case SDL_WINDOWEVENT_RESIZED:
-						{
-							ResizeViewport(event.window.data1, event.window.data2);
-							m_config.Width  = event.window.data1;
-							m_config.Height = event.window.data2;
-
-							m_events->send(event_WindowResize { m_config.Width, m_config.Height });
-							break;
-						}
-					}
-					break;
-				}
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
-				{
-					if (event.key.repeat == 0)
-					{
-						m_events->send(event_Input { 
-							m_input.Map(event.key.keysym.scancode),
-							event.key.state == SDL_PRESSED ? 1.f : -1.f // -1 for += e.state math, check for > 0 for is pressed
-						});
-					}
-					break;
-				}
-
-				case SDL_CONTROLLERBUTTONDOWN:
-				case SDL_CONTROLLERBUTTONUP:
-					printf("controller button %d %d\n", event.cbutton.button, event.cbutton.state);
-					break;
-
-				case SDL_CONTROLLERAXISMOTION:
-					printf("controller axis %d %f\n", event.caxis.axis, event.caxis.value);
-					break;
-
-				case SDL_CONTROLLERDEVICEADDED:
-					printf("controller plugged in\n");
-					break;
-
-				case SDL_CONTROLLERDEVICEREMOVED:
-					printf("controller unplugged\n");
-					break;
-			}
-		}
-	}
-
-	// for now this works, but shouldnt be here
-	// dont call this func to make removing it ezpz
-	void ResizeViewport(int width, int height)
-	{
-		m_config.Width = width;
-		m_config.Height = height;
-
-		if (m_opengl) // if opengl isnt init, then when window is first opened it will take the m_config size
-		{
-			gl(glViewport(0, 0, m_config.Width, m_config.Height));
-		}
-	}
-
-	void Resize(int width, int height, bool center = true)
-	{
-		if (m_window) // only if open
-		{
-			SDL_SetWindowSize(m_window, width, height); // high DPI screens need some other functions?
-			if (center) SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-		}
-
-		ResizeViewport(width, height);
-	}
-
-	void SetTitle(const std::string& title)
-	{
-		SDL_SetWindowTitle(m_window, title.c_str());
-	}
-
-	void EndFrame() 
-	{
-		SDL_GL_SwapWindow(m_window);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-#ifdef IW_PLATFORM_WINDOWS
-		ImGui::UpdatePlatformWindows();
-#endif
-	}
+	void Init();
+	void InitUI();
+	void Dnit();
+	
+	void PumpEvents();
+	void EndFrame();
 	
 	// imgui renderer
 
-	void BeginImgui()
-	{
-		// might want to allow user to configure this
-		// but 99% of the time you want to draw imgui 
-		// to the screen not some backbuffer
-		
-		gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+	void BeginImgui();
+	void EndImgui();
+	
+	// for now this works, but shouldnt be here
+	// dont call this func to make removing it ezpz
+	void ResizeViewport(int width, int height);
 
-		ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(m_window);
-        ImGui::NewFrame();
-	}
-
-	void EndImgui()
-	{
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-		if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-		{
-#ifdef IW_PLATFORM_WINDOWS
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-#endif
-			SDL_GL_MakeCurrent(m_window, m_opengl);
-		}
-	}
+	void Resize(int width, int height, bool center = true);
+	void SetTitle(const std::string& title);
 
 	// yes moves
+	Window(Window&& move) noexcept;
+	Window& operator=(Window&& move) noexcept;
+	
 	//  no copys
-	Window(Window&& move) noexcept
-		: m_window (move.m_window)
-		, m_opengl (move.m_opengl)
-		, m_events (move.m_events)
-		, m_config (move.m_config)
-		, m_input  (move.m_input)
-	{
-		move.m_window = nullptr;
-		move.m_opengl = nullptr;
-		move.m_events = nullptr;
-	}
-	Window& operator=(Window&& move) noexcept
-	{
-		m_window = move.m_window;
-		m_opengl = move.m_opengl;
-		m_events = move.m_events;
-		m_config = move.m_config;
-		m_input  = move.m_input;
-		move.m_window = nullptr;
-		move.m_opengl = nullptr;
-		move.m_events = nullptr;
-		return *this;
-	}
 	Window(const Window& copy) = delete;
 	Window& operator=(const Window& copy) = delete;
 
@@ -428,61 +128,7 @@ public:
 
 private:
 
-	SDL_GameController* m_controller = nullptr;
-
-	static const char* Init_Video()
-	{
-		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
-
-		// set OpenGL attributes
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-
-		SDL_GL_SetAttribute(
-			SDL_GL_CONTEXT_PROFILE_MASK,
-			SDL_GL_CONTEXT_PROFILE_CORE
-		);
-
-		// is this needed?
-
-#ifdef __APPLE__
-		SDL_GL_SetAttribute( // required on Mac OS
-			SDL_GL_CONTEXT_FLAGS,
-			SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-		);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
-		return "#version 150";
-#elif __linux__
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		return "#version 150";
-#elif _WIN32
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-		return "#version 130";
-#endif
-	}
-
-	void Init_Imgui(const char* glsl_version)
-	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImPlot::CreateContext();
-		ImGui::StyleColorsDark();
-
-		ImGui_ImplSDL2_InitForOpenGL(m_window, m_opengl);
-		ImGui_ImplOpenGL3_Init(glsl_version);
-	}
-
-	void Dnit_Imgui()
-	{
-		ImGui_ImplOpenGL3_Shutdown();
-    	ImGui_ImplSDL2_Shutdown();
- 		ImGui::DestroyContext();
-		ImPlot::DestroyContext();
-	}
+	const char* Init_Video();
+	void Init_Imgui(const char* glsl_version);
+	void Dnit_Imgui();
 };

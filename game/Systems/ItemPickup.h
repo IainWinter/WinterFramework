@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Events.h"
 
 struct System_ItemPickup : System<System_ItemPickup>

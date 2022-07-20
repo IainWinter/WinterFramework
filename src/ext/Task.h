@@ -3,15 +3,8 @@
 #include "util/thread_pool.h"
 #include "util/pool_allocator.h"
 
-#include <mutex>
 #include <condition_variable>
-
-
-// Task knows if its blocked
-// Task knows what blocks it
-// When a task is run, it can edit and unclock the ones that relied on it
-
-// Coroutine([]() { doWork(); return whenDone; } ).Then([]() { doSomethingAfter(); } ).Then([] () {  } )
+#include <mutex>
 
 struct TaskPool
 {

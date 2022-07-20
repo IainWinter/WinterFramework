@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Leveling.h"
+#include "app/System.h"
 #include "Physics.h"
+#include "Prefabs.h"
+#include "Sand/SandEvents.h"
 #include "ext/Time.h"
 #include "ext/rendering/Sprite.h"
-#include "Sand/SandEvents.h"
-#include "Prefabs.h"
+#include "util/random.h"
 
 struct Asteroid {
 	int _pad;
@@ -14,17 +15,20 @@ struct Asteroid {
 struct System_RockSpawner_Test : SystemBase
 {
 	float spawnTimer = 0.f;
-	float spawnTime = 6.f;
+	float spawnTime = 0.f;// 6.f;
 
 	float rockSpeed = 10.f;
 	float rockTurning = wPI / 2.f;
 
+	int asteroidsLeft = 6;
+
 	void Update()
 	{
 		spawnTimer -= Time::DeltaTime();
-		if (spawnTimer < 0.f)
+		if (spawnTimer < 0.f && asteroidsLeft > 0)
 		{
 			spawnTimer = spawnTime;
+			asteroidsLeft -= 1;
 			
 			vec2 pos = get_randnc(40.f);
 			vec2 vel = -normalize(pos) * rockSpeed * (.1f + get_rand(.9f));
@@ -55,17 +59,5 @@ struct System_RockSpawner_Test : SystemBase
 
 			Send(event_SandAddSprite{ rock });
 		}
-	}
-
-	void Debug()
-	{
-		ImGui::Begin("Asteroids");
-
-		int count = 0;
-		for (auto [e] : Query<SandSprite>()) count += 1;
-
-		ImGui::Text("Asteroid count: %d", count);
-
-		ImGui::End();
 	}
 };

@@ -3,14 +3,13 @@
 #include "Rendering.h"
 #include "Entity.h"
 #include "Physics.h"
-#include "Leveling.h"
 #include "Windowing.h"
 #include "Events.h"
 
+#include "app/System.h"
 #include "ext/Time.h"
-#include "ext/flood_fill.h"
-#include "ext/marching_cubes.h"
-#include "ext/Components.h"
+#include "ext/algo/flood_fill.h"
+#include "ext/algo/marching_cubes.h"
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Particle.h"
@@ -52,7 +51,7 @@ struct SandWorld
 	{
 		worldSizeCells = camSize * 2.f * (float)cellsPerMeter_;
 		cameraSizeMeters = camSize;
-		cellsPerMeter = cellsPerMeter_;
+		cellsPerMeter = (float)cellsPerMeter_;
 	}
 
 	ivec2 ToScreenPos(vec2 posInMeters) const
@@ -152,9 +151,11 @@ struct Sand_System_Update : System<Sand_System_Update>
 		else
 		{
 			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
-			body->SetVelocity(e.velocity);
-			body->SetAngularVelocity(e.aVelocity);
+			body->ApplyForce(e.velocity);
+			body->ApplyTorque(e.aVelocity);
 		}
+
+		e.entity.Add<WrapOnScreen>();
 
 		SendNow(event_Sand_CreateCollider{ e.entity });
 	}

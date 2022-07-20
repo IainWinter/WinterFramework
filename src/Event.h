@@ -45,13 +45,7 @@ struct event_pipe
 	std::function<void(void*)> m_send;
 	std::function<bool(void*)> m_only_if;
 
-	void send(void* event)
-	{
-		if (!m_only_if || m_only_if(event))
-		{
-			m_send(event);
-		}
-	}
+	void send(void* event);
 };
 
 template<typename _e>
@@ -59,7 +53,9 @@ struct event_pipe_wrapper
 {
 	event_pipe& m_pipe;
 
-	event_pipe_wrapper(event_pipe& pipe) : m_pipe(pipe) {}
+	event_pipe_wrapper(event_pipe& pipe) 
+		: m_pipe(pipe)
+	{}
 
 	void only_if(std::function<bool(const _e&)> func)
 	{
@@ -96,33 +92,15 @@ struct event_sink
 		return m_pipes.emplace_back(make_pipe<_e, _h>(handler));
 	}
 
-	void remove_pipe(void* handler)
-	{
-		for (int i = 0; i < m_pipes.size(); i++)
-		{
-			if (m_pipes.at(i).m_destination == handler)
-			{
-				m_pipes.erase(m_pipes.begin() + i);
-				--i; // dont break could have multiple pipes to same instance
-			}
-		}
-	}
+	void remove_pipe(void* handler);
 
-	void send(void* event)
-	{
-		for (event_pipe& pipe : m_pipes)
-		{
-			pipe.send(event);
-		}
-	}
+	void send(void* event);
 };
 
 struct event_manager
 {
 	std::unordered_map<hash_t, event_sink> m_sinks;
 	std::vector<event_manager*> m_children; // doesnt own
-
-	// needs to be template
 
 	template<typename _e, typename _h>
 	event_pipe_wrapper<_e> attach(_h* handler_ptr)
@@ -132,47 +110,15 @@ struct event_manager
 		return event_pipe_wrapper<_e>(pipe);
 	}
 
-	void detach(void* handler)
-	{
-		for (auto itr = m_sinks.begin(); itr != m_sinks.end();)
-		{
-			itr->second.remove_pipe(handler);
+	void detach(void* handler);
+	void detach(event_type type, void* handler);
 
-			if (itr->second.m_pipes.size() == 0)
-			{
-				itr = m_sinks.erase(itr);
-			}
-			else
-			{
-				++itr;
-			}
-		}
-	}
+	void send(event_type type, void* event);
 
-	void detach(event_type type, void* handler)
-	{
-		event_sink& sink = m_sinks.at(type.m_hash);
-		sink.remove_pipe(handler);
+	// adding / remove child event_managers
 
-		if (sink.m_pipes.size() == 0)
-		{
-			m_sinks.erase(type.m_hash);
-		}
-	}
-
-	void send(event_type type, void* event)
-	{
-		auto itr = m_sinks.find(type.m_hash); // might cause a problem on large throughput of events
-		if (itr != m_sinks.end())
-		{
-			itr->second.send(event);
-		}
-
-		for (event_manager* child : m_children)
-		{
-			child->send(type, event);
-		}
-	}
+	void attach_child(event_manager* child);
+	void detach_child(event_manager* child);
 
 	// template headers
 
@@ -186,36 +132,6 @@ struct event_manager
 	void send(_t&& event)
 	{
 		send(make_event<_t>(), (void*)&event);
-	}
-
-	// adding / remove child event_managers
-
-	void attach_child(event_manager* child)
-	{
-		for (event_manager* c : m_children)
-		{
-			if (child == c)
-			{
-				assert(false && "Child already added");
-				return;
-			}
-		}
-
-		m_children.push_back(child);
-	}
-
-	void detach_child(event_manager* child)
-	{
-		for (auto itr = m_children.begin(); itr != m_children.end(); ++itr)
-		{
-			if (*itr == child)
-			{
-				m_children.erase(itr);
-				return;
-			}
-		}
-
-		assert(false && "Child not in manager");
 	}
 };
 
@@ -248,50 +164,18 @@ struct event_queue
 
 	event_manager* m_manager;
 	tsque<queued_event_base*> m_queue;
-
 	const char* m_where_current;
 
 	event_queue(
 		event_manager* manager
-	)
-		: m_manager       (manager)
-		, m_where_current (nullptr)
-	{}
+	);
+
+	void execute();
 
 	template<typename _e>
 	void send(const _e& event)
 	{
 		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, event); // should use pool...
 		m_queue.push_back(qe);
-	}
-
-	void execute()
-	{
-		while (m_queue.size() > 0)
-		{
-			queued_event_base* e = m_queue.pop_front();
-			e->send(m_manager);
-			delete e;
-		}
-
-		//size_t i = 0;
-
-
-
-		//do
-		//{
-		//	size_t sizeThisIteration = m_queue.size();
-
-		//	for (; i < sizeThisIteration; i++)
-		//	{
-		//		queued_event_base* e = m_queue.at(i);
-		//		e->send(m_manager);
-		//		delete e;
-		//		m_queue.at(i) = nullptr; // debug
-		//	}
-		//}
-		//while (i < m_queue.size());
-
-		//m_queue.clear();
 	}
 };
