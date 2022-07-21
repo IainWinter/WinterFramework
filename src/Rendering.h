@@ -236,11 +236,12 @@ public:
 	void Add(AttachmentName name, const r<Texture>& texture);
 
 	// creates an empty texture
-	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, bool isStatic = INHERIT_HOST);
+	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, int isStatic = INHERIT_HOST);
 
 	void Resize(int width, int height);
 
 	void Use();
+
 	static void UseDefault();
 	static void Clear(Color color);
 
@@ -251,10 +252,10 @@ public:
 	bool OnDevice()     const override;
 	int  DeviceHandle() const override;
 protected:
-	void _FreeHost() override;
-	void _FreeDevice() override;
-	void _InitOnDevice() override;
-	void _UpdateOnDevice() override;
+	void _FreeHost()         override;
+	void _FreeDevice()       override;
+	void _InitOnDevice()     override;
+	void _UpdateOnDevice()   override;
 	void _UpdateFromDevice() override;
 
 // construction
@@ -311,6 +312,7 @@ private:
 	_data        m_host;
 	GLuint       m_device   = 0u;
 
+	int          m_length   = 0; // need length after host is freeed
 	int          m_repeat   = 0;
 	ElementType  m_type     = _none;
 
@@ -348,10 +350,10 @@ public:
 	bool OnDevice()     const override;
 	int  DeviceHandle() const override;
 protected:
-	void _FreeHost() override;
-	void _FreeDevice() override;
-	void _InitOnDevice() override;
-	void _UpdateOnDevice() override;
+	void _FreeHost()         override;
+	void _FreeDevice()       override;
+	void _InitOnDevice()     override;
+	void _UpdateOnDevice()   override;
 	void _UpdateFromDevice() override;
 
 // construction
@@ -494,7 +496,7 @@ public:
 	Mesh& Add(AttribName name, int instancedStride, int isStatic, const std::vector<_t>& data)
 	{
 		auto [repeat, type] = get_element_type_info<_t>();
-		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, isStatic == INHERIT_HOST ? IsStatic() : isStatic);
+		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, PICK_INHERIT);
 		buffer->Set((int)data.size(), data.data());
 		return Add(name, instancedStride, buffer->Repeat(), buffer);
 	}
@@ -538,10 +540,10 @@ public:
 	bool OnDevice()     const override;
 	int  DeviceHandle() const override;
 protected:
-	void _FreeHost() override;
-	void _FreeDevice() override;
-	void _InitOnDevice() override;
-	void _UpdateOnDevice() override;
+	void _FreeHost()         override;
+	void _FreeDevice()       override;
+	void _InitOnDevice()     override;
+	void _UpdateOnDevice()   override;
 	void _UpdateFromDevice() override;
 
 // construction
@@ -619,7 +621,6 @@ public:
 // interface
 
 public:
-
 	bool OnHost()       const override;
 	bool OnDevice()     const override;
 	int  DeviceHandle() const override;

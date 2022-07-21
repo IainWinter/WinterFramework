@@ -52,6 +52,7 @@ struct System_KeepOnScreen : SystemBase
 			if (pos != transform.position)
 			{
 				transform.position = pos;
+				transform.UpdateLastFrameData();
 				body.SetTransform(transform);
 			}
 		}

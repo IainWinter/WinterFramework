@@ -142,9 +142,8 @@ void InitCollisionInfoProgram()
 
 		"void main()"
 		"{"
-			"vec4 mask = texture(colliderMask, TexCoords);"
-			"if (mask.a > .7) mask.a = 1.f;" // round up for health thing
-			"if (mask.a == 0) discard;"
+			"float mask = texture(colliderMask, TexCoords).a;"
+			"if (mask == 0) discard;"
 			"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, 1);"
 		"}";
 

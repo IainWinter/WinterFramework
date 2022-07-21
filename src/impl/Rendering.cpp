@@ -72,12 +72,11 @@ void IDeviceObject::assert_on_device()  const { assert(OnDevice() && "Device obj
 void IDeviceObject::assert_is_static()  const { assert( m_static  && "Device object is static"); }
 void IDeviceObject::assert_not_static() const { assert(!m_static  && "Device object is not static"); }
 
-void IDeviceObject::copy_base(const IDeviceObject* move)
+void IDeviceObject::copy_base(const IDeviceObject* copy)
 {
-	m_static = move->m_static;
-	m_outdated = move->m_outdated;
+	m_static   = copy->m_static;
+	m_outdated = copy->m_outdated;
 }
-
 
 int            Texture::Width()           const { return m_width; } 
 int            Texture::Height()          const { return m_height; } 
@@ -303,9 +302,9 @@ void Target::Add(AttachmentName name, const r<Texture>& texture)
 	m_attachments.emplace(name, texture);
 }
 
-r<Texture> Target::Add(AttachmentName name, int width, int height, Texture::Usage usage, bool isStatic)
+r<Texture> Target::Add(AttachmentName name, int width, int height, Texture::Usage usage, int isStatic)
 {
-	r<Texture> texture = mkr<Texture>(width, height, usage, isStatic);
+	r<Texture> texture = mkr<Texture>(width, height, usage, PICK_INHERIT);
 	Add(name, texture);
 
 	return texture;
@@ -438,7 +437,7 @@ Target& Target::copy_into(const Target& copy)
 
 	  void*         Buffer::Data()                   { return m_host.data(); }
 const void*         Buffer::Data()             const { return m_host.data(); }
-int                 Buffer::Length()           const { return m_host.size() / BytesPerElement(); }
+int                 Buffer::Length()           const { return m_length;  }
 int                 Buffer::Repeat()           const { return m_repeat; }
 Buffer::ElementType Buffer::Type()             const { return m_type; }
 int                 Buffer::BytesPerElement()  const { return Repeat() * gl_element_type_size(Type()); }
@@ -446,24 +445,29 @@ int                 Buffer::Bytes()            const { return m_host.size(); }
 
 void Buffer::SetBytes(int byteCount, const void* data)
 {
+	m_length = byteCount;
 	m_host.resize(byteCount);
 	memcpy(m_host.data(), data, byteCount); // put an error check to see if memory was actually allocated
 }
 
 void Buffer::PushBytes(int byteCount, const void* data)
 {
-	int bytes = Bytes();
-	m_host.reserve(bytes + byteCount);
-	memcpy((char*)m_host.data() + bytes, data, byteCount);
+	m_length += byteCount;
+	
+	int end = Bytes();
+	m_host.reserve(end + byteCount);
+	memcpy((char*)m_host.data() + end, data, byteCount);
 }
 
 void Buffer::EraseBytes(int byteIndex, int byteCount)
 {
+	m_length -= byteCount;
 	m_host.erase(m_host.begin() + byteIndex, m_host.begin() + byteIndex + byteCount);
 }
 
 void Buffer::PopBytes(int byteCount)
 {
+	m_length -= byteCount;
 	m_host.erase(m_host.end() - byteCount, m_host.end());
 }
 
@@ -542,6 +546,7 @@ Buffer& Buffer::move_into(Buffer&& move) noexcept
 
 	m_repeat		  = move.m_repeat;
 	m_type            = move.m_type;
+	m_length          = move.m_length;
 
 	m_host  		  = std::move(move.m_host);
 	m_device		  = move.m_device;
@@ -557,14 +562,10 @@ Buffer& Buffer::copy_into(const Buffer& copy)
 
 	m_repeat          = copy.m_repeat;
 	m_type            = copy.m_type;
+	m_length          = copy.m_length;
 
-	m_device          = 0;
-	m_host            = {};
-
-	if (copy.OnHost())
-	{
-		m_host = copy.m_host;
-	}
+	m_device          = copy.IsStatic() ? copy.m_device : 0; // if its static take device
+	m_host            = copy.m_host;
 
 	return *this;
 }
@@ -705,7 +706,6 @@ void Mesh::_UpdateFromDevice()
 
 Mesh::Mesh(
 	bool isStatic
-
 )
 	: IDeviceObject (isStatic)
 {}
@@ -760,7 +760,6 @@ Mesh& Mesh::copy_into(const Mesh& copy)
 
 	for (const auto& [buffer, names] : singleBuffers)
 	{
-		buffer->assert_on_host(); // needs to have some data on host for this to make sense
 		r<Buffer> copyBuffer = mkr<Buffer>(*buffer);
 
 		for (const AttribName& name : names)
@@ -796,6 +795,8 @@ void ShaderProgram::Use()
 {
 	if (!OnDevice()) SendToDevice();
 	gl(glUseProgram(m_device));
+
+	//m_slot = 0; // reset for texture bindings
 }
 
 void ShaderProgram::Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
@@ -819,6 +820,8 @@ void ShaderProgram::Set(const std::string& name, Texture& texture)
 	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
 	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
 	gl(glUniform1i(gl_location(name), m_slot));
+
+	//m_slot += 1;
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }

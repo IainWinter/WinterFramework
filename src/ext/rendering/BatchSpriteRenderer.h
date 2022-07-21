@@ -67,7 +67,7 @@ private:
 
 			"layout (location = 6) in vec4 uvOffsetAndScale;"
 			"layout (location = 7) in vec4 tint;"
-			"layout (location = 10) in mat4 model;" // reserves 8, 9, 10, 11
+			"layout (location = 10) in mat4 model;"
 
 			"out vec2 TexCoords;"
 			"out vec4 Tint;"
@@ -100,8 +100,6 @@ private:
 
 		m_program.Add(ShaderProgram::sVertex,   source_vert);
 		m_program.Add(ShaderProgram::sFragment, source_frag);
-
-		r<Buffer> models = mkr<Buffer>(Buffer(0, 16, Buffer::_f32, DYNAMIC_HOST));
 
 		m_quad = InitQuadMesh2D(Mesh(DYNAMIC_HOST))
 			.Add<vec4>(Mesh::aCustom_a1, 1)
