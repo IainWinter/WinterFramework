@@ -18,9 +18,6 @@
 // Each thing could be interfaces with a graphics objeect type, might make things more? or less confusing
 // This should just be a wrapper, I dont want to cover everything, so expose underlying library
 
-// I was using RAII, but that causes headaches with all the move constructors
-// So here is how this works
-
 // Constructor  ( create host memory / load from files )
 // SendToDevice ( create device memory and copy over) [free host if static]
 // Cleanup      ( destroy host and device memory if they exists)
@@ -107,6 +104,7 @@ public:
 		uINT_32,  // 128 bit
 		uFLOAT_32 // 128 bit
 	};
+
 private:
 	u8*          m_host            = nullptr; // deafult construction
 	GLuint       m_device          = 0u;
@@ -137,7 +135,7 @@ public:
 	// only rgb -> Channels() = 3
 	// full rgba -> Channels() = 4
 
-	// assumed non const At will be written to
+	// assumed non const At will be written to so marks the texture as outdated
 
 	      Color& At(int x, int y);
 	const Color& At(int x, int y) const;
@@ -173,7 +171,8 @@ protected:
 // construction
 
 public:
-	Texture(bool isStatic = true);
+	// by default is static
+	Texture();
 	Texture(const std::string& path, bool isStatic = true);
 	Texture(int width, int height, Usage usage, bool isStatic = true);
 	Texture(int width, int height, Usage usage, void* pixels);
@@ -213,6 +212,7 @@ public:
 		aDepth,
 		aStencil
 	};
+
 private:
 	using _attachments = std::unordered_map<AttachmentName, r<Texture>>;
 
@@ -305,8 +305,8 @@ public:
 	{
 		_none, _u8, _u32, _f32
 	};
-private:
 
+private:
 	using _data = std::vector<char>;
 
 	_data        m_host;
@@ -340,8 +340,8 @@ public:
 	void Erase(int elementIndex, int elementCount = 1);
 	void Pop  (int elementCount = 1);
 
-	template<typename _t> void Set (const std::vector<_t>& data) { SetBytes (data.size() * sizeof(_t), data.data()); }
-	template<typename _t> void Push(const std::vector<_t>& data) { PushBytes(data.size() * sizeof(_t), data.data()); }
+	template<typename _t> void Set (const std::vector<_t>& data) { SetBytes ((int)(data.size() * sizeof(_t)), data.data()); }
+	template<typename _t> void Push(const std::vector<_t>& data) { PushBytes((int)(data.size() * sizeof(_t)), data.data()); }
 
 // interface
 
@@ -450,6 +450,7 @@ public:
 		int offset;            // this is used if the buffer is larger than a vec4
 		int repeat;            // so each buffer knows how many repeats (buffer with 5 repeats) first attrib has 4, next has 1
 	};
+
 private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
 	using _info    = std::unordered_map<AttribName, BufferInfo>; // could change to a struct if there is other info

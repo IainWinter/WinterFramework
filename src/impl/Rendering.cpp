@@ -22,7 +22,7 @@ void IDeviceObject::FreeDevice()
 
 void IDeviceObject::SendToDevice()
 {
-	assert_on_host(); // always require at least something on host to be copied to device, no device only init
+	assert_on_host(); // always require at least something on host to be copied to device
 
 	if (OnDevice())
 	{
@@ -30,7 +30,7 @@ void IDeviceObject::SendToDevice()
 		_UpdateOnDevice();
 	}
 
-	else
+	else // if no device then init
 	{
 		_InitOnDevice();
 		if (m_static) FreeHost();
@@ -177,10 +177,8 @@ void Texture::_UpdateFromDevice()
 	gl(glGetTextureImage(m_device, 0, gl_format(m_usage), gl_type(m_usage), BufferSize(), Pixels()));
 }
 
-Texture::Texture(
-	bool isStatic
-)
-	: IDeviceObject (isStatic)
+Texture::Texture()
+	: IDeviceObject (true)
 {}
 
 Texture::Texture(
@@ -257,7 +255,16 @@ Texture& Texture::copy_into(const Texture& copy)
 	if (copy.OnHost())
 	{
 		m_host = (u8*)malloc(BufferSize());
-		memcpy(m_host, copy.m_host, BufferSize());
+
+		if (m_host)
+		{
+			memcpy(m_host, copy.m_host, BufferSize());
+		}
+		else
+		{
+			assert(false);
+			printf("[ERROR]\tFailed to allocate texture memory");
+		}
 	}
 
 	return *this;
@@ -441,7 +448,7 @@ int                 Buffer::Length()           const { return m_length;  }
 int                 Buffer::Repeat()           const { return m_repeat; }
 Buffer::ElementType Buffer::Type()             const { return m_type; }
 int                 Buffer::BytesPerElement()  const { return Repeat() * gl_element_type_size(Type()); }
-int                 Buffer::Bytes()            const { return m_host.size(); }
+int                 Buffer::Bytes()            const { return (int)m_host.size(); }
 
 void Buffer::SetBytes(int byteCount, const void* data)
 {
@@ -471,10 +478,10 @@ void Buffer::PopBytes(int byteCount)
 	m_host.erase(m_host.end() - byteCount, m_host.end());
 }
 
-void Buffer::Set  (int elementCount, const void* elements) { SetBytes(BytesPerElement() * elementCount, elements); }
-void Buffer::Push (int elementCount, const void* elements) { Push    (BytesPerElement() * elementCount, elements); }
-void Buffer::Erase(int elementIndex, int elementCount)     { Erase   (BytesPerElement() * elementIndex, elementCount); }
-void Buffer::Pop  (int elementCount)                       { PopBytes(BytesPerElement() * elementCount); }
+void Buffer::Set  (int elementCount, const void* elements) { SetBytes  (BytesPerElement() * elementCount, elements); }
+void Buffer::Push (int elementCount, const void* elements) { PushBytes (BytesPerElement() * elementCount, elements); }
+void Buffer::Erase(int elementIndex, int elementCount)     { EraseBytes(BytesPerElement() * elementIndex, elementCount); }
+void Buffer::Pop  (int elementCount)                       { PopBytes  (BytesPerElement() * elementCount); }
 
 bool Buffer::OnHost()       const { return m_host.size() > 0; }
 bool Buffer::OnDevice()     const { return m_device != 0u; }
@@ -570,7 +577,7 @@ Buffer& Buffer::copy_into(const Buffer& copy)
 	return *this;
 }
 
-int  Mesh::NumberOfBuffers()     const { return m_buffers.size(); }
+int  Mesh::NumberOfBuffers()     const { return (int)m_buffers.size(); }
 bool Mesh::HasInstancedBuffers() const { return m_hasInstance > 0; }
 
       r<Buffer>&  Mesh::Get          (AttribName name)       { MarkForUpdate(); return m_buffers.at(name); }
@@ -689,7 +696,7 @@ void Mesh::_InitOnDevice()
 		BufferInfo& info = GetInfo(attrib);
 
 		gl(glEnableVertexAttribArray(attrib));
-		gl(glVertexAttribPointer(attrib, info.repeat, gl_format(buffer->Type()), GL_FALSE, buffer->BytesPerElement(), (void*)info.offset));
+		gl(glVertexAttribPointer(attrib, info.repeat, gl_format(buffer->Type()), GL_FALSE, buffer->BytesPerElement(), (void*)(uintptr_t)info.offset));
 		gl(glVertexAttribDivisor(attrib, info.instancedStride));
 	}
 }
@@ -778,7 +785,7 @@ bool Mesh::SendBindAndReturnHasIndex()
 	return m_buffers.find(aIndexBuffer) != m_buffers.end();
 }
 
-int ShaderProgram::NumberOfShaders()       const { return m_buffers.size(); }
+int ShaderProgram::NumberOfShaders()       const { return (int)m_buffers.size(); }
 int ShaderProgram::NumberOfBoundTextures() const { return m_slot; }
 
 void ShaderProgram::Add(ShaderName name, const char* str)

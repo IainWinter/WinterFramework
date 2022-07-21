@@ -166,7 +166,19 @@ protected:
 
 // some helpers
 
-	template<typename... _t> Entity                       FirstEntityWith() { assert_init(); return std::get<0>(*m_level->m_world.QueryWithEntity<_t...>().begin()); }
+	template<typename... _t> 
+	Entity FirstEntityWith() const
+	{
+		assert_init(); 
+
+		auto query = m_level->m_world.QueryWithEntity<_t...>();
+		if (query.begin() == query.end())
+		{
+			return Entity();
+		}
+
+		return std::get<0>(*m_level->m_world.QueryWithEntity<_t...>().begin());
+	}
 
 	template<typename _t> void Send         (_t&& event) { assert_init(); m_level->m_levelQueue.send(event); }
 	template<typename _t> void SendNow      (_t&& event) { assert_init(); m_level->m_levelBus.send(event); }
@@ -220,7 +232,7 @@ public:
 	virtual void Debug() {}
 
 private:
-	void assert_init()
+	void assert_init() const
 	{
 		assert(m_level && "System has not been assigned a level. Make sure to use the Init function, not the constructor");
 	}

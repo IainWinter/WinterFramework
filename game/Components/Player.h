@@ -31,7 +31,7 @@ struct Player
 	WeaponProps Alt;
 
 	int Score = 0; // storing this here for simplicity
-	int Lives = 3;
+	int Lives = 3; // this isnt the count, actual count lives in the system this is just for the UI to read it
 
 	float m_attackTimer = 0.f;
 	float m_attackTimerAlt = 0.f;

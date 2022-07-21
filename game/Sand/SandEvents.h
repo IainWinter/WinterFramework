@@ -56,8 +56,11 @@ struct event_Sand_ExplodeToDust
 {
 	EntityWith<Transform2D, Sprite, SandSprite> entity;
 	std::vector<int> onlyThisIndex; // if empty everything is blow
-	vec2 velocity;
-	
+	vec2 velocity = vec2(0.f);
+	bool putColliderOnDust = false;
+
+	std::function<void(Entity)> onCreate;
+
 	//vec2 projectileVel;
 };
 

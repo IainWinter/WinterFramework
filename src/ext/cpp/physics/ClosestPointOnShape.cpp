@@ -24,7 +24,6 @@ std::vector<vec2> GetBodyVertices(const Rigidbody2D& body)
 
 vec2 GetClosestPointInLine(vec2 point, vec2 linePoint1, vec2 linePoint2)
 {
-    vec2 closest;
     vec2 bVec1 = linePoint2 - linePoint1; // LINE FROM POINT 1 to 2
     vec2 bVec2 = point - linePoint1;      // LINE FROM VERTEX TO POINT 1
     

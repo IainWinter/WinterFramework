@@ -20,7 +20,7 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 			return;
 		}
 
-		auto [sprite, mask] = e.entity.GetAll<Sprite, SandSprite>();
+		auto [sprite, mask, body] = e.entity.GetAll<Sprite, SandSprite, Rigidbody2D>();
 
 		if (sprite.Get().At(e.index).a > 0) // projectiles hit mask sprite
 		{
@@ -28,5 +28,7 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 		}
 
 		Send(event_Sand_RemoveCell{ e.entity, e.index, e.hitPosInWorld });
+
+		body.ApplyForce(e.projectile.Get<Rigidbody2D>().GetVelocity(), e.hitPosInWorld - body.GetPosition());
 	}
 };

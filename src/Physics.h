@@ -10,6 +10,7 @@ vec2   _fb(const b2Vec2& v);
 
 struct CollisionInfo
 {
+	Entity me;
 	Entity other;
 	b2Contact* contact;
 	bool isA;
@@ -25,25 +26,29 @@ private:
 	b2BodyDef m_body;   // Init values for Physics Add
 	b2Body* m_instance; // If null, not in physics world
 	float m_density;    // deafult value on each new collider, if the new collider had 0 density
+	bool m_collisionEnabled;
 
 	friend struct PhysicsWorld;
 
 public:
-	Rigidbody2D(
-		Transform2D transform = {}
-	);
+	Rigidbody2D(Transform2D transform = {});
 	
 	void SetTransform(Transform2D& transform);
 
 	// functions for setting properties for box2d...
 
-	bool InWorld() const;
+	bool InWorld()            const;
+	bool IsFixedRotation()    const;
+	bool IsCollisionEnabled() const;
+
+	void ApplyForce (vec2 force);
+	void ApplyForce (vec2 force, vec2 offsetFromCenter);
+	void ApplyTorque(float force);
 	
 	vec2  GetPosition()        const;
 	vec2  GetVelocity()        const;
 	float GetAngle()           const;
 	float GetAngularVelocity() const;
-	bool  IsFixedRotation()    const;
 	float GetDamping()         const;
 	float GetAngularDamping()  const;
 	float GetMass()            const;
@@ -57,10 +62,7 @@ public:
 	Rigidbody2D& SetDamping        (float damping);
 	Rigidbody2D& SetAngularDamping (float adamping);
 	Rigidbody2D& SetDensity        (float density);
-
-	void ApplyForce (vec2 force);
-	void ApplyForce (vec2 force, vec2 offsetFromCenter);
-	void ApplyTorque(float force);
+	Rigidbody2D& SetEnableCollision(bool respond);
 
 	void RemoveColliders();
 	int GetColliderCount() const;
@@ -76,6 +78,7 @@ public:
 private:
 	void assert_in_world() const;
 	b2Fixture* GetCol(int index) const;
+	b2Fixture* GetColList() const;
 };
 
 struct PointQueryResult

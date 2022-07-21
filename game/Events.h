@@ -41,3 +41,8 @@ struct event_Enemy_Spawn
 
 	vec2 initialVel;
 };
+
+struct event_Player_Destroied
+{
+	int _pad;
+};

@@ -107,7 +107,8 @@ public:
 		if (m_fixedStepAcc >= Time::FixedTime())
 		{
 			physicsTicks += 1;
-			m_fixedStepAcc -= Time::FixedTime();
+			m_fixedStepAcc = 0.f; // so this is incorrect if the physics should run twice a frame, but if the physics is whats causing a slow frame, it causes a feedback loop...
+			//m_fixedStepAcc -= Time::FixedTime();
 
 			TickLevelFixed();
 			TickPhysics();

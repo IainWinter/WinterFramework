@@ -28,12 +28,12 @@ struct Sand_System_ExplodeToDust : System<Sand_System_ExplodeToDust>
 	{
 		bool destroyAll = e.onlyThisIndex.size() == 0;
 		if (destroyAll) e.onlyThisIndex = GetCorePixels(e.entity.Get<Sprite>().source).GetAllAsVec();
-		ExplodeSpriteIntoDust(e.onlyThisIndex, e.entity, e.velocity, destroyAll);
+		ExplodeSpriteIntoDust(e.onlyThisIndex, e.entity, e.velocity, destroyAll, e.putColliderOnDust, e.onCreate);
 	}
 
 private:
 
-	void ExplodeSpriteIntoDust(const std::vector<int>& island, Entity explodeMe, vec2 velocity, bool destroyAll)
+	void ExplodeSpriteIntoDust(const std::vector<int>& island, Entity explodeMe, vec2 velocity, bool destroyAll, bool createColliderOnDust, const std::function<void(Entity)>& onCreate)
 	{
 		auto [transform, sprite] = explodeMe.GetAll<Transform2D, Sprite>();
 		Texture& tex = sprite.Get();
@@ -61,12 +61,14 @@ private:
 				.SetOriginal(dust.Get<Transform2D>());
 
 			//dust.Add<ParticleShrinkWithAge>();
+			//dust.Add<WrapOnScreen>();
 
 			dust.Add<Item>()
 				.SetType(ITEM_REGOLITH)
 				.SetPickupRadius(8.f)
-				.SetLife(4.f + get_rand(4.f))
+				.SetLife(3.f + get_rand(3.f))
 				.SetPickupDelay(.1f + get_rand(.5f));
+			dust.Get<Item>().m_initScale = vec2(s);
 
 			vec2 vel = velocity;
 			if (explodeMe.Has<Rigidbody2D>())
@@ -78,6 +80,20 @@ private:
 			GetModule<PhysicsWorld>().AddEntity(dust)
 				.SetVelocity(vel)
 				.SetAngularVelocity(get_randc(w2PI));
+
+			if (createColliderOnDust)
+			{
+				b2CircleShape circle;
+				circle.m_radius = s;
+
+				dust.Get<Rigidbody2D>()
+					.AddCollider(circle);
+			}
+
+			if (onCreate)
+			{
+				onCreate(dust);
+			}
 		}
 
 		if (destroyAll)

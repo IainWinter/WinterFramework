@@ -16,6 +16,7 @@
 #include "Sand/SandSystems.h"
 #include "Systems/AllowPauseMenu.h"
 #include "Systems/PlayerController.h"
+#include "Systems/PlayerSpawner.h"
 #include "Systems/KeepOnScreen.h"
 #include "Systems/FireWeapon.h"
 #include "Systems/RockSpawner_Test.h"
@@ -134,15 +135,16 @@ struct Regolith : EngineLoop
 		ConfigureModules();
 		ConfigureLevel();
 		ConfigureInputMapping();
-		ConfigureMainGameLevel();
+		//ConfigureMainGameLevel();
 	}
 
 	void _InitUI()
 	{
 		FontMap& fonts = m_app.GetModule<FontMap>();
 		fonts.Load("Roboto",      18, "Roboto.ttf");
-		fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
-		fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+		fonts.Load("Score",       48, "Roboto.ttf");
+		//fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+		//fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
@@ -176,6 +178,8 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_RenderScene());
 		level->AddSystem(System_PhysicsInterpolation());
 	
+		level->AddSystem(System_PlayerSpawner());
+
 		level->AddSystem(System_LowCorePixelDeath());
 		level->AddSystem(System_DestroyInTime());
 
@@ -185,14 +189,12 @@ struct Regolith : EngineLoop
 
 		level->AddSystem(System_UI_AsteroidsHUD());
 
-		removeOnDeath =
-		{
-			// asteroids mode
-
-			level->AddSystem(System_PlayerController()),
-			level->AddSystem(System_ItemPickup()),
-			level->AddSystem(System_FireWeapon()),
-			level->AddSystem(System_RockSpawner_Test())
+		//removeOnDeath =
+		//{
+			level->AddSystem(System_PlayerController());
+			level->AddSystem(System_ItemPickup());
+			level->AddSystem(System_FireWeapon());
+			level->AddSystem(System_RockSpawner_Test());
 
 			//level->AddSystem(System_ItemSpawner()),
 			//level->AddSystem(System_FireWeaponAfterDelay()),
@@ -202,7 +204,7 @@ struct Regolith : EngineLoop
 			//level->AddSystem(System_FuelTank()),
 			
 			//level->AddSystem(System_EnemySpawner()),
-		};
+		//};
 
 		AddSandSystemsToLevel(level);
 		
@@ -236,45 +238,46 @@ struct Regolith : EngineLoop
 		m_app.AddModule<CoordTranslation>(coords);
 	}
 
-	void ConfigureMainGameLevel()
-	{ 
-		r<Level> level = LevelManager::CurrentLevel();
+	//void ConfigureMainGameLevel()
+	//{ 
+	//	r<Level> level = LevelManager::CurrentLevel();
 
-		Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
-		player.Add<Player>();
-		//player.Add<KeepOnScreen>();
-		player.Add<ItemSink>();
-		player.Add<SandHealable>();
-		player.Add<SandDieInTimeWithLowCoreCount>();
+	//	Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
+	//	player.Add<Player>();
+	//	//player.Add<KeepOnScreen>();
+	//	player.Add<ItemSink>();
+	//	player.Add<SandHealable>();
+	//	player.Add<SandDieInTimeWithLowCoreCount>();
 
-		player.Add<Rigidbody2D>().OnCollision += [=](CollisionInfo info)
-		{
-			m_app.Send(event_Sand_ExplodeToDust{player});
-			//m_app.Send(event_SpawnExplosion{player.Get<Transform2D>().position, 20.f});
-		};
+	//	player.Add<Rigidbody2D>().OnCollision += [=](CollisionInfo info)
+	//	{
+	//		event_Sand_ExplodeToDust e;
+	//		e.entity = player;
+	//		e.putColliderOnDust = true;
 
-		//	//.SetFixedRotation(true)
-		//	.SetAngularDamping(1.f)
-		//	.SetDamping(.1f);
-			
-		player.Get<SandSprite>().isHardCore = true;
+	//		m_app.Send(e);
+	//	};
 
-		player.OnDestroy([this](Entity) {
-			RemoveSystemsForPlayerDeath();
-		});
+	//	player.OnDestroy([this](Entity)
+	//	{
+	//		RemoveSystemsForPlayerDeath();
+	//	});
+	//}
 
-		//CreateSandSprite("test_sqr.png", "test_sqr.png");
-	}
+	//void on(event_Player_Destroied& e)
+	//{
+	//	RemoveSystemsForPlayerDeath()
+	//}
 
-	void RemoveSystemsForPlayerDeath()
-	{
-		r<Level> level = LevelManager::CurrentLevel();
+	//void RemoveSystemsForPlayerDeath()
+	//{
+	//	r<Level> level = LevelManager::CurrentLevel();
 
-		for (Order system : removeOnDeath)
-		{
-			level->RemoveSystem(system);
-		}
-	}
+	//	for (Order system : removeOnDeath)
+	//	{
+	//		level->RemoveSystem(system);
+	//	}
+	//}
 };
 
 void setup()

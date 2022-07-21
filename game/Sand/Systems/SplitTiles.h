@@ -7,6 +7,9 @@
 
 struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 {
+	const int TurnToDustIfUnder = 25;
+	const int TurnToDustInTimeIfUnder = 100;
+
 	void Init()
 	{
 		Attach<event_Sand_RemoveCell>();
@@ -104,7 +107,7 @@ private:
 
 			for (const std::vector<int>& island : islands.otherIslands)
 			{
-				if (island.size() < 25)
+				if (island.size() < TurnToDustIfUnder)
 				{
 					Send(event_Sand_ExplodeToDust{ entity, island });
 				}
@@ -159,7 +162,7 @@ private:
 			vec2  vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
 			float ang = a + get_randc(wPI);
 
-			if (island.size() < 50)
+			if (island.size() < TurnToDustInTimeIfUnder)
 			{
 				splitEntity.Add<SandTurnToDustInTime>(island.size() / 10.f);
 			}

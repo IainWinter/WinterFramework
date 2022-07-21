@@ -22,16 +22,12 @@ struct System_PlayerController : System<System_PlayerController>
 		//Attach<event_Mouse>();
 		Attach<event_Item_Pickup>();
 
-		playerEntity = FirstEntityWith<Player>();
 		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
-
-		playerEntity.Get<Player>().Alt = { WEAPON_LASER_LARGE, 0, 0, .001f };
-
-		Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
 	}
 
 	void Update()
 	{
+		playerEntity = FirstEntityWith<Player>();
 		if (!playerEntity.IsAlive()) return;
 
 		Player& player = playerEntity.Get<Player>();
@@ -48,7 +44,6 @@ struct System_PlayerController : System<System_PlayerController>
 			player.m_attackTimerAlt = player.Alt.AttackTime;
 			player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
 			Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
-
 		}
 
 		else 

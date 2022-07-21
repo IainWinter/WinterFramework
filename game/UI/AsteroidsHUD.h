@@ -8,24 +8,19 @@
 
 struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 {
-	r<Texture> background;
 	r<Texture> playerSprite;
-	Entity playerEntity;
-	r<Texture> laserTank;
+	int lastPlayerLives = 3;
 
 	void Init()
 	{
-		background = GetPrefab_Texture("ui_playerHUD.png");
-		background->SendToDevice();
-
-		playerEntity = FirstEntityWith<Player>();
+		playerSprite = mkr<Texture>(_A("player.png"));
+		playerSprite->SendToDevice();
 	}
 
 	void UI()
 	{
 		vec2 screen = GetModule<Window>().Dimensions();
 		vec2 size_hud = screen * vec2(.15, 1);
-		vec2 scale = size_hud / background->Dimensions();
 
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(size_hud.x, size_hud.y));
@@ -33,24 +28,26 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 
-		ImGui::PushFont(GetModule<FontMap>().Get("Pixel"));
+		ImGui::PushFont(GetModule<FontMap>().Get("Score"));
 
-		ImGui::Begin("Player HUD", 0, 
-			  ImGuiWindowFlags_NoResize 
-			| ImGuiWindowFlags_NoInputs 
-			| ImGuiWindowFlags_NoBackground 
+		ImGui::Begin("Player HUD", 0,
+			ImGuiWindowFlags_NoResize
+			| ImGuiWindowFlags_NoInputs
+			| ImGuiWindowFlags_NoBackground
 			| ImGuiWindowFlags_NoTitleBar
 			| ImGuiWindowFlags_NoScrollbar
 		);
 
-		ImGui::SetWindowFontScale(scale.y / 4.f);
-
-		float text = ImGui::CalcTextSize("0").y;
-		
-		vec2 pos_score  = vec2(15, 52) * scale - vec2(0, text / 2.f + 2.f); // +2 is an adjustment to line the font up with the bg
-
-		ImGui::SetCursorPos(ImVec2(pos_score.x, pos_score.y));
+		ImGui::SetCursorPos(ImVec2(10, 10));
 		ImGui::Text("%d", GetScoreCount());
+
+		float healthSize = 50.f;
+
+		for (int i = 0; i < GetPlayerLives(); i++)
+		{
+			ImGui::SetCursorPos(ImVec2(10 + (10 + healthSize) * i, 10 + 10 + ImGui::CalcTextSize("0").y));
+			ImGui::Image((void*)playerSprite->DeviceHandle(), ImVec2(healthSize, healthSize), ImVec2(0, 1), ImVec2(1, 0));
+		}
 
 		ImGui::End();
 		ImGui::PopStyleVar(2);
@@ -60,8 +57,14 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	int GetScoreCount() const
 	{
-		return playerEntity.IsAlive()
-			? playerEntity.Get<Player>().Score
-			: 0;
+		Entity player = FirstEntityWith<Player>();
+		return player.IsAlive() ? player.Get<Player>().Score : 0;
+	}
+
+	int GetPlayerLives()
+	{
+		Entity player = FirstEntityWith<Player>();
+		lastPlayerLives = player.IsAlive() ? player.Get<Player>().Lives : lastPlayerLives;
+		return lastPlayerLives;
 	}
 };
