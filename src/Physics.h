@@ -3,15 +3,24 @@
 #include "Common.h"
 #include "Entity.h"
 #include "box2d/box2d.h"
+#include "util/function.h"
 
 b2Vec2 _tb(const   vec2& v);
 vec2   _fb(const b2Vec2& v);
+
+struct CollisionInfo
+{
+	Entity other;
+	b2Contact* contact;
+	bool isA;
+};
 
 struct Rigidbody2D
 {
 public:
 	Transform2D LastTransform;
-	
+	callback<void(CollisionInfo)> OnCollision;
+
 private:
 	b2BodyDef m_body;   // Init values for Physics Add
 	b2Body* m_instance; // If null, not in physics world

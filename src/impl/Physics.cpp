@@ -5,6 +5,12 @@
 b2Vec2 _tb(const vec2& v)   { return b2Vec2(v.x, v.y); }
 vec2   _fb(const b2Vec2& v) { return vec2(v.x, v.y); }
 
+Entity FixtureToEntity(b2Fixture* fixture)
+{
+	b2BodyUserData& data = fixture->GetBody()->GetUserData();
+	return ((EntityWorld*)data.entityOwning)->Wrap(data.entityId);
+}
+
 struct PointQueryCallback : b2QueryCallback
 {
 	PointQueryResult result;
@@ -15,14 +21,7 @@ struct PointQueryCallback : b2QueryCallback
 
 	bool ReportFixture(b2Fixture* fixture)
 	{
-		b2BodyUserData& data = fixture->GetBody()->GetUserData();
-		EntityWorld* world = (EntityWorld*)data.entityOwning;
-
-		result.results.push_back({
-			world->Wrap(data.entityId),
-			distance(_fb(fixture->GetBody()->GetPosition()), point)
-		});
-
+		result.results.push_back({ FixtureToEntity(fixture), distance(_fb(fixture->GetBody()->GetPosition()), point) });
 		return false;
 	}
 };
@@ -37,17 +36,23 @@ struct RayQueryCallback : b2RayCastCallback
 
 	float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
 	{
-		b2BodyUserData& data = fixture->GetBody()->GetUserData();
-		EntityWorld* world = (EntityWorld*)data.entityOwning;
-			
-		result.results.push_back({
-			world->Wrap(data.entityId),
-			fraction * length,
-			_fb(point),
-			_fb(normal)
-		});
-
+		result.results.push_back({ FixtureToEntity(fixture), fraction * length, _fb(point), _fb(normal) });
 		return -1;
+	}
+};
+
+struct ContactCallback : b2ContactListener
+{
+	void BeginContact(b2Contact* contact) override 
+	{
+		Entity entityA = FixtureToEntity(contact->GetFixtureA());
+		Entity entityB = FixtureToEntity(contact->GetFixtureB());
+
+		Rigidbody2D& bodyA = entityA.Get<Rigidbody2D>();
+		Rigidbody2D& bodyB = entityB.Get<Rigidbody2D>();
+
+		bodyA.OnCollision(CollisionInfo { entityB, contact, true });
+		bodyB.OnCollision(CollisionInfo { entityA, contact, false });
 	}
 };
 
@@ -155,6 +160,7 @@ const   RayQueryResult::Result&   RayQueryResult::FirstResult()   const { return
 PhysicsWorld::PhysicsWorld()
 {
 	m_world = new b2World();
+	m_world->SetContactListener(new ContactCallback());
 }
 
 PhysicsWorld::~PhysicsWorld()

@@ -247,7 +247,12 @@ struct Regolith : EngineLoop
 		player.Add<SandHealable>();
 		player.Add<SandDieInTimeWithLowCoreCount>();
 
-		//player.Add<Rigidbody2D>()
+		player.Add<Rigidbody2D>().OnCollision += [=](CollisionInfo info)
+		{
+			m_app.Send(event_Sand_ExplodeToDust{player});
+			//m_app.Send(event_SpawnExplosion{player.Get<Transform2D>().position, 20.f});
+		};
+
 		//	//.SetFixedRotation(true)
 		//	.SetAngularDamping(1.f)
 		//	.SetDamping(.1f);
