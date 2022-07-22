@@ -47,14 +47,14 @@ private:
 		{
 			case WEAPON_CANNON:
 			{
-				e.Add<DestroyInTime>(3.f);
+				e.Add<DestroyInTime>(2.f);
 				//e.Add<ParticleEmitter>(GetPrefab_BulletEmitter());
 				
 				e.Add<Sprite>(GetPrefab_Texture("diamond.png"));
 
 				e.Add<CellProjectile>(entity.Id())
-					.SetHealth(100)
-					.SetSize(0)
+					.SetHealth(50)
+					.SetSize(1)
 					.SetTurnRate(0.5f);
 
 				e.Add<WrapOnScreen>();

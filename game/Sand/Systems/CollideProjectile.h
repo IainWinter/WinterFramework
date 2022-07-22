@@ -29,6 +29,7 @@ struct Sand_System_CollideProjectile : System<Sand_System_CollideProjectile>
 
 		Send(event_Sand_RemoveCell{ e.entity, e.index, e.hitPosInWorld });
 
-		body.ApplyForce(e.projectile.Get<Rigidbody2D>().GetVelocity(), e.hitPosInWorld - body.GetPosition());
+		vec2 force = safe_normalize(e.projectile.Get<Rigidbody2D>().GetVelocity()) * 5.f;
+		body.ApplyForce(force, e.hitPosInWorld - body.GetPosition());
 	}
 };

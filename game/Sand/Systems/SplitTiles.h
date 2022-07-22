@@ -9,6 +9,7 @@ struct Sand_System_SplitTiles : System<Sand_System_SplitTiles>
 {
 	const int TurnToDustIfUnder = 25;
 	const int TurnToDustInTimeIfUnder = 100;
+	const float TimePerCellToTurnToDust = 0.01f;
 
 	void Init()
 	{
@@ -164,7 +165,7 @@ private:
 
 			if (island.size() < TurnToDustInTimeIfUnder)
 			{
-				splitEntity.Add<SandTurnToDustInTime>(island.size() / 10.f);
+				splitEntity.Add<SandTurnToDustInTime>(island.size() * TimePerCellToTurnToDust);
 			}
 
 			splitEntity.Add<Throwable>();

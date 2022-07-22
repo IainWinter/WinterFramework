@@ -42,7 +42,8 @@ struct event_Enemy_Spawn
 	vec2 initialVel;
 };
 
-struct event_Player_Destroied
+struct event_SubmitHighscore
 {
-	int _pad;
+	std::string name;
+	int score;
 };

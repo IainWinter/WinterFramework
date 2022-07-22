@@ -120,7 +120,6 @@
 //	}
 //};
 
-
 // Idea: Make a polished version of asteroids to completion, then iterate with enemies and damage system
 
 struct Regolith : EngineLoop
@@ -136,15 +135,19 @@ struct Regolith : EngineLoop
 		ConfigureLevel();
 		ConfigureInputMapping();
 		//ConfigureMainGameLevel();
+
+		m_app.Attach<event_SubmitHighscore>(this);
 	}
 
 	void _InitUI()
 	{
 		FontMap& fonts = m_app.GetModule<FontMap>();
-		fonts.Load("Roboto",      18, "Roboto.ttf");
-		fonts.Load("Score",       48, "Roboto.ttf");
-		//fonts.Load("Pixel",       28, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
-		//fonts.Load("Pixel Title", 36, "graph-35-pix.regular.ttf"); // each char is 7 pixels tall
+		fonts.Load("Roboto",          18,     "Roboto.ttf");
+		fonts.Load("Score",           48 * 2, "Roboto.ttf");
+		fonts.Load("OK Button",       32 * 2, "Roboto.ttf");
+		fonts.Load("Game Over",      128 * 2, "Roboto.ttf");
+		fonts.Load("Final Score",     64 * 2, "Roboto.ttf");
+		fonts.Load("Highscore Input", 64 * 2, "Roboto.ttf");
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
@@ -236,6 +239,11 @@ struct Regolith : EngineLoop
 		coords.CellsToMeters = 1.f / cellsPerMeter;
 
 		m_app.AddModule<CoordTranslation>(coords);
+	}
+
+	void on(event_SubmitHighscore& e)
+	{
+		r<Level> level = m_app.GetModule<LevelManager>().CreateLevel();
 	}
 
 	//void ConfigureMainGameLevel()
