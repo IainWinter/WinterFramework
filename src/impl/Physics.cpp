@@ -48,6 +48,8 @@ struct ContactCallback : b2ContactListener
 		Entity entityA = FixtureToEntity(contact->GetFixtureA());
 		Entity entityB = FixtureToEntity(contact->GetFixtureB());
 
+		if (!entityA.IsAlive() || !entityB.IsAlive()) return; // when an entity is deleted in collision / midframe
+
 		Rigidbody2D& bodyA = entityA.Get<Rigidbody2D>();
 		Rigidbody2D& bodyB = entityB.Get<Rigidbody2D>();
 

@@ -124,8 +124,6 @@
 
 struct Regolith : EngineLoop
 {
-	std::vector<Order> removeOnDeath;
-
 	void _Init()
 	{
 		ConfigureWindow();
@@ -174,52 +172,34 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
+	std::vector<Order> thegame;
+
 	void ConfigureLevel()
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
+		// Basic functionality
 		level->AddSystem(System_RenderScene());
 		level->AddSystem(System_PhysicsInterpolation());
-	
-		level->AddSystem(System_PlayerSpawner());
-
-		level->AddSystem(System_LowCorePixelDeath());
-		level->AddSystem(System_DestroyInTime());
-
-		level->AddSystem(System_KeepOnScreen());
-		level->AddSystem(System_Item());
 		level->AddSystem(System_ParticleUpdate());
-
-		level->AddSystem(System_UI_AsteroidsHUD());
-
-		//removeOnDeath =
-		//{
-			level->AddSystem(System_PlayerController());
-			level->AddSystem(System_ItemPickup());
-			level->AddSystem(System_FireWeapon());
-			level->AddSystem(System_RockSpawner_Test());
-
-			//level->AddSystem(System_ItemSpawner()),
-			//level->AddSystem(System_FireWeaponAfterDelay()),
-			//level->AddSystem(System_Enemy()),
-			//level->AddSystem(System_ExplodeNearTarget()),
-			//level->AddSystem(System_AllowPauseMenu()),
-			//level->AddSystem(System_FuelTank()),
-			
-			//level->AddSystem(System_EnemySpawner()),
-		//};
-
+		level->AddSystem(System_DestroyInTime());
+		level->AddSystem(System_KeepOnScreen());
 		AddSandSystemsToLevel(level);
-		
-		//level->AddSystem(System_TurnTwoardsTarget());
-		//level->AddSystem(System_EnemyController());
-		//level->AddSystem(System_FlockingMovement());
-		//level->AddSystem(System_ExplosionSpawner());
-		//level->AddSystem(System_Lightning());
-		//level->AddSystem(System_UI_PlayerHUD());
 
-		//level->AddSystem(System_Metrics());
-		//level->AddSystem(System_Testing());
+		thegame = 
+		{
+			// Gameplay functionality
+			level->AddSystem(System_PlayerSpawner()),
+			level->AddSystem(System_PlayerController()),
+			level->AddSystem(System_LowCorePixelDeath()),
+			level->AddSystem(System_Item()),
+			level->AddSystem(System_ItemPickup()),
+			level->AddSystem(System_FireWeapon()),
+			level->AddSystem(System_RockSpawner_Test()),
+			
+			// UI
+			level->AddSystem(System_UI_AsteroidsHUD())
+		};
 	}
 
 	void ConfigureModules()
@@ -243,52 +223,39 @@ struct Regolith : EngineLoop
 
 	void on(event_SubmitHighscore& e)
 	{
-		r<Level> level = m_app.GetModule<LevelManager>().CreateLevel();
+		RemoveList(thegame);
 	}
 
-	//void ConfigureMainGameLevel()
-	//{ 
-	//	r<Level> level = LevelManager::CurrentLevel();
+	void RemoveList(const std::vector<Order>& list)
+	{
+		r<Level> level = LevelManager::CurrentLevel();
 
-	//	Entity player = CreateSandSprite("player.png", "player_collider_mask.png");
-	//	player.Add<Player>();
-	//	//player.Add<KeepOnScreen>();
-	//	player.Add<ItemSink>();
-	//	player.Add<SandHealable>();
-	//	player.Add<SandDieInTimeWithLowCoreCount>();
+		for (Order order : list) { 
+			level->RemoveSystem(order);
+		}
 
-	//	player.Add<Rigidbody2D>().OnCollision += [=](CollisionInfo info)
-	//	{
-	//		event_Sand_ExplodeToDust e;
-	//		e.entity = player;
-	//		e.putColliderOnDust = true;
-
-	//		m_app.Send(e);
-	//	};
-
-	//	player.OnDestroy([this](Entity)
-	//	{
-	//		RemoveSystemsForPlayerDeath();
-	//	});
-	//}
-
-	//void on(event_Player_Destroied& e)
-	//{
-	//	RemoveSystemsForPlayerDeath()
-	//}
-
-	//void RemoveSystemsForPlayerDeath()
-	//{
-	//	r<Level> level = LevelManager::CurrentLevel();
-
-	//	for (Order system : removeOnDeath)
-	//	{
-	//		level->RemoveSystem(system);
-	//	}
-	//}
+		level->GetWorld()->Clear();
+	}
 };
 
 void setup()
 {
 	RunEngineLoop<Regolith>();
 }
+
+
+//level->AddSystem(System_ItemSpawner()),
+//level->AddSystem(System_FireWeaponAfterDelay()),
+//level->AddSystem(System_Enemy()),
+//level->AddSystem(System_ExplodeNearTarget()),
+//level->AddSystem(System_AllowPauseMenu()),
+//level->AddSystem(System_FuelTank()),
+//level->AddSystem(System_EnemySpawner()),
+//level->AddSystem(System_TurnTwoardsTarget());
+//level->AddSystem(System_EnemyController());
+//level->AddSystem(System_FlockingMovement());
+//level->AddSystem(System_ExplosionSpawner());
+//level->AddSystem(System_Lightning());
+//level->AddSystem(System_UI_PlayerHUD());
+//level->AddSystem(System_Metrics());
+//level->AddSystem(System_Testing());

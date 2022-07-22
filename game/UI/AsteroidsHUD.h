@@ -18,7 +18,7 @@ int FilterAZ(ImGuiInputTextCallbackData* data)
 struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 {
 	r<Texture> playerSprite;
-	int lastPlayerLives;
+	int lastPlayerLives = 3;
 	int lastPlayerScore;
 	
 	char name[6];
@@ -168,6 +168,6 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	bool IsGameOver() const
 	{
-		return true;
+		return lastPlayerLives == 0;
 	}
 };
