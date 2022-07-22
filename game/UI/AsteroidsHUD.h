@@ -34,7 +34,8 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		playerSprite->SendToDevice();
 
 		m_gameoverTimer = 0.f;
-		m_currentFade = 0.5f;    // gamepver fade amount
+		m_currentFade = 0.0f;
+		m_fadeTarget = 0.5f;   // game over fade amount
 	}
 
 	void UI()
@@ -113,7 +114,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				ImGui::Spacing();
 
 				ImGui::SetCursorPosX(midpoint.x - size.x / 2.f);
-				ImGui::InputText("", name, sizeof(name), ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CallbackCharFilter, FilterAZ);
+				ImGui::InputText("##", name, sizeof(name), ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CallbackCharFilter, FilterAZ);
 
 				ImGui::Spacing();
 				ImGui::Spacing();
@@ -173,6 +174,6 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	bool IsGameOver() const
 	{
-		return lastPlayerLives == 0;
+		return lastPlayerLives == 0 || true;
 	}
 };

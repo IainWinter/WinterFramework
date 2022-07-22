@@ -6,7 +6,7 @@
 struct System_AllowPauseMenu : System<System_AllowPauseMenu>
 {
 private:
-	Order pause;
+	SystemBase* pause;
 	float timescale;
 
 public:
@@ -22,14 +22,14 @@ public:
 		{
 			if (pause) // pause is open 
 			{
-				LevelManager::CurrentLevel()->RemoveSystem(pause);
+				LevelManager::CurrentLevel()->DestroySystem(pause);
 				pause = nullptr;
 				Time::SetTimeScale(timescale);
 			}
 
 			else 
 			{ 
-				pause = LevelManager::CurrentLevel()->AddSystem(System_UI_PauseMenu());
+				pause = LevelManager::CurrentLevel()->CreateSystem(System_UI_PauseMenu());
 				timescale = Time::TimeScale();
 				Time::SetTimeScale(0.f);
 			}

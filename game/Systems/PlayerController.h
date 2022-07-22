@@ -38,25 +38,34 @@ struct System_PlayerController : System<System_PlayerController>
 
 		Player& player = playerEntity.Get<Player>();
 
+		player.AmmoRechargeTimer += Time::DeltaTime();
+		if (player.AmmoRechargeTimer > player.AmmoRechargeTime)
+		{
+			player.AmmoRechargeTimer = 0.f;
+			player.Ammo = clamp(player.Ammo + 1, 0, player.AmmoMax);
+		}
+
 		player.m_attackTimer    -= Time::DeltaTime();
 		player.m_attackTimerAlt -= Time::DeltaTime();
 		
 		//FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
 
-		if (   AttackFireInputAlt 
-			&& player.m_attackTimerAlt <= 0.f 
-			&& player.AttackFuelAlt > 0)
-		{
-			player.m_attackTimerAlt = player.Alt.AttackTime;
-			player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
-			Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
-		}
+		//if (   AttackFireInputAlt 
+		//	&& player.m_attackTimerAlt <= 0.f 
+		//	&& player.AttackFuelAlt > 0)
+		//{
+		//	player.m_attackTimerAlt = player.Alt.AttackTime;
+		//	player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
+		//	Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
+		//}
 
-		else 
+		//else 
 		if (   AttackFireInput 
+			&& player.Ammo > 0
 			&& player.m_attackTimer <= 0.f)
 		{
 			AttackFireInput = false;
+			player.Ammo -= 1;
 
 			player.m_attackTimer = player.Current.AttackTime;
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });

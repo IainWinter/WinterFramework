@@ -125,28 +125,30 @@ public:
 	// wait until Start to do any work
 
 	template<typename _t>
-	Order AddSystem(const _t& system_toCopy)
+	SystemBase* CreateSystem(_t&& systemToMove)
 	{
-		return (Order)m_systems.emplace_back(NewSystem(system_toCopy));
+		SystemBase* system = NewSystem<_t>(std::forward<_t>(systemToMove));
+		m_systems.push_back(system);
+		return system;
 	}
 
-	template<typename _t>
-	Order AddSystemAfter(Order after, const _t& system_toCopy)
+	void DestroySystem(SystemBase* system)
 	{
-		auto itr = m_systems.begin();
-		for (; itr != m_systems.end(); ++itr) if (*itr == after) break;
-		return (Order)*m_systems.emplace(itr, NewSystem(system_toCopy));
-	}
-
-	void RemoveSystem(Order order)
-	{
-		auto itr = std::find(m_systems.begin(), m_systems.end(), order);
+		auto itr = std::find(m_systems.begin(), m_systems.end(), system);
 		m_systems.erase(itr);
+		DeleteSystem(system);
+	}
+
+	void DestroySystems(const std::vector<SystemBase*>& systems)
+	{
+		for (SystemBase* system : systems) DestroySystem(system);
 	}
 
 private:
 	template<typename _t>
-	SystemBase* NewSystem(const _t& system_toCopy);
+	SystemBase* NewSystem(_t&& system_toCopy);
+	
+	void DeleteSystem(SystemBase* system);
 };
 
 struct SystemBase
@@ -213,11 +215,7 @@ public:
 // Interface
 
 public:
-	virtual ~SystemBase()
-	{
-		if (!m_level) return; // if temp
-		m_level->m_levelBus.detach(this);
-	}
+	virtual ~SystemBase() {}
 
 	// I wonder if you could just declspec a templated type to
 	// test if it contained these functions and store their func pointers if they do
@@ -297,7 +295,7 @@ public:
 	void DestroyLevel(int levelId)
 	{
 		r<Level> level = m_levels.at(levelId);
-		DnitLevel(level);
+		//DnitLevel(level);
 
 		if (m_current == level)
 		{
@@ -308,21 +306,21 @@ public:
 		m_app->GetRootEventQueue()->m_manager->detach_child(level->GetLevelEventQueue()->m_manager);
 	}
 
-	void InitLevel(r<Level> level)
-	{
-		for (SystemBase* system : level->GetSystems())
-		{
-			system->Init();
-		}
-	}
+	//void InitLevel(r<Level> level)
+	//{
+	//	for (SystemBase* system : level->GetSystems())
+	//	{
+	//		system->Init();
+	//	}
+	//}
 
-	void DnitLevel(r<Level> level)
-	{
-		for (SystemBase* system : level->GetSystems())
-		{
-			system->Dnit();
-		}
-	}
+	//void DnitLevel(r<Level> level)
+	//{
+	//	for (SystemBase* system : level->GetSystems())
+	//	{
+	//		system->Dnit();
+	//	}
+	//}
 
 	static r<Level> CurrentLevel()
 	{
@@ -342,10 +340,18 @@ inline Level::~Level()
 }
 
 template<typename _t>
-inline SystemBase* Level::NewSystem(const _t& system_toCopy)
+inline SystemBase* Level::NewSystem(_t&& system_toCopy)
 {
-	SystemBase* system = new _t(system_toCopy);
+	SystemBase* system = new _t(std::forward<_t>(system_toCopy));
 	system->m_level = this;
 	system->SetName(typeid(_t).name()); // default name, can set a pritty name in the Init function of system
+	system->Init();
 	return system;
+}
+
+inline void Level::DeleteSystem(SystemBase* system)
+{
+	m_levelBus.detach(system);
+	system->Dnit();
+	delete system;
 }

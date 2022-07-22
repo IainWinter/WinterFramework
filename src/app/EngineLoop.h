@@ -78,7 +78,7 @@ public:
 		_Init();
 
 		// init the default level
-		m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
+		//m_app.GetModule<LevelManager>().InitLevel(LevelManager::CurrentLevel());
 
 		// init UI, defered for user set Imgui config flags
 		m_app.GetModule<Window>().InitUI();

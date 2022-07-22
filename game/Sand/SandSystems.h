@@ -2,4 +2,5 @@
 
 #include "app/System.h"
 
-void AddSandSystemsToLevel(r<Level> level);
+void CreateSandSystems(r<Level> level);
+void DestroySandSystems(r<Level> level);

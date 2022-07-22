@@ -9,17 +9,26 @@
 #include "Sand/Systems/UpdateLineProjectileMesh.h"
 #include "Sand/Systems/RemoveCellFromSprite.h"
 
-void AddSandSystemsToLevel(r<Level> level)
+std::vector<SystemBase*> sand_ids;
+
+void CreateSandSystems(r<Level> level)
 {
-	level->AddSystem(Sand_System_Update());
+	sand_ids = {
+		level->CreateSystem(Sand_System_Update()),
+		level->CreateSystem(Sand_System_UpdateLineProjectileMesh()),
+		level->CreateSystem(Sand_System_SplitTiles()),
 
-	level->AddSystem(Sand_System_UpdateLineProjectileMesh());
-	level->AddSystem(Sand_System_SplitTiles());
+		// reactive systems
 
-	// reactive systems
+		level->CreateSystem(Sand_System_ExplodeToDust()),
+		level->CreateSystem(Sand_System_CollideProjectile()),
+		level->CreateSystem(Sand_System_CreateCollider()),
+		level->CreateSystem(Sand_System_RemoveCellsFromSprite())
+	};
+}
 
-	level->AddSystem(Sand_System_ExplodeToDust());
-	level->AddSystem(Sand_System_CollideProjectile());
-	level->AddSystem(Sand_System_CreateCollider());
-	level->AddSystem(Sand_System_RemoveCellsFromSprite());
+void DestroySandSystems(r<Level> level)
+{
+	level->DestroySystems(sand_ids);
+	sand_ids = {};
 }

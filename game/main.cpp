@@ -136,13 +136,14 @@ struct Regolith : EngineLoop
 		//ConfigureMainGameLevel();
 
 		m_app.Attach<event_SubmitHighscore>(this);
+		m_app.Attach<event_PlayGame>(this);
 	}
 
 	void _InitUI()
 	{
 		FontMap& fonts = m_app.GetModule<FontMap>();
 		fonts.Load("Roboto",          18,     "Roboto.ttf");
-		fonts.Load("Score",           48 * 2, "Roboto.ttf");
+		fonts.Load("Score",           56 * 2, "Roboto.ttf");
 		fonts.Load("OK Button",       32 * 2, "Roboto.ttf");
 		fonts.Load("Game Over",      128 * 2, "Roboto.ttf");
 		fonts.Load("Final Score",     64 * 2, "Roboto.ttf");
@@ -176,40 +177,62 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
-	std::vector<u32> thegame;
-	std::vector<u32> themenu;
+	std::vector<SystemBase*> thegame;
+	std::vector<SystemBase*> themenu;
 
 	void ConfigureLevel()
 	{
 		r<Level> level = LevelManager::CurrentLevel();
 
 		// Basic functionality
-		level->AddSystem(System_RenderScene());
-		level->AddSystem(System_PhysicsInterpolation());
-		level->AddSystem(System_ParticleUpdate());
-		level->AddSystem(System_DestroyInTime());
-		level->AddSystem(System_KeepOnScreen());
-		AddSandSystemsToLevel(level);
+		level->CreateSystem(System_RenderScene());
+		level->CreateSystem(System_PhysicsInterpolation());
+		level->CreateSystem(System_ParticleUpdate());
+		level->CreateSystem(System_DestroyInTime());
+		level->CreateSystem(System_KeepOnScreen());
+		CreateSandSystems(level);
 
-		//thegame = 
-		//{
-		//	// Gameplay functionality
-		//	level->AddSystem(System_PlayerSpawner()),
-		//	level->AddSystem(System_PlayerController()),
-		//	level->AddSystem(System_LowCorePixelDeath()),
-		//	level->AddSystem(System_Item()),
-		//	level->AddSystem(System_ItemPickup()),
-		//	level->AddSystem(System_FireWeapon()),
-		//	level->AddSystem(System_RockSpawner_Test()),
-		//	
-		//	// UI
-		//	level->AddSystem(System_UI_AsteroidsHUD())
-		//};
+		SwitchToMenu();
+	}
 
-		themenu =
-		{
-			level->AddSystem(System_UI_AsteroidsMenu())
+	void SwitchToGame()
+	{
+		r<Level> level = LevelManager::CurrentLevel();
+
+		m_app.GetModule<Camera>().x = 0;
+		m_app.GetModule<Camera>().y = 0;
+
+		level->GetWorld()->Clear();
+		// doesnt clear the physics world
+
+		thegame = {
+			// Gameplay functionality
+			level->CreateSystem(System_PlayerSpawner()),
+			level->CreateSystem(System_PlayerController()),
+			level->CreateSystem(System_LowCorePixelDeath()),
+			level->CreateSystem(System_Item()),
+			level->CreateSystem(System_ItemPickup()),
+			level->CreateSystem(System_FireWeapon()),
+			level->CreateSystem(System_RockSpawner_Test()),
+			
+			// UI
+			level->CreateSystem(System_UI_AsteroidsHUD())
 		};
+
+		level->DestroySystems(themenu);
+		themenu = {};
+	}
+
+	void SwitchToMenu()
+	{
+		r<Level> level = LevelManager::CurrentLevel();
+
+		themenu = {
+			level->CreateSystem(System_UI_AsteroidsMenu())
+		};
+
+		level->DestroySystems(thegame);
+		thegame = {};
 	}
 
 	void ConfigureModules()
@@ -250,7 +273,7 @@ struct Regolith : EngineLoop
 			
 			if (done)
 			{
-				LevelManager::CurrentLevel()->DestroySystems(thegame);
+				SwitchToMenu();
 			}
 
 			Camera& camera = m_app.GetModule<Camera>();
@@ -267,8 +290,7 @@ struct Regolith : EngineLoop
 
 	void on(event_PlayGame& e)
 	{
-		//RemoveList(themenu);
-		//AddList(thegame);
+		SwitchToGame();
 	}
 };
 

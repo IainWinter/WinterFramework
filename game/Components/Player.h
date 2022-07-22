@@ -13,6 +13,11 @@ struct WeaponProps
 
 struct Player
 {
+	int Ammo = 5;
+	int AmmoMax = 5;
+	float AmmoRechargeTimer = 0.f;
+	float AmmoRechargeTime = .8f;
+
 	float MovementAccelerationScaleFactor = 15.f;
 	float MovementSpeed = 35.f;// 40.f;
 	float RotationSpeed = wPI * 1.2f;

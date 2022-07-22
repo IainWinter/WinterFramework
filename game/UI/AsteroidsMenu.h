@@ -39,9 +39,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::SetWindowFontScale(scale / 2.f);
 
 		ImGui::PushFont(GetModule<FontMap>().Get("Main Menu Title"));
-		ImVec2 titleSize = ImGui::CalcTextSize("ASTEROIDS");
+		ImVec2 titleSize = ImGui::CalcTextSize("REGOLITH");
 		ImGui::SetCursorPos(ImVec2(midpoint.x - titleSize.x / 2, midpoint.y - titleSize.y / 2));
-		ImGui::Text("ASTEROIDS");
+		ImGui::Text("REGOLITH");
 		ImGui::PopFont();
 
 		ImGui::PushFont(GetModule<FontMap>().Get("Main Menu Button"));
@@ -49,8 +49,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::SetCursorPosX(midpoint.x - playSize.x / 2);
 		if (ImGui::Button("Play"))
 		{
-			Send(event_PlayGame{});
+			SendToRoot(event_PlayGame{});
 		}
+		ImGui::PopFont();
 
 		//ImVec2 highscoreSize = ImGui::CalcTextSize("Highscores");
 		//ImGui::SetCursorPosX(midpoint.x - highscoreSize.x / 2);
@@ -59,6 +60,5 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::End();
 		ImGui::PopStyleVar(2);
 		ImGui::PopStyleColor(1);
-		ImGui::PopFont();
 	}
 };
