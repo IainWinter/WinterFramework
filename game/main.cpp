@@ -26,6 +26,7 @@
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
 #include "UI/AsteroidsHUD.h"
+#include "UI/AsteroidsMenu.h"
 
 //#include "Systems/FlockingMovement.h"
 //#include "Systems/TurnTwoardsTarget.h"
@@ -146,6 +147,9 @@ struct Regolith : EngineLoop
 		fonts.Load("Game Over",      128 * 2, "Roboto.ttf");
 		fonts.Load("Final Score",     64 * 2, "Roboto.ttf");
 		fonts.Load("Highscore Input", 64 * 2, "Roboto.ttf");
+
+		fonts.Load("Main Menu Title", 192 * 2, "Roboto.ttf");
+		fonts.Load("Main Menu Button", 64 * 2, "Roboto.ttf");
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
@@ -172,7 +176,8 @@ struct Regolith : EngineLoop
 		window.SetTitle("Windowing Test");
 	}
 
-	std::vector<Order> thegame;
+	std::vector<u32> thegame;
+	std::vector<u32> themenu;
 
 	void ConfigureLevel()
 	{
@@ -186,19 +191,24 @@ struct Regolith : EngineLoop
 		level->AddSystem(System_KeepOnScreen());
 		AddSandSystemsToLevel(level);
 
-		thegame = 
+		//thegame = 
+		//{
+		//	// Gameplay functionality
+		//	level->AddSystem(System_PlayerSpawner()),
+		//	level->AddSystem(System_PlayerController()),
+		//	level->AddSystem(System_LowCorePixelDeath()),
+		//	level->AddSystem(System_Item()),
+		//	level->AddSystem(System_ItemPickup()),
+		//	level->AddSystem(System_FireWeapon()),
+		//	level->AddSystem(System_RockSpawner_Test()),
+		//	
+		//	// UI
+		//	level->AddSystem(System_UI_AsteroidsHUD())
+		//};
+
+		themenu =
 		{
-			// Gameplay functionality
-			level->AddSystem(System_PlayerSpawner()),
-			level->AddSystem(System_PlayerController()),
-			level->AddSystem(System_LowCorePixelDeath()),
-			level->AddSystem(System_Item()),
-			level->AddSystem(System_ItemPickup()),
-			level->AddSystem(System_FireWeapon()),
-			level->AddSystem(System_RockSpawner_Test()),
-			
-			// UI
-			level->AddSystem(System_UI_AsteroidsHUD())
+			level->AddSystem(System_UI_AsteroidsMenu())
 		};
 	}
 
@@ -221,20 +231,44 @@ struct Regolith : EngineLoop
 		m_app.AddModule<CoordTranslation>(coords);
 	}
 
-	void on(event_SubmitHighscore& e)
+	float transitionTimer = 0;
+	float transitionTime = 2.f;
+
+	float easeQuint(float x)
 	{
-		RemoveList(thegame);
+		return x * x * x * x;
 	}
 
-	void RemoveList(const std::vector<Order>& list)
+	void on(event_SubmitHighscore& e)
 	{
-		r<Level> level = LevelManager::CurrentLevel();
+		m_app.GetTaskPool()->Coroutine([this]()
+		{
+			transitionTimer += Time::DeltaTime();
+			
+			float progress = transitionTimer / transitionTime;
+			bool done = progress > 1.f;
+			
+			if (done)
+			{
+				LevelManager::CurrentLevel()->DestroySystems(thegame);
+			}
 
-		for (Order order : list) { 
-			level->RemoveSystem(order);
-		}
+			Camera& camera = m_app.GetModule<Camera>();
+			vec2 position = vec2(camera.x, camera.y);
 
-		level->GetWorld()->Clear();
+			position = lerp(position, vec2(100, 30), easeQuint(progress));
+
+			camera.x = position.x;
+			camera.y = position.y;
+
+			return done;
+		});
+	}
+
+	void on(event_PlayGame& e)
+	{
+		//RemoveList(themenu);
+		//AddList(thegame);
 	}
 };
 

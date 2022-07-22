@@ -47,3 +47,7 @@ struct event_SubmitHighscore
 	std::string name;
 	int score;
 };
+
+struct event_PlayGame
+{
+};

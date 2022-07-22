@@ -78,7 +78,7 @@ void Window::PumpEvents()
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
-		printf("event: %d\n", event.type);
+		//printf("event: %d\n", event.type);
 
 		ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
 

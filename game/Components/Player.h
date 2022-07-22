@@ -13,15 +13,11 @@ struct WeaponProps
 
 struct Player
 {
-	vec2 MovementInput;
 	float MovementAccelerationScaleFactor = 15.f;
 	float MovementSpeed = 35.f;// 40.f;
 	float RotationSpeed = wPI * 1.2f;
 
 	//vec2 AttackDirectionInput;
-	vec2 AttackLocationInput;
-	float AttackFireInput;
-	float AttackFireInputAlt;
 
 	float AttackFuelAlt; // gets incremented in the UI system :yuk: and decremented in the player system
 	float AttackFuelConsumptionAlt = .05;

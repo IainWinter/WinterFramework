@@ -16,6 +16,12 @@ struct System_PlayerController : System<System_PlayerController>
 	Entity playerEntity;
 	Entity target;
 
+	// these need to be here to reset on death
+	vec2 MovementInput;
+	vec2 AttackLocationInput;
+	float AttackFireInput;
+	float AttackFireInputAlt;
+
 	void Init()
 	{
 		Attach<event_Input>();
@@ -37,7 +43,7 @@ struct System_PlayerController : System<System_PlayerController>
 		
 		//FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
 
-		if (   player.AttackFireInputAlt 
+		if (   AttackFireInputAlt 
 			&& player.m_attackTimerAlt <= 0.f 
 			&& player.AttackFuelAlt > 0)
 		{
@@ -47,10 +53,10 @@ struct System_PlayerController : System<System_PlayerController>
 		}
 
 		else 
-		if (   player.AttackFireInput 
+		if (   AttackFireInput 
 			&& player.m_attackTimer <= 0.f)
 		{
-			player.AttackFireInput = false;
+			AttackFireInput = false;
 
 			player.m_attackTimer = player.Current.AttackTime;
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
@@ -82,10 +88,10 @@ struct System_PlayerController : System<System_PlayerController>
 
 		// tank controls
 
-		float moveForward = player.MovementInput.y;
+		float moveForward = MovementInput.y;
 		if (moveForward == -1.f) moveForward = 0.f; // dont allow moving backwards
 
-		float angle = body.GetAngle() + -player.MovementInput.x * player.RotationSpeed * Time::FixedTime(); // radians per second
+		float angle = body.GetAngle() + -MovementInput.x * player.RotationSpeed * Time::FixedTime(); // radians per second
 		vec2 force = PlayerHeading() * player.MovementSpeed * moveForward;
 
 		body.SetAngle(angle);
@@ -104,20 +110,17 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void on(event_Input& e)
 	{
-		if (!playerEntity.IsAlive()) return;
-
-		Player& player = playerEntity.Get<Player>();
 		switch (e.name)
 		{
-			case InputName::UP:    player.MovementInput.y += e.state; break;
-			case InputName::DOWN:  player.MovementInput.y -= e.state; break;
-			case InputName::RIGHT: player.MovementInput.x += e.state; break;
-			case InputName::LEFT:  player.MovementInput.x -= e.state; break;
+			case InputName::UP:    MovementInput.y += e.state; break;
+			case InputName::DOWN:  MovementInput.y -= e.state; break;
+			case InputName::RIGHT: MovementInput.x += e.state; break;
+			case InputName::LEFT:  MovementInput.x -= e.state; break;
 
-			case InputName::AIM_X:      player.AttackLocationInput.x  = e.state; break;
-			case InputName::AIM_Y:      player.AttackLocationInput.y  = e.state; break;
-			case InputName::ATTACK:     player.AttackFireInput       += e.state; break;
-			case InputName::ATTACK_ALT: player.AttackFireInputAlt    += e.state; break;
+			case InputName::AIM_X:      AttackLocationInput.x  = e.state; break;
+			case InputName::AIM_Y:      AttackLocationInput.y  = e.state; break;
+			case InputName::ATTACK:     AttackFireInput       += e.state; break;
+			case InputName::ATTACK_ALT: AttackFireInputAlt    += e.state; break;
 		}
 	}
 

@@ -25,12 +25,16 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	float m_gameoverTimer;
 
+	float m_fadeTarget;
+	float m_currentFade;
+
 	void Init()
 	{
 		playerSprite = mkr<Texture>(_A("player.png"));
 		playerSprite->SendToDevice();
 
 		m_gameoverTimer = 0.f;
+		m_currentFade = 0.5f;    // gamepver fade amount
 	}
 
 	void UI()
@@ -50,9 +54,8 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 		ImGui::PushFont(GetModule<FontMap>().Get("Score"));
 
-		ImGui::Begin("Player HUD", 0,
+		ImGui::Begin("Asteroids HUD", 0,
 			ImGuiWindowFlags_NoResize
-			//| ImGuiWindowFlags_NoInputs
 			| ImGuiWindowFlags_NoBackground
 			| ImGuiWindowFlags_NoTitleBar
 			| ImGuiWindowFlags_NoScrollbar
@@ -62,10 +65,12 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 		if (IsGameOver())
 		{
+			m_currentFade = lerp(m_currentFade, m_fadeTarget, Time::DeltaTime());
+
 			ImGui::GetBackgroundDrawList()->AddRectFilled(
 				ImVec2(0, 0),
 				ImVec2(screen.x, screen.y),
-				Color(0, 0, 0, 127).as_u32
+				Color(0, 0, 0, m_currentFade * 255).as_u32
 			);
 
 			m_gameoverTimer += Time::DeltaTime();
@@ -127,6 +132,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				if (ImGui::Button("OK"))
 				{
 					SendToRoot(event_SubmitHighscore{ std::string(name), lastPlayerScore });
+					m_fadeTarget = 0.f;
 				}
 				
 				ImGui::PopFont();
@@ -135,7 +141,6 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				ImGui::PopFont();
 			}
 		}
-
 
 		ImGui::SetCursorPos(ImVec2(margin, margin));
 		ImGui::Text("%d", GetScoreCount());
