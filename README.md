@@ -10,5 +10,5 @@ Most of the functionality gets included no matter what, so a single file makes i
 | Entity | A wrapper around EnTT exposing the API through an entity class |
 | Physics | A wrapper around box2d that ties into the entity system to automatically maintain the physics world |
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
-| Rendering | Taking ideas from CUDA about host and device memory, I tried to create an interface for OpenGL that followed this naming for every object that I need currently (Texture/Target, Buffer/Mesh, ShaderProgram) |
+| Rendering | Taking ideas from CUDA about host and device memory, this follows the same naming scheme through a unified interface for each OpenGL object. Currently supports Texture/Target, Buffer/Mesh and ShaderProgram |
 | App | Ties everything together to create an application framework. Can load Worlds and attach Systems to update the state. Each World stores its own entities, and multiple can be loaded at once to compose scenes. |
