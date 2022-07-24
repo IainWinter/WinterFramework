@@ -124,6 +124,8 @@ struct PhysicsWorld
 	PhysicsWorld();
 	~PhysicsWorld();
 
+	void Clear();
+
 	void Add(EntityWith<Transform2D, Rigidbody2D> e);
 	void Remove(Entity& e);
 

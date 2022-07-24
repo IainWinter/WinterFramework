@@ -8,7 +8,6 @@ struct System_PlayerSpawner : System<System_PlayerSpawner>
 {
 private:
 	int m_lives = 3;
-	int m_score = 0;
 
 	float m_respawnTime = 2.f;
 	float m_respawnTimer = 0.f;
@@ -18,12 +17,7 @@ public:
 	{
 		Entity entity = FirstEntity<Player>();
 
-		if (entity.IsAlive())
-		{
-			m_score = entity.Get<Player>().Score;
-		}
-
-		else if (m_lives > 0)
+		if (!entity.IsAlive() && m_lives > 0)
 		{
 			m_respawnTimer -= Time::DeltaTime();
 			if (m_respawnTimer < 0.f)
@@ -44,6 +38,8 @@ private:
 		playerEntity.Add<ItemSink>();
 		playerEntity.Add<SandHealable>();
 		playerEntity.Add<SandDieInTimeWithLowCoreCount>();
+		
+		playerEntity.Get<Transform2D>().z = 5; // ontop of asteroids
 
 		// this is technically wrong, should be WhileColliding
 
@@ -53,7 +49,6 @@ private:
 		
 			if (player.HasDied) return; // block double delete
 			
-			player.Lives -= 1; // update UI
 			player.HasDied = true;
 
 			event_Sand_ExplodeToDust e;
@@ -67,12 +62,11 @@ private:
 			};
 
 			Send(e);
+			Send(event_RemoveLife{});
 		};
 
 		Player& player = playerEntity.Add<Player>();
 		player.Alt = { WEAPON_LASER_LARGE, 0, 0, .001f }; // big laser
-		player.Lives = m_lives;
-		player.Score = m_score;
 
 		Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
 

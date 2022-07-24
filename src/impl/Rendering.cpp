@@ -351,7 +351,7 @@ int  Target::DeviceHandle() const { return m_device; }
 
 void Target::_FreeHost()
 {
-	for (auto& [_, texture] : m_attachments) if (texture->OnHost() && texture->IsStatic()) texture->FreeHost();
+	for (auto& [_, texture] : m_attachments) if (texture->OnHost()) texture->FreeHost();
 }
 
 void Target::_FreeDevice()
@@ -663,7 +663,7 @@ int  Mesh::DeviceHandle() const { return m_device; }
 
 void Mesh::_FreeHost()
 {
-	for (auto& [_, buffer] : m_buffers) if (buffer->OnHost() && buffer->IsStatic()) buffer->FreeHost();
+	for (auto& [_, buffer] : m_buffers) if (buffer->OnHost()) buffer->FreeHost();
 }
 
 void Mesh::_FreeDevice()
@@ -837,7 +837,7 @@ int  ShaderProgram::DeviceHandle() const { return m_device; }
 
 void ShaderProgram::_FreeHost()
 {
-	m_buffers = {};
+	m_buffers.clear();
 }
 
 void ShaderProgram::_FreeDevice()

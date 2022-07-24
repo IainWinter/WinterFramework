@@ -180,7 +180,7 @@ struct System_PlayerController : System<System_PlayerController>
 
 			case ITEM_REGOLITH:
 			{
-				player.Score += 1;
+				Send(event_AddScore{ 1 });
 				break;
 			}
 

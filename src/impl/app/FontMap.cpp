@@ -13,6 +13,11 @@ namespace FontMap
 
 	ImFont* Get(const std::string& name)
 	{
-		return Fonts.at(name);
+		if (auto font = Fonts.find(name); font != Fonts.end())
+		{
+			return font->second;
+		}
+
+		return ImGui::GetIO().FontDefault;
 	}
 }

@@ -1,6 +1,6 @@
 #include "Sand/SandEntity.h"
 
-Entity CreateSandSprite(r<World> world, const std::string& path, const std::string& collider_mask_path)
+Entity CreateSandSprite(World* world, const std::string& path, const std::string& collider_mask_path)
 {
 	r<Texture> sprite = mkr<Texture>(_a(path), false);
 	r<Texture> mask   = mkr<Texture>(_a(collider_mask_path), false);
@@ -17,7 +17,7 @@ Entity CreateSandSprite(r<World> world, const std::string& path, const std::stri
 	return entity;
 }
 
-Entity CreateTexturedCircle(r<World> world, const std::string& path)
+Entity CreateTexturedCircle(World* world, const std::string& path)
 {
 	r<Texture> sprite = mkr<Texture>(_a(path), false);
 

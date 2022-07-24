@@ -48,6 +48,15 @@ struct event_SubmitHighscore
 	int score;
 };
 
+struct event_AddScore
+{
+	int score;
+};
+
+struct event_RemoveLife
+{
+};
+
 struct event_PlayGame
 {
 };

@@ -28,18 +28,13 @@
 struct EngineLoop
 {
 protected:
-	r<Application> app;
+	Application app;
 	
 private:
 	bool m_running = true;
 	float m_fixedStepAcc = 0.f;
 
 public:
-	EngineLoop()
-	{
-		app = mkr<Application>();
-	}
-
 	void on(event_Shutdown& e)
 	{
 		m_running = false;
@@ -50,7 +45,7 @@ public:
 		if (e.repeat == 0)
 		{
 			InputName input = Input::Map(e.keycode);
-			app->Send(event_Input{ input, e.state ? 1.f : -1.f });
+			app.Send(event_Input{ input, e.state ? 1.f : -1.f });
 		}
 	}
 
@@ -62,11 +57,11 @@ public:
 	void _Init()
 	{
 		// attach system events
-		app->Attach<event_Shutdown>(this);
-		app->Attach<event_Key>(this);
+		app.Attach<event_Shutdown>(this);
+		app.Attach<event_Key>(this);
 
 		// open window and create graphics context, allows sending data to device
-		app->GetWindow().Init();
+		app.GetWindow().Init();
 
 		// init user code
 		Init();
@@ -75,7 +70,7 @@ public:
 		PreInitUI();
 
 		// init Imgui
-		app->GetWindow().InitUI();
+		app.GetWindow().InitUI();
 
 		// init user UI, load fonts ect.
 		InitUI();
@@ -85,14 +80,14 @@ public:
 
 	void _Dnit()
 	{
-		app->Detach(this);
-		_Dnit();
+		app.Detach(this);
+		Dnit();
 	}
 
 	void Tick()
 	{
 		Time::UpdateTime();
-		app->Tick();
+		app.Tick();
 	}
 
 // Interface

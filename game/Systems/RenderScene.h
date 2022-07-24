@@ -12,34 +12,18 @@
 
 #include "GameRender.h"
 
-struct System_RenderScene : SystemBase
+struct System_Render_Sprites : SystemBase
 {
 private:
 	BatchSpriteRenderer render;
-	r<Target> sandSpriteInfoTarget;
-	r<ShaderProgram> sandSpriteInfoProgram;
-	r<Mesh> m_quad;
 
 public:
-	void Init()
-	{
-		sandSpriteInfoTarget = First<SandWorld>().screenRead;
-		sandSpriteInfoProgram = GetProgram_SandSpriteInfo();
-		m_quad = GetQuadMesh2D();
-	}
-
 	void Update()
-	{
-		DrawScreen();
-		DrawSandSpriteInfo();
-	}
-
-private:
-
-	void DrawScreen()
 	{
 		Target::UseDefault();
 		Target::Clear(Color(22, 22, 22));
+
+		glViewport(0, 0, GetWindow().Width(), GetWindow().Height());
 
 		render.Begin(First<Camera>());
 
@@ -78,15 +62,32 @@ private:
 		}
 		render.Draw();
 	}
+};
 
-	void DrawSandSpriteInfo()
+struct System_Render_SandCollisionInfo : SystemBase
+{
+private:
+	r<Target> sandSpriteInfoTarget;
+	r<ShaderProgram> sandSpriteInfoProgram;
+	r<Mesh> m_quad;
+
+public:
+	void Init()
+	{
+		sandSpriteInfoTarget = First<SandWorld>().screenRead;
+		sandSpriteInfoProgram = GetProgram_SandSpriteInfo();
+		m_quad = GetQuadMesh2D();
+	}
+
+	void Update()
 	{
 		sandSpriteInfoTarget->Use();
 		sandSpriteInfoTarget->Clear(Color(0, 0, 0, 0));
 
 		sandSpriteInfoProgram->Use();
-
 		sandSpriteInfoProgram->Set("projection", First<Camera>().Projection());
+
+		glViewport(0, 0, sandSpriteInfoTarget->Width(), sandSpriteInfoTarget->Height());
 
 		for (auto [entity, transform, sandSprite] : QueryWithEntity<Transform2D, SandSprite>())
 		{

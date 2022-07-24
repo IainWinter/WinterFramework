@@ -2,5 +2,5 @@
 
 #include "app/System.h"
 
-void CreateSandSystems(r<World> level);
-void DestroySandSystems(r<World> level);
+void CreateSandSystems(World* level);
+void DestroySandSystems(World* level);

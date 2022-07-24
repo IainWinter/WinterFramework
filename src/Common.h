@@ -131,6 +131,9 @@ void pop_erase(std::vector<_t>& list, size_t index)
 template<typename _t> 
 using r = std::shared_ptr<_t>;
 
+template<typename _t>
+using wr = std::weak_ptr<_t>;
+
 template<typename _t, typename... _args> 
 r<_t> mkr(_args&&... args)
 { 

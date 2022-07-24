@@ -132,13 +132,11 @@ struct Regolith : EngineLoop
 		ConfigureWindow();
 		InitGameRenderVars();
 
-		//ConfigureModules();
 		ConfigureLevel();
 		ConfigureInputMapping();
-		//ConfigureMainGameLevel();
 
-		//app.Attach<event_SubmitHighscore>(this);
-		//app.Attach<event_PlayGame>(this);
+		app.Attach<event_SubmitHighscore>(this);
+		app.Attach<event_PlayGame>(this);
 	}
 
 	void InitUI()
@@ -171,24 +169,39 @@ struct Regolith : EngineLoop
 
 	void ConfigureWindow()
 	{
-		Window& window = app->GetWindow();
+		Window& window = app.GetWindow();
 
 		window.Resize(1280, 720);
-		window.SetTitle("Windowing Test");
+		window.SetTitle("Regolith");
 	}
-
-	std::vector<SystemBase*> thegame;
-	std::vector<SystemBase*> themenu;
 
 	void ConfigureLevel()
 	{
-		r<World> game = app->CreateWorld();
+		CreateMenuWorld();
+	}
+
+	World* menu;
+	World* game;
+
+	void CreateMenuWorld()
+	{
+		menu = app.CreateWorld();
+
+		menu->CreateSystem(InitGame_System());
+		menu->CreateSystem(System_Render_Sprites());
+		menu->CreateSystem(System_UI_AsteroidsMenu());
+	}
+
+	void CreateGameWorld()
+	{
+		game = app.CreateWorld();
 
 		game->CreateSystem(InitGame_System());
 
 		// Basic functionality
 
-		game->CreateSystem(System_RenderScene());
+		game->CreateSystem(System_Render_Sprites());
+		game->CreateSystem(System_Render_SandCollisionInfo());
 		game->CreateSystem(System_TransformInterpolation());
 		game->CreateSystem(System_PhysicsInterpolation());
 		game->CreateSystem(System_ParticleUpdate());
@@ -210,65 +223,6 @@ struct Regolith : EngineLoop
 		game->CreateSystem(System_UI_AsteroidsHUD());
 	}
 
-	//void SwitchToGame()
-	//{
-	//	r<Level> level = LevelManager::CurrentLevel();
-
-	//	m_app.GetModule<Camera>().x = 0;
-	//	m_app.GetModule<Camera>().y = 0;
-
-	//	level->GetWorld()->Clear();
-	//	// doesnt clear the physics world
-
-	//	thegame = {
-	//		// Gameplay functionality
-	//		level->CreateSystem(System_PlayerSpawner()),
-	//		level->CreateSystem(System_PlayerController()),
-	//		level->CreateSystem(System_LowCorePixelDeath()),
-	//		level->CreateSystem(System_Item()),
-	//		level->CreateSystem(System_ItemPickup()),
-	//		level->CreateSystem(System_FireWeapon()),
-	//		level->CreateSystem(System_RockSpawner_Test()),
-	//		
-	//		// UI
-	//		level->CreateSystem(System_UI_AsteroidsHUD())
-	//	};
-
-	//	level->DestroySystems(themenu);
-	//	themenu = {};
-	//}
-
-	//void SwitchToMenu()
-	//{
-	//	r<Level> level = LevelManager::CurrentLevel();
-
-	//	themenu = {
-	//		level->CreateSystem(System_UI_AsteroidsMenu())
-	//	};
-
-	//	level->DestroySystems(thegame);
-	//	thegame = {};
-	//}
-
-	//void ConfigureModules()
-	//{
-	//	Window& window = m_app.GetModule<Window>();
-
-	//	vec2 screenSize = vec2(window.Width(), window.Height());
-	//	vec2 cameraSize = vec2(16 * 2, 9 * 2);
-
-	//	int cellsPerMeter = 18;
-
-	//	m_app.AddModule<SandWorld>(cellsPerMeter, vec2(cameraSize.x, cameraSize.y));
-	//	m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
-
-	//	CoordTranslation coords;
-	//	coords.ScreenToWorld = cameraSize;
-	//	coords.CellsToMeters = 1.f / cellsPerMeter;
-
-	//	m_app.AddModule<CoordTranslation>(coords);
-	//}
-
 	float transitionTimer = 0;
 	float transitionTime = 2.f;
 
@@ -277,38 +231,19 @@ struct Regolith : EngineLoop
 		return x * x * x * x;
 	}
 
-	//void on(event_SubmitHighscore& e)
-	//{
-	//	transitionTimer = 0.f;
+	void on(event_PlayGame& e)
+	{
+		app.DestroyWorld(menu);
+		menu = nullptr;
+		CreateGameWorld();
+	}
 
-	//	m_app.GetTaskPool()->Coroutine([this]()
-	//	{
-	//		transitionTimer += Time::DeltaTime();
-	//		
-	//		float progress = transitionTimer / transitionTime;
-	//		bool done = progress > 1.f;
-	//		
-	//		if (done)
-	//		{
-	//			SwitchToMenu();
-	//		}
-
-	//		Camera& camera = m_app.GetModule<Camera>();
-	//		vec2 position = vec2(camera.x, camera.y);
-
-	//		position = lerp(position, vec2(100, 30), easeQuint(progress));
-
-	//		camera.x = position.x;
-	//		camera.y = position.y;
-
-	//		return done;
-	//	});
-	//}
-
-	//void on(event_PlayGame& e)
-	//{
-	//	SwitchToGame();
-	//}
+	void on(event_SubmitHighscore& e)
+	{
+		app.DestroyWorld(game);
+		game = nullptr;
+		CreateMenuWorld();
+	}
 };
 
 void setup()

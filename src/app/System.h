@@ -27,7 +27,7 @@ struct Application;
 struct SystemBase
 {
 private:
-	r<World> m_world;
+	World* m_world;
 
 private:
 	template<typename _t>
@@ -40,11 +40,11 @@ public:
 	// some of these do extra stuff, but I like the idea of having the ability to
 	// put the metrics here instead of in the location where they are called
 
-	void _Init(r<World> world); // pass world so every system doestn need a constructor
+	void _Init(World* world); // pass world so every system doestn need a constructor
 	void _Dnit();
 
-	void _Attach();
-	void _Detach();
+	void _Activate();
+	void _Deactivate();
 
 	void _Update();
 	void _FixedUpdate();
@@ -52,7 +52,7 @@ public:
 	void _UI();
 	void _Debug();
 
-	virtual ~SystemBase(); // Calls Detach & Dnit
+	virtual ~SystemBase() = default;
 
 protected:
 
@@ -85,15 +85,15 @@ protected:
 // getters
 
 	WindowRef GetWindow();
-	r<World> GetWorld();
+	World*    GetWorld();
 // interface
 
 protected:
 	virtual void Init() {} // alloc resources
 	virtual void Dnit() {} // free resources
 
-	virtual void Attach() {} // attach events
-	virtual void Detach() {} // detach events, happens automatically in _Detach
+	virtual void Activate() {}   // attach events
+	virtual void Deactivate() {} // detach events, happens automatically in _Detach
 
 	virtual void Update() {}
 	virtual void FixedUpdate() {}
@@ -112,10 +112,10 @@ struct System : SystemBase
 	void Detach();
 };
 
-struct World final : std::enable_shared_from_this<World>
+struct World final
 {
 private:
-	r<Application> m_app;
+	Application* m_app;
 
 	EntityWorld  m_entities;
 	PhysicsWorld m_physics;
@@ -125,25 +125,18 @@ private:
 
 	TaskPool m_tasks;
 	
-	std::vector<r<SystemBase>> m_systems;
+	std::vector<SystemBase*> m_systems;
 
 	// tick variables
 	float m_fixedTimeAcc = 0.f;
 	bool m_active = true;
-
-private:
-	// this is so the World doesnt need to expose everything through getters
-	// could be a good idea for force the system design flow, or coiuld be bad
-	// because it limits what you can do, well see for now leave as friend
-
-	//friend struct SystemBase;
 
 public:
 	void SetActive(bool active);
 	bool IsActive() const;
 
 public:
-	r<Application> GetApplication();
+	Application*   GetApplication();
 	EntityWorld&   GetEntityWorld();
 	PhysicsWorld&  GetPhysicsWorld();
 	event_queue&   GetEventQueue();
@@ -165,16 +158,17 @@ private:
 	void TickEntities();
 
 public:
-	World(r<Application> app, event_manager* root);
-
+	World(Application* app, event_manager* root);
+	~World();
+	
 	void DetachFromRoot(event_manager* root);
 
 	template<typename _t>
-	r<SystemBase> CreateSystem(_t&& system);
+	SystemBase* CreateSystem(_t&& system);
 
-	void  AttachSystem(r<SystemBase> system);
-	void  DetachSystem(r<SystemBase> system);
-	void DestroySystem(r<SystemBase> system);
+	void  AttachSystem(SystemBase* system);
+	void  DetachSystem(SystemBase* system);
+	void DestroySystem(SystemBase* system);
 
 private:
 	// needs to use entt because they dont support lambdas 
@@ -183,7 +177,7 @@ private:
 	void on_remove_rigidbody(entt::registry& reg, entt::entity e);
 };
 
-struct Application final : std::enable_shared_from_this<Application>
+struct Application final
 {
 private:
 	Window m_window;
@@ -191,10 +185,7 @@ private:
 	event_manager m_bus;
 	event_queue   m_queue;
 
-	std::vector<r<World>> m_worlds;
-
-private:
-	friend struct World;
+	std::vector<World*> m_worlds;
 
 public:
 	Window&        GetWindow();
@@ -204,8 +195,8 @@ public:
 public:
 	Application();
 
-	r<World> CreateWorld();
-	void DestroyWorld(r<World> world);
+	World* CreateWorld();
+	void DestroyWorld(World* world);
 
 	void Tick();
 
@@ -300,10 +291,10 @@ inline void System<_t>::Detach()
 }
 
 template<typename _t>
-inline r<SystemBase> World::CreateSystem(_t&& system)
+inline SystemBase* World::CreateSystem(_t&& system)
 {
-	r<SystemBase> s = mkr<_t>(std::forward<_t>(system));
-	s->_Init(shared_from_this());
+	SystemBase* s = new _t(std::forward<_t>(system));
+	s->_Init(this);
 	AttachSystem(s);
 
 	return s;

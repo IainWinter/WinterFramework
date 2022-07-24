@@ -7,5 +7,5 @@
 #include "Sand/Sand.h"
 #include <string>
 
-Entity CreateSandSprite    (r<World> world, const std::string& path, const std::string& collider_mask_path);
-Entity CreateTexturedCircle(r<World> world, const std::string& path);
+Entity CreateSandSprite    (World* world, const std::string& path, const std::string& collider_mask_path);
+Entity CreateTexturedCircle(World* world, const std::string& path);

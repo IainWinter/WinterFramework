@@ -9,9 +9,9 @@
 #include "Sand/Systems/UpdateLineProjectileMesh.h"
 #include "Sand/Systems/RemoveCellFromSprite.h"
 
-std::vector<r<SystemBase>> sand_ids;
+std::vector<SystemBase*> sand_ids;
 
-void CreateSandSystems(r<World> level)
+void CreateSandSystems(World* level)
 {
 	sand_ids = {
 		level->CreateSystem(Sand_System_Update()),
@@ -29,7 +29,7 @@ void CreateSandSystems(r<World> level)
 
 void DestroySandSystems(r<World> level)
 {
-	for (r<SystemBase>& s : sand_ids)
+	for (SystemBase*& s : sand_ids)
 	{
 		level->DestroySystem(s);
 	}

@@ -18,24 +18,34 @@ int FilterAZ(ImGuiInputTextCallbackData* data)
 struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 {
 	r<Texture> playerSprite;
-	int lastPlayerLives = 3;
-	int lastPlayerScore;
 	
 	char name[6];
-
-	float m_gameoverTimer;
-
-	float m_fadeTarget;
-	float m_currentFade;
+	int lastPlayerLives = 3;
+	int lastPlayerScore;
+	float gameoverTimer = 0.f;
+	float currentFade = 0.0f;
+	float fadeTarget = 0.5f;   // game over fade amount
 
 	void Init()
 	{
 		playerSprite = mkr<Texture>(_A("player.png"));
 		playerSprite->SendToDevice();
+	}
 
-		m_gameoverTimer = 0.f;
-		m_currentFade = 0.0f;
-		m_fadeTarget = 0.5f;   // game over fade amount
+	void Activate()
+	{
+		Attach<event_AddScore>();
+		Attach<event_RemoveLife>();
+	}
+
+	void on(event_AddScore& e)
+	{
+		lastPlayerScore += e.score;
+	}
+
+	void on(event_RemoveLife& e)
+	{
+		lastPlayerLives -= 1;
 	}
 
 	void UI()
@@ -66,17 +76,17 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 		if (IsGameOver())
 		{
-			m_currentFade = lerp(m_currentFade, m_fadeTarget, Time::DeltaTime());
+			currentFade = lerp(currentFade, fadeTarget, Time::DeltaTime());
 
 			ImGui::GetBackgroundDrawList()->AddRectFilled(
 				ImVec2(0, 0),
 				ImVec2(screen.x, screen.y),
-				Color(0, 0, 0, m_currentFade * 255).as_u32
+				Color(0, 0, 0, currentFade * 255).as_u32
 			);
 
-			m_gameoverTimer += Time::DeltaTime();
+			gameoverTimer += Time::DeltaTime();
 
-			if (m_gameoverTimer < 3.f)
+			if (gameoverTimer < 3.f)
 			{
 				ImGui::PushFont(FontMap::Get("Game Over"));
 				
@@ -139,7 +149,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				if (ImGui::Button("OK"))
 				{
 					SendToRoot(event_SubmitHighscore{ std::string(name), lastPlayerScore });
-					m_fadeTarget = 0.f;
+					fadeTarget = 0.f;
 				}
 				
 				ImGui::PopFont();
@@ -166,20 +176,16 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	int GetScoreCount()
 	{
-		Entity player = FirstEntity<Player>();
-		lastPlayerScore = player.IsAlive() ? player.Get<Player>().Score : lastPlayerScore;
 		return lastPlayerScore;
 	}
 
 	int GetPlayerLives()
 	{
-		Entity player = FirstEntity<Player>();
-		lastPlayerLives = player.IsAlive() ? player.Get<Player>().Lives : lastPlayerLives;
 		return lastPlayerLives;
 	}
 
 	bool IsGameOver() const
 	{
-		return lastPlayerLives == 0;
+		return lastPlayerLives == 0 || true;
 	}
 };

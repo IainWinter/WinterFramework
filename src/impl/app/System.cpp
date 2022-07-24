@@ -1,25 +1,40 @@
 #include "app/System.h"
 
-void SystemBase::_Init(r<World> world)
+void _log(const char* fmt, ...)
 {
+	printf("[World] ");
+
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+
+	printf("\n");
+}
+
+void SystemBase::_Init(World* world)
+{
+	_log("Created System");
+
 	m_world = world;
 	Init();
 }
 
 void SystemBase::_Dnit()
 {
+	_log("Destroied System");
 	m_world->GetEventBus().detach(this);
 	Dnit();
 }
 
-void SystemBase::_Attach()
+void SystemBase::_Activate()
 {
-	Attach();
+	Activate();
 }
 
-void SystemBase::_Detach()
+void SystemBase::_Deactivate()
 {
-	Detach();
+	Deactivate();
 }
 
 void SystemBase::_Update()
@@ -40,15 +55,6 @@ void SystemBase::_UI()
 void SystemBase::_Debug()
 {
 	Debug();
-}
-
-SystemBase::~SystemBase()
-{
-	if (m_world)
-	{
-		_Detach();
-		_Dnit();
-	}
 }
 
 Entity SystemBase::CreateEntity()
@@ -101,7 +107,7 @@ WindowRef SystemBase::GetWindow()
 	return m_world->GetWindow();
 }
 
-r<World> SystemBase::GetWorld()
+World* SystemBase::GetWorld()
 {
 	return m_world;
 }
@@ -132,7 +138,7 @@ void World::TickUI()
 
 void World::TickFixed()
 {
-	for (r<SystemBase>& system : m_systems)
+	for (SystemBase*& system : m_systems)
 	{
 		system->_FixedUpdate();
 	}
@@ -142,7 +148,7 @@ void World::TickFixed()
 
 void World::TickSystems()
 {
-	for (r<SystemBase>& system : m_systems)
+	for (SystemBase*& system : m_systems)
 	{
 		system->_Update();
 	}
@@ -150,7 +156,7 @@ void World::TickSystems()
 
 void World::TickSystemsUI()
 {
-	for (r<SystemBase>& system : m_systems)
+	for (SystemBase*& system : m_systems)
 	{
 		system->_UI();
 	}
@@ -158,7 +164,7 @@ void World::TickSystemsUI()
 
 void World::TickSystemsDebug()
 {
-	for (r<SystemBase>& system : m_systems)
+	for (SystemBase*& system : m_systems)
 	{
 		system->_Debug();
 	}
@@ -180,7 +186,7 @@ void World::TickEntities()
 }
 
 World::World(
-	r<Application> app,
+	Application* app,
 	event_manager* root)
 	: m_app   (app)
 	, m_queue (&m_bus)
@@ -189,6 +195,20 @@ World::World(
 
 	m_entities.OnAdd   <Rigidbody2D, &World::on_add_rigidbody, World>(this);
 	m_entities.OnRemove<Rigidbody2D, &World::on_remove_rigidbody, World>(this);
+
+	_log("Created world");
+}
+
+World::~World()
+{
+	for (SystemBase*& system : m_systems)
+	{
+		system->_Deactivate();
+		system->_Dnit();
+		delete system;
+	}
+
+	_log("Destroied world");
 }
 
 void World::DetachFromRoot(event_manager* root)
@@ -206,7 +226,7 @@ bool World::IsActive() const
 	return m_active;
 }
 
-r<Application> World::GetApplication()  { return m_app; }
+Application*   World::GetApplication()  { return m_app; }
 EntityWorld&   World::GetEntityWorld()  { return m_entities; }
 PhysicsWorld&  World::GetPhysicsWorld() { return m_physics; }
 event_queue&   World::GetEventQueue()   { return m_queue; }
@@ -214,19 +234,19 @@ event_manager& World::GetEventBus()     { return m_bus; }
 TaskPool&      World::GetTaskPool()     { return m_tasks; }
 WindowRef      World::GetWindow()       { return WindowRef(&m_app->GetWindow()); }
 
-void World::AttachSystem(r<SystemBase> system)
+void World::AttachSystem(SystemBase* system)
 {
 	m_systems.push_back(system);
-	system->_Attach();
+	system->_Activate();
 }
 
-void World::DetachSystem(r<SystemBase> system)
+void World::DetachSystem(SystemBase* system)
 {
-	system->_Detach();
+	system->_Deactivate();
 	m_systems.erase(std::find(m_systems.begin(), m_systems.end(), system));
 }
 
-void World::DestroySystem(r<SystemBase> system)
+void World::DestroySystem(SystemBase* system)
 {
 	DetachSystem(system);
 	system->_Dnit();
@@ -249,37 +269,45 @@ Application::Application()
 	, m_window (WindowConfig{}, &m_queue)
 {}
 
-r<World> Application::CreateWorld()
+World* Application::CreateWorld()
 {
-	r<World> world = mkr<World>(shared_from_this(), &m_bus);
+	World* world = new World(this, &m_bus);
 	m_worlds.push_back(world);
 
 	return world;
 }
 
-void Application::DestroyWorld(r<World> world)
+void Application::DestroyWorld(World* world)
 {
 	m_worlds.erase(std::find(m_worlds.begin(), m_worlds.end(), world));
 	world->DetachFromRoot(&m_bus);
+
+	delete world;
 }
 
 void Application::Tick()
 {
-	for (r<World>& world : m_worlds)
+	// app loop
+
+	for (World*& world : m_worlds)
 	{
 		if (world->IsActive()) world->Tick();
 	}
 
+	m_queue.execute();
+
+	// UI
+
 	m_window.BeginImgui();
 
-	for (r<World>& world : m_worlds)
+	for (World*& world : m_worlds)
 	{
 		if (world->IsActive()) world->TickUI();
 	}
 
 	m_window.EndImgui();
 
-	m_queue.execute();
+	// OS
 
 	m_window.EndFrame();
 	m_window.PumpEvents();
