@@ -97,7 +97,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 	void Update()
 	{
-		SandWorld& sand = GetModule<SandWorld>();
+		SandWorld& sand = First<SandWorld>();
 
 		// turn off emitter when off screen
 
@@ -133,7 +133,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 	void on(event_SandAddSprite& e)
 	{
 		r<Texture> sprite = e.entity.Get<Sprite>().source;
-		e.entity.Get<Transform2D>().scale = sprite->Dimensions() / GetModule<SandWorld>().cellsPerMeter;
+		e.entity.Get<Transform2D>().scale = sprite->Dimensions() * First<CoordTranslation>().CellsToMeters;
 		
 		SandSprite& sandSprite = e.entity.Get<SandSprite>();
 
@@ -150,7 +150,7 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		else
 		{
-			body = &GetModule<PhysicsWorld>().AddEntity(e.entity);
+			body = &e.entity.Add<Rigidbody2D>();
 			body->ApplyForce(e.velocity);
 			body->ApplyTorque(e.aVelocity);
 		}

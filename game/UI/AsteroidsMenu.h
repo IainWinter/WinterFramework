@@ -16,7 +16,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void UI()
 	{
-		vec2 screen = GetModule<Window>().Dimensions();
+		vec2 screen = GetWindow().Dimensions();
 		vec2 midpoint = screen / 2.f;
 		float scale = screen.y / 720;
 
@@ -38,13 +38,13 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 		ImGui::SetWindowFontScale(scale / 2.f);
 
-		ImGui::PushFont(GetModule<FontMap>().Get("Main Menu Title"));
+		ImGui::PushFont(FontMap::Get("Main Menu Title"));
 		ImVec2 titleSize = ImGui::CalcTextSize("REGOLITH");
 		ImGui::SetCursorPos(ImVec2(midpoint.x - titleSize.x / 2, midpoint.y - titleSize.y / 2));
 		ImGui::Text("REGOLITH");
 		ImGui::PopFont();
 
-		ImGui::PushFont(GetModule<FontMap>().Get("Main Menu Button"));
+		ImGui::PushFont(FontMap::Get("Main Menu Button"));
 		ImVec2 playSize = ImGui::CalcTextSize("Play");
 		ImGui::SetCursorPosX(midpoint.x - playSize.x / 2);
 		if (ImGui::Button("Play"))

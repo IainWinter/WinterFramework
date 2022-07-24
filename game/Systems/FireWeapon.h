@@ -60,9 +60,9 @@ private:
 				e.Add<WrapOnScreen>();
 
 				transform.position += normal * .05f;
-				transform.scale = vec2(GetModule<CoordTranslation>().CellsToMeters * 4);
+				transform.scale = vec2(First<CoordTranslation>().CellsToMeters * 4);
 
-				GetModule<PhysicsWorld>().AddEntity(e)
+				e.Add<Rigidbody2D>()
 					.SetVelocity(direction * 24.f);
 
 				break;
@@ -78,7 +78,7 @@ private:
 				e.Add<CellProjectile>(entity.Id())
 					.SetHealth(5);
 
-				GetModule<PhysicsWorld>().AddEntity(e)
+				e.Add<Rigidbody2D>()
 					.SetVelocity(direction * 40.f);
 
 				break;
@@ -94,7 +94,7 @@ private:
 
 				transform.position += normal * .02f;
 				
-				GetModule<PhysicsWorld>().AddEntity(e)
+				e.Add<Rigidbody2D>()
 					.SetVelocity(direction * 25.f);
 
 				break;
@@ -110,7 +110,7 @@ private:
 
 				transform.position += normal * .5f;
 
-				GetModule<PhysicsWorld>().AddEntity(e)
+				e.Add<Rigidbody2D>()
 					.SetVelocity(direction * 60.f);
 
 				break;
@@ -125,7 +125,7 @@ private:
 					.SetHealth(15)
 					.SetSize(3);
 
-				GetModule<PhysicsWorld>().AddEntity(e)
+				e.Add<Rigidbody2D>()
 					.SetVelocity(direction * 50.f);
 
 				break;

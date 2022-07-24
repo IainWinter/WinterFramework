@@ -1,9 +1,10 @@
 #pragma once
 
 #include "app/System.h"
-#include "Events.h"
 #include "Sand/Sand.h"
 #include "ext/rendering/Particle.h"
+#include "Events.h"
+#include "Prefabs.h"
 
 struct System_ExplosionSpawner : System<System_ExplosionSpawner>
 {
@@ -41,8 +42,7 @@ private:
 			e.Add<CellProjectile>();
 			e.Add<DestroyInTime>(.1f + get_rand(.3f));
 
-			GetModule<PhysicsWorld>()
-				.AddEntity(e)
+			e.Add<Rigidbody2D>()
 				.SetVelocity(get_randn(radius))
 				.SetDamping(radius / 10.f);
 
@@ -57,8 +57,7 @@ private:
 				Particle(m_smoke)
 			);
 
-			GetModule<PhysicsWorld>()
-				.AddEntity(smoke)
+			smoke.Add<Rigidbody2D>()
 				.SetVelocity(get_randn(radius))
 				.SetDamping(3.f);
 		}

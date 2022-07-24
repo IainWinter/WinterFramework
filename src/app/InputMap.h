@@ -29,19 +29,12 @@ struct event_Input
 	float state;
 };
 
-struct InputMap
+// only handles keyboard mappings right now
+// in future should be able to map a name to an axis / mouse pos
+
+namespace Input
 {
-	std::unordered_map<SDL_Scancode, InputName> Keyboard;
-
-	InputName Map(SDL_Scancode code) const 
-	{
-		auto itr = Keyboard.find(code);
-		if (itr != Keyboard.end()) return itr->second;
-		return InputName::_NONE;
-	}
-
-	void Set(SDL_Scancode code, InputName name)
-	{
-		Keyboard[code] = name;
-	}
-};
+	InputName Map(SDL_Scancode code);
+	void Set(SDL_Scancode code, InputName name);
+	void SetMap(const std::unordered_map<SDL_Scancode, InputName>& map);
+}

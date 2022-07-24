@@ -39,7 +39,7 @@ private:
 		Texture& tex = sprite.Get();
 		vec2 mid = vec2(tex.Width(), tex.Height()) / 2.f;
 
-		SandWorld& sand = GetModule<SandWorld>(); // non threadsafe read
+		SandWorld& sand = First<SandWorld>(); // non threadsafe read
 
 		// delta for each pixel in world space
 		
@@ -77,7 +77,7 @@ private:
 			}
 			vel += get_randn(length(vel) / 2.f + 1.f);
 
-			GetModule<PhysicsWorld>().AddEntity(dust)
+			dust.Add<Rigidbody2D>()
 				.SetVelocity(vel)
 				.SetAngularVelocity(get_randc(w2PI));
 

@@ -59,7 +59,7 @@ struct System_FuelTank : SystemBase
 
 		tank.onEat = [this]()
 		{
-			Player& player = FirstEntityWith<Player>().Get<Player>();
+			Player& player = First<Player>();
 			player.AttackFuelAlt += player.AttackFuelAdditionAlt;
 		};
 

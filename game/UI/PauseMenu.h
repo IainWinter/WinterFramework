@@ -11,7 +11,7 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 
 	void UI()
 	{
-		vec2 screen = GetModule<Window>().Dimensions();
+		vec2 screen = GetWindow().Dimensions();
 		vec2 pause = screen * vec2(.4, 1);
 		
 		offset = lerp(offset, screen.x * .15f, Time::RawDeltaTime() * 20.f);
@@ -22,7 +22,7 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0, 0, 0, .4f));
-		ImGui::PushFont(GetModule<FontMap>().Get("Pixel Title"));
+		ImGui::PushFont(FontMap::Get("Pixel Title"));
 
 		ImGui::Begin("Pause Menu", 0, 
 				ImGuiWindowFlags_NoResize 
@@ -30,7 +30,7 @@ struct System_UI_PauseMenu : System<System_UI_PauseMenu>
 			| ImGuiWindowFlags_NoScrollbar
 		);
 
-		ImGui::PushFont(GetModule<FontMap>().Get("Pixel"));
+		ImGui::PushFont(FontMap::Get("Pixel"));
 		ImGui::Text("Paused");
 		ImGui::PopFont();
 

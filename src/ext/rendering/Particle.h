@@ -1,11 +1,13 @@
 #pragma once
 
+#include "Entity.h"
 #include "ext/rendering/TextureAtlas.h"
 
 struct Particle
 {
 	r<TextureAtlas> atlas;
-	
+	int m_emitterSpawnerIndex;
+
 	int   repeatCount     =  1;
 	int   frameCount      =  1;
 	float framesPerSecond = 24.f;
@@ -39,7 +41,6 @@ struct Particle
 	Particle& SetTint            (const Color&              tint)            { this->tint            = tint;            return *this; }
 	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
 	Particle& AddTint            (const Color&              tint)            { this->tints.push_back(tint);             return *this; }
-
 
 	void TickFrame(float dt)
 	{
@@ -86,7 +87,7 @@ struct ParticleEmitter
 	{
 		Particle particle;
 		float weight;
-		std::function<void(Particle)> onCreate;
+		std::function<void(Entity)> onCreate;
 	};
 
 	std::vector<Spawner> spawners;
@@ -97,7 +98,7 @@ struct ParticleEmitter
 
 	bool enableAutoEmit = true;
 
-	void AddSpawner(Particle particle, float weight, std::function<void(Particle)> onCreate)
+	void AddSpawner(Particle particle, float weight, std::function<void(Entity)> onCreate)
 	{
 		spawners.push_back({ particle, weight, onCreate });
 		totalWeight += weight;
@@ -117,11 +118,7 @@ struct ParticleEmitter
 		
 		Particle p = spawner.particle;
 		p.original.position += position; // *= emitterTransform;            // todo: should parent when that is a feature
-
-		if (spawner.onCreate)
-		{
-			spawner.onCreate(p);
-		}
+		p.m_emitterSpawnerIndex = index;
 
 		return p;
 	}
@@ -143,8 +140,10 @@ struct ParticleEmitter
 	}
 
 	// could return a vector of particles
-	void EmitLine(vec2 a, vec2 b) const
+	std::vector<Particle> EmitLine(vec2 a, vec2 b) const
 	{
+		std::vector<Particle> out;
+
 		vec2 delta = b - a;
 		float ticks = length(delta) * 15.f;
 		vec2 deltaTick = delta / ticks;
@@ -152,7 +151,9 @@ struct ParticleEmitter
 		for (float t = 0; t < ticks; t += 1.f)
 		{
 			a += deltaTick;
-			Emit(a);
+			out.push_back(Emit(a));
 		}
+
+		return out;
 	}
 };

@@ -2593,9 +2593,9 @@ ImGuiListClipper::~ImGuiListClipper()
     End();
 }
 
-// Use case A: Begin() called from constructor with items_height<0, then called again from Step() in StepNo 1
+// Use case A: Begin() called from constructor with items_height<0, then called again from Tick() in StepNo 1
 // Use case B: Begin() called from constructor with items_height>0
-// FIXME-LEGACY: Ideally we should remove the Begin/End functions but they are part of the legacy API we still support. This is why some of the code in Step() calling Begin() and reassign some fields, spaghetti style.
+// FIXME-LEGACY: Ideally we should remove the Begin/End functions but they are part of the legacy API we still support. This is why some of the code in Tick() calling Begin() and reassign some fields, spaghetti style.
 void ImGuiListClipper::Begin(int items_count, float items_height)
 {
     ImGuiContext& g = *GImGui;
@@ -2678,7 +2678,7 @@ bool ImGuiListClipper::Step()
         return true;
     }
 
-    // Step 0: Let you process the first element (regardless of it being visible or not, so we can measure the element height)
+    // Tick 0: Let you process the first element (regardless of it being visible or not, so we can measure the element height)
     bool calc_clipping = false;
     if (data->StepNo == 0)
     {
@@ -2697,7 +2697,7 @@ bool ImGuiListClipper::Step()
         calc_clipping = true;   // If on the first step with known item height, calculate clipping.
     }
 
-    // Step 1: Let the clipper infer height from first range
+    // Tick 1: Let the clipper infer height from first range
     if (ItemsHeight <= 0.0f)
     {
         IM_ASSERT(data->StepNo == 1);
@@ -2713,7 +2713,7 @@ bool ImGuiListClipper::Step()
         calc_clipping = true;   // If item height had to be calculated, calculate clipping afterwards.
     }
 
-    // Step 0 or 1: Calculate the actual ranges of visible elements.
+    // Tick 0 or 1: Calculate the actual ranges of visible elements.
     const int already_submitted = DisplayEnd;
     if (calc_clipping)
     {
@@ -2758,7 +2758,7 @@ bool ImGuiListClipper::Step()
         ImGuiListClipper_SortAndFuseRanges(data->Ranges, data->StepNo);
     }
 
-    // Step 0+ (if item height is given in advance) or 1+: Display the next range in line.
+    // Tick 0+ (if item height is given in advance) or 1+: Display the next range in line.
     if (data->StepNo < data->Ranges.Size)
     {
         DisplayStart = ImMax(data->Ranges[data->StepNo].Min, already_submitted);
@@ -18685,7 +18685,7 @@ void ImGui::DebugHookIdInfo(ImGuiID id, ImGuiDataType data_type, const void* dat
     ImGuiWindow* window = g.CurrentWindow;
     ImGuiStackTool* tool = &g.DebugStackTool;
 
-    // Step 0: stack query
+    // Tick 0: stack query
     // This assume that the ID was computed with the current ID stack, which tends to be the case for our widget.
     if (tool->StackLevel == -1)
     {
@@ -18696,7 +18696,7 @@ void ImGui::DebugHookIdInfo(ImGuiID id, ImGuiDataType data_type, const void* dat
         return;
     }
 
-    // Step 1+: query for individual level
+    // Tick 1+: query for individual level
     IM_ASSERT(tool->StackLevel >= 0);
     if (tool->StackLevel != window->IDStack.Size)
         return;

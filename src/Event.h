@@ -122,16 +122,16 @@ struct event_manager
 
 	// template headers
 
-	template<typename _t>
+	template<typename _e>
 	void detach(void* handler_ptr)
 	{
-		detach(make_event<_t>(), handler_ptr);
+		detach(make_event<_e>(), handler_ptr);
 	}
 
-	template<typename _t>
-	void send(_t&& event)
+	template<typename _e>
+	void send(_e&& event)
 	{
-		send(make_event<_t>(), (void*)&event);
+		send(make_event<_e>(), (void*)&event);
 	}
 };
 

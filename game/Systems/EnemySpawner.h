@@ -23,7 +23,7 @@ struct System_EnemySpawner : SystemBase
 	{
 		float padding = 0.f;
 		int numberOfZones = 5;
-		vec2 screenSize = GetModule<Camera>().ScreenSize();
+		vec2 screenSize = First<Camera>().ScreenSize();
 		
 		m_zoneSize = screenSize * 2.f / (float)numberOfZones; // zones are square so x and w/h of zones on x and y is w/h of zones on y
 

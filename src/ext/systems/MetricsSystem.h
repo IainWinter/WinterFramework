@@ -3,23 +3,17 @@
 #include "app/System.h"
 #include "imgui/imgui.h"
 #include "imgui/implot.h"
+#include "util/metrics.h"
 
 struct System_Metrics : SystemBase
 {
-	metrics_log* log;
-
-	void Init()
-	{
-		log = GetLevel()->GetApp()->GetMetrics();
-	}
-
 	void UI()
 	{
 		id = 0;
 
 		ImGui::Begin("Metrics");
 
-		for (metrics_log::series* series : log->get_series()) // iterate root level
+		for (metrics_log::series* series : First<metrics_log>().get_series()) // iterate root level
 		{
 			UIDrawSeriesLevel(series);
 		}

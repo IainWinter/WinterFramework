@@ -17,7 +17,7 @@ struct System_Enemy : System<System_Enemy>
 	void Init()
 	{
 		Attach<event_Enemy_Spawn>();
-		player = FirstEntityWith<Player>();
+		player = FirstEntity<Player>();
 	}
 
 	void on(event_Enemy_Spawn& e)
@@ -35,7 +35,7 @@ private:
 		{
 			case ENEMY_FIGHTER:
 			{
-				entity = CreateSandSprite("enemy_fighter.png", "enemy_fighter_mask.png");
+				entity = CreateSandSprite(GetWorld(), "enemy_fighter.png", "enemy_fighter_mask.png");
 				entity.Add<Enemy>(10 + get_rand(10));
 
 				entity.Add<Rigidbody2D>()
@@ -55,7 +55,7 @@ private:
 
 			case ENEMY_BOMB:
 			{
-				entity = CreateSandSprite("enemy_bomb.png", "enemy_bomb_mask.png");
+				entity = CreateSandSprite(GetWorld(), "enemy_bomb.png", "enemy_bomb_mask.png");
 				entity.Add<Enemy>(20 + get_rand(20));
 
 				entity.Get<SandSprite>().SetCellStrength(.8f);
@@ -80,7 +80,7 @@ private:
 
 			case ENEMY_STATION:
 			{
-				entity = CreateSandSprite("enemy_station.png", "enemy_station_mask.png");
+				entity = CreateSandSprite(GetWorld(), "enemy_station.png", "enemy_station_mask.png");
 				entity.Add<Enemy>(100 + get_rand(100));
 
 				entity.Add<Rigidbody2D>()
@@ -114,7 +114,7 @@ private:
 
 			case ENEMY_BASE:
 			{
-				entity = CreateSandSprite("enemy_base.png", "enemy_base_mask.png");
+				entity = CreateSandSprite(GetWorld(), "enemy_base.png", "enemy_base_mask.png");
 				entity.Add<Enemy>(200 + get_rand(200));
 
 				entity.Add<Rigidbody2D>()

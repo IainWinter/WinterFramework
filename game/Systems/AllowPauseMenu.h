@@ -20,19 +20,21 @@ public:
 	{
 		if (e.name == InputName::ESCAPE && e.state == 1)
 		{
-			if (pause) // pause is open 
-			{
-				LevelManager::CurrentLevel()->DestroySystem(pause);
-				pause = nullptr;
-				Time::SetTimeScale(timescale);
-			}
+			// this needs to send events on root to app
 
-			else 
-			{ 
-				pause = LevelManager::CurrentLevel()->CreateSystem(System_UI_PauseMenu());
-				timescale = Time::TimeScale();
-				Time::SetTimeScale(0.f);
-			}
+			//if (pause) // pause is open 
+			//{
+			//	LevelManager::CurrentLevel()->DestroySystem(pause);
+			//	pause = nullptr;
+			//	Time::SetTimeScale(timescale);
+			//}
+
+			//else 
+			//{ 
+			//	pause = LevelManager::CurrentLevel()->CreateSystem(System_UI_PauseMenu());
+			//	timescale = Time::TimeScale();
+			//	Time::SetTimeScale(0.f);
+			//}
 		}
 	}
 };

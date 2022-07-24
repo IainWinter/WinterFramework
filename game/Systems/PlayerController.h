@@ -33,7 +33,7 @@ struct System_PlayerController : System<System_PlayerController>
 
 	void Update()
 	{
-		playerEntity = FirstEntityWith<Player>();
+		playerEntity = FirstEntity<Player>();
 		if (!playerEntity.IsAlive()) return;
 
 		Player& player = playerEntity.Get<Player>();

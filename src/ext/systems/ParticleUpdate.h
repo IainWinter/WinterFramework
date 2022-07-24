@@ -30,7 +30,20 @@ struct System_ParticleUpdate : SystemBase
 		for (auto [transform, emitter] : Query<Transform2D, ParticleEmitter>())
 		{
 			if (!emitter.enableAutoEmit) continue;
-			emitter.EmitLine(transform.LastTransform().position, transform.position);
+			
+			std::vector<Particle> particles = emitter.EmitLine(
+				transform.LastTransform().position, 
+				transform.position
+			);
+
+			for (Particle& p : particles)
+			{
+				Entity e = CreateEntity();
+				e.Add<Particle>(p);
+				e.Add<Transform2D>(p.original);
+
+				emitter.spawners.at(p.m_emitterSpawnerIndex).onCreate(e);
+			}
 		}
 	}
 };

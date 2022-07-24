@@ -97,7 +97,7 @@ struct System_Item : System<System_Item>
 			d *= 0.5f + get_rand(1.5f);
 
 			Entity entity = CreateEntity();
-			entity.Add<Transform2D>(vec3(e.pos, 10.f), itemTexture->Dimensions() * GetModule<CoordTranslation>().CellsToMeters);
+			entity.Add<Transform2D>(vec3(e.pos, 10.f), itemTexture->Dimensions() * First<CoordTranslation>().CellsToMeters);
 			entity.Add<Sprite>(itemTexture);
 
 			entity.Add<Item>()
@@ -105,7 +105,7 @@ struct System_Item : System<System_Item>
 				.SetPickupRadius(r + get_rand(2.f))
 				.SetLife(4.f + get_rand(4.f));
 
-			GetModule<PhysicsWorld>().AddEntity(entity)
+			entity.Add<Rigidbody2D>()
 				.SetVelocity(get_randn(12.f))
 				.SetAngularVelocity(get_rand(w2PI))
 				.SetDamping(d)

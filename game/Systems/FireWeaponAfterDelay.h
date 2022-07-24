@@ -5,6 +5,7 @@
 
 #include "Components/EnemyAI.h"
 #include "Sand/SandEvents.h"
+#include "Events.h"
 
 struct System_FireWeaponAfterDelay : SystemBase
 {

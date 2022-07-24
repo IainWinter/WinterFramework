@@ -132,3 +132,23 @@ private:
 	void Init_Imgui(const char* glsl_version);
 	void Dnit_Imgui();
 };
+
+// encapsulates the window so systems can read the props without access to engine functions
+struct WindowRef
+{
+private:
+	Window* m_window;
+
+public:
+	WindowRef(Window* window);
+
+	int                Width()      const;
+	int                Height()     const;
+	vec2               Dimensions() const;
+	const std::string& Title()      const;
+	
+	void SetTitle(const std::string& title);
+
+	void ResizeViewport(int width, int height);
+	void Resize(int width, int height, bool center = true);
+};

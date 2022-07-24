@@ -240,7 +240,7 @@ void PhysicsWorld::Remove(Entity& e)
 	body.m_instance = nullptr;
 }
 
-void PhysicsWorld::Step(float dt)
+void PhysicsWorld::Tick(float dt)
 {
 	m_world->Step(dt, 8, 3);
 }

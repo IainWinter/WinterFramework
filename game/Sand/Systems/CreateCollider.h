@@ -20,11 +20,6 @@ struct Sand_System_CreateCollider : System<Sand_System_CreateCollider>
 
 	void on(event_Sand_CreateCollider& e)
 	{
-		if (!e.entity.Get<Rigidbody2D>().InWorld()) // annoying, should be automatic
-		{
-			GetModule<PhysicsWorld>().AddEntity(e.entity);
-		}
-
 		if (!TrySetCircleColliderOnSprite(e.entity))
 		{
 			if (!TrySetPolygonColliderOnSprite(e.entity))
@@ -49,7 +44,7 @@ private:
 				body.AddCollider(b2CircleShape());
 			}
 
-			tran.scale = sand.colliderMask->Dimensions() * GetModule<CoordTranslation>().CellsToMeters;
+			tran.scale = sand.colliderMask->Dimensions() * First<CoordTranslation>().CellsToMeters;
 			body.SetTransform(tran);
 		}
 
@@ -62,8 +57,6 @@ private:
 	{
 		auto [tran, body, sand] = entity.GetAll<Transform2D, Rigidbody2D, SandSprite>();
 		r<Texture>& mask = sand.colliderMask;
-
-		if (!body.InWorld()) GetModule<PhysicsWorld>().AddEntity(entity);
 
 		assert(mask->Channels() == 4 && "collider mask needs to be 32 bit right now");
 		assert(entity.IsAlive());
@@ -81,7 +74,7 @@ private:
 		vec2 sizeMask   = vec2(mask->Width(), mask->Height());
 		
 		vec2 offset = sizeMask / sizeIsland - vec2(1.f, 1.f);
-		vec2 scale = sizeIsland * GetModule<CoordTranslation>().CellsToMeters;
+		vec2 scale = sizeIsland * First<CoordTranslation>().CellsToMeters;
 
 		// scale and move origin of polygons
 		for (std::vector<vec2>& polygon : polygons.first)

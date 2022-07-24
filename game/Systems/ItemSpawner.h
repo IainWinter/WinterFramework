@@ -4,6 +4,7 @@
 #include "Sand/SandEvents.h"
 #include "Sand/SandHelpers.h"
 #include "Events.h"
+#include "Components/Player.h"
 
 struct System_ItemSpawner : System<System_ItemSpawner>
 {
@@ -12,7 +13,7 @@ struct System_ItemSpawner : System<System_ItemSpawner>
 	void Init()
 	{
 		Attach<event_Sand_RemoveCell>();
-		playerEntity = FirstEntityWith<Player>();
+		playerEntity = FirstEntity<Player>();
 	}
 
 	void on(event_Sand_RemoveCell& e)

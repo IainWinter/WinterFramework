@@ -334,3 +334,17 @@ void Window::Dnit_Imgui()
  	ImGui::DestroyContext();
 	ImPlot::DestroyContext();
 }
+
+WindowRef::WindowRef(Window* window)
+	: m_window (window)
+{}
+
+int                WindowRef::Width()      const { return m_window->Width(); }
+int                WindowRef::Height()     const { return m_window->Height(); }
+vec2               WindowRef::Dimensions() const { return m_window->Dimensions(); }
+const std::string& WindowRef::Title()      const { return m_window->Title(); }
+
+void WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); }
+
+void WindowRef::ResizeViewport(int width, int height) { m_window->ResizeViewport(width, height); }
+void WindowRef::Resize(int width, int height, bool center) { m_window->Resize(width, height, center); }

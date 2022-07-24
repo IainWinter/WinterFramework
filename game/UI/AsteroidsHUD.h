@@ -40,7 +40,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	void UI()
 	{
-		vec2 screen = GetModule<Window>().Dimensions();
+		vec2 screen = GetWindow().Dimensions();
 		vec2 midpoint = screen / 2.f;
 		float scale = screen.y / 720;
 
@@ -53,7 +53,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 
-		ImGui::PushFont(GetModule<FontMap>().Get("Score"));
+		ImGui::PushFont(FontMap::Get("Score"));
 
 		ImGui::Begin("Asteroids HUD", 0,
 			ImGuiWindowFlags_NoResize
@@ -78,7 +78,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 			if (m_gameoverTimer < 3.f)
 			{
-				ImGui::PushFont(GetModule<FontMap>().Get("Game Over"));
+				ImGui::PushFont(FontMap::Get("Game Over"));
 				
 				const char* text = "GAME OVER";
 				ImVec2 size = ImGui::CalcTextSize(text);
@@ -94,7 +94,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 			else
 			{
-				ImGui::PushFont(GetModule<FontMap>().Get("Final Score"));
+				ImGui::PushFont(FontMap::Get("Final Score"));
 
 				const char* text = "ENTER YOUR NAME";
 				ImVec2 size = ImGui::CalcTextSize(text);
@@ -114,6 +114,12 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				ImGui::Spacing();
 
 				ImGui::SetCursorPosX(midpoint.x - size.x / 2.f);
+				
+				if (!ImGui::IsAnyItemActive())
+				{
+					ImGui::SetKeyboardFocusHere();
+				}
+
 				ImGui::InputText("##", name, sizeof(name), ImGuiInputTextFlags_CharsNoBlank | ImGuiInputTextFlags_CharsUppercase | ImGuiInputTextFlags_CallbackCharFilter, FilterAZ);
 
 				ImGui::Spacing();
@@ -127,7 +133,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				ImGui::Spacing();
 				ImGui::Spacing();
 
-				ImGui::PushFont(GetModule<FontMap>().Get("OK Button"));
+				ImGui::PushFont(FontMap::Get("OK Button"));
 				ImGui::SetCursorPosX(midpoint.x - size.x / 2.f);
 				
 				if (ImGui::Button("OK"))
@@ -160,14 +166,14 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	int GetScoreCount()
 	{
-		Entity player = FirstEntityWith<Player>();
+		Entity player = FirstEntity<Player>();
 		lastPlayerScore = player.IsAlive() ? player.Get<Player>().Score : lastPlayerScore;
 		return lastPlayerScore;
 	}
 
 	int GetPlayerLives()
 	{
-		Entity player = FirstEntityWith<Player>();
+		Entity player = FirstEntity<Player>();
 		lastPlayerLives = player.IsAlive() ? player.Get<Player>().Lives : lastPlayerLives;
 		return lastPlayerLives;
 	}

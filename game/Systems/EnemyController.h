@@ -5,6 +5,7 @@
 #include "Components/Throwable.h"
 #include "Components/Lightning.h"
 #include "Prefabs.h"
+#include "Events.h"
 
 struct System_EnemyController : System<System_EnemyController>
 {

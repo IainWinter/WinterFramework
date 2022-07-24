@@ -127,7 +127,7 @@ struct PhysicsWorld
 	Rigidbody2D& AddEntity(Entity& e);
 	void Remove(Entity& e);
 
-	void Step(float dt);
+	void Tick(float dt);
 
 	  RayQueryResult QueryRay  (vec2 point, vec2 direction, float distance) const;
 	  RayQueryResult QueryRay  (vec2 point, vec2 target) const;

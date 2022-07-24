@@ -12,7 +12,7 @@ struct System_KeepOnScreen : SystemBase
 
 	void Init()
 	{
-		vec2 camera = GetModule<Camera>().ScreenSize();
+		vec2 camera = First<Camera>().ScreenSize();
 
 		// needs to be adjusted for UI
 

@@ -7,17 +7,6 @@ std::unordered_map<std::string, r<Texture>> textures;
 
 // could put in globals file
 
-Entity CreateEntity()
-{
-	return LevelManager::CurrentLevel()->GetWorld()->Create();
-}
-
-template<typename _t>
-_t& GetModule()
-{
-	return LevelManager::CurrentLevel()->GetApp()->GetModule<_t>();
-}
-
 ParticleEmitter GetPrefab_BulletEmitter()
 {
 	r<ParticleEmitter>& emitter = emitters["bullet.emitter"];
@@ -33,17 +22,13 @@ ParticleEmitter GetPrefab_BulletEmitter()
 		};
 
 		emitter->AddSpawner(bullet, 1.f,
-			[](Particle particle)
+			[](Entity entity)
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.original);
-
-				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-				body.SetAngularVelocity(get_randc(3.f));
-				body.SetAngle(get_rand(w2PI));
-				body.SetVelocity(get_randn(1.f));
-				body.SetDamping(5.f);
+				entity.Add<Rigidbody2D>()
+					.SetAngularVelocity(get_randc(3.f))
+					.SetAngle(get_rand(w2PI))
+					.SetVelocity(get_randn(1.f))
+					.SetDamping(5.f);
 			}
 		);
 	}
@@ -68,19 +53,15 @@ ParticleEmitter GetPrefab_LaserEmitter()
 		};
 
 		emitter->AddSpawner(fireball, 1.f,
-			[](Particle particle)
+			[](Entity entity)
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.original);
-
 				entity.Add<ParticleShrinkWithAge>();
 
-				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-				body.SetAngularVelocity(get_randc(10.f));
-				body.SetAngle(get_rand(w2PI));
-				body.SetVelocity(get_randn(1.f));
-				body.SetDamping(5.f);
+				entity.Add<Rigidbody2D>()
+					.SetAngularVelocity(get_randc(10.f))
+					.SetAngle(get_rand(w2PI))
+					.SetVelocity(get_randn(1.f))
+					.SetDamping(5.f);
 			}
 		);
 	}
@@ -106,19 +87,15 @@ ParticleEmitter GetPrefab_FuelShotEmitter()
 		};
 
 		emitter->AddSpawner(fireball, 1.f,
-			[](Particle particle)
+			[](Entity entity)
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.original);
-
 				entity.Add<ParticleShrinkWithAge>();
 
-				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-				body.SetAngularVelocity(get_randc(10.f));
-				body.SetAngle(get_rand(w2PI));
-				body.SetVelocity(get_randn(5.f));
-				body.SetDamping(5.f);
+				entity.Add<Rigidbody2D>()
+					.SetAngularVelocity(get_randc(10.f))
+					.SetAngle(get_rand(w2PI))
+					.SetVelocity(get_randn(5.f))
+					.SetDamping(5.f);
 			});
 	}
 
@@ -144,19 +121,15 @@ ParticleEmitter GetPrefab_LightningEmitter()
 		};
 
 		emitter->AddSpawner(fireball, 1.f,
-			[](Particle particle)
+			[](Entity entity)
 			{
-				Entity entity = CreateEntity();
-				entity.Add<Particle>(particle);
-				entity.Add<Transform2D>(particle.original);
-
 				entity.Add<ParticleShrinkWithAge>();
 
-				Rigidbody2D&  body = GetModule<PhysicsWorld>().AddEntity(entity);
-				body.SetAngularVelocity(get_randc(10.f));
-				body.SetAngle(get_rand(w2PI));
-				body.SetVelocity(get_randn(5.f));
-				body.SetDamping(5.f);
+				entity.Add<Rigidbody2D>()
+					.SetAngularVelocity(get_randc(10.f))
+					.SetAngle(get_rand(w2PI))
+					.SetVelocity(get_randn(5.f))
+					.SetDamping(5.f);
 			});
 	}
 

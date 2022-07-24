@@ -12,7 +12,7 @@ private:
 public:
 	void Init()
 	{
-		sand = &GetModule<SandWorld>();
+		sand = &First<SandWorld>();
 	}
 
 	void Update()
@@ -132,7 +132,7 @@ private:
 			{
 				hitInfo.hasHit = 0; // remove from this frame
 
-				Entity hitEntity = Wrap(hitInfo.spriteEntityID);
+				Entity hitEntity = WrapEntity(hitInfo.spriteEntityID);
 
 				if (hitEntity.IsAlive() && hitEntity.Id() != owner)
 				{

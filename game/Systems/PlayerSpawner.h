@@ -16,7 +16,7 @@ private:
 public:
 	void Update()
 	{
-		Entity entity = FirstEntityWith<Player>();
+		Entity entity = FirstEntity<Player>();
 
 		if (entity.IsAlive())
 		{
@@ -39,7 +39,7 @@ private:
 
 	void SpawnPlayer()
 	{
-		Entity playerEntity = CreateSandSprite("player.png", "player_collider_mask.png");
+		Entity playerEntity = CreateSandSprite(GetWorld(), "player.png", "player_collider_mask.png");
 		//player.Add<KeepOnScreen>();
 		playerEntity.Add<ItemSink>();
 		playerEntity.Add<SandHealable>();

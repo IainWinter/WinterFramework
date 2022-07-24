@@ -14,6 +14,7 @@
 // systems
 
 #include "Sand/SandSystems.h"
+#include "Systems/InitGame.h"
 #include "Systems/AllowPauseMenu.h"
 #include "Systems/PlayerController.h"
 #include "Systems/PlayerSpawner.h"
@@ -125,53 +126,51 @@
 
 struct Regolith : EngineLoop
 {
-	void _Init()
+	void Init()
 	{
 		ConfigureWindow();
 		InitGameRenderVars();
 
-		ConfigureModules();
+		//ConfigureModules();
 		ConfigureLevel();
 		ConfigureInputMapping();
 		//ConfigureMainGameLevel();
 
-		m_app.Attach<event_SubmitHighscore>(this);
-		m_app.Attach<event_PlayGame>(this);
+		//app.Attach<event_SubmitHighscore>(this);
+		//app.Attach<event_PlayGame>(this);
 	}
 
-	void _InitUI()
+	void InitUI()
 	{
-		FontMap& fonts = m_app.GetModule<FontMap>();
-		fonts.Load("Roboto",          18,     "Roboto.ttf");
-		fonts.Load("Score",           56 * 2, "Roboto.ttf");
-		fonts.Load("OK Button",       32 * 2, "Roboto.ttf");
-		fonts.Load("Game Over",      128 * 2, "Roboto.ttf");
-		fonts.Load("Final Score",     64 * 2, "Roboto.ttf");
-		fonts.Load("Highscore Input", 64 * 2, "Roboto.ttf");
-
-		fonts.Load("Main Menu Title", 192 * 2, "Roboto.ttf");
-		fonts.Load("Main Menu Button", 64 * 2, "Roboto.ttf");
+		FontMap::Load("Roboto",          18,     "Roboto.ttf");
+		FontMap::Load("Score",           56 * 2, "Roboto.ttf");
+		FontMap::Load("OK Button",       32 * 2, "Roboto.ttf");
+		FontMap::Load("Game Over",      128 * 2, "Roboto.ttf");
+		FontMap::Load("Final Score",     64 * 2, "Roboto.ttf");
+		FontMap::Load("Highscore Input", 64 * 2, "Roboto.ttf");
+		FontMap::Load("Main Menu Title", 192 * 2, "Roboto.ttf");
+		FontMap::Load("Main Menu Button", 64 * 2, "Roboto.ttf");
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
 
 	void ConfigureInputMapping()
 	{
-		InputMap& inputs = m_app.GetModule<InputMap>();
-
-		inputs.Set(SDL_SCANCODE_UP,     InputName::UP);
-		inputs.Set(SDL_SCANCODE_DOWN,   InputName::DOWN);
-		inputs.Set(SDL_SCANCODE_RIGHT,  InputName::RIGHT);
-		inputs.Set(SDL_SCANCODE_LEFT,   InputName::LEFT);
-		inputs.Set(SDL_SCANCODE_SPACE,  InputName::ATTACK);
-		inputs.Set(SDL_SCANCODE_ESCAPE, InputName::ESCAPE);
+		Input::SetMap({
+			{ SDL_SCANCODE_UP,     InputName::UP},
+			{ SDL_SCANCODE_DOWN,   InputName::DOWN},
+			{ SDL_SCANCODE_RIGHT,  InputName::RIGHT},
+			{ SDL_SCANCODE_LEFT,   InputName::LEFT},
+			{ SDL_SCANCODE_SPACE,  InputName::ATTACK},
+			{ SDL_SCANCODE_ESCAPE, InputName::ESCAPE}
+		});
 	}
 
 	// Init
 
 	void ConfigureWindow()
 	{
-		Window& window = m_app.GetModule<Window>();
+		Window& window = app->GetWindow();
 
 		window.Resize(1280, 720);
 		window.SetTitle("Windowing Test");
@@ -182,77 +181,90 @@ struct Regolith : EngineLoop
 
 	void ConfigureLevel()
 	{
-		r<Level> level = LevelManager::CurrentLevel();
+		r<World> game = app->CreateWorld();
+
+		game->CreateSystem(InitGame_System());
 
 		// Basic functionality
-		level->CreateSystem(System_RenderScene());
-		level->CreateSystem(System_PhysicsInterpolation());
-		level->CreateSystem(System_ParticleUpdate());
-		level->CreateSystem(System_DestroyInTime());
-		level->CreateSystem(System_KeepOnScreen());
-		CreateSandSystems(level);
+		game->CreateSystem(System_RenderScene());
+		game->CreateSystem(System_PhysicsInterpolation());
+		game->CreateSystem(System_ParticleUpdate());
+		game->CreateSystem(System_DestroyInTime());
+		game->CreateSystem(System_KeepOnScreen());
+		
+		CreateSandSystems(game);
 
-		SwitchToMenu();
+		// Gameplay functionality
+		game->CreateSystem(System_PlayerSpawner());
+		game->CreateSystem(System_PlayerController());
+		game->CreateSystem(System_LowCorePixelDeath());
+		game->CreateSystem(System_Item());
+		game->CreateSystem(System_ItemPickup());
+		game->CreateSystem(System_FireWeapon());
+		game->CreateSystem(System_RockSpawner_Test());
+
+		// UI
+		game->CreateSystem(System_UI_AsteroidsHUD());
 	}
 
-	void SwitchToGame()
-	{
-		r<Level> level = LevelManager::CurrentLevel();
+	//void SwitchToGame()
+	//{
+	//	r<Level> level = LevelManager::CurrentLevel();
 
-		m_app.GetModule<Camera>().x = 0;
-		m_app.GetModule<Camera>().y = 0;
+	//	m_app.GetModule<Camera>().x = 0;
+	//	m_app.GetModule<Camera>().y = 0;
 
-		level->GetWorld()->Clear();
-		// doesnt clear the physics world
+	//	level->GetWorld()->Clear();
+	//	// doesnt clear the physics world
 
-		thegame = {
-			// Gameplay functionality
-			level->CreateSystem(System_PlayerSpawner()),
-			level->CreateSystem(System_PlayerController()),
-			level->CreateSystem(System_LowCorePixelDeath()),
-			level->CreateSystem(System_Item()),
-			level->CreateSystem(System_ItemPickup()),
-			level->CreateSystem(System_FireWeapon()),
-			level->CreateSystem(System_RockSpawner_Test()),
-			
-			// UI
-			level->CreateSystem(System_UI_AsteroidsHUD())
-		};
+	//	thegame = {
+	//		// Gameplay functionality
+	//		level->CreateSystem(System_PlayerSpawner()),
+	//		level->CreateSystem(System_PlayerController()),
+	//		level->CreateSystem(System_LowCorePixelDeath()),
+	//		level->CreateSystem(System_Item()),
+	//		level->CreateSystem(System_ItemPickup()),
+	//		level->CreateSystem(System_FireWeapon()),
+	//		level->CreateSystem(System_RockSpawner_Test()),
+	//		
+	//		// UI
+	//		level->CreateSystem(System_UI_AsteroidsHUD())
+	//	};
 
-		level->DestroySystems(themenu);
-		themenu = {};
-	}
+	//	level->DestroySystems(themenu);
+	//	themenu = {};
+	//}
 
-	void SwitchToMenu()
-	{
-		r<Level> level = LevelManager::CurrentLevel();
+	//void SwitchToMenu()
+	//{
+	//	r<Level> level = LevelManager::CurrentLevel();
 
-		themenu = {
-			level->CreateSystem(System_UI_AsteroidsMenu())
-		};
+	//	themenu = {
+	//		level->CreateSystem(System_UI_AsteroidsMenu())
+	//	};
 
-		level->DestroySystems(thegame);
-		thegame = {};
-	}
+	//	level->DestroySystems(thegame);
+	//	thegame = {};
+	//}
 
-	void ConfigureModules()
-	{
-		Window& window = m_app.GetModule<Window>();
+	//void ConfigureModules()
+	//{
+	//	Window& window = m_app.GetModule<Window>();
 
-		vec2 screenSize = vec2(window.Width(), window.Height());
-		vec2 cameraSize = vec2(16 * 2, 9 * 2);
+	//	vec2 screenSize = vec2(window.Width(), window.Height());
+	//	vec2 cameraSize = vec2(16 * 2, 9 * 2);
 
-		int cellsPerMeter = 18;
+	//	int cellsPerMeter = 18;
 
-		m_app.AddModule<SandWorld>(cellsPerMeter, vec2(cameraSize.x, cameraSize.y));
-		m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
+	//	m_app.AddModule<SandWorld>(cellsPerMeter, vec2(cameraSize.x, cameraSize.y));
+	//	m_app.AddModule<Camera>(0, 0, cameraSize.x, cameraSize.y);          // this is bad but works ok for now...
 
-		CoordTranslation coords;
-		coords.ScreenToWorld = cameraSize;
-		coords.CellsToMeters = 1.f / cellsPerMeter;
+	//	CoordTranslation coords;
+	//	coords.ScreenToWorld = cameraSize;
+	//	coords.CellsToMeters = 1.f / cellsPerMeter;
 
-		m_app.AddModule<CoordTranslation>(coords);
-	}
+	//	m_app.AddModule<CoordTranslation>(coords);
+	//}
 
 	float transitionTimer = 0;
 	float transitionTime = 2.f;
@@ -262,36 +274,38 @@ struct Regolith : EngineLoop
 		return x * x * x * x;
 	}
 
-	void on(event_SubmitHighscore& e)
-	{
-		m_app.GetTaskPool()->Coroutine([this]()
-		{
-			transitionTimer += Time::DeltaTime();
-			
-			float progress = transitionTimer / transitionTime;
-			bool done = progress > 1.f;
-			
-			if (done)
-			{
-				SwitchToMenu();
-			}
+	//void on(event_SubmitHighscore& e)
+	//{
+	//	transitionTimer = 0.f;
 
-			Camera& camera = m_app.GetModule<Camera>();
-			vec2 position = vec2(camera.x, camera.y);
+	//	m_app.GetTaskPool()->Coroutine([this]()
+	//	{
+	//		transitionTimer += Time::DeltaTime();
+	//		
+	//		float progress = transitionTimer / transitionTime;
+	//		bool done = progress > 1.f;
+	//		
+	//		if (done)
+	//		{
+	//			SwitchToMenu();
+	//		}
 
-			position = lerp(position, vec2(100, 30), easeQuint(progress));
+	//		Camera& camera = m_app.GetModule<Camera>();
+	//		vec2 position = vec2(camera.x, camera.y);
 
-			camera.x = position.x;
-			camera.y = position.y;
+	//		position = lerp(position, vec2(100, 30), easeQuint(progress));
 
-			return done;
-		});
-	}
+	//		camera.x = position.x;
+	//		camera.y = position.y;
 
-	void on(event_PlayGame& e)
-	{
-		SwitchToGame();
-	}
+	//		return done;
+	//	});
+	//}
+
+	//void on(event_PlayGame& e)
+	//{
+	//	SwitchToGame();
+	//}
 };
 
 void setup()
