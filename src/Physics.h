@@ -31,7 +31,7 @@ private:
 	friend struct PhysicsWorld;
 
 public:
-	Rigidbody2D(Transform2D transform = {});
+	Rigidbody2D();
 	
 	void SetTransform(Transform2D& transform);
 
@@ -124,7 +124,7 @@ struct PhysicsWorld
 	PhysicsWorld();
 	~PhysicsWorld();
 
-	Rigidbody2D& AddEntity(Entity& e);
+	void Add(EntityWith<Transform2D, Rigidbody2D> e);
 	void Remove(Entity& e);
 
 	void Tick(float dt);

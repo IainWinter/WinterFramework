@@ -13,7 +13,7 @@ struct InitGame_System : SystemBase
 		int cellsPerMeter = 18;
 
 		CreateEntity().Add<SandWorld>(cellsPerMeter, cameraSize);
-		CreateEntity().Add<Camera>(0, 0, 32, 18);
+		CreateEntity().Add<Camera>(0, 0, cameraSize.x, cameraSize.y);
 
 		CoordTranslation& coords = CreateEntity().Add<CoordTranslation>();
 		coords.ScreenToWorld = cameraSize;

@@ -26,6 +26,7 @@
 #include "Systems/RenderScene.h"
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
+#include "ext/systems/TransformInterpolation.h"
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
 
@@ -186,7 +187,9 @@ struct Regolith : EngineLoop
 		game->CreateSystem(InitGame_System());
 
 		// Basic functionality
+
 		game->CreateSystem(System_RenderScene());
+		game->CreateSystem(System_TransformInterpolation());
 		game->CreateSystem(System_PhysicsInterpolation());
 		game->CreateSystem(System_ParticleUpdate());
 		game->CreateSystem(System_DestroyInTime());

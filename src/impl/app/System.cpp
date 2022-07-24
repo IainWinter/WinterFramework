@@ -186,6 +186,9 @@ World::World(
 	, m_queue (&m_bus)
 {
 	root->attach_child(&m_bus);
+
+	m_entities.OnAdd   <Rigidbody2D, &World::on_add_rigidbody, World>(this);
+	m_entities.OnRemove<Rigidbody2D, &World::on_remove_rigidbody, World>(this);
 }
 
 void World::DetachFromRoot(event_manager* root)
@@ -229,8 +232,21 @@ void World::DestroySystem(r<SystemBase> system)
 	system->_Dnit();
 }
 
+void World::on_add_rigidbody(entt::registry& reg, entt::entity e)
+{
+	Entity entity = m_entities.Wrap((u32)e);
+	m_physics.Add(entity);
+}
+
+void World::on_remove_rigidbody(entt::registry& reg, entt::entity e)
+{
+	Entity entity = m_entities.Wrap((u32)e);
+	m_physics.Remove(entity);
+}
+
 Application::Application()
-	: m_queue(&m_bus)
+	: m_queue  (&m_bus)
+	, m_window (WindowConfig{}, &m_queue)
 {}
 
 r<World> Application::CreateWorld()

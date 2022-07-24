@@ -58,16 +58,12 @@ struct ContactCallback : b2ContactListener
 	}
 };
 
-Rigidbody2D::Rigidbody2D(
-	Transform2D transform
-)
+Rigidbody2D::Rigidbody2D()
 	: m_instance         (nullptr)
 	, m_density          (1.f)
 	, m_collisionEnabled (true)
-	, LastTransform      (transform) 
 {
 	m_body.type = b2_dynamicBody;
-	SetTransform(transform);
 }
 	
 void Rigidbody2D::SetTransform(Transform2D& transform)
@@ -211,17 +207,10 @@ PhysicsWorld::~PhysicsWorld()
 	delete m_world;
 }
 
-Rigidbody2D& PhysicsWorld::AddEntity(Entity& e)
+void PhysicsWorld::Add(EntityWith<Transform2D, Rigidbody2D> e)
 {
-	if (!e.Has<Rigidbody2D>())
-	{
-		e.Add<Rigidbody2D>(e.Get<Transform2D>());
-	}
-
-	e.OnDestroy([this](Entity entity) 
-	{ 
-		Remove(entity); 
-	});
+	e.Get<Rigidbody2D>()
+		.SetTransform(e.Get<Transform2D>());
 
 	Rigidbody2D& body = e.Get<Rigidbody2D>();
 	body.m_instance = m_world->CreateBody(&body.m_body);
@@ -229,8 +218,6 @@ Rigidbody2D& PhysicsWorld::AddEntity(Entity& e)
 	b2BodyUserData& data = body.m_instance->GetUserData();
 	data.entityId     = e.Id();
 	data.entityOwning = e.Owning();
-
-	return body;
 }
 	
 void PhysicsWorld::Remove(Entity& e)

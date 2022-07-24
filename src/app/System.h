@@ -175,6 +175,12 @@ public:
 	void  AttachSystem(r<SystemBase> system);
 	void  DetachSystem(r<SystemBase> system);
 	void DestroySystem(r<SystemBase> system);
+
+private:
+	// needs to use entt because they dont support lambdas 
+
+	void on_add_rigidbody(entt::registry& reg, entt::entity e);
+	void on_remove_rigidbody(entt::registry& reg, entt::entity e);
 };
 
 struct Application final : std::enable_shared_from_this<Application>

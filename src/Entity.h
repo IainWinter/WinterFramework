@@ -135,6 +135,18 @@ public:
 	void ExecuteDeferdDeletions();
 	void Clear();
 
+	template<typename _c, auto _f, typename _t>
+	void OnAdd(_t* instance)
+	{
+		m_registry.on_construct<_c>().connect<_f>(instance);
+	}
+
+	template<typename _c, auto _f, typename _t>
+	void OnRemove(_t* instance)
+	{
+		m_registry.on_destroy<_c>().connect<_f>(instance);
+	}
+
 private:
 
 // hidden entity functions, called from Entity

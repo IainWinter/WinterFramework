@@ -180,6 +180,6 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 
 	bool IsGameOver() const
 	{
-		return lastPlayerLives == 0 || true;
+		return lastPlayerLives == 0;
 	}
 };
