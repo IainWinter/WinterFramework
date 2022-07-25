@@ -10,7 +10,7 @@ Window::Window()
 
 Window::Window(
 	const WindowConfig& config,
-	event_queue* events
+	EventQueue* events
 )
 	: m_events (events)
 	, m_config (config)
@@ -96,7 +96,7 @@ void Window::PumpEvents()
 		{
 			case SDL_QUIT: 
 			{
-				m_events->send(event_Shutdown {});
+				m_events->Send(event_Shutdown {});
 				break;
 			}
 			case SDL_MOUSEBUTTONUP: // can these be combined?
@@ -104,7 +104,7 @@ void Window::PumpEvents()
 			{
 				bool pressed = event.button.state == SDL_PRESSED;
 
-				m_events->send(event_Mouse {
+				m_events->Send(event_Mouse {
 					event.button.x,                                                           // position as (0, width/height)
 					event.button.y,
 					(                    event.button.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
@@ -122,7 +122,7 @@ void Window::PumpEvents()
 			}
 			case SDL_MOUSEMOTION:
 			{
-				m_events->send(event_Mouse { 
+				m_events->Send(event_Mouse { 
 					event.motion.x,                                                          // position as (0, width/height)
 					event.motion.y,
 					(                   event.motion.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
@@ -148,7 +148,7 @@ void Window::PumpEvents()
 						m_config.Width  = event.window.data1;
 						m_config.Height = event.window.data2;
 
-						m_events->send(event_WindowResize { m_config.Width, m_config.Height });
+						m_events->Send(event_WindowResize { m_config.Width, m_config.Height });
 						break;
 					}
 				}
@@ -157,7 +157,7 @@ void Window::PumpEvents()
 			case SDL_KEYDOWN:
 			case SDL_KEYUP:
 			{
-				m_events->send(event_Key {
+				m_events->Send(event_Key {
 					event.key.keysym.scancode,
 					(char)event.key.keysym.sym,
 					(bool)event.key.state,

@@ -39,6 +39,13 @@ public:
 
 	~thread_pool()
 	{
+		shutdown();
+	}
+
+	// joins all threads
+	// allows work to complete
+	void shutdown()
+	{
 		for (int i = 0; i < m_threads.size(); i++)
 		{
 			m_work.push_back(work_item{ true, {} }); // option: push_front would stop all queued work

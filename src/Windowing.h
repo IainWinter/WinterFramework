@@ -78,9 +78,9 @@ struct WindowConfig
 struct Window
 {
 private:
-	SDL_Window* m_window;
+	SDL_Window*   m_window;
 	SDL_GLContext m_opengl;
-	event_queue* m_events;
+	EventQueue*   m_events;
 
 	WindowConfig m_config;
 
@@ -89,7 +89,7 @@ private:
 
 public:
 	Window();
-	Window(const WindowConfig& config, event_queue* events = nullptr);
+	Window(const WindowConfig& config, EventQueue* events = nullptr);
 	~Window();
 
 	int                Width()      const;

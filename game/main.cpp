@@ -28,7 +28,6 @@
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
 #include "Systems/Background.h"
-#include "ext/systems/TransformInterpolation.h"
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
 
@@ -46,7 +45,6 @@
 //#include "UI/PlayerHUD.h"
 
 
-#include "ext/systems/PhysicsInterpolation.h"
 #include "ext/systems/ParticleUpdate.h"
 #include "ext/systems/DestroyInTime.h"
 #include "ext/systems/MetricsSystem.h"
@@ -137,8 +135,8 @@ struct Regolith : EngineLoop
 		ConfigureLevel();
 		ConfigureInputMapping();
 
-		app.Attach<event_SubmitHighscore>(this);
-		app.Attach<event_PlayGame>(this);
+		app.GetRootEventBus().Attach<event_SubmitHighscore>(this);
+		app.GetRootEventBus().Attach<event_PlayGame>(this);
 	}
 
 	void InitUI()
@@ -205,8 +203,6 @@ struct Regolith : EngineLoop
 		game->CreateSystem(System_Render_Meshes());
 		game->CreateSystem(System_Render_Sprites());
 		game->CreateSystem(System_Render_SandCollisionInfo());
-		game->CreateSystem(System_TransformInterpolation());
-		game->CreateSystem(System_PhysicsInterpolation());
 		game->CreateSystem(System_ParticleUpdate());
 		game->CreateSystem(System_DestroyInTime());
 		game->CreateSystem(System_KeepOnScreen());
@@ -230,7 +226,6 @@ struct Regolith : EngineLoop
 	{
 		World* bg = app.CreateWorld();
 		bg->CreateSystem(System_Render_Sprites());
-		bg->CreateSystem(System_PhysicsInterpolation());
 		bg->CreateSystem(Background_System());
 	}
 

@@ -30,7 +30,7 @@ void event_sink::send(void* event)
 	}
 }
 
-void event_manager::detach(void* handler)
+void EventBus::Detach(void* handler)
 {
 	for (auto itr = m_sinks.begin(); itr != m_sinks.end();)
 	{
@@ -47,7 +47,7 @@ void event_manager::detach(void* handler)
 	}
 }
 
-void event_manager::detach(event_type type, void* handler)
+void EventBus::Detach(event_type type, void* handler)
 {
 	event_sink& sink = m_sinks.at(type.m_hash);
 	sink.remove_pipe(handler);
@@ -58,7 +58,7 @@ void event_manager::detach(event_type type, void* handler)
 	}
 }
 
-void event_manager::send(event_type type, void* event)
+void EventBus::Send(event_type type, void* event)
 {
 	auto itr = m_sinks.find(type.m_hash); // might cause a problem on large throughput of events
 	if (itr != m_sinks.end())
@@ -66,15 +66,15 @@ void event_manager::send(event_type type, void* event)
 		itr->second.send(event);
 	}
 
-	for (event_manager* child : m_children)
+	for (EventBus* child : m_children)
 	{
-		child->send(type, event);
+		child->Send(type, event);
 	}
 }
 
-void event_manager::attach_child(event_manager* child)
+void EventBus::ChildAttach(EventBus* child)
 {
-	for (event_manager* c : m_children)
+	for (EventBus* c : m_children)
 	{
 		if (child == c)
 		{
@@ -86,7 +86,7 @@ void event_manager::attach_child(event_manager* child)
 	m_children.push_back(child);
 }
 
-void event_manager::detach_child(event_manager* child)
+void EventBus::ChildDetach(EventBus* child)
 {
 	for (auto itr = m_children.begin(); itr != m_children.end(); ++itr)
 	{
@@ -100,14 +100,14 @@ void event_manager::detach_child(event_manager* child)
 	assert(false && "Child not in manager");
 }
 
-event_queue::event_queue(
-	event_manager* manager
+EventQueue::EventQueue(
+	EventBus* manager
 )
 	: m_manager       (manager)
 	, m_where_current (nullptr)
 {}
 
-void event_queue::execute()
+void EventQueue::Execute()
 {
 	while (m_queue.size() > 0)
 	{

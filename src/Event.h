@@ -97,50 +97,50 @@ struct event_sink
 	void send(void* event);
 };
 
-struct event_manager
+struct EventBus
 {
 	std::unordered_map<hash_t, event_sink> m_sinks;
-	std::vector<event_manager*> m_children; // doesnt own
+	std::vector<EventBus*> m_children; // doesnt own
 
 	template<typename _e, typename _h>
-	event_pipe_wrapper<_e> attach(_h* handler_ptr)
+	event_pipe_wrapper<_e> Attach(_h* handler_ptr)
 	{
 		event_sink& sink = m_sinks[make_event<_e>().m_hash];
 		event_pipe& pipe = sink.add_pipe<_e, _h>(handler_ptr);
 		return event_pipe_wrapper<_e>(pipe);
 	}
 
-	void detach(void* handler);
-	void detach(event_type type, void* handler);
+	void Detach(void* handler);
+	void Detach(event_type type, void* handler);
 
-	void send(event_type type, void* event);
+	void Send(event_type type, void* event);
 
 	// adding / remove child event_managers
 
-	void attach_child(event_manager* child);
-	void detach_child(event_manager* child);
+	void ChildAttach(EventBus* child);
+	void ChildDetach(EventBus* child);
 
 	// template headers
 
 	template<typename _e>
-	void detach(void* handler_ptr)
+	void Detach(void* handler_ptr)
 	{
 		detach(make_event<_e>(), handler_ptr);
 	}
 
 	template<typename _e>
-	void send(_e&& event)
+	void Send(_e&& event)
 	{
-		send(make_event<_e>(), (void*)&event);
+		Send(make_event<_e>(), (void*)&event);
 	}
 };
 
-struct event_queue
+struct EventQueue
 {
 	struct queued_event_base
 	{
 		virtual ~queued_event_base() = default;
-		virtual void send(event_manager* manager) = 0;
+		virtual void send(EventBus* manager) = 0;
 	};
 
 	template<typename _e>
@@ -156,24 +156,24 @@ struct event_queue
 			, m_event (event)
 		{}
 
-		void send(event_manager* manager)
+		void send(EventBus* manager)
 		{
-			manager->send(m_type, &m_event);
+			manager->Send(m_type, &m_event);
 		}
 	};
 
-	event_manager* m_manager;
+	EventBus* m_manager;
 	tsque<queued_event_base*> m_queue;
 	const char* m_where_current;
 
-	event_queue(
-		event_manager* manager
+	EventQueue(
+		EventBus* manager
 	);
 
-	void execute();
+	void Execute();
 
 	template<typename _e>
-	void send(const _e& event)
+	void Send(const _e& event)
 	{
 		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, event); // should use pool...
 		m_queue.push_back(qe);

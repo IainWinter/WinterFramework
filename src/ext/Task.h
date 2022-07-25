@@ -52,6 +52,11 @@ public:
 			}
 		}
 	}
+
+	void ShutdownAndWait()
+	{
+		m_pool.shutdown();
+	}
 };
 
 struct TaskSyncPoint

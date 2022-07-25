@@ -58,13 +58,13 @@ namespace Studio
 	class VCA;
 }}
 
-struct AudioWorld
+struct Audio
 {
 	std::unordered_map<std::string, int> m_loaded; // name, handle - hashed paths of loaded objects
 
-	int Initialize();
-	int Destroy();
-	
+	Audio();
+	~Audio();
+
 	int Tick();
 
 	int Load(const std::string& path);
@@ -100,7 +100,7 @@ private:
 	std::unordered_map<int, FMOD::Studio::EventDescription*> m_events;
 	std::unordered_map<int, FMOD::Studio::EventInstance*>    m_instances;
 
-	using InstanceUserData = std::pair<int, AudioWorld*>;
+	using InstanceUserData = std::pair<int, Audio*>;
 
 	int PutLoaded(const std::string& path, FMOD::Studio::Bank* bank);
 	int PutLoaded(const std::string& path, FMOD::Studio::EventDescription* event);
@@ -148,4 +148,59 @@ private:
 
 		return ENGINE_OK;
 	}
+};
+
+struct AudioBankLoader
+{
+	enum WhenToLoad
+	{
+		ON_INIT,
+		ON_ACTIVE
+	};
+
+	enum WhenToFree
+	{
+		ON_DNIT,
+		ON_DEACTIVE
+	};
+
+	WhenToLoad load;
+	WhenToFree free;
+	std::vector<std::string> banks;
+
+	AudioBankLoader& SetWhenToLoad(WhenToLoad load);
+	AudioBankLoader& SetWhenToFree(WhenToFree free);
+	AudioBankLoader& AddBank      (const std::string& bank);
+};
+
+// Components to talk to Audio through ECS
+// and update mixing
+
+struct AudioEmitter
+{
+private:
+	Audio* m_audio;
+	int instance = 0; // gets populated when playing
+
+public:
+	std::string event;
+
+public:
+	void _SetAudio(Audio* audio);
+
+	bool IsPlaying()   const;
+	int  GetInstance() const;
+
+	int PlayAndForget();
+
+	void Play();
+	void Start();
+	void Stop();
+	void Free();
+
+	AudioEmitter&  Set(const std::string& param, float value);
+	float          Get(const std::string& param);
+
+	AudioEmitter& SetVolume(float volume);
+	float         GetVolume();
 };

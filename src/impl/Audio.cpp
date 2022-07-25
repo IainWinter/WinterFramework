@@ -7,6 +7,7 @@
 
 #define CHECK_HANDLE(h) if (!IsLoaded(h)) { return audio_log_error(ENGINE_FAILED_HANDLE_NOT_LOADED); }
 #define CHECK(stmt, n) if (audio_error_check(stmt)) { return audio_log_error(n); }
+#define CHECK_NO_RETURN(stmt, n) if (audio_error_check(stmt)) { audio_log_error(n); }
 
 #define H_BANK 1
 #define H_EVENT 2
@@ -157,11 +158,11 @@ int audio_set_type(int high, int low) { return low + (high << sizeof(int) * 8 / 
 int audio_get_type(int handle) { return handle >> (sizeof(int) * 8 / 2); }
 int audio_make_handle(int type, int index) { return audio_set_type(type, index); }
 
-int AudioWorld::Initialize()
+Audio::Audio()
 {
 	audio_log("Initializing audio space using FMOD");
 
-	CHECK(
+	CHECK_NO_RETURN(
 		System::create(&m_system),
 		ENGINE_FAILED_CREATE
 	);
@@ -173,21 +174,18 @@ int AudioWorld::Initialize()
 	m_system->getCoreSystem(&core);
 	core->setAdvancedSettings(&settings);
 
-	CHECK(
+	CHECK_NO_RETURN(
 		m_system->initialize(16, FMOD_STUDIO_INIT_NORMAL, FMOD_INIT_NORMAL, nullptr),
 		ENGINE_FAILED_INIT
 	);
-
-	return ENGINE_OK;
 }
 
-int AudioWorld::Destroy()
+Audio::~Audio()
 {
-	CHECK(m_system->release(), ENGINE_FAILED_DNIT);
-	return ENGINE_OK;
+	CHECK_NO_RETURN(m_system->release(), ENGINE_FAILED_DNIT);
 }
 
-int AudioWorld::Tick()
+int Audio::Tick()
 {
 	CHECK(m_system->update(), ENGINE_FAILED_UPDATE);
 	return ENGINE_OK;
@@ -195,7 +193,7 @@ int AudioWorld::Tick()
 
 // only loads bank?
 
-int AudioWorld::Load(const std::string& path)
+int Audio::Load(const std::string& path)
 {
 	if (IsLoaded(path))
 	{
@@ -250,7 +248,7 @@ int AudioWorld::Load(const std::string& path)
 	return handle;
 }
 
-int AudioWorld::Play(const std::string& path)
+int Audio::Play(const std::string& path)
 {
 	if (path.find("event:/") == 0)
 	{
@@ -311,7 +309,7 @@ int AudioWorld::Play(const std::string& path)
 	return ENGINE_OK;
 }
 
-int AudioWorld::Set(int handle, const std::string& parameter, float value)
+int Audio::Set(int handle, const std::string& parameter, float value)
 {
 	CHECK_HANDLE(handle);
 
@@ -328,7 +326,7 @@ int AudioWorld::Set(int handle, const std::string& parameter, float value)
 	return ENGINE_OK;
 }
 
-int AudioWorld::Get(int handle, const std::string& parameter, float& value)
+int Audio::Get(int handle, const std::string& parameter, float& value)
 {
 	CHECK_HANDLE(handle);
 
@@ -343,7 +341,7 @@ int AudioWorld::Get(int handle, const std::string& parameter, float& value)
 	return ENGINE_OK;
 }
 
-int AudioWorld::Start(int handle)
+int Audio::Start(int handle)
 {
 	CHECK_HANDLE(handle);
 
@@ -356,7 +354,7 @@ int AudioWorld::Start(int handle)
 	return ENGINE_OK;
 }
 
-int AudioWorld::Stop(int handle)
+int Audio::Stop(int handle)
 {
 	CHECK_HANDLE(handle);
 
@@ -369,7 +367,7 @@ int AudioWorld::Stop(int handle)
 	return ENGINE_OK;
 }
 
-int AudioWorld::Free(int handle)
+int Audio::Free(int handle)
 {
 	CHECK_HANDLE(handle);
 
@@ -382,7 +380,7 @@ int AudioWorld::Free(int handle)
 	return ENGINE_OK;
 }
 
-int AudioWorld::SetVolume(int handle, float volume)
+int Audio::SetVolume(int handle, float volume)
 {
 	CHECK_HANDLE(handle);
 
@@ -402,7 +400,7 @@ int AudioWorld::SetVolume(int handle, float volume)
 	return ENGINE_OK;
 }
 
-int AudioWorld::GetVolume(int handle, float& volume)
+int Audio::GetVolume(int handle, float& volume)
 {
 	CHECK_HANDLE(handle);
 
@@ -422,7 +420,7 @@ int AudioWorld::GetVolume(int handle, float& volume)
 	return ENGINE_OK;
 }
 
-bool AudioWorld::IsLoaded(int handle) const
+bool Audio::IsLoaded(int handle) const
 {
 	switch (audio_get_type(handle))
 	{
@@ -440,12 +438,12 @@ bool AudioWorld::IsLoaded(int handle) const
 	return 0;
 }
 
-bool AudioWorld::IsLoaded(const std::string& path) const
+bool Audio::IsLoaded(const std::string& path) const
 {
 	return m_loaded.find(path) != m_loaded.end();
 }
 
-int AudioWorld::GetHandle(const std::string& path) const
+int Audio::GetHandle(const std::string& path) const
 {
 	auto itr = m_loaded.find(path);
 	if (itr == m_loaded.end())
@@ -456,18 +454,18 @@ int AudioWorld::GetHandle(const std::string& path) const
 	return itr->second;
 }
 
-int AudioWorld::MakeHandle(int type) const
+int Audio::MakeHandle(int type) const
 {
 	return audio_set_type(type, (int)m_loaded.size() + 1);
 }
 
-void AudioWorld::PutLoaded(const std::string& path, int handle)
+void Audio::PutLoaded(const std::string& path, int handle)
 {
 	m_loaded.emplace(path, handle);
 	audio_log("Loaded '%s' (handle: %d)", path.c_str(), handle);
 }
 
-int AudioWorld::PutLoaded(const std::string& path, Bank* bank)
+int Audio::PutLoaded(const std::string& path, Bank* bank)
 {
 	int handle = MakeHandle(H_BANK);
 	PutLoaded(path, handle);
@@ -475,7 +473,7 @@ int AudioWorld::PutLoaded(const std::string& path, Bank* bank)
 	return handle;
 }
 
-int AudioWorld::PutLoaded(const std::string& path, EventDescription* event)
+int Audio::PutLoaded(const std::string& path, EventDescription* event)
 {
 	int handle = MakeHandle(H_EVENT);
 	PutLoaded(path, handle);
@@ -483,7 +481,7 @@ int AudioWorld::PutLoaded(const std::string& path, EventDescription* event)
 	return handle;
 }
 
-int AudioWorld::PutLoaded(const std::string& path, EventInstance* instance)
+int Audio::PutLoaded(const std::string& path, EventInstance* instance)
 {
 	int handle = MakeHandle(H_INSTANCE);
 	PutLoaded(path, handle);
@@ -491,7 +489,7 @@ int AudioWorld::PutLoaded(const std::string& path, EventInstance* instance)
 	return handle;
 }
 
-int AudioWorld::PutLoaded(const std::string& path, Bus* bus)
+int Audio::PutLoaded(const std::string& path, Bus* bus)
 {
 	int handle = MakeHandle(H_BUS);
 	PutLoaded(path, handle);
@@ -499,10 +497,79 @@ int AudioWorld::PutLoaded(const std::string& path, Bus* bus)
 	return handle;
 }
 
-int AudioWorld::PutLoaded(const std::string& path, VCA* vca)
+int Audio::PutLoaded(const std::string& path, VCA* vca)
 {
 	int handle = MakeHandle(H_VCA);
 	PutLoaded(path, handle);
 	m_vcas[handle] = vca;
 	return handle;
+}
+
+
+AudioBankLoader& AudioBankLoader::SetWhenToLoad(WhenToLoad load)
+{
+	this->load = load;
+	return *this;
+}
+
+AudioBankLoader& AudioBankLoader::SetWhenToFree(WhenToFree free)
+{
+	this->free = free;
+	return *this;
+}
+
+AudioBankLoader& AudioBankLoader::AddBank(const std::string& bank)
+{
+	this->banks.push_back(bank);
+	return *this;
+}
+
+void AudioEmitter::_SetAudio(Audio* audio)
+{
+	m_audio = audio; 
+}
+
+bool AudioEmitter::IsPlaying() const
+{
+	return instance != 0;
+}
+
+int AudioEmitter::GetInstance() const
+{
+	return instance;
+}
+
+int AudioEmitter::PlayAndForget()
+{
+	return m_audio->Play(event);
+}
+
+void AudioEmitter::Play()  { instance = PlayAndForget(); }
+void AudioEmitter::Start() { m_audio->Start(instance); }
+void AudioEmitter::Stop()  { m_audio->Stop(instance); }
+void AudioEmitter::Free()  { m_audio->Free(instance); }
+
+AudioEmitter& AudioEmitter::Set(const std::string& param, float value)
+{
+	m_audio->Set(instance, param, value);
+	return *this;
+}
+
+float AudioEmitter::Get(const std::string& param)
+{
+	float x = 0.f;
+	m_audio->Get(instance, param, x);
+	return x;
+}
+
+AudioEmitter& AudioEmitter::SetVolume(float volume)
+{
+	m_audio->SetVolume(instance, volume);
+	return *this;
+}
+
+float AudioEmitter::GetVolume() {
+	float x = 0.f;
+	m_audio->GetVolume(instance, x);
+	return x;
 }

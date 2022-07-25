@@ -45,7 +45,7 @@ public:
 		if (e.repeat == 0)
 		{
 			InputName input = Input::Map(e.keycode);
-			app.Send(event_Input{ input, e.state ? 1.f : -1.f });
+			app.GetRootEventQueue().Send(event_Input{input, e.state ? 1.f : -1.f});
 		}
 	}
 
@@ -57,8 +57,8 @@ public:
 	void _Init()
 	{
 		// attach system events
-		app.Attach<event_Shutdown>(this);
-		app.Attach<event_Key>(this);
+		app.GetRootEventBus().Attach<event_Shutdown>(this);
+		app.GetRootEventBus().Attach<event_Key>(this);
 
 		// open window and create graphics context, allows sending data to device
 		app.GetWindow().Init();
@@ -80,7 +80,7 @@ public:
 
 	void _Dnit()
 	{
-		app.Detach(this);
+		app.GetRootEventBus().Detach(this);
 		Dnit();
 	}
 

@@ -12,7 +12,7 @@ Entity CreateSandSprite(World* world, const std::string& path, const std::string
 	entity.Add<SandSprite>(mask);
 	entity.Add<Sprite>(sprite);
 
-	world->GetEventQueue().send(event_SandAddSprite { entity });
+	world->GetEventQueue().Send(event_SandAddSprite { entity });
 
 	return entity;
 }
@@ -26,7 +26,7 @@ Entity CreateTexturedCircle(World* world, const std::string& path)
 	entity.Add<SandSprite>(sprite).isCircle = true;
 	entity.Add<Sprite>(sprite);
 
-	world->GetEventQueue().send(event_SandAddSprite{ entity });
+	world->GetEventQueue().Send(event_SandAddSprite{ entity });
 
 	return entity;
 }

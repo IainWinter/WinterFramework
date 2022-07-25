@@ -14,17 +14,17 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void Init()
 	{
-		music_handle = Chirp("event:/music_menu_main");
+		//music_handle = Chirp("event:/music_menu_main");
 	}
 
 	void PressedPlay()
 	{
-		AudioWorld& audio = GetWorld()->GetAudioWorld();
+		//Audio& audio = GetWorld()->GetAudio();
 
-		audio.Stop(music_handle);
-		audio.Play("event:/menu_press_play");
-		
-		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
+		//audio.Stop(music_handle);
+		//audio.Play("event:/menu_press_play");
+		//
+		//Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
 	}
 
 	void UI()

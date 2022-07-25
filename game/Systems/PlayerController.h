@@ -70,8 +70,6 @@ struct System_PlayerController : System<System_PlayerController>
 			player.m_attackTimer = player.Current.AttackTime;
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
 
-			Chirp("event:/weapons/fire_cannon");
-
 			if (player.Current.Weapon != WEAPON_CANNON)
 			{
 				player.Current.Ammo -= 1;

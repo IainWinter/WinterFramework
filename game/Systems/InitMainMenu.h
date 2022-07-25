@@ -7,9 +7,10 @@ struct InitMainMenu_System : SystemBase
 {
 	void Init()
 	{
-		AudioWorld& audio = GetWorld()->GetAudioWorld();
-
-		audio.Load("Sounds/Master.strings.bank");
-		audio.Load("Sounds/Master.bank");
+		CreateEntity().Add<AudioBankLoader>()
+			.AddBank("Sounds/Master.strings.bank")
+			.AddBank("Sounds/Master.bank")
+			.SetWhenToLoad(AudioBankLoader::ON_INIT)
+			.SetWhenToFree(AudioBankLoader::ON_DNIT);
 	}
 };
