@@ -102,6 +102,11 @@ void SystemBase::Delay(float delayInSeconds, const std::function<void()>& task)
 	return m_world->GetTaskPool().Coroutine(routine);
 }
 
+int SystemBase::Chirp(const std::string& audioEvent)
+{
+	return m_world->GetAudioWorld().Play(audioEvent);
+}
+
 WindowRef SystemBase::GetWindow()
 {
 	return m_world->GetWindow();
@@ -124,6 +129,7 @@ void World::Tick()
 	}
 
 	TickSystems();
+	TickAudio();
 
 	TickTasks();
 	TickEvents();
@@ -134,6 +140,11 @@ void World::TickUI()
 {
 	TickSystemsUI();
 	TickSystemsDebug();
+}
+
+AudioWorld& World::GetAudioWorld()
+{
+	return m_audio;
 }
 
 void World::TickFixed()
@@ -185,6 +196,11 @@ void World::TickEntities()
 	m_entities.ExecuteDeferdDeletions();
 }
 
+void World::TickAudio()
+{
+	m_audio.Tick();
+}
+
 World::World(
 	Application* app,
 	event_manager* root)
@@ -197,6 +213,8 @@ World::World(
 	m_entities.OnRemove<Rigidbody2D, &World::on_remove_rigidbody, World>(this);
 
 	_log("Created world");
+
+	m_audio.Initialize();
 }
 
 World::~World()
@@ -207,6 +225,8 @@ World::~World()
 		system->_Dnit();
 		delete system;
 	}
+
+	m_audio.Destroy();
 
 	_log("Destroied world");
 }

@@ -10,8 +10,21 @@
 
 struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 {
+	int music_handle = 0;
+
 	void Init()
 	{
+		music_handle = Chirp("event:/music_menu_main");
+	}
+
+	void PressedPlay()
+	{
+		AudioWorld& audio = GetWorld()->GetAudioWorld();
+
+		audio.Stop(music_handle);
+		audio.Play("event:/menu_press_play");
+		
+		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
 	}
 
 	void UI()
@@ -47,10 +60,12 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::PushFont(FontMap::Get("Main Menu Button"));
 		ImVec2 playSize = ImGui::CalcTextSize("Play");
 		ImGui::SetCursorPosX(midpoint.x - playSize.x / 2);
+		
 		if (ImGui::Button("Play"))
 		{
-			SendToRoot(event_PlayGame{});
+			PressedPlay();
 		}
+		
 		ImGui::PopFont();
 
 		//ImVec2 highscoreSize = ImGui::CalcTextSize("Highscores");

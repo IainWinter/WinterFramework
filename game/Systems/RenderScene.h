@@ -12,6 +12,30 @@
 
 #include "GameRender.h"
 
+struct System_Render_Meshes : SystemBase
+{
+private:
+	r<ShaderProgram> program;
+
+public:
+	void Init()
+	{
+		program = GetProgram_Wireframe();
+	}
+
+	void Update()
+	{
+		program->Use();
+		program->Set("projection", First<Camera>().Projection());
+
+		for (auto [transform, mesh] : Query<Transform2D, Mesh>())
+		{
+			program->Set("model", transform.World());
+			mesh.Draw(mesh.topology);
+		}
+	}
+};
+
 struct System_Render_Sprites : SystemBase
 {
 private:
@@ -21,7 +45,6 @@ public:
 	void Update()
 	{
 		Target::UseDefault();
-		Target::Clear(Color(22, 22, 22));
 
 		glViewport(0, 0, GetWindow().Width(), GetWindow().Height());
 

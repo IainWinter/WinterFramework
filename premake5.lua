@@ -19,8 +19,8 @@ project "Framework"
 		"src/**.h",
 		"src/impl/**.cpp",
 
-		"src/ext/cpp/Time.cpp",
-		"src/ext/cpp/physics/ClosestPointOnShape.cpp",
+		"src/ext/impl/Time.cpp",
+		"src/ext/impl/physics/ClosestPointOnShape.cpp",
 
 		"vendor/glad/src/glad.c",
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
@@ -47,8 +47,9 @@ project "Framework"
 		"vendor/glad/include",
 		"vendor/asio/include",
 		"vendor/json/include",
+		"vendor/fmod/include",
 
-		"vendor/sqlite/include",
+		--"vendor/sqlite/include",
 
 		-- these are game files, see above
 
@@ -58,14 +59,17 @@ project "Framework"
 	libdirs {
 		"vendor/box2d/lib",
 		"vendor/imgui/lib",
-		"vendor/hitbox/lib" 
+		"vendor/hitbox/lib",
+		"vendor/fmod/lib",
 	}
 
 	links {
 		"SDL2",
 		"box2d",
 		"ImGui", 
-		"hitbox"
+		"hitbox",
+		"fmod",
+		"fmodstudio"
 	}
 
 	defines { 

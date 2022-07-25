@@ -15,4 +15,9 @@ struct Sprite
 	Sprite(r<Texture> source) : source(source) {}
 	Sprite(const Texture& sourceToCopy) : source(mkr<Texture>(sourceToCopy)) {}
 	Texture& Get() { return *source; }
+
+	Sprite& SetSource  (const r<Texture>& source) { this->source   = source; return *this; }
+	Sprite& SetTint    (const Color&      tint)   { this->tint     = tint;   return *this; }
+	Sprite& SetUvOffset(const vec2&       offset) { this->uvOffset = offset; return *this; }
+	Sprite& SetUvScale (const vec2&       scale)  { this->uvScale  = scale;  return *this; }
 };

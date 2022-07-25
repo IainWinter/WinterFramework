@@ -40,6 +40,7 @@ public:
 	Transform2D& SetPosition(vec2 position);
 	Transform2D& SetScale   (vec2 scale);
 	Transform2D& SetRotation(float rotation);
+	Transform2D& SetZIndex  (float z);
 
 	Transform2D  operator* (const Transform2D& other) const;
 	Transform2D& operator*=(const Transform2D& other);

@@ -3,6 +3,7 @@
 #include "Windowing.h"
 #include "Entity.h"
 #include "Physics.h"
+#include "Audio.h"
 #include "ext/Task.h"
 #include "ext/Time.h" // bring this in for Delay
 
@@ -82,6 +83,10 @@ protected:
 	void Defer    (const std::function<void()>& task);                       // run code once at the end of the frame (with coroutine)
 	void Delay    (float delayInSeconds, const std::function<void()>& task); // run code after x seconds
 
+// audio
+
+	int Chirp(const std::string& audioEvent);
+
 // getters
 
 	WindowRef GetWindow();
@@ -117,14 +122,26 @@ struct World final
 private:
 	Application* m_app;
 
+	// before the design was to store everything in the entity system
+	// I think this might be the way to do as it would allow worlds to choose to add
+	// physics / audio
+
+	// another argument is that including these and not using them doesnt hurt anything, so
+	// its uo in the air...
+
+	// the way to do this would be to make a root entity world in the application
+	// then store worlds in that
+
+	// then the World has its own EntityWorld that can store the physics / audio in a component
+
 	EntityWorld  m_entities;
 	PhysicsWorld m_physics;
+	AudioWorld   m_audio;
+	TaskPool     m_tasks;
 
 	event_manager m_bus;
 	event_queue   m_queue;
 
-	TaskPool m_tasks;
-	
 	std::vector<SystemBase*> m_systems;
 
 	// tick variables
@@ -139,9 +156,10 @@ public:
 	Application*   GetApplication();
 	EntityWorld&   GetEntityWorld();
 	PhysicsWorld&  GetPhysicsWorld();
+	AudioWorld&    GetAudioWorld();
+	TaskPool&      GetTaskPool();
 	event_queue&   GetEventQueue();
 	event_manager& GetEventBus();
-	TaskPool&      GetTaskPool();
 	WindowRef      GetWindow();
 
 public:
@@ -156,6 +174,7 @@ private:
 	void TickTasks();
 	void TickEvents();
 	void TickEntities();
+	void TickAudio();
 
 public:
 	World(Application* app, event_manager* root);

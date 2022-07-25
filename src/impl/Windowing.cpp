@@ -46,7 +46,7 @@ void Window::Init()
 
 	Resize(m_config.Width, m_config.Height);
 
-	//glClearColor(1.f, 1.f, 1.f, 1.f);
+	glClearColor(0.f, 0.f, 0.f, 0.f);
 
 	// sand breaks because this isnt setup
 	glEnable(GL_DEPTH_TEST);
@@ -219,7 +219,7 @@ void Window::SetTitle(const std::string& title)
 void Window::EndFrame()
 {
 	SDL_GL_SwapWindow(m_window);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 	
 // imgui renderer

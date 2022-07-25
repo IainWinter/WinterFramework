@@ -15,6 +15,7 @@
 
 #include "Sand/SandSystems.h"
 #include "Systems/InitGame.h"
+#include "Systems/InitMainMenu.h"
 #include "Systems/AllowPauseMenu.h"
 #include "Systems/PlayerController.h"
 #include "Systems/PlayerSpawner.h"
@@ -26,6 +27,7 @@
 #include "Systems/RenderScene.h"
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
+#include "Systems/Background.h"
 #include "ext/systems/TransformInterpolation.h"
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
@@ -178,6 +180,7 @@ struct Regolith : EngineLoop
 	void ConfigureLevel()
 	{
 		CreateMenuWorld();
+		CreateBackgroundWorld();
 	}
 
 	World* menu;
@@ -187,8 +190,7 @@ struct Regolith : EngineLoop
 	{
 		menu = app.CreateWorld();
 
-		menu->CreateSystem(InitGame_System());
-		menu->CreateSystem(System_Render_Sprites());
+		menu->CreateSystem(InitMainMenu_System());
 		menu->CreateSystem(System_UI_AsteroidsMenu());
 	}
 
@@ -200,6 +202,7 @@ struct Regolith : EngineLoop
 
 		// Basic functionality
 
+		game->CreateSystem(System_Render_Meshes());
 		game->CreateSystem(System_Render_Sprites());
 		game->CreateSystem(System_Render_SandCollisionInfo());
 		game->CreateSystem(System_TransformInterpolation());
@@ -221,6 +224,14 @@ struct Regolith : EngineLoop
 
 		// UI
 		game->CreateSystem(System_UI_AsteroidsHUD());
+	}
+
+	void CreateBackgroundWorld()
+	{
+		World* bg = app.CreateWorld();
+		bg->CreateSystem(System_Render_Sprites());
+		bg->CreateSystem(System_PhysicsInterpolation());
+		bg->CreateSystem(Background_System());
 	}
 
 	float transitionTimer = 0;

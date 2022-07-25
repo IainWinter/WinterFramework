@@ -101,16 +101,22 @@ private:
 		// wont work if entity has Mesh
 		// need to make a model class with a list of Meshs + Transforms
 
-		//std::vector<vec2> debug_mesh;
-		//std::vector<vec4> debug_mesh_colors; // bad, create another shader
-		//for (const std::vector<vec2>& polygon : polygons.first) for (const vec2& v : polygon) { debug_mesh.push_back(v / tran.scale); debug_mesh_colors.push_back(vec4(1.f, 1.f, 1.f, 1.f)); }
+		std::vector<vec2> debug_mesh;
+		std::vector<vec4> debug_mesh_colors;
 
-		//if (entity.Has<Mesh>()) entity.Remove<Mesh>();
-		//entity.Add<Mesh>();
-		//Mesh& mesh = entity.Get<Mesh>();
-		//mesh.topology = Mesh::tLoops;
-		//mesh.Add(Mesh::aPosition, debug_mesh);
-		//mesh.Add(Mesh::aColor, debug_mesh_colors);
+		for (const std::vector<vec2>& polygon : polygons.first) 
+		for (const vec2& v : polygon) 
+		{ 
+			debug_mesh.push_back(v / tran.scale); 
+			debug_mesh_colors.push_back(vec4(1.f, 1.f, 1.f, 1.f));
+		}
+
+		if (entity.Has<Mesh>()) entity.Remove<Mesh>();
+		entity.Add<Mesh>();
+		Mesh& mesh = entity.Get<Mesh>();
+		mesh.topology = Mesh::tLoops;
+		mesh.Add(Mesh::aPosition, debug_mesh);
+		mesh.Add(Mesh::aColor, debug_mesh_colors);
 
 		return polygons.first.size() > 0;
 	}

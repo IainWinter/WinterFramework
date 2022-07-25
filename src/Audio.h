@@ -1,131 +1,151 @@
 #pragma once
 
-#ifdef IW_PLATFORM_WINDOWS
-#	ifdef IWAUDIO_DLL
-#		define IWAUDIO_API __declspec(dllexport)
-#else
-#		define IWAUDIO_API __declspec(dllimport)
-#	endif
-#else
-#	define IWAUDIO_API
-#endif
-
+#include "Defines.h"
 
 #include <unordered_map>
 #include <vector>
 #include <string>
 #include <stdio.h>
+#include <stdarg.h>
 
 #undef PlaySound
+#undef CreateEvent
 
 // all calls return a handle or an error code
 // all error codes are negitive
-
-constexpr int audio_set_type(int high, int low) { return low + (high << sizeof(int) * 8 / 2); }
-constexpr int audio_get_type(int handle) { return handle >> (sizeof(int) * 8 / 2); }
-constexpr int audio_make_handle(int type, int index) {	return audio_set_type(type, index); }
+// 0 is a special handle representing global actions
 
 enum audio_error : int
 {
 	ENGINE_OK               =  0,
 	ENGINE_FAILED_CREATE    = -1,
 	ENGINE_FAILED_INIT      = -2,
-	ENGINE_FAILED_UPDATE    = -3,
-	ENGINE_FAILED_LOAD_BANK = -4,
-	ENGINE_ALREADY_LOADED   = -5,
+	ENGINE_FAILED_DNIT      = -3,
+	ENGINE_FAILED_UPDATE    = -4,
+	ENGINE_FAILED_LOAD_BANK = -5,
+	ENGINE_ALREADY_LOADED   = -6,
 
-	ENGINE_FAILED_MAKE_INSTANCE = -6,
-	ENGINE_FAILED_LOAD_INSTANCE = -7,
-	ENGINE_FAILED_INVALID_HANDLE = -8,
-	ENGINE_FAILED_HANDLE_NOT_LOADED = -9,
-	ENGINE_FAILED_SET_PARAM = -10,
-	ENGINE_FAILED_GET_PARAM = -11
+	ENGINE_FAILED_INVALID_HANDLE    = -7,
+	ENGINE_FAILED_HANDLE_NOT_LOADED = -8,
+
+	ENGINE_FAILED_MAKE_INSTANCE  = -9,
+	ENGINE_FAILED_LOAD_INSTANCE  = -10,
+	ENGINE_FAILED_START_INSTANCE = -11,
+	ENGINE_FAILED_STOP_INSTANCE  = -12,
+	ENGINE_FAILED_FREE_INSTANCE  = -13,
+	
+	ENGINE_FAILED_SET_PARAM = -14,
+	ENGINE_FAILED_GET_PARAM = -15,
 };
 
-const char* audio_error_string(
-	audio_error code)
+const char* audio_error_string(audio_error code);
+bool audio_error_check(int result);
+
+int audio_set_type(int high, int low);
+int audio_get_type(int handle);
+int audio_make_handle(int type, int index);
+
+// forward declare fmod
+
+namespace FMOD { 
+namespace Studio 
 {
-	static std::unordered_map<int, const char*> translation;
-	if (translation.size() == 0)
-	{
-		translation.emplace(ENGINE_OK,               "Engine is ok");
-		translation.emplace(ENGINE_FAILED_CREATE,    "Engine failed to create fmod system");
-		translation.emplace(ENGINE_FAILED_INIT,      "Engine failed to init fmod system");
-		translation.emplace(ENGINE_FAILED_UPDATE,    "Engine failed to update fmod system");
-		translation.emplace(ENGINE_FAILED_LOAD_BANK, "Engine failed to load a bank");
-		translation.emplace(ENGINE_ALREADY_LOADED,   "Engine tried to load a bank that was already loaded");
+	class System;
+	class Bank;
+	class EventDescription;
+	class EventInstance;
+	class Bus;
+	class VCA;
+}}
 
-		translation.emplace(ENGINE_FAILED_MAKE_INSTANCE,     "Engine failed to create an instance");
-		translation.emplace(ENGINE_FAILED_LOAD_INSTANCE,     "Engine failed to load an instance");
-		translation.emplace(ENGINE_FAILED_INVALID_HANDLE,    "Engine was passed a handle was invalid");
-		translation.emplace(ENGINE_FAILED_HANDLE_NOT_LOADED, "Engine was passed a handle that hasn't been loaded");
-		translation.emplace(ENGINE_FAILED_SET_PARAM,         "Engine failed to set an instance parameter");
-		translation.emplace(ENGINE_FAILED_GET_PARAM,         "Engine failed to get an instance parameter");
-	}
-
-	return translation.at(code);
-}
-
-void audio_log_error(
-	audio_error error)
+struct AudioWorld
 {
-	printf("[Audio] %s", audio_error_string(error));
-}
-
-// 0 is a special handle representing global actions
-
-struct audio_manager
-{
-	std::string m_root_path;
 	std::unordered_map<std::string, int> m_loaded; // name, handle - hashed paths of loaded objects
 
-	virtual ~audio_manager() = default;
+	int Initialize();
+	int Destroy();
+	
+	int Tick();
 
-	virtual int initialize() = 0;
-	virtual int update()    = 0;
-	virtual int destroy()   = 0;
+	int Load(const std::string& path);
+	int Play(const std::string& path);
 
-	virtual int load(const std::string& path) = 0;
-	virtual int play(const std::string& path) = 0;
+	int Set(int handle, const std::string& parameter, float  value);
+	int Get(int handle, const std::string& parameter, float& value);
 
-	virtual int set(int handle, const std::string& parameter, float  value) = 0;
-	virtual int set(int handle, const std::string& parameter, float& value) = 0;
+	int Start(int handle);
+	int Stop (int handle);
+	int Free (int handle);
 
-	virtual int start(int handle) = 0;
-	virtual int stop (int handle) = 0;
-	virtual int free (int handle) = 0;
+	int SetVolume(int handle, float  volume);
+	int GetVolume(int handle, float& volume);
 
-	virtual int set_volume(int handle, float  volume) = 0;
-	virtual int get_volume(int handle, float& volume) = 0;
+	bool IsLoaded(int handle) const;
+	bool IsLoaded(const std::string& path) const;
 
-	virtual bool is_loaded(int handle) const = 0;
+	int GetHandle(const std::string& path) const;
 
-	bool is_loaded(
-		const std::string& path) const
+private:
+	int MakeHandle(int type) const;
+	void PutLoaded(const std::string& path, int handle);
+
+// FMOD stuff
+
+private:
+	FMOD::Studio::System* m_system;
+
+	std::unordered_map<int, FMOD::Studio::Bank*>             m_banks;
+	std::unordered_map<int, FMOD::Studio::Bus*>              m_buses;
+	std::unordered_map<int, FMOD::Studio::VCA*>              m_vcas;
+	std::unordered_map<int, FMOD::Studio::EventDescription*> m_events;
+	std::unordered_map<int, FMOD::Studio::EventInstance*>    m_instances;
+
+	using InstanceUserData = std::pair<int, AudioWorld*>;
+
+	int PutLoaded(const std::string& path, FMOD::Studio::Bank* bank);
+	int PutLoaded(const std::string& path, FMOD::Studio::EventDescription* event);
+	int PutLoaded(const std::string& path, FMOD::Studio::EventInstance* instance);
+	int PutLoaded(const std::string& path, FMOD::Studio::Bus* bus);
+	int PutLoaded(const std::string& path, FMOD::Studio::VCA* vca);
+
+	template<typename _t, typename _f1, typename _f2>
+	int LoadFromBank(FMOD::Studio::Bank* bank, _f1&& getCount, _f2&& getItems)
 	{
-		return m_loaded.find(path) != m_loaded.end();
-	}
+		int count;
 
-	int get_handle(
-		const std::string& path) const
-	{
-		auto itr = m_loaded.find(path);
-		if (itr == m_loaded.end())
+		if (audio_error_check(getCount(bank, count)))
 		{
-			return log(ENGINE_FAILED_HANDLE_NOT_LOADED);
+			return ENGINE_FAILED_LOAD_BANK;
 		}
 
-		return itr->second;
-	}
+		if (count > 0)
+		{
+			_t** items = new _t*[count];
 
-protected:
-	virtual bool get_error(int result, audio_error code) const = 0;
+			if (audio_error_check(getItems(bank, items, count)))
+			{
+				delete[] items;
+				return ENGINE_FAILED_LOAD_BANK;
+			}
 
-	void put_loaded(
-		const std::string& path,
-		int handle)
-	{
-		m_loaded.emplace(path, handle);
-		printf("[Audio] Engine loaded: %s. Handle: %d", path.c_str(), handle);
+			for (int i = 0; i < count; i++)
+			{
+				std::string name(1024, '\0');
+				int size;
+
+				if (audio_error_check(items[i]->getPath(name.data(), 1024, &size)))
+				{
+					delete[] items;
+					return ENGINE_FAILED_LOAD_BANK;
+				}
+
+				name.resize(size - 1);
+				PutLoaded(name, items[i]);
+			}
+
+			delete[] items;
+		}
+
+		return ENGINE_OK;
 	}
 };

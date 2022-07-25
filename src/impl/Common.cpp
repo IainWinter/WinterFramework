@@ -47,6 +47,7 @@ Transform2D::Transform2D(
 Transform2D& Transform2D::SetPosition(vec2 position)  { this->position = position; return *this; }
 Transform2D& Transform2D::SetScale   (vec2 scale)     { this->scale    = scale;    return *this; }
 Transform2D& Transform2D::SetRotation(float rotation) { this->rotation = rotation; return *this; }
+Transform2D& Transform2D::SetZIndex  (float z)        { this->z        = z;        return *this; }
 
 Transform2D Transform2D::operator*(const Transform2D& other) const
 {
