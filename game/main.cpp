@@ -64,18 +64,22 @@ struct Regolith : EngineLoop<Regolith>
 		FontMap::Load("Highscore Table",  36 * 2, "DidactGothic-Regular.ttf");
 
 		ImGuiStyle& style = ImGui::GetStyle();
-		style.WindowPadding                  = ImVec2(0, 0);
-		style.FramePadding                   = ImVec2(0.f, 0.f);
-		style.WindowBorderSize               = 0.f;
-		style.Colors[ImGuiCol_Text]          = ImVec4(1, 1, 1, 1);
-		style.Colors[ImGuiCol_Button]        = ImVec4(0, 0, 0, 0);
-		style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0, 0, 0, 0);
-		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0, 0, 0, 0);
-		style.Colors[ImGuiCol_TableRowBg]    = ImVec4(1, 1, 1, 1);
-		style.Colors[ImGuiCol_ScrollbarBg]   = ImVec4(0, 0, 0, 0);
-		style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(1, 1, 1, .2);
+		style.WindowPadding                         = ImVec2(0, 0);
+		style.FramePadding                          = ImVec2(0.f, 0.f);
+		style.WindowBorderSize                      = 0.f;
+		style.Colors[ImGuiCol_Text]                 = ImVec4(1, 1, 1, 1);
+		style.Colors[ImGuiCol_Button]               = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ButtonActive]         = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ButtonHovered]        = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_TableRowBg]           = ImVec4(1, 1, 1, 1);
+		style.Colors[ImGuiCol_ScrollbarBg]          = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ScrollbarGrab]        = ImVec4(1, 1, 1, .2);
 		style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(1, 1, 1, .6);
-		style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1, 1, 1, .4);
+		style.Colors[ImGuiCol_ScrollbarGrabActive]  = ImVec4(1, 1, 1, .4);
+		style.Colors[ImGuiCol_CheckMark]            = ImVec4(1, 1, 1, .9);
+		style.Colors[ImGuiCol_FrameBg]              = ImVec4(1, 1, 1, .2);
+		style.Colors[ImGuiCol_FrameBgHovered]       = ImVec4(1, 1, 1, .4);
+		style.Colors[ImGuiCol_FrameBgActive]        = ImVec4(1, 1, 1, .2);
 
 		//ImGuiIO& io = ImGui::GetIO();
 		//io.NavMovesMouse = true;

@@ -216,7 +216,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::PushFont(FontMap::Get("Highscore Table"));
 
 		ImGui::SetNextWindowPos(ImVec2(position - twidth / 2, screen.y * .33f));
-		ImGui::BeginChild("Highscores titles", ImVec2(twidth, theight));
+		ImGui::BeginChild("Highscores titles", ImVec2(twidth, -1));
 
 		if (ImGui::BeginTable("Upgrades Titles", 3))
 		{
@@ -266,6 +266,13 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::EndChild();
 	}
 
+	struct SettingsState
+	{
+		bool fullscreen;
+	};
+
+	SettingsState state;
+
 	void Settings(float position)
 	{
 		auto [width, height] = GetSize(title_settings, 100);
@@ -273,13 +280,27 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::SetCursorPos(ImVec2(position - screen.x / 2 + margin * 2, margin * 2));
 		ImGui::Image((void*)title_settings->DeviceHandle(), ImVec2(width, height));
 
-		float backWidth = ImGui::CalcTextSize("Back").x;
-
-		ImGui::SetCursorPos(ImVec2(position - screen.x / 2.f + backWidth + 2 * margin, midpoint.y));
+		ImGui::SetCursorPos(ImVec2(position - screen.x / 2.f + 2 * margin, midpoint.y));
 		if (ImGui::Button("Back"))
 		{
 			PressedBack();
 		}
+
+		ImGui::PushFont(FontMap::Get("Highscore Table"));
+
+		float twidth  = screen.x * .5f;
+		float theight = screen.y * .5f;
+
+		ImGui::SetNextWindowPos(ImVec2(position - twidth / 2, screen.y * .33f));
+		ImGui::BeginChild("Settings Items", ImVec2(twidth, -1));
+
+		ImGui::Text("Video");
+		ImGui::Separator();
+		ImGui::Checkbox("Fullscreen", &state.fullscreen);
+
+		ImGui::EndChild();
+
+		ImGui::PopFont();
 	}
 
 	bool MenuButton(const char* label, MenuState state)
