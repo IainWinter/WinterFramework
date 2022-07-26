@@ -28,7 +28,7 @@ std::unordered_map<int, const char*> audio_error_translation =
 
 	{ ENGINE_FAILED_MAKE_INSTANCE,     "Engine failed to create an instance" },
 	{ ENGINE_FAILED_LOAD_INSTANCE,     "Engine failed to load an instance" },
-	{ ENGINE_FAILED_INVALID_HANDLE,    "Engine was passed a handle was invalid" },
+	{ ENGINE_FAILED_INVALID_HANDLE,    "Engine was passed an invalid handle" },
 	{ ENGINE_FAILED_HANDLE_NOT_LOADED, "Engine was passed a handle that hasn't been loaded" },
 	{ ENGINE_FAILED_SET_PARAM,         "Engine failed to set an instance parameter" },
 	{ ENGINE_FAILED_GET_PARAM,         "Engine failed to get an instance parameter" }
@@ -384,9 +384,7 @@ int Audio::SetVolume(int handle, float volume)
 {
 	CHECK_HANDLE(handle);
 
-	int type = audio_get_type(handle);
-
-	switch (type)
+	switch (audio_get_type(handle))
 	{
 		case H_INSTANCE: m_instances[handle]->setVolume(volume); break;
 		case H_BUS:      m_buses    [handle]->setVolume(volume); break;
@@ -404,9 +402,7 @@ int Audio::GetVolume(int handle, float& volume)
 {
 	CHECK_HANDLE(handle);
 
-	int type = audio_get_type(handle);
-
-	switch (type)
+	switch (audio_get_type(handle))
 	{
 		case H_INSTANCE: m_instances[handle]->getVolume(&volume); break;
 		case H_BUS:      m_buses    [handle]->getVolume(&volume); break;
@@ -505,71 +501,58 @@ int Audio::PutLoaded(const std::string& path, VCA* vca)
 	return handle;
 }
 
-
-AudioBankLoader& AudioBankLoader::SetWhenToLoad(WhenToLoad load)
-{
-	this->load = load;
-	return *this;
-}
-
-AudioBankLoader& AudioBankLoader::SetWhenToFree(WhenToFree free)
-{
-	this->free = free;
-	return *this;
-}
-
-AudioBankLoader& AudioBankLoader::AddBank(const std::string& bank)
-{
-	this->banks.push_back(bank);
-	return *this;
-}
-
-void AudioEmitter::_SetAudio(Audio* audio)
-{
-	m_audio = audio; 
-}
-
-bool AudioEmitter::IsPlaying() const
-{
-	return instance != 0;
-}
-
-int AudioEmitter::GetInstance() const
-{
-	return instance;
-}
-
-int AudioEmitter::PlayAndForget()
-{
-	return m_audio->Play(event);
-}
-
-void AudioEmitter::Play()  { instance = PlayAndForget(); }
-void AudioEmitter::Start() { m_audio->Start(instance); }
-void AudioEmitter::Stop()  { m_audio->Stop(instance); }
-void AudioEmitter::Free()  { m_audio->Free(instance); }
-
-AudioEmitter& AudioEmitter::Set(const std::string& param, float value)
-{
-	m_audio->Set(instance, param, value);
-	return *this;
-}
-
-float AudioEmitter::Get(const std::string& param)
-{
-	float x = 0.f;
-	m_audio->Get(instance, param, x);
-	return x;
-}
-
-AudioEmitter& AudioEmitter::SetVolume(float volume)
-{
-	m_audio->SetVolume(instance, volume);
-	return *this;
-}
-
-float AudioEmitter::GetVolume() {
-	float x = 0.f;
-	m_audio->GetVolume(instance, x);
-	return x;
-}
+//void AudioEmitter::_SetAudio(Audio* audio)
+//{
+//	m_audio = audio; 
+//}
+//
+//AudioEmitter& AudioEmitter::SetEvent(const std::string& event)
+//{
+//	this->event = event;
+//	return *this;
+//}
+//
+//bool AudioEmitter::IsPlaying() const
+//{
+//	return instance != 0;
+//}
+//
+//int AudioEmitter::GetInstance() const
+//{
+//	return instance;
+//}
+//
+//int AudioEmitter::PlayAndForget()
+//{
+//	return m_audio->Play(event);
+//}
+//
+//AudioEmitter& AudioEmitter::Play()  { instance = PlayAndForget(); return *this; }
+//AudioEmitter& AudioEmitter::Start() { m_audio->Start(instance); return *this; }
+//AudioEmitter& AudioEmitter::Stop()  { m_audio->Stop(instance); return *this; }
+//AudioEmitter& AudioEmitter::Free()  { m_audio->Free(instance); return *this; }
+//
+//AudioEmitter& AudioEmitter::Set(const std::string& param, float value)
+//{
+//	m_audio->Set(instance, param, value);
+//	return *this;
+//}
+//
+//float AudioEmitter::Get(const std::string& param)
+//{
+//	float x = 0.f;
+//	m_audio->Get(instance, param, x);
+//	return x;
+//}
+//
+//AudioEmitter& AudioEmitter::SetVolume(float volume)
+//{
+//	m_audio->SetVolume(instance, volume);
+//	return *this;
+//}
+//
+//float AudioEmitter::GetVolume() {
+//	float x = 0.f;
+//	m_audio->GetVolume(instance, x);
+//	return x;
+//}

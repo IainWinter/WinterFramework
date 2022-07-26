@@ -10,21 +10,19 @@
 
 struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 {
-	int music_handle = 0;
+	int music;
 
 	void Init()
 	{
-		//music_handle = Chirp("event:/music_menu_main");
+		music = PlaySound("event:/music_menu_main");
 	}
 
 	void PressedPlay()
 	{
-		//Audio& audio = GetWorld()->GetAudio();
-
-		//audio.Stop(music_handle);
-		//audio.Play("event:/menu_press_play");
-		//
-		//Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
+		StopSound(music);
+		PlaySound("event:/menu_press_play");
+		
+		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
 	}
 
 	void UI()

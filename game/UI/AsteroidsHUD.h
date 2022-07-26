@@ -26,6 +26,8 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 	float currentFade = 0.0f;
 	float fadeTarget = 0.5f;   // game over fade amount
 
+	int deathMusic = 0;
+
 	void Init()
 	{
 		playerSprite = mkr<Texture>(_A("player.png"));
@@ -46,6 +48,11 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 	void on(event_RemoveLife& e)
 	{
 		lastPlayerLives -= 1;
+
+		if (lastPlayerLives == 0 && deathMusic == 0)
+		{
+			deathMusic = PlaySound("event:/music_menu_gameover");
+		}
 	}
 
 	void UI()
@@ -150,6 +157,8 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 				{
 					SendToRoot(event_SubmitHighscore{ std::string(name), lastPlayerScore });
 					fadeTarget = 0.f;
+
+					StopSound(deathMusic);
 				}
 				
 				ImGui::PopFont();

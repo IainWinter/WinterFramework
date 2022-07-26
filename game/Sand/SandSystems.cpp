@@ -14,16 +14,16 @@ std::vector<SystemBase*> sand_ids;
 void CreateSandSystems(World* level)
 {
 	sand_ids = {
-		level->CreateSystem(Sand_System_Update()),
-		level->CreateSystem(Sand_System_UpdateLineProjectileMesh()),
-		level->CreateSystem(Sand_System_SplitTiles()),
+		level->CreateSystem<Sand_System_Update>(),
+		level->CreateSystem<Sand_System_UpdateLineProjectileMesh>(),
+		level->CreateSystem<Sand_System_SplitTiles>(),
 
 		// reactive systems
 
-		level->CreateSystem(Sand_System_ExplodeToDust()),
-		level->CreateSystem(Sand_System_CollideProjectile()),
-		level->CreateSystem(Sand_System_CreateCollider()),
-		level->CreateSystem(Sand_System_RemoveCellsFromSprite())
+		level->CreateSystem<Sand_System_ExplodeToDust>(),
+		level->CreateSystem<Sand_System_CollideProjectile>(),
+		level->CreateSystem<Sand_System_CreateCollider>(),
+		level->CreateSystem<Sand_System_RemoveCellsFromSprite>()
 	};
 }
 

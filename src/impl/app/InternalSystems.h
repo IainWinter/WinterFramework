@@ -15,16 +15,7 @@ struct PhysicsInterpolationUpdate : SystemBase
 	void FixedUpdate() override;
 };
 
-struct AudioUpdate : SystemBase
-{
-	Audio* m_audio = nullptr;
-
-	void LoadBank(AudioBankLoader& loader);
-	void FreeBank(AudioBankLoader& loader);
-
-	void Init() override;
-	void Dnit() override;
-	void Activate() override;
-	void Deactivate() override;
-	void Update() override;
-};
+//struct AudioUpdate : SystemBase
+//{
+//	void Update() override;
+//};

@@ -15,24 +15,35 @@ void world_log(const char* fmt, ...)
 
 void SystemBase::_Init(World* world)
 {
+	world_log("\tInitialized System");
+
 	m_world = world;
 	Init();
 }
 
 void SystemBase::_Dnit()
 {
-	m_world->GetEventBus().Detach(this);
 	Dnit();
+	m_world->GetEventBus().Detach(this);
+	m_world = nullptr;
+
+	world_log("\tDeinitialized System");
 }
 
 void SystemBase::_Activate()
 {
+	world_log("\tActivated System");
+
+	m_active = true;
 	Activate();
 }
 
 void SystemBase::_Deactivate()
 {
+	m_active = false;
 	Deactivate();
+
+	world_log("\tDeactivated System");
 }
 
 void SystemBase::_Update()
@@ -53,6 +64,28 @@ void SystemBase::_UI()
 void SystemBase::_Debug()
 {
 	Debug();
+}
+
+SystemBase::SystemBase()
+	: m_world  (nullptr)
+	, m_active (false)
+{
+	world_log("\tCreated System");
+}
+
+SystemBase::~SystemBase()
+{
+	world_log("\tDestroied System");
+}
+
+bool SystemBase::GetInitState() const
+{
+	return !!m_world;
+}
+
+bool SystemBase::GetActiveState() const
+{
+	return m_active;
 }
 
 Entity SystemBase::CreateEntity()
@@ -100,9 +133,24 @@ void SystemBase::Delay(float delayInSeconds, const std::function<void()>& task)
 	return m_world->GetTaskPool().Coroutine(routine);
 }
 
+int SystemBase::PlaySound(const std::string& eventPath)
+{
+	return GetAudio().Play(eventPath);
+}
+
+void SystemBase::StopSound(int soundHandle)
+{
+	GetAudio().Stop(soundHandle);
+}
+
 WindowRef SystemBase::GetWindow()
 {
 	return m_world->GetWindow();
+}
+
+Audio& SystemBase::GetAudio()
+{
+	return m_world->GetAudio();
 }
 
 World* SystemBase::GetWorld()
@@ -110,8 +158,146 @@ World* SystemBase::GetWorld()
 	return m_world;
 }
 
+World::World(
+	Application* app, EventBus* root
+)
+	: m_app          (app)
+	, m_queue        (&m_bus)
+	, m_fixedTimeAcc (0.f)
+	, m_init         (false)
+{
+	world_log("Created World");
+
+	// allow app events to propagate down to world
+
+	root->ChildAttach(&m_bus);
+
+	// auto add/remove bodies to physics
+
+	m_entities.OnAdd   <Rigidbody2D, &World::on_add_rigidbody, World>(this);
+	m_entities.OnRemove<Rigidbody2D, &World::on_remove_rigidbody, World>(this);
+
+	// auto set audio on component
+
+	//m_entities.OnAdd<AudioEmitter, &World::on_add_audio_emitter, World>(this);
+
+	// Default system
+
+	CreateSystem<TransformUpdate>();
+	CreateSystem<PhysicsInterpolationUpdate>();
+	//CreateSystem<AudioUpdate>();
+}
+
+World::~World()
+{
+	// wait for tasks before destroying systems
+	// to keep bound lambda memory alive
+	m_tasks.ShutdownAndWait();
+
+	for (SystemBase* system : m_systems)
+	if (system->GetInitState())
+		system->_Deactivate();
+
+	for (SystemBase* system : m_systems)
+	if (system->GetInitState())
+		system->_Dnit();
+
+	for (SystemBase* system : m_systems)
+		delete system;
+
+	world_log("Destroied World");
+}
+
+void World::DetachFromRoot(EventBus* root)
+{
+	root->ChildDetach(&m_bus);
+}
+
+void World::AttachSystem(SystemBase* system)
+{
+	if (ContainsSystem(system))
+	{
+		world_log("Error: System is already in world");
+		return;
+	}
+
+	m_systems.push_back(system);
+	
+	if (system->GetInitState())
+	{
+		system->_Activate();
+	}
+}
+
+void World::DetachSystem(SystemBase* system)
+{
+	if (!ContainsSystem(system))
+	{
+		world_log("Error: System is not in world");
+		return;
+	}
+
+	if (system->GetInitState())
+	{
+		system->_Deactivate();
+	}
+
+	m_systems.erase(std::find(m_systems.begin(), m_systems.end(), system));
+}
+
+void World::DestroySystem(SystemBase* system)
+{
+	if (!ContainsSystem(system))
+	{
+		world_log("Error: System is not in world");
+		return;
+	}
+
+	DetachSystem(system);
+	
+	if (system->GetInitState())
+	{
+		system->_Dnit();
+	}
+
+	delete system;
+}
+
+bool World::ContainsSystem(SystemBase* system) const
+{
+	return std::find(m_systems.begin(), m_systems.end(), system) != m_systems.end();
+}
+
+void World::Init()
+{
+	m_init = true;
+
+	for (SystemBase*& system : m_systems) // init systems that need it
+	{
+		if (!system->GetInitState())
+		{
+			system->_Init(this);
+		}
+	}
+}
+
+Application*  World::GetApplication()     { return m_app; }
+WindowRef     World::GetWindow()          { return WindowRef(&m_app->GetWindow()); }
+Audio&        World::GetAudio()           { return m_app->GetAudio(); }
+
+EntityWorld&  World::GetEntityWorld()     { return m_entities; }
+PhysicsWorld& World::GetPhysicsWorld()    { return m_physics; }
+TaskPool&     World::GetTaskPool()        { return m_tasks; }
+
+EventBus&     World::GetEventBus()        { return m_bus; }
+EventQueue&   World::GetEventQueue()      { return m_queue; }
+
+bool          World::GetInitState() const { return m_init; }
+
 void World::Tick()
 {
+	ActivateInactiveSystems();
+
 	m_fixedTimeAcc += Time::DeltaTime();
 	if (m_fixedTimeAcc >= Time::FixedTime())
 	{
@@ -166,77 +352,15 @@ void World::TickSystemsDebug()
 	}
 }
 
-World::World(Application* app, EventBus* root)
-	: m_app   (app)
-	, m_queue (&m_bus)
+void World::ActivateInactiveSystems()
 {
-	// allow app events to propagate down to world
-
-	root->ChildAttach(&m_bus);
-
-	// auto add/remove bodies to physics
-
-	m_entities.OnAdd   <Rigidbody2D, &World::on_add_rigidbody, World>(this);
-	m_entities.OnRemove<Rigidbody2D, &World::on_remove_rigidbody, World>(this);
-
-	// auto set audio on component
-
-	m_entities.OnAdd<AudioEmitter, &World::on_add_audio_emitter, World>(this);
-
-	// Default system
-
-	CreateSystem(TransformUpdate());
-	CreateSystem(PhysicsInterpolationUpdate());
-	CreateSystem(AudioUpdate());
-}
-
-World::~World()
-{
-	// wait for tasks before destroying systems
-	// to keep bound lambda memory alive
-	m_tasks.ShutdownAndWait();
-
 	for (SystemBase*& system : m_systems)
 	{
-		system->_Deactivate();
-		system->_Dnit();
-		delete system;
+		if (!system->GetActiveState())
+		{
+			system->_Activate();
+		}
 	}
-}
-
-void World::DetachFromRoot(EventBus* root)
-{
-	root->ChildDetach(&m_bus);
-}
-
-Application*  World::GetApplication()  { return m_app; }
-WindowRef     World::GetWindow()       { return WindowRef(&m_app->GetWindow()); }
-
-EntityWorld&  World::GetEntityWorld()  { return m_entities; }
-PhysicsWorld& World::GetPhysicsWorld() { return m_physics; }
-TaskPool&     World::GetTaskPool()     { return m_tasks; }
-
-EventBus&     World::GetEventBus()     { return m_bus; }
-EventQueue&   World::GetEventQueue()   { return m_queue; }
-
-void World::AttachSystem(SystemBase* system)
-{
-	m_systems.push_back(system);
-	system->_Activate();
-}
-
-void World::DetachSystem(SystemBase* system)
-{
-	system->_Deactivate();
-	m_systems.erase(std::find(m_systems.begin(), m_systems.end(), system));
-}
-
-void World::DestroySystem(SystemBase* system)
-{
-	DetachSystem(system);
-	system->_Dnit();
-
-	delete system;
 }
 
 void World::on_add_rigidbody(entt::registry& reg, entt::entity e)
@@ -251,21 +375,34 @@ void World::on_remove_rigidbody(entt::registry& reg, entt::entity e)
 	m_physics.Remove(entity);
 }
 
-void World::on_add_audio_emitter(entt::registry& reg, entt::entity e)
-{
-	Entity entity = m_entities.Wrap((u32)e);
-	entity.Get<AudioEmitter>()._SetAudio(&GetApplication()->GetAudio());
-}
+//void World::on_add_audio_emitter(entt::registry& reg, entt::entity e)
+//{
+//	Entity entity = m_entities.Wrap((u32)e);
+//	entity.Get<AudioEmitter>()._SetAudio(&GetApplication()->GetAudio());
+//}
 
 Application::Application()
 	: m_queue  (&m_bus)
 	, m_window (WindowConfig{}, &m_queue)
 {}
 
-World* Application::CreateWorld()
+Application::~Application()
+{
+	for (World*& world : m_worlds)
+	{
+		delete world;
+	}
+}
+
+World* Application::CreateWorld(bool autoInit)
 {
 	World* world = new World(this, &m_bus);
 	m_worlds.push_back(world);
+	
+	if (autoInit)
+	{
+		world->Init();
+	}
 
 	return world;
 }
@@ -284,7 +421,10 @@ void Application::Tick()
 
 	for (World*& world : m_worlds)
 	{
-		world->Tick();
+		if (world->GetInitState())
+		{
+			world->Tick();
+		}
 	}
 
 	m_queue.Execute();
@@ -295,7 +435,10 @@ void Application::Tick()
 
 	for (World*& world : m_worlds)
 	{
-		world->TickUI();
+		if (world->GetInitState())
+		{
+			world->TickUI();
+		}
 	}
 
 	m_window.EndImgui();

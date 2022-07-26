@@ -36,63 +36,15 @@ void PhysicsInterpolationUpdate::FixedUpdate()
 	}
 }
 
-void AudioUpdate::LoadBank(AudioBankLoader& loader)
-{
-	for (const std::string& bank : loader.banks)
-	{
-		m_audio->Load(bank);
-	}
-}
-
-void AudioUpdate::FreeBank(AudioBankLoader& loader)
-{
-	for (const std::string& bank : loader.banks)
-	{
-		m_audio->Free(m_audio->GetHandle(bank));
-	}
-}
-
-void AudioUpdate::Init()
-{
-	m_audio = &GetWorld()->GetApplication()->GetAudio();
-
-	for (auto [loader] : Query<AudioBankLoader>())
-	if (loader.load == AudioBankLoader::ON_INIT)
-		LoadBank(loader);
-}
-
-void AudioUpdate::Dnit()
-{
-	for (auto [loader] : Query<AudioBankLoader>())
-	if (loader.load == AudioBankLoader::ON_DNIT)
-		FreeBank(loader);
-}
-
-void AudioUpdate::Activate()
-{
-	for (auto [loader] : Query<AudioBankLoader>())
-	if (loader.load == AudioBankLoader::ON_ACTIVE)
-		LoadBank(loader);
-}
-
-void AudioUpdate::Deactivate()
-{
-	for (auto [loader] : Query<AudioBankLoader>())
-	if (loader.load == AudioBankLoader::ON_DEACTIVE)
-		FreeBank(loader);
-}
-
-void AudioUpdate::Update()
-{
-	//Audio& audio = GetWorld()->GetApplication()->GetAudio();
-
-	//for (auto [emitter] : Query<AudioEmitter>())
-	//{
-	//	if (!emitter.IsPlaying())
-	//	{
-	//		emitter.instance = audio.Play(emitter.instance);
-	//	}
-
-	//	GetWorld()->GetAudioWorld().Load();
-	//}
-}
+//void AudioUpdate::Update()
+//{
+//	Audio& audio = GetWorld()->GetApplication()->GetAudio();
+//
+//	for (auto [emitter] : Query<AudioEmitter>())
+//	{
+//		if (!emitter.IsPlaying())
+//		{
+//			emitter.Play();
+//		}
+//	}
+//}

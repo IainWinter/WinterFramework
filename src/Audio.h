@@ -32,10 +32,12 @@ enum audio_error : int
 	ENGINE_FAILED_LOAD_INSTANCE  = -10,
 	ENGINE_FAILED_START_INSTANCE = -11,
 	ENGINE_FAILED_STOP_INSTANCE  = -12,
-	ENGINE_FAILED_FREE_INSTANCE  = -13,
 	
-	ENGINE_FAILED_SET_PARAM = -14,
-	ENGINE_FAILED_GET_PARAM = -15,
+	ENGINE_FAILED_FREE_INSTANCE  = -13,
+	ENGINE_FAILED_FREE_BANK  = -14,
+	
+	ENGINE_FAILED_SET_PARAM = -15,
+	ENGINE_FAILED_GET_PARAM = -16,
 };
 
 const char* audio_error_string(audio_error code);
@@ -150,57 +152,36 @@ private:
 	}
 };
 
-struct AudioBankLoader
-{
-	enum WhenToLoad
-	{
-		ON_INIT,
-		ON_ACTIVE
-	};
-
-	enum WhenToFree
-	{
-		ON_DNIT,
-		ON_DEACTIVE
-	};
-
-	WhenToLoad load;
-	WhenToFree free;
-	std::vector<std::string> banks;
-
-	AudioBankLoader& SetWhenToLoad(WhenToLoad load);
-	AudioBankLoader& SetWhenToFree(WhenToFree free);
-	AudioBankLoader& AddBank      (const std::string& bank);
-};
-
 // Components to talk to Audio through ECS
 // and update mixing
 
-struct AudioEmitter
-{
-private:
-	Audio* m_audio;
-	int instance = 0; // gets populated when playing
-
-public:
-	std::string event;
-
-public:
-	void _SetAudio(Audio* audio);
-
-	bool IsPlaying()   const;
-	int  GetInstance() const;
-
-	int PlayAndForget();
-
-	void Play();
-	void Start();
-	void Stop();
-	void Free();
-
-	AudioEmitter&  Set(const std::string& param, float value);
-	float          Get(const std::string& param);
-
-	AudioEmitter& SetVolume(float volume);
-	float         GetVolume();
-};
+//struct AudioEmitter
+//{
+//private:
+//	Audio* m_audio;
+//	int instance = 0; // gets populated when playing
+//
+//public:
+//	std::string event;
+//
+//public:
+//	void _SetAudio(Audio* audio);
+//
+//	AudioEmitter& SetEvent(const std::string& event);
+//
+//	bool IsPlaying()   const;
+//	int  GetInstance() const;
+//
+//	int PlayAndForget();
+//
+//	AudioEmitter& Play();
+//	AudioEmitter& Start();
+//	AudioEmitter& Stop();
+//	AudioEmitter& Free();
+//
+//	AudioEmitter&  Set(const std::string& param, float value);
+//	float          Get(const std::string& param);
+//
+//	AudioEmitter& SetVolume(float volume);
+//	float         GetVolume();
+//};

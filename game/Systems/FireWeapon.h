@@ -59,8 +59,7 @@ private:
 
 				e.Add<WrapOnScreen>();
 
-				//e.Add<AudioEmitter>()
-				//	.SetEvent("event:/weapons/fire_cannon");
+				PlaySound("event:/fire_main_gun");
 
 				transform.position += normal * .05f;
 				transform.scale = vec2(First<CoordTranslation>().CellsToMeters * 4);

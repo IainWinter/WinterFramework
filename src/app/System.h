@@ -29,12 +29,13 @@ struct SystemBase
 {
 private:
 	World* m_world;
+	bool m_active;
 
 private:
 	template<typename _t>
-	friend struct System;
+	friend struct System; // for m_world without giving direct access to children
 
-	friend struct World;
+	friend struct World;  // for _Method
 
 private:
 
@@ -54,7 +55,11 @@ private:
 	void _Debug();
 
 public:
-	virtual ~SystemBase() = default;
+	SystemBase();
+	virtual ~SystemBase();
+
+	bool GetInitState() const;
+	bool GetActiveState() const;
 
 protected:
 
@@ -84,9 +89,15 @@ protected:
 	void Defer    (const std::function<void()>& task);                       // run code once at the end of the frame (with coroutine)
 	void Delay    (float delayInSeconds, const std::function<void()>& task); // run code after x seconds
 
+// audio
+
+	int  PlaySound(const std::string& eventPath);
+	void StopSound(int soundHandle);
+
 // getters
 
 	WindowRef GetWindow();
+	Audio&    GetAudio();
 	World*    GetWorld();
 
 // interface
@@ -129,7 +140,27 @@ private:
 
 	std::vector<SystemBase*> m_systems;
 
-	float m_fixedTimeAcc = 0.f;
+	float m_fixedTimeAcc;
+	bool m_init;
+
+public:
+	World(Application* app, EventBus* root);
+	~World();
+	
+	void DetachFromRoot(EventBus* root);
+
+	// you could create two of the same system 
+	// dont do that
+	template<typename _t>
+	SystemBase* CreateSystem();
+
+	void  AttachSystem(SystemBase* system);
+	void  DetachSystem(SystemBase* system);
+	void DestroySystem(SystemBase* system);
+
+	bool ContainsSystem(SystemBase* system) const;
+
+	void Init();
 
 public:
 	Application*  GetApplication();
@@ -137,6 +168,7 @@ public:
 	// returns a WindowRef that allows editing properties of the window
 	// but not its rendering state
 	WindowRef     GetWindow();
+	Audio&        GetAudio();
 
 	EntityWorld&  GetEntityWorld();
 	PhysicsWorld& GetPhysicsWorld();
@@ -144,6 +176,8 @@ public:
 
 	EventQueue&   GetEventQueue();
 	EventBus&     GetEventBus();
+
+	bool          GetInitState() const;
 
 public:
 	void Tick();
@@ -155,26 +189,14 @@ private:
 	void TickSystemsUI();
 	void TickSystemsDebug();
 
-public:
-	World(Application* app, EventBus* root);
-	~World();
-	
-	void DetachFromRoot(EventBus* root);
-
-	template<typename _t>
-	SystemBase* CreateSystem(_t&& system);
-
-	void  AttachSystem(SystemBase* system);
-	void  DetachSystem(SystemBase* system);
-	void DestroySystem(SystemBase* system);
+	void ActivateInactiveSystems();
 
 private:
 	// needs to use entt because it doesn't support lambdas 
 
-	void on_add_rigidbody    (entt::registry& reg, entt::entity e);
-	void on_remove_rigidbody (entt::registry& reg, entt::entity e);
-
-	void on_add_audio_emitter(entt::registry& reg, entt::entity e);
+	void on_add_rigidbody     (entt::registry& reg, entt::entity e);
+	void on_remove_rigidbody  (entt::registry& reg, entt::entity e);
+	//void on_add_audio_emitter (entt::registry& reg, entt::entity e);
 };
 
 struct Application final
@@ -196,8 +218,9 @@ public:
 
 public:
 	Application();
+	~Application();
 
-	World* CreateWorld();
+	World* CreateWorld(bool autoInit = true);
 	void DestroyWorld(World* world);
 
 	void Tick();
@@ -285,11 +308,15 @@ inline void System<_t>::Detach()
 }
 
 template<typename _t>
-inline SystemBase* World::CreateSystem(_t&& system)
+inline SystemBase* World::CreateSystem()
 {
-	SystemBase* s = new _t(std::forward<_t>(system));
-	s->_Init(this);
-	AttachSystem(s);
+	SystemBase* s = new _t();
+	m_systems.push_back(s);
 	
+	if (m_init) // auto init if world is already
+	{
+		s->_Init(this);
+	}
+
 	return s;
 }
