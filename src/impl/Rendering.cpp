@@ -1,5 +1,8 @@
 #include "Rendering.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/load_image.h"
+
 IDeviceObject::IDeviceObject(
 	bool isStatic
 )

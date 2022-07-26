@@ -38,12 +38,21 @@ struct System_PlayerController : System<System_PlayerController>
 
 		Player& player = playerEntity.Get<Player>();
 
-		player.AmmoRechargeTimer += Time::DeltaTime();
-		if (player.AmmoRechargeTimer > player.AmmoRechargeTime)
+		if (player.AmmoRechargeTimer < 0.f)
+		{
+			player.AmmoRechargeTimer += Time::DeltaTime();
+
+			if (player.AmmoRechargeTimer >= 0.f)
+			{
+				player.Ammo = 5;
+			}
+		}
+
+		/*if (player.AmmoRechargeTimer > player.AmmoRechargeTime)
 		{
 			player.AmmoRechargeTimer = 0.f;
 			player.Ammo = clamp(player.Ammo + 1, 0, player.AmmoMax);
-		}
+		}*/
 
 		player.m_attackTimer    -= Time::DeltaTime();
 		player.m_attackTimerAlt -= Time::DeltaTime();
@@ -66,18 +75,28 @@ struct System_PlayerController : System<System_PlayerController>
 		{
 			AttackFireInput = false;
 			player.Ammo -= 1;
-
 			player.m_attackTimer = player.Current.AttackTime;
+
+			if (player.Ammo == 0) // second cooldown if shot all bullets
+			{
+				player.AmmoRechargeTimer = -1;
+			}
+			
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
 
-			if (player.Current.Weapon != WEAPON_CANNON)
-			{
-				player.Current.Ammo -= 1;
-				if (player.Current.Ammo <= 0)
-				{
-					Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
-				}
-			}
+			//if (player.Current.Weapon != WEAPON_CANNON)
+			//{
+			//	player.Current.Ammo -= 1;
+			//	if (player.Current.Ammo <= 0)
+			//	{
+			//		if (player.Ammo == 0) // second cooldown if shot all bullets
+			//		{
+			//			player.AmmoRechargeTimer = -1;
+			//		}
+
+			//		Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
+			//	}
+			//}
 		}
 
 		target.Get<Transform2D>().position = playerEntity.Get<Transform2D>().position + PlayerHeading(); // shoot forward

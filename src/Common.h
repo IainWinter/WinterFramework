@@ -112,6 +112,8 @@ vec2 safe_normalize(const vec2& p);
 vec2 rotate(const vec2& v, float a);
 vec2 limit(const vec2& x, float max);
 
+float pow4(float x);
+
 template<typename _t>
 std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 {

@@ -36,7 +36,7 @@
 
 // Idea: Make a polished version of asteroids to completion, then iterate with enemies and damage system
 
-struct Regolith : EngineLoop
+struct Regolith : EngineLoop<Regolith>
 {
 	void Init()
 	{
@@ -47,20 +47,34 @@ struct Regolith : EngineLoop
 		ConfigureLevel();
 		ConfigureInputMapping();
 
-		app.GetRootEventBus().Attach<event_SubmitHighscore>(this);
-		app.GetRootEventBus().Attach<event_PlayGame>(this);
+		Attach<event_SubmitHighscore>();
+		Attach<event_PlayGame>();
 	}
 
 	void InitUI()
 	{
-		FontMap::Load("Roboto",          18,     "Roboto.ttf");
-		FontMap::Load("Score",           56 * 2, "Roboto.ttf");
-		FontMap::Load("OK Button",       32 * 2, "Roboto.ttf");
-		FontMap::Load("Game Over",      128 * 2, "Roboto.ttf");
-		FontMap::Load("Final Score",     64 * 2, "Roboto.ttf");
-		FontMap::Load("Highscore Input", 64 * 2, "Roboto.ttf");
+		FontMap::Load("Roboto",           18,     "Roboto.ttf");
+		FontMap::Load("Score",            56 * 2, "Roboto.ttf");
+		FontMap::Load("OK Button",        32 * 2, "Roboto.ttf");
+		FontMap::Load("Game Over",       128 * 2, "Roboto.ttf");
+		FontMap::Load("Final Score",      64 * 2, "Roboto.ttf");
+		FontMap::Load("Highscore Input",  64 * 2, "Roboto.ttf");
 		FontMap::Load("Main Menu Title", 192 * 2, "Roboto.ttf");
-		FontMap::Load("Main Menu Button", 64 * 2, "Roboto.ttf");
+		FontMap::Load("Main Menu Button", 48 * 2, "DidactGothic-Regular.ttf");
+		FontMap::Load("Highscore Table",  36 * 2, "DidactGothic-Regular.ttf");
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.WindowPadding                  = ImVec2(0, 0);
+		style.FramePadding                   = ImVec2(0.f, 0.f);
+		style.WindowBorderSize               = 0.f;
+		style.Colors[ImGuiCol_Text]          = ImVec4(1, 1, 1, 1);
+		style.Colors[ImGuiCol_Button]        = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_TableRowBg]    = ImVec4(1, 1, 1, 1);
+
+		//ImGuiIO& io = ImGui::GetIO();
+		//io.NavMovesMouse = true;
 	}
 
 	// this should load from a file that the user can configure in a settings menu...
@@ -134,6 +148,9 @@ struct Regolith : EngineLoop
 		game->CreateSystem<System_ItemPickup>();
 		game->CreateSystem<System_FireWeapon>();
 		game->CreateSystem<System_RockSpawner_Test>();
+
+		// enemy
+		// game->CreateSystem<EnemyController_System>();
 
 		// UI
 		game->CreateSystem<System_UI_AsteroidsHUD>();

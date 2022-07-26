@@ -8,70 +8,311 @@
 #include "Events.h"
 #include <sstream>
 
+float easeInOutCubic(float x)
+{
+	return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
+}
+
+struct HighscoreRecord
+{
+	int order;
+	int score;
+	std::string name;
+};
+
 struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 {
 	int music;
+	r<Texture> title_main;
+	r<Texture> title_highscores;
+	r<Texture> title_settings;
+
+	std::vector<HighscoreRecord> records;
 
 	void Init()
 	{
+		records =
+		{
+			{ 1, 10023, "Test" },
+			{ 2,  9023, "Iain" },
+			{ 3,  8420, "Another" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+			{ 4,   100, "Same" },
+		};
+
 		music = PlaySound("event:/music_menu_main");
+		
+		title_main       = GetPrefab_Texture("title_main.png");
+		title_highscores = GetPrefab_Texture("title_highscores.png");
+		title_settings   = GetPrefab_Texture("title_settings.png");
+		
+		title_main      ->SendToDevice();
+		title_highscores->SendToDevice();
+		title_settings  ->SendToDevice();
+	}
+
+	ImVec2 GetSize(const r<Texture>& texture, float height_pixels)
+	{
+		float ratio = texture->Width() / (float)texture->Height();
+		float height = height_pixels * scale;
+		float width = height * ratio;
+
+		return ImVec2(width, height);
 	}
 
 	void PressedPlay()
 	{
 		StopSound(music);
 		PlaySound("event:/menu_press_play");
-		
+
 		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
+	}
+
+	const float highscoreLocation = -1500;
+	const float settingsLocation  =  1500;
+
+	void PressedBack()
+	{
+		SetTarget(0);
+	}
+
+	void PressedHighscores()
+	{
+		SetTarget(highscoreLocation);
+	}
+
+	void PressedSettings()
+	{
+		SetTarget(settingsLocation);
+	}
+
+	enum MenuState
+	{
+		MAIN,
+		HIGHSCORES,
+		SETTINGS
+	};
+
+	vec2 screen, midpoint;
+	float scale, margin;
+	MenuState currentState = MAIN;
+
+	float menuAnchorPoint                = 0.f;
+	float menuAnchorPointLast            = 0.f;
+	float menuAnchorPointTarget          = 0.f;
+	float menuAnchorPointTransitionTimer = 1.f;
+
+	float highscorePos;
+	float settingsPos;
+
+	void SetTarget(float target)
+	{
+		menuAnchorPointTarget = target;
+		menuAnchorPointLast = menuAnchorPoint;
+		menuAnchorPointTransitionTimer = 0.f;
 	}
 
 	void UI()
 	{
-		vec2 screen = GetWindow().Dimensions();
-		vec2 midpoint = screen / 2.f;
-		float scale = screen.y / 720;
+		screen   = GetWindow().Dimensions();
+		midpoint = screen / 2.f;
+		scale    = screen.y / 720;
+		margin   = 10.f * scale;
 
-		float healthSize = 50.f * scale;
-		float margin = 10.f * scale;
+		menuAnchorPointTransitionTimer += Time::DeltaTime();
+		
+		if (menuAnchorPointTransitionTimer > 1.f)
+		{
+			menuAnchorPoint = menuAnchorPointTarget;
+		}
+
+		else
+		{
+			menuAnchorPoint = lerp(menuAnchorPointLast, menuAnchorPointTarget, easeInOutCubic(menuAnchorPointTransitionTimer));
+		}
+
+		midpoint.x -= menuAnchorPoint * scale;
 
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(screen.x, screen.y));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-		ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
 
 		ImGui::Begin("Asteroids Menu", 0,
 			ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_NoBackground
 			| ImGuiWindowFlags_NoTitleBar
-			| ImGuiWindowFlags_NoScrollbar
+			//| ImGuiWindowFlags_NoScrollbar
 		);
 
 		ImGui::SetWindowFontScale(scale / 2.f);
 
-		ImGui::PushFont(FontMap::Get("Main Menu Title"));
-		ImVec2 titleSize = ImGui::CalcTextSize("REGOLITH");
-		ImGui::SetCursorPos(ImVec2(midpoint.x - titleSize.x / 2, midpoint.y - titleSize.y / 2));
-		ImGui::Text("REGOLITH");
-		ImGui::PopFont();
-
 		ImGui::PushFont(FontMap::Get("Main Menu Button"));
-		ImVec2 playSize = ImGui::CalcTextSize("Play");
-		ImGui::SetCursorPosX(midpoint.x - playSize.x / 2);
-		
-		if (ImGui::Button("Play"))
-		{
-			PressedPlay();
-		}
-		
-		ImGui::PopFont();
 
-		//ImVec2 highscoreSize = ImGui::CalcTextSize("Highscores");
-		//ImGui::SetCursorPosX(midpoint.x - highscoreSize.x / 2);
-		//ImGui::Button("Highscores");
+		Main(midpoint.x);
+		
+		if (menuAnchorPoint > 0)
+		{
+			Settings(midpoint.x + settingsLocation  * scale);
+		}
+
+		else if (menuAnchorPoint < 0)
+		{
+			Highscores(midpoint.x + highscoreLocation * scale);
+		}
+
+
+		ImGui::PopFont();
 
 		ImGui::End();
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor(1);
+	}
+
+	void Main(float position)
+	{
+		auto [width, height] = GetSize(title_main, 200);
+
+		ImGui::SetCursorPos(ImVec2(position - width / 2, midpoint.y - height));
+		ImGui::Image((void*)title_main->DeviceHandle(), ImVec2(width, height));
+
+		ImGui::SetCursorPosY(midpoint.y + height / 2.f);
+
+		if (MenuButton("Play",       MAIN))       PressedPlay();
+		if (MenuButton("Highscores", HIGHSCORES)) PressedHighscores();
+		if (MenuButton("Settings",   SETTINGS))   PressedSettings();
+	}
+
+	void Highscores(float position)
+	{
+		auto [width, height] = GetSize(title_highscores, 100);
+
+		ImGui::SetCursorPos(ImVec2(position - screen.x / 2 + margin * 2, margin * 2));
+		ImGui::Image((void*)title_highscores->DeviceHandle(), ImVec2(width, height));
+
+		float backWidth = ImGui::CalcTextSize("Back").x;
+
+		ImGui::SetCursorPos(ImVec2(position + screen.x / 2.f - backWidth - 2 * margin, midpoint.y));
+		if (ImGui::Button("Back"))
+		{
+			PressedBack();
+		}
+
+		// table
+
+		float twidth  = screen.x * .5f;
+		float theight = screen.y * .5f;
+
+		ImGui::SetCursorPos(ImVec2(position - twidth / 2, screen.y * .33f));
+		ImGui::PushFont(FontMap::Get("Highscore Table"));
+
+		ImGui::SetNextWindowPos(ImVec2(position - twidth / 2, screen.y * .33f));
+		ImGui::BeginChild("Highscores titles", ImVec2(twidth, theight));
+
+		if (ImGui::BeginTable("Upgrades Titles", 3))
+		{
+			ImGui::TableSetupColumn("#",     ImGuiTableColumnFlags_WidthStretch, .1);
+			ImGui::TableSetupColumn("Name",  ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("Score", ImGuiTableColumnFlags_WidthStretch, .5);
+		
+			ImGui::TableNextColumn(); ImGui::Text("#");
+			ImGui::TableNextColumn(); ImGui::Text("Name");
+			ImGui::TableNextColumn(); ImGui::Text("Score");
+
+			ImGui::EndTable();
+		}
+
+		float headerSize = ImGui::GetItemRectSize().y + margin;
+
+		ImGui::Separator();
+		ImGui::EndChild();
+
+		ImGui::SetNextWindowPos(ImVec2(position - twidth / 2, screen.y * .33f + headerSize));
+		ImGui::BeginChild("Highscores table", ImVec2(twidth, theight));
+		if (ImGui::BeginTable("Upgrades", 3))
+		{
+			ImGui::TableSetupColumn("#",     ImGuiTableColumnFlags_WidthStretch, .1);
+			ImGui::TableSetupColumn("Name",  ImGuiTableColumnFlags_WidthStretch);
+			ImGui::TableSetupColumn("Score", ImGuiTableColumnFlags_WidthStretch, .5);
+
+			for (int i = 0; i < records.size(); i++)
+			{
+				HighscoreRecord& record = records.at(i);
+
+				ImGui::TableNextColumn();
+				ImGui::Text("%d", record.order);
+
+				ImGui::TableNextColumn();
+				ImGui::Text(record.name.c_str());
+
+				ImGui::TableNextColumn();
+				ImGui::Text("%d", record.score);
+
+				ImGui::TableNextRow();
+			}
+			ImGui::EndTable();
+		}
+
+		ImGui::PopFont();
+		ImGui::EndChild();
+	}
+
+	void Settings(float position)
+	{
+		auto [width, height] = GetSize(title_settings, 100);
+
+		ImGui::SetCursorPos(ImVec2(position - screen.x / 2 + margin * 2, margin * 2));
+		ImGui::Image((void*)title_settings->DeviceHandle(), ImVec2(width, height));
+
+		float backWidth = ImGui::CalcTextSize("Back").x;
+
+		ImGui::SetCursorPos(ImVec2(position - screen.x / 2.f + backWidth + 2 * margin, midpoint.y));
+		if (ImGui::Button("Back"))
+		{
+			PressedBack();
+		}
+	}
+
+	bool MenuButton(const char* label, MenuState state)
+	{
+		ImVec2 textSize = ImGui::CalcTextSize(label);
+		ImGui::SetCursorPosX(midpoint.x - textSize.x / 2);
+
+		bool active = false;
+
+		if (ImGui::Button(label))
+		{
+			active = true;
+		}
+		PutDotsNextToActiveButton(state);
+
+		return active;
+	}
+
+	void PutDotsNextToActiveButton(MenuState state)
+	{
+		if (ImGui::IsItemHovered() || state == currentState)
+		{
+			currentState = state;
+
+			ImVec2 min = ImGui::GetItemRectMin();
+			ImVec2 max = ImGui::GetItemRectMax();
+			float avgY = (min.y + max.y) / 2.f;
+
+			ImVec2 dotLeft  = ImVec2(min.x - 2 * margin, avgY);
+			ImVec2 dotRight = ImVec2(max.x + 2 * margin, avgY);
+
+			ImGui::GetForegroundDrawList()->AddCircleFilled(dotLeft,  5.f, Color(255, 255, 255).as_u32);
+			ImGui::GetForegroundDrawList()->AddCircleFilled(dotRight, 5.f, Color(255, 255, 255).as_u32);
+		}
 	}
 };

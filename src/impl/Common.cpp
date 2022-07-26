@@ -190,3 +190,8 @@ vec2 limit(const vec2& x, float max)
 	if (d > max) return x / d * max;
 	return x;
 }
+
+float pow4(float x)
+{
+	return x * x * x * x;
+}

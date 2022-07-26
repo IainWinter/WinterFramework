@@ -9,7 +9,6 @@
 
 #include "util/error_check.h" // gives gl
 #include "SDL2/SDL_surface.h"
-#include "stb/load_image.h"
 
 // I want to create the simplest graphics api that hides as much as possible away
 // I only need simple Texture/Mesh/Shader, I dont even need materials

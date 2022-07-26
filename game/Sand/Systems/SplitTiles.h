@@ -152,8 +152,8 @@ private:
 													// they should have to because if not they explode
 		float cellsStrength = entity.Get<SandSprite>().cellStrength;
 
-		Defer([=]()
-		{
+		//Defer([=]()
+		//{
 			auto [t, s, ss] = split;
 			Entity splitEntity = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 
@@ -170,8 +170,8 @@ private:
 
 			splitEntity.Add<Throwable>();
 
-			SendNow(event_SandAddSprite { splitEntity, vel, ang, d });
-		});
+			Send(event_SandAddSprite { splitEntity, vel, ang, d });
+		//});
 	}
 
 	std::tuple<Transform2D, r<Texture>, r<Texture>> SplitSpriteInTwo(const std::vector<int>& island, Entity entity)

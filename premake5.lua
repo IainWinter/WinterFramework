@@ -48,6 +48,7 @@ project "Framework"
 		"vendor/asio/include",
 		"vendor/json/include",
 		"vendor/fmod/include",
+		"vendor/tinyglft/include",
 
 		--"vendor/sqlite/include",
 

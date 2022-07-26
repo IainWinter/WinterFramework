@@ -157,6 +157,6 @@ struct Sand_System_Update : System<Sand_System_Update>
 
 		e.entity.Add<WrapOnScreen>();
 
-		SendNow(event_Sand_CreateCollider{ e.entity });
+		Send(event_Sand_CreateCollider{ e.entity });
 	}
 };

@@ -25,6 +25,7 @@
 // functions for updating its state
 // this is where global events attach...
 
+template<typename _me>
 struct EngineLoop
 {
 protected:
@@ -97,6 +98,12 @@ protected:
 	virtual void PreInitUI() {};
 	virtual void InitUI() {}; // for loading fonts n such after flags have been set
 	virtual void Dnit() {};
+
+	template<typename _e>
+	void Attach() { app.GetRootEventBus().Attach<_e, _me>((_me*)this); }
+
+	template<typename _e>
+	void Detach() { app.GetRootEventBus().Detach<_e>(this); }
 };
 
 template<typename _engine_loop>
