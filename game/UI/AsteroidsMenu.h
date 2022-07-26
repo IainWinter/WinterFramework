@@ -73,20 +73,21 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		return ImVec2(width, height);
 	}
 
+	const vec2 highscoreLocation = vec2(-1500, 0);
+	const vec2 settingsLocation  = vec2( 1500, 0);
+
 	void PressedPlay()
 	{
 		StopSound(music);
 		PlaySound("event:/menu_press_play");
 
+		Delay(1.f, [this]() { SetTarget(vec2(0, -1000.f)); });
 		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
 	}
 
-	const float highscoreLocation = -1500;
-	const float settingsLocation  =  1500;
-
 	void PressedBack()
 	{
-		SetTarget(0);
+		SetTarget(vec2(0));
 	}
 
 	void PressedHighscores()
@@ -110,15 +111,15 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	float scale, margin;
 	MenuState currentState = MAIN;
 
-	float menuAnchorPoint                = 0.f;
-	float menuAnchorPointLast            = 0.f;
-	float menuAnchorPointTarget          = 0.f;
+	vec2  menuAnchorPoint                = vec2(0.f);
+	vec2  menuAnchorPointLast            = vec2(0.f);
+	vec2  menuAnchorPointTarget          = vec2(0.f);
 	float menuAnchorPointTransitionTimer = 1.f;
 
 	float highscorePos;
 	float settingsPos;
 
-	void SetTarget(float target)
+	void SetTarget(vec2 target)
 	{
 		menuAnchorPointTarget = target;
 		menuAnchorPointLast = menuAnchorPoint;
@@ -144,7 +145,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 			menuAnchorPoint = lerp(menuAnchorPointLast, menuAnchorPointTarget, easeInOutCubic(menuAnchorPointTransitionTimer));
 		}
 
-		midpoint.x -= menuAnchorPoint * scale;
+		midpoint -= menuAnchorPoint * scale;
 
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2(screen.x, screen.y));
@@ -153,7 +154,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 			ImGuiWindowFlags_NoResize
 			| ImGuiWindowFlags_NoBackground
 			| ImGuiWindowFlags_NoTitleBar
-			//| ImGuiWindowFlags_NoScrollbar
+			| ImGuiWindowFlags_NoScrollbar
 		);
 
 		ImGui::SetWindowFontScale(scale / 2.f);
@@ -162,16 +163,15 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 		Main(midpoint.x);
 		
-		if (menuAnchorPoint > 0)
+		if (menuAnchorPoint.x > 0)
 		{
-			Settings(midpoint.x + settingsLocation  * scale);
+			Settings(midpoint.x + settingsLocation.x * scale);
 		}
 
-		else if (menuAnchorPoint < 0)
+		else if (menuAnchorPoint.x < 0)
 		{
-			Highscores(midpoint.x + highscoreLocation * scale);
+			Highscores(midpoint.x + highscoreLocation.x * scale);
 		}
-
 
 		ImGui::PopFont();
 

@@ -72,6 +72,10 @@ struct Regolith : EngineLoop<Regolith>
 		style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0, 0, 0, 0);
 		style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0, 0, 0, 0);
 		style.Colors[ImGuiCol_TableRowBg]    = ImVec4(1, 1, 1, 1);
+		style.Colors[ImGuiCol_ScrollbarBg]   = ImVec4(0, 0, 0, 0);
+		style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(1, 1, 1, .2);
+		style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(1, 1, 1, .6);
+		style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(1, 1, 1, .4);
 
 		//ImGuiIO& io = ImGui::GetIO();
 		//io.NavMovesMouse = true;
