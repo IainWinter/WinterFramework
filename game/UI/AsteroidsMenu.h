@@ -88,7 +88,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	void PressedExit()
 	{
 		SetTarget(vec2(0, 1000.f));
-		targetFade = 1.f;
+		SetTargetFade(1.f);
 		Delay(1.f, [this]() { SendToRoot(event_Shutdown{});  });
 	}
 
@@ -180,12 +180,12 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		fadeTimer += Time::DeltaTime();
 		if (fadeTimer > 1.f)
 		{
-			fadeTimer = 1;
+			currentFade = targetFade;
 		}
 
 		else
 		{
-			currentFade = lerp(lastFade, targetFade, fadeTimer);
+			currentFade = lerp(lastFade, targetFade, easeInOutCubic(fadeTimer));
 		}
 
 		ImGui::GetBackgroundDrawList()->AddRectFilled(
