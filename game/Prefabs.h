@@ -5,6 +5,8 @@
 #include "app/System.h"
 #include "Rendering.h"
 
+void ClearPrefabs();
+
 ParticleEmitter GetPrefab_BulletEmitter();
 ParticleEmitter GetPrefab_LaserEmitter();
 ParticleEmitter GetPrefab_FuelShotEmitter();

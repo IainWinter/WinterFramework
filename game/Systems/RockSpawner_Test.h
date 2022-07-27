@@ -20,7 +20,7 @@ struct System_RockSpawner_Test : SystemBase
 	float rockSpeed = 10.f;
 	float rockTurning = wPI / 2.f;
 
-	int asteroidsLeft = 6;
+	int asteroidsLeft = 1;
 
 	void Update()
 	{

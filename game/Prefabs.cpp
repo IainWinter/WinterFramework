@@ -5,6 +5,12 @@
 std::unordered_map<std::string, r<ParticleEmitter>> emitters;
 std::unordered_map<std::string, r<Texture>> textures;
 
+void ClearPrefabs() // cleanup before context is destroied
+{
+	emitters.clear();
+	textures.clear();
+}
+
 // could put in globals file
 
 ParticleEmitter GetPrefab_BulletEmitter()

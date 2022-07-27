@@ -5,6 +5,7 @@
 #include "Components/Weapon.h"
 #include "Components/Item.h"
 #include "Components/EnemyAI.h"
+#include "HighscoreRecord.h"
 
 struct event_SpawnExplosion
 {
@@ -40,12 +41,24 @@ struct event_Enemy_Spawn
 	bool enableAi = true;
 
 	vec2 initialVel;
+
+	Entity target;
 };
 
 struct event_SubmitHighscore
 {
 	std::string name;
 	int score;
+};
+
+struct event_RequestHighscores
+{
+	// should add query options
+};
+
+struct event_RespondHighscore
+{
+	HighscoreRecord record;
 };
 
 struct event_AddScore

@@ -87,9 +87,9 @@ private:
 		// If there are two islands that contain the core, this means it's been split and should explode
 		// Any waother island is part of the larger armor, and can be split off by spawning a new entity
 
-		bool split = islands.Count() > 1;
+		size_t cellCount = islands.CellCount();
 
-		if (split)
+		if (islands.Count() > 1)
 		{
 			if (islands.coreIslands.size() > 1) // explode split cores, should tune
 			{
@@ -138,7 +138,17 @@ private:
 			}
 		}
 
-		Send(event_Sand_CreateCollider{ entity });
+		if (cellCount < TurnToDustIfUnder)
+		{
+			printf("explode to dust\n");
+			SendNow(event_Sand_ExplodeToDust{ entity });
+		}
+
+		else
+		{
+			printf("recalc colliders\n");
+			SendNow(event_Sand_CreateCollider{ entity });
+		}
 	}
 
 	void SplitFromIsland(const std::vector<int>& island, Entity entity)

@@ -455,14 +455,14 @@ int                 Buffer::Bytes()            const { return (int)m_host.size()
 
 void Buffer::SetBytes(int byteCount, const void* data)
 {
-	m_length = byteCount;
+	m_length = byteCount / BytesPerElement();
 	m_host.resize(byteCount);
 	memcpy(m_host.data(), data, byteCount); // put an error check to see if memory was actually allocated
 }
 
 void Buffer::PushBytes(int byteCount, const void* data)
 {
-	m_length += byteCount;
+	m_length += byteCount / BytesPerElement();
 	
 	int end = Bytes();
 	m_host.reserve(end + byteCount);
@@ -471,13 +471,13 @@ void Buffer::PushBytes(int byteCount, const void* data)
 
 void Buffer::EraseBytes(int byteIndex, int byteCount)
 {
-	m_length -= byteCount;
+	m_length -= byteCount / BytesPerElement();
 	m_host.erase(m_host.begin() + byteIndex, m_host.begin() + byteIndex + byteCount);
 }
 
 void Buffer::PopBytes(int byteCount)
 {
-	m_length -= byteCount;
+	m_length -= byteCount / BytesPerElement();
 	m_host.erase(m_host.end() - byteCount, m_host.end());
 }
 

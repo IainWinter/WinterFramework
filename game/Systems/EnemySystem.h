@@ -12,22 +12,19 @@
 
 struct System_Enemy : System<System_Enemy>
 {
-	Entity player;
-
-	void Init()
+	void OnAttach()
 	{
 		Attach<event_Enemy_Spawn>();
-		player = FirstEntity<Player>();
 	}
 
 	void on(event_Enemy_Spawn& e)
 	{
-		SpawnEnemy(e.enemy, e.position, e.enableAi);
+		SpawnEnemy(e.enemy, e.position, e.enableAi, FirstEntity<Player>());
 	}
 
 private:
 
-	void SpawnEnemy(EnemyType type, vec2 position, bool enableAI)
+	void SpawnEnemy(EnemyType type, vec2 position, bool enableAI, Entity player) // todo: rename play to target
 	{
 		Entity entity;
 

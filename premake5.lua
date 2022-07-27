@@ -26,7 +26,7 @@ project "Framework"
 		"vendor/imgui/backends/imgui_impl_sdl.cpp",
 		"vendor/imgui/backends/imgui_impl_opengl3.cpp",
 		"vendor/stb/src/load_image.cpp",
-		--"vendor/sqlite/src/sqlite3.c",
+		"vendor/sqlite/src/sqlite3.c",
 
 		-- these are game files, remove for just framework
 
@@ -50,7 +50,7 @@ project "Framework"
 		"vendor/fmod/include",
 		"vendor/tinyglft/include",
 
-		--"vendor/sqlite/include",
+		"vendor/sqlite/include",
 
 		-- these are game files, see above
 

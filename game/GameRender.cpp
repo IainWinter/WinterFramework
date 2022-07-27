@@ -51,8 +51,8 @@ void InitWireframeProgram()
 
 		"void main()"
 		"{"
-		"vertColor = color;"
-		"gl_Position = projection * model * vec4(vertex.xy, 3.0, 1.0);" // hack: draw wireframes above
+			"vertColor = color;"
+			"gl_Position = projection * model * vec4(vertex, 3.0, 1.0);" // hack: draw wireframes above
 		"}";
 
 	const char* source_frag =

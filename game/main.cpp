@@ -27,6 +27,12 @@
 #include "Systems/LowCorePixelDeath.h"
 #include "Systems/zTestingSystem.h"
 #include "Systems/Background.h"
+#include "Systems/HighscoreStore.h"
+
+#include "Systems/EnemyController.h"
+#include "Systems/EnemySpawner.h"
+#include "Systems/EnemySystem.h"
+
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
 
@@ -49,6 +55,11 @@ struct Regolith : EngineLoop<Regolith>
 
 		Attach<event_SubmitHighscore>();
 		Attach<event_PlayGame>();
+	}
+
+	void Dnit()
+	{
+		ClearPrefabs();
 	}
 
 	void InitUI()
@@ -157,6 +168,10 @@ struct Regolith : EngineLoop<Regolith>
 		game->CreateSystem<System_FireWeapon>();
 		game->CreateSystem<System_RockSpawner_Test>();
 
+		//game->CreateSystem<System_EnemySpawner>();
+		//game->CreateSystem<System_EnemyController>();
+		//game->CreateSystem<System_Enemy>();
+
 		// enemy
 		// game->CreateSystem<EnemyController_System>();
 
@@ -169,6 +184,7 @@ struct Regolith : EngineLoop<Regolith>
 		World* bg = app.CreateWorld();
 		bg->CreateSystem<System_Render_Sprites>();
 		bg->CreateSystem<Background_System>();
+		bg->CreateSystem<System_HighscoreStore>();
 	}
 
 	float transitionTimer = 0;

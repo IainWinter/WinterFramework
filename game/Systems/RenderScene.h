@@ -6,6 +6,7 @@
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Particle.h"
+#include "ext/rendering/Model.h"
 #include "ext/rendering/BatchSpriteRenderer.h"
 #include "imgui/imgui.h"
 #include <algorithm>
@@ -32,6 +33,15 @@ public:
 		{
 			program->Set("model", transform.World());
 			mesh.Draw(mesh.topology);
+		}
+
+		for (auto [transform, model] : Query<Transform2D, Model>())
+		{
+			program->Set("model", transform.World());
+			for (r<Mesh>& mesh : model.meshes)
+			{
+				mesh->Draw(mesh->topology);
+			}
 		}
 	}
 };

@@ -45,8 +45,8 @@ private:
 	void _Init(World* world); // pass world so every system doestn need a constructor
 	void _Dnit();
 
-	void _Activate();
-	void _Deactivate();
+	void _OnAttach();
+	void _OnDetach();
 
 	void _Update();
 	void _FixedUpdate();
@@ -106,8 +106,8 @@ protected:
 	virtual void Init() {} // alloc resources
 	virtual void Dnit() {} // free resources
 
-	virtual void Activate() {}   // attach events
-	virtual void Deactivate() {} // detach events, happens automatically in _Detach
+	virtual void OnAttach() {} // attach events
+	virtual void OnDetach() {} // detach events, happens automatically in _Detach
 
 	virtual void Update() {}
 	virtual void FixedUpdate() {}
@@ -189,7 +189,7 @@ private:
 	void TickSystemsUI();
 	void TickSystemsDebug();
 
-	void ActivateInactiveSystems();
+	void AttachInactiveSystems();
 
 private:
 	// needs to use entt because it doesn't support lambdas 

@@ -6,19 +6,13 @@
 #include "Prefabs.h"
 #include "Components/Player.h"
 #include "Events.h"
+#include "HighscoreRecord.h"
 #include <sstream>
 
 float easeInOutCubic(float x)
 {
 	return x < 0.5 ? 4 * x * x * x : 1 - pow(-2 * x + 2, 3) / 2;
 }
-
-struct HighscoreRecord
-{
-	int order;
-	int score;
-	std::string name;
-};
 
 struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 {
@@ -31,37 +25,28 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void Init()
 	{
-		records =
-		{
-			{ 1, 10023, "Test" },
-			{ 2,  9023, "Iain" },
-			{ 3,  8420, "Another" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-			{ 4,   100, "Same" },
-		};
-
 		music = PlaySound("event:/music_menu_main");
 		
 		title_main       = GetPrefab_Texture("title_main.png");
 		title_highscores = GetPrefab_Texture("title_highscores.png");
 		title_settings   = GetPrefab_Texture("title_settings.png");
 		
-		title_main      ->SendToDevice();
-		title_highscores->SendToDevice();
-		title_settings  ->SendToDevice();
+		if (!title_main      ->OnDevice()) title_main      ->SendToDevice();
+		if (!title_highscores->OnDevice()) title_highscores->SendToDevice();
+		if (!title_settings  ->OnDevice()) title_settings  ->SendToDevice();
+	}
+
+	void OnAttach() override
+	{
+		records = {};
+		SendToRoot(event_RequestHighscores{});
+
+		Attach<event_RespondHighscore>();
+	}
+
+	void on(event_RespondHighscore& e)
+	{
+		records.push_back(e.record);
 	}
 
 	ImVec2 GetSize(const r<Texture>& texture, float height_pixels)

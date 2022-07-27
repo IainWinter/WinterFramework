@@ -70,17 +70,17 @@ struct System_PlayerController : System<System_PlayerController>
 
 		//else 
 		if (   AttackFireInput 
-			&& player.Ammo > 0
+//			&& player.Ammo > 0
 			&& player.m_attackTimer <= 0.f)
 		{
-			AttackFireInput = false;
-			player.Ammo -= 1;
+//			AttackFireInput = false;
+//			player.Ammo -= 1;
 			player.m_attackTimer = player.Current.AttackTime;
 
-			if (player.Ammo == 0) // second cooldown if shot all bullets
-			{
-				player.AmmoRechargeTimer = -1;
-			}
+//			if (player.Ammo == 0) // second cooldown if shot all bullets
+//			{
+//				player.AmmoRechargeTimer = -1;
+//			}
 			
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
 

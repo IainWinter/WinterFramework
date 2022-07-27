@@ -61,8 +61,8 @@ struct System_EnemySpawner : SystemBase
 		}
 	}
 
-	float delay = 2.f;
-	float time  = 2.f;
+	float delay = 10.f;
+	float time  = 0.f;
 
 	bool enabled = true;
 

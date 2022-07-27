@@ -19,6 +19,17 @@ struct Islands
 	{
 		return coreIslands.size() + otherIslands.size();
 	}
+
+	size_t CellCount() const
+	{
+		size_t totalCoreCount = 0;
+		size_t totalOtherCount = 0;
+
+		for (const auto& core  : coreIslands)  totalCoreCount  += core .size();
+		for (const auto& other : otherIslands) totalOtherCount += other.size();
+
+		return totalCoreCount, totalOtherCount;
+	}
 };
 
 template<typename _t>

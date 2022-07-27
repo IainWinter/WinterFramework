@@ -4,6 +4,7 @@
 #include "Physics.h"
 #include "Rendering.h"
 #include "ext/algo/marching_cubes.h"
+#include "ext/rendering/Model.h"
 
 #include "CoordTranslation.h"
 
@@ -97,26 +98,28 @@ private:
 			body.AddCollider(shape, sand.density);
 		}
 
-		// debug
-		// wont work if entity has Mesh
-		// need to make a model class with a list of Meshs + Transforms
+		if (entity.Has<Model>()) entity.Remove<Model>();
+		
+		Model& model = entity.Add<Model>();
 
-		//std::vector<vec2> debug_mesh;
-		//std::vector<vec4> debug_mesh_colors;
+		for (const std::vector<vec2>& polygon : polygons.first)
+		{
+			std::vector<vec2> debug_mesh;
+			std::vector<vec4> debug_mesh_colors;
 
-		//for (const std::vector<vec2>& polygon : polygons.first) 
-		//for (const vec2& v : polygon) 
-		//{ 
-		//	debug_mesh.push_back(v / tran.scale); 
-		//	debug_mesh_colors.push_back(vec4(1.f, 1.f, 1.f, 1.f));
-		//}
+			for (const vec2& v : polygon) 
+			{
+				debug_mesh.push_back(v / tran.scale); 
+				debug_mesh_colors.push_back(vec4(1.f, 1.f, 1.f, 1.f));
+			}
 
-		//if (entity.Has<Mesh>()) entity.Remove<Mesh>();
-		//entity.Add<Mesh>();
-		//Mesh& mesh = entity.Get<Mesh>();
-		//mesh.topology = Mesh::tLoops;
-		//mesh.Add(Mesh::aPosition, debug_mesh);
-		//mesh.Add(Mesh::aColor, debug_mesh_colors);
+			r<Mesh> mesh = mkr<Mesh>();
+			mesh->topology = Mesh::tLoops;
+			mesh->Add(Mesh::aPosition, debug_mesh);
+			mesh->Add(Mesh::aColor,    debug_mesh_colors);
+
+			model.meshes.push_back(mesh);
+		}
 
 		return polygons.first.size() > 0;
 	}

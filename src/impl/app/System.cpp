@@ -24,26 +24,26 @@ void SystemBase::_Init(World* world)
 void SystemBase::_Dnit()
 {
 	Dnit();
-	m_world->GetEventBus().Detach(this);
 	m_world = nullptr;
 
 	world_log("\tDeinitialized System");
 }
 
-void SystemBase::_Activate()
+void SystemBase::_OnAttach()
 {
-	world_log("\tActivated System");
+	world_log("\tAttached System");
 
 	m_active = true;
-	Activate();
+	OnAttach();
 }
 
-void SystemBase::_Deactivate()
+void SystemBase::_OnDetach()
 {
 	m_active = false;
-	Deactivate();
+	m_world->GetEventBus().Detach(this);
+	OnDetach();
 
-	world_log("\tDeactivated System");
+	world_log("\tDetached System");
 }
 
 void SystemBase::_Update()
@@ -196,7 +196,7 @@ World::~World()
 
 	for (SystemBase* system : m_systems)
 	if (system->GetInitState())
-		system->_Deactivate();
+		system->_OnDetach();
 
 	for (SystemBase* system : m_systems)
 	if (system->GetInitState())
@@ -225,7 +225,7 @@ void World::AttachSystem(SystemBase* system)
 	
 	if (system->GetInitState())
 	{
-		system->_Activate();
+		system->_OnAttach();
 	}
 }
 
@@ -239,7 +239,7 @@ void World::DetachSystem(SystemBase* system)
 
 	if (system->GetInitState())
 	{
-		system->_Deactivate();
+		system->_OnDetach();
 	}
 
 	m_systems.erase(std::find(m_systems.begin(), m_systems.end(), system));
@@ -296,7 +296,7 @@ bool          World::GetInitState() const { return m_init; }
 
 void World::Tick()
 {
-	ActivateInactiveSystems();
+	AttachInactiveSystems();
 
 	m_fixedTimeAcc += Time::DeltaTime();
 	if (m_fixedTimeAcc >= Time::FixedTime())
@@ -352,13 +352,13 @@ void World::TickSystemsDebug()
 	}
 }
 
-void World::ActivateInactiveSystems()
+void World::AttachInactiveSystems()
 {
 	for (SystemBase*& system : m_systems)
 	{
 		if (!system->GetActiveState())
 		{
-			system->_Activate();
+			system->_OnAttach();
 		}
 	}
 }

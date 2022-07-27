@@ -34,7 +34,7 @@ struct System_UI_AsteroidsHUD : System<System_UI_AsteroidsHUD>
 		playerSprite->SendToDevice();
 	}
 
-	void Activate()
+	void OnAttach()
 	{
 		Attach<event_AddScore>();
 		Attach<event_RemoveLife>();
