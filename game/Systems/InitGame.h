@@ -7,6 +7,8 @@ struct InitGame_System : SystemBase
 {
 	void Init()
 	{
+		PlaySound("event:/music_game_easy");
+
 		vec2 screenSize = GetWindow().Dimensions();
 		vec2 cameraSize = vec2(16 * 2, 9 * 2);
 

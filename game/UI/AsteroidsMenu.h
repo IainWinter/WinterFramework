@@ -85,6 +85,13 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		Delay(3.f, [this]() { SendToRoot(event_PlayGame{}); });
 	}
 
+	void PressedExit()
+	{
+		SetTarget(vec2(0, 1000.f));
+		targetFade = 1.f;
+		Delay(1.f, [this]() { SendToRoot(event_Shutdown{});  });
+	}
+
 	void PressedBack()
 	{
 		SetTarget(vec2(0));
@@ -104,7 +111,8 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	{
 		MAIN,
 		HIGHSCORES,
-		SETTINGS
+		SETTINGS,
+		EXIT
 	};
 
 	vec2 screen, midpoint;
@@ -116,6 +124,11 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	vec2  menuAnchorPointTarget          = vec2(0.f);
 	float menuAnchorPointTransitionTimer = 1.f;
 
+	float currentFade = 0.f;
+	float targetFade  = 0.f;
+	float lastFade    = 0.f;
+	float fadeTimer   = 0.f;
+
 	float highscorePos;
 	float settingsPos;
 
@@ -124,6 +137,13 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		menuAnchorPointTarget = target;
 		menuAnchorPointLast = menuAnchorPoint;
 		menuAnchorPointTransitionTimer = 0.f;
+	}
+
+	void SetTargetFade(float fade)
+	{
+		targetFade = fade;
+		lastFade = currentFade;
+		fadeTimer = 0.f;
 	}
 
 	void UI()
@@ -155,6 +175,23 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 			| ImGuiWindowFlags_NoBackground
 			| ImGuiWindowFlags_NoTitleBar
 			| ImGuiWindowFlags_NoScrollbar
+		);
+
+		fadeTimer += Time::DeltaTime();
+		if (fadeTimer > 1.f)
+		{
+			fadeTimer = 1;
+		}
+
+		else
+		{
+			currentFade = lerp(lastFade, targetFade, fadeTimer);
+		}
+
+		ImGui::GetBackgroundDrawList()->AddRectFilled(
+			ImVec2(0, 0),
+			ImVec2(screen.x, screen.y),
+			Color(0, 0, 0, currentFade * 255).as_u32
 		);
 
 		ImGui::SetWindowFontScale(scale / 2.f);
@@ -190,6 +227,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		if (MenuButton("Play",       MAIN))       PressedPlay();
 		if (MenuButton("Highscores", HIGHSCORES)) PressedHighscores();
 		if (MenuButton("Settings",   SETTINGS))   PressedSettings();
+		if (MenuButton("Exit",       EXIT))       PressedExit();
 	}
 
 	void Highscores(float position)
