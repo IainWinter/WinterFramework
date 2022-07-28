@@ -89,7 +89,8 @@ float Rigidbody2D::GetAngularVelocity() const { return     m_instance ? m_instan
 float Rigidbody2D::GetDamping()         const { return     m_instance ? m_instance->GetLinearDamping()   : m_body.linearDamping; }
 float Rigidbody2D::GetAngularDamping()  const { return     m_instance ? m_instance->GetAngularDamping()  : m_body.angularDamping; }
 float Rigidbody2D::GetMass()            const { assert_in_world(); return m_instance->GetMass(); }
-float Rigidbody2D::GetSpeed()           const { return length(_fb(m_instance ? m_instance->GetLinearVelocity() : m_body.linearVelocity)); }
+float Rigidbody2D::GetSpeed()           const { return length(GetVelocity()); }
+float Rigidbody2D::GetAngularSpeed()    const { return abs(GetAngularVelocity()); }
 
 Rigidbody2D& Rigidbody2D::SetPosition       (vec2  pos)      { if (m_instance) m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); else m_body.position        = _tb(pos); return *this; }
 Rigidbody2D& Rigidbody2D::SetVelocity       (vec2  vel)      { if (m_instance) m_instance->SetLinearVelocity (_tb(vel));                         else m_body.linearVelocity  = _tb(vel); return *this; }

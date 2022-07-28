@@ -160,7 +160,7 @@ private:
 		float a = body.GetAngularVelocity();
 		float d = body.GetCollider()->GetDensity(); // should test if body has collider, 
 													// they should have to because if not they explode
-		float cellsStrength = entity.Get<SandSprite>().cellStrength;
+		SandSprite oldSprite = entity.Get<SandSprite>();
 
 		//Defer([=]()
 		//{
@@ -168,7 +168,9 @@ private:
 			Entity splitEntity = CreateEntity().AddAll(Transform2D(t), Sprite(s), SandSprite(ss));
 
 			splitEntity.Get<SandSprite>()
-				.SetCellStrength(cellsStrength);
+				.SetCellStrength(oldSprite.cellStrength)
+				.SetMaxSpeed(oldSprite.maxSpeed)
+				.SetMaxAngularSpeed(oldSprite.maxAngularSpeed);
 
 			vec2  vel = v + safe_normalize(t.position - body.GetPosition()) * 2.f;
 			float ang = a + get_randc(wPI);

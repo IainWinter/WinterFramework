@@ -79,6 +79,9 @@ struct SandSprite
 	bool hasBeenOnScreenOnce = false;
 	float timeOffscreen = 0.f;
 
+	float maxSpeed = 0;
+	float maxAngularSpeed = 0;
+
 	int CellCount() const { return pixels.TotalSize(); }
 	Texture& Get() { return *colliderMask; }
 
@@ -87,9 +90,11 @@ struct SandSprite
 	SandSprite(r<Texture> collider)     : colliderMask(collider) {}
 
 
-	SandSprite& SetDensity       (float density)      { this->density = density;           return *this; }
-	SandSprite& SetCellStrength  (float cellStrength) { this->cellStrength = cellStrength; return *this; }
-	SandSprite& SetIsInvulnerable(bool invulnerable)  { this->invulnerable = invulnerable; return *this; }
+	SandSprite& SetDensity        (float density)         { this->density         = density;         return *this; }
+	SandSprite& SetCellStrength   (float cellStrength)    { this->cellStrength    = cellStrength;    return *this; }
+	SandSprite& SetIsInvulnerable (bool invulnerable)     { this->invulnerable    = invulnerable;    return *this; }
+	SandSprite& SetMaxSpeed       (float maxSpeed)        { this->maxSpeed        = maxSpeed;        return *this; }
+	SandSprite& SetMaxAngularSpeed(float maxAngularSpeed) { this->maxAngularSpeed = maxAngularSpeed; return *this; }
 };
 
 struct SandHealable

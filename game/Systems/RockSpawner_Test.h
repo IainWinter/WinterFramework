@@ -20,7 +20,7 @@ struct System_RockSpawner_Test : SystemBase
 	float rockSpeed = 10.f;
 	float rockTurning = wPI / 2.f;
 
-	int asteroidsLeft = 1;
+	int asteroidsLeft = 6;
 
 	void Update()
 	{
@@ -49,7 +49,9 @@ struct System_RockSpawner_Test : SystemBase
 			rock.Add<Sprite>(texture);
 			rock.Add<SandSprite>(texture)
 				.SetCellStrength(.2f)
-				.SetDensity(1000.f);
+				.SetDensity(1000.f)
+				.SetMaxSpeed(25.f)
+				.SetMaxAngularSpeed(wPI*3);
 
 			rock.Add<Rigidbody2D>()
 				.SetPosition(pos)

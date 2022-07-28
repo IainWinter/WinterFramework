@@ -46,6 +46,8 @@ struct Regolith : EngineLoop<Regolith>
 {
 	void Init()
 	{
+		gladLoadGL();
+
 		ConfigureWindow();
 		ConfigureAudio();
 		InitGameRenderVars();
@@ -64,6 +66,8 @@ struct Regolith : EngineLoop<Regolith>
 
 	void InitUI()
 	{
+		ImGui::SetCurrentContext(app.GetWindow().GetImGuiContext());
+
 		FontMap::Load("Roboto",           18,     "Roboto.ttf");
 		FontMap::Load("Score",            56 * 2, "Roboto.ttf");
 		FontMap::Load("OK Button",        32 * 2, "Roboto.ttf");

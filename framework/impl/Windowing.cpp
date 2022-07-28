@@ -46,14 +46,14 @@ void Window::Init()
 
 	Resize(m_config.Width, m_config.Height);
 
-	glClearColor(0.f, 0.f, 0.f, 0.f);
+	gl(glClearColor(0.f, 0.f, 0.f, 0.f));
 
 	// sand breaks because this isnt setup
-	glEnable(GL_DEPTH_TEST);
+	gl(glEnable(GL_DEPTH_TEST));
 
 	// enable transparency
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	gl(glEnable(GL_BLEND));
+	gl(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	// vsync
 
@@ -224,6 +224,11 @@ void Window::EndFrame()
 	
 // imgui renderer
 
+ImGuiContext* Window::GetImGuiContext()
+{
+	return m_imgui;
+}
+
 void Window::BeginImgui()
 {
 	// might want to allow user to configure this
@@ -256,21 +261,25 @@ void Window::EndImgui()
 Window::Window(Window&& move) noexcept
 	: m_window (move.m_window)
 	, m_opengl (move.m_opengl)
+	, m_imgui  (move.m_imgui)
 	, m_events (move.m_events)
 	, m_config (move.m_config)
 {
 	move.m_window = nullptr;
 	move.m_opengl = nullptr;
+	move.m_imgui  = nullptr;
 	move.m_events = nullptr;
 }
 Window& Window::operator=(Window&& move) noexcept
 {
 	m_window = move.m_window;
 	m_opengl = move.m_opengl;
+	m_imgui  = move.m_imgui;
 	m_events = move.m_events;
 	m_config = move.m_config;
 	move.m_window = nullptr;
 	move.m_opengl = nullptr;
+	move.m_imgui  = nullptr;
 	move.m_events = nullptr;
 	return *this;
 }
@@ -315,7 +324,7 @@ const char* Window::Init_Video()
 void Window::Init_Imgui(const char* glsl_version)
 {
 	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
+	m_imgui = ImGui::CreateContext();
 	ImPlot::CreateContext();
 	ImGui::StyleColorsDark();
 

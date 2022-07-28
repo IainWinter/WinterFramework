@@ -53,6 +53,7 @@ public:
 	float GetAngularDamping()  const;
 	float GetMass()            const;
 	float GetSpeed()           const;
+	float GetAngularSpeed()    const;
 
 	Rigidbody2D& SetPosition       (vec2  pos);
 	Rigidbody2D& SetVelocity       (vec2  vel);

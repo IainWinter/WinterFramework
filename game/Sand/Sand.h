@@ -128,6 +128,17 @@ struct Sand_System_Update : System<Sand_System_Update>
 				}
 			}
 		}
+
+		// explode tiles if they are too fast
+
+		for (auto [entity, body, sand] : QueryWithEntity<Rigidbody2D, SandSprite>())
+		{
+			if (sand.maxSpeed        > 0 && body.GetSpeed()        > sand.maxSpeed)
+			if (sand.maxAngularSpeed > 0 && body.GetAngularSpeed() > sand.maxAngularSpeed)
+			{
+				Send(event_Sand_ExplodeToDust{ entity });
+			}
+		}
 	}
 
 	void on(event_SandAddSprite& e)

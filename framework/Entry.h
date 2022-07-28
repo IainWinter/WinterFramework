@@ -1,9 +1,9 @@
 #pragma once
 
-extern void setup();
+extern "C" void __declspec(dllexport) setup();
 
 #ifndef IW_NOLOOP
-extern bool loop();
+extern "C" bool __declspec(dllexport) loop();
 #endif
 
 int main()

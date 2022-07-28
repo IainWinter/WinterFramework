@@ -9,7 +9,6 @@
 
 #define IW_NOLOOP
 #include "Entry.h"
-#undef IW_NOLOOP
 
 #include "Windowing.h"
 #include "Physics.h"
@@ -25,8 +24,7 @@
 // functions for updating its state
 // this is where global events attach...
 
-template<typename _me>
-struct EngineLoop
+struct EngineLoopBase
 {
 protected:
 	Application app;
@@ -36,60 +34,12 @@ private:
 	float m_fixedStepAcc = 0.f;
 
 public:
-	void on(event_Shutdown& e)
-	{
-		m_running = false;
-	}
+	void on(event_Shutdown& e);
+	void on(event_Key& e);
 
-	void on(event_Key& e)
-	{
-		if (e.repeat == 0)
-		{
-			InputName input = Input::Map(e.keycode);
-			app.GetRootEventQueue().Send(event_Input{input, e.state ? 1.f : -1.f});
-		}
-	}
-
-	bool Running()
-	{
-		return m_running;
-	}
-
-	void _Init()
-	{
-		// attach system events
-		app.GetRootEventBus().Attach<event_Shutdown>(this);
-		app.GetRootEventBus().Attach<event_Key>(this);
-
-		// open window and create graphics context, allows sending data to device
-		app.GetWindow().Init();
-
-		// init user code
-		Init();
-
-		// set imgui config flags
-		PreInitUI();
-
-		// init Imgui
-		app.GetWindow().InitUI();
-
-		// init user UI, load fonts ect.
-		InitUI();
-
-		// should prob send events from init functions before first tick
-	}
-
-	void _Dnit()
-	{
-		app.GetRootEventBus().Detach(this);
-		Dnit();
-	}
-
-	void Tick()
-	{
-		Time::UpdateTime();
-		app.Tick();
-	}
+	void _Init();
+	void _Dnit();
+	bool Tick();
 
 // Interface
 
@@ -98,7 +48,11 @@ protected:
 	virtual void PreInitUI() {};
 	virtual void InitUI() {}; // for loading fonts n such after flags have been set
 	virtual void Dnit() {};
+};
 
+template<typename _me>
+struct EngineLoop : EngineLoopBase
+{
 	template<typename _e>
 	void Attach() { app.GetRootEventBus().Attach<_e, _me>((_me*)this); }
 
@@ -106,11 +60,12 @@ protected:
 	void Detach() { app.GetRootEventBus().Detach<_e>(this); }
 };
 
-template<typename _engine_loop>
+template<typename _t>
 void RunEngineLoop()
 {
-	_engine_loop loop;
+	_t loop = _t();
+
 	loop._Init();
-	while (loop.Running()) loop.Tick();
+	while (loop.Tick()) {}
 	loop._Dnit();
 }

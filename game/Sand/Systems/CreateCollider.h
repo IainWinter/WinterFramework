@@ -94,7 +94,7 @@ private:
 			}
 			shape.Set(shape.m_vertices, (int)polygon.size());
 
-			assert(polygon.size() <= 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
+  			assert(polygon.size() <= 12 && "hitbox library genereated a polygon with more than 12 verts, could expand b2 limit or put a limit on the methods in hitbox lib");
 			body.AddCollider(shape, sand.density);
 		}
 

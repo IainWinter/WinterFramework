@@ -80,6 +80,7 @@ struct Window
 private:
 	SDL_Window*   m_window;
 	SDL_GLContext m_opengl;
+	ImGuiContext* m_imgui;
 	EventQueue*   m_events;
 
 	WindowConfig m_config;
@@ -106,6 +107,7 @@ public:
 	
 	// imgui renderer
 
+	ImGuiContext* GetImGuiContext();
 	void BeginImgui();
 	void EndImgui();
 	
