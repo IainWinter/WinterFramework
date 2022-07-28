@@ -32,6 +32,8 @@
 #include "Systems/EnemyController.h"
 #include "Systems/EnemySpawner.h"
 #include "Systems/EnemySystem.h"
+#include "Systems/FlockingMovement.h"
+#include "Systems/FireWeaponAfterDelay.h"
 
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
@@ -46,8 +48,6 @@ struct Regolith : EngineLoop<Regolith>
 {
 	void Init()
 	{
-		gladLoadGL();
-
 		ConfigureWindow();
 		ConfigureAudio();
 		InitGameRenderVars();
@@ -66,8 +66,6 @@ struct Regolith : EngineLoop<Regolith>
 
 	void InitUI()
 	{
-		ImGui::SetCurrentContext(app.GetWindow().GetImGuiContext());
-
 		FontMap::Load("Roboto",           18,     "Roboto.ttf");
 		FontMap::Load("Score",            56 * 2, "Roboto.ttf");
 		FontMap::Load("OK Button",        32 * 2, "Roboto.ttf");
@@ -172,12 +170,12 @@ struct Regolith : EngineLoop<Regolith>
 		game->CreateSystem<System_FireWeapon>();
 		game->CreateSystem<System_RockSpawner_Test>();
 
-		//game->CreateSystem<System_EnemySpawner>();
-		//game->CreateSystem<System_EnemyController>();
-		//game->CreateSystem<System_Enemy>();
-
 		// enemy
-		// game->CreateSystem<EnemyController_System>();
+		game->CreateSystem<System_EnemySpawner>();
+		game->CreateSystem<System_EnemyController>();
+		game->CreateSystem<System_Enemy>();
+		game->CreateSystem<System_FlockingMovement>();
+		game->CreateSystem<System_FireWeaponAfterDelay>();
 
 		// UI
 		game->CreateSystem<System_UI_AsteroidsHUD>();
@@ -214,7 +212,8 @@ struct Regolith : EngineLoop<Regolith>
 	}
 };
 
-void setup()
+int main()
 {
 	RunEngineLoop<Regolith>();
+	return 0;
 }

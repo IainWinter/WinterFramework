@@ -7,9 +7,6 @@
 // be another file with a DefaultEngineLoop that has the Window Physics Audio added
 // the interface version should be empty, but this works for now
 
-#define IW_NOLOOP
-#include "Entry.h"
-
 #include "Windowing.h"
 #include "Physics.h"
 

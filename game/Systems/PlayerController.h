@@ -25,7 +25,6 @@ struct System_PlayerController : System<System_PlayerController>
 	void Init()
 	{
 		Attach<event_Input>();
-		//Attach<event_Mouse>();
 		Attach<event_Item_Pickup>();
 
 		target = CreateEntity().AddAll(Transform2D(vec2(0.f, 0.f)));
@@ -48,55 +47,14 @@ struct System_PlayerController : System<System_PlayerController>
 			}
 		}
 
-		/*if (player.AmmoRechargeTimer > player.AmmoRechargeTime)
-		{
-			player.AmmoRechargeTimer = 0.f;
-			player.Ammo = clamp(player.Ammo + 1, 0, player.AmmoMax);
-		}*/
-
 		player.m_attackTimer    -= Time::DeltaTime();
 		player.m_attackTimerAlt -= Time::DeltaTime();
 		
-		//FirstEntityWith<LaserTank>().Get<FuelTank>().openOutlet = player.AttackFireInputAlt;
-
-		//if (   AttackFireInputAlt 
-		//	&& player.m_attackTimerAlt <= 0.f 
-		//	&& player.AttackFuelAlt > 0)
-		//{
-		//	player.m_attackTimerAlt = player.Alt.AttackTime;
-		//	player.AttackFuelAlt -= player.AttackFuelConsumptionAlt;
-		//	Send(event_FireWeapon{ playerEntity, target, player.Alt.Weapon, player.Alt.Inaccuracy });
-		//}
-
-		//else 
 		if (   AttackFireInput 
-//			&& player.Ammo > 0
 			&& player.m_attackTimer <= 0.f)
 		{
-//			AttackFireInput = false;
-//			player.Ammo -= 1;
 			player.m_attackTimer = player.Current.AttackTime;
-
-//			if (player.Ammo == 0) // second cooldown if shot all bullets
-//			{
-//				player.AmmoRechargeTimer = -1;
-//			}
-			
 			Send(event_FireWeapon{ playerEntity, target, player.Current.Weapon, player.Current.Inaccuracy });
-
-			//if (player.Current.Weapon != WEAPON_CANNON)
-			//{
-			//	player.Current.Ammo -= 1;
-			//	if (player.Current.Ammo <= 0)
-			//	{
-			//		if (player.Ammo == 0) // second cooldown if shot all bullets
-			//		{
-			//			player.AmmoRechargeTimer = -1;
-			//		}
-
-			//		Send(event_Item_Pickup{ playerEntity, ITEM_WEAPON_CANNON });
-			//	}
-			//}
 		}
 
 		target.Get<Transform2D>().position = playerEntity.Get<Transform2D>().position + PlayerHeading(); // shoot forward
@@ -125,15 +83,6 @@ struct System_PlayerController : System<System_PlayerController>
 		body.SetAngle(angle);
 		body.ApplyForce(force);
 		body.SetAngularVelocity(0);
-
-		// absolute controls
-
-		//vec2 vel = lerp(
-		//	body.GetVelocity(),
-		//	safe_normalize(player.MovementInput) * player.MovementSpeed,
-		//	Time::DeltaTime() * player.MovementAccelerationScaleFactor);
-
-		//body.SetVelocity(vel);
 	}
 
 	void on(event_Input& e)
@@ -151,18 +100,6 @@ struct System_PlayerController : System<System_PlayerController>
 			case InputName::ATTACK_ALT: AttackFireInputAlt    += e.state; break;
 		}
 	}
-
-	// translates mouse to controller
-
-	//void on(event_Mouse& e)
-	//{
-	//	vec2 target = vec2(e.screen_x, e.screen_y) * GetModule<CoordTranslation>().ScreenToWorld;
-
-	//	SendNow(event_Input{ InputName::AIM_X, target.x });
-	//	SendNow(event_Input{ InputName::AIM_Y, target.y });
-	//	SendNow(event_Input{ InputName::ATTACK,     (float)e.button_left });
-	//	SendNow(event_Input{ InputName::ATTACK_ALT, (float)e.button_right });
-	//}
 
 	void on(event_Item_Pickup& e)
 	{
@@ -208,26 +145,6 @@ struct System_PlayerController : System<System_PlayerController>
 				Send(event_Sand_HealCell{ e.sinkEntity, -1 }); 
 				break;
 			}
-
-			//case ITEM_ENERGY:
-			//{
-			//	FirstEntityWith<LaserTank>().Get<FuelTank>().feed.push_back(Color(255, 0, 0));
-			//	break;
-			//}
 		}
 	}
 };
-
-//CellCollisionInfo& info = GetModule<SandWorld>().GetCollisionInfo(player.AttackLocationInput);
-//if (info.hasHit)
-//{
-//	Entity e = Wrap(info.spriteEntityID);
-//	SandSprite& ssprite = e.Get<SandSprite>();
-//	Send(event_Sand_RemoveCell{ 
-//		Wrap(info.spriteEntityID), 
-//		ssprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y), 
-//		player.AttackLocationInput
-//	});
-//}
-
-//Send(event_SpawnExplosion{player.AttackLocationInput, 20.f});

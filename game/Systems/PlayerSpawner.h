@@ -13,6 +13,11 @@ private:
 	float m_respawnTimer = 0.f;
 
 public:
+	void Init()
+	{
+		SpawnPlayer();
+	}
+
 	void Update()
 	{
 		Entity entity = FirstEntity<Player>();

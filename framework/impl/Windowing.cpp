@@ -224,11 +224,6 @@ void Window::EndFrame()
 	
 // imgui renderer
 
-ImGuiContext* Window::GetImGuiContext()
-{
-	return m_imgui;
-}
-
 void Window::BeginImgui()
 {
 	// might want to allow user to configure this
@@ -261,25 +256,21 @@ void Window::EndImgui()
 Window::Window(Window&& move) noexcept
 	: m_window (move.m_window)
 	, m_opengl (move.m_opengl)
-	, m_imgui  (move.m_imgui)
 	, m_events (move.m_events)
 	, m_config (move.m_config)
 {
 	move.m_window = nullptr;
 	move.m_opengl = nullptr;
-	move.m_imgui  = nullptr;
 	move.m_events = nullptr;
 }
 Window& Window::operator=(Window&& move) noexcept
 {
 	m_window = move.m_window;
 	m_opengl = move.m_opengl;
-	m_imgui  = move.m_imgui;
 	m_events = move.m_events;
 	m_config = move.m_config;
 	move.m_window = nullptr;
 	move.m_opengl = nullptr;
-	move.m_imgui  = nullptr;
 	move.m_events = nullptr;
 	return *this;
 }
@@ -324,7 +315,7 @@ const char* Window::Init_Video()
 void Window::Init_Imgui(const char* glsl_version)
 {
 	IMGUI_CHECKVERSION();
-	m_imgui = ImGui::CreateContext();
+	ImGui::CreateContext();
 	ImPlot::CreateContext();
 	ImGui::StyleColorsDark();
 

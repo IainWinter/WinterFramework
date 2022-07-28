@@ -23,6 +23,8 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	std::vector<HighscoreRecord> records;
 
+	bool pressedPlay;
+
 	void Init()
 	{
 		music = PlaySound("event:/music_menu_main");
@@ -38,6 +40,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void OnAttach() override
 	{
+		pressedPlay = false;
 		records = {};
 		SendToRoot(event_RequestHighscores{});
 
@@ -63,6 +66,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void PressedPlay()
 	{
+		if (pressedPlay) return;
+		pressedPlay = true;
+
 		StopSound(music);
 		PlaySound("event:/menu_press_play");
 
@@ -72,6 +78,8 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void PressedExit()
 	{
+		if (pressedPlay) return;
+
 		SetTarget(vec2(0, 1000.f));
 		SetTargetFade(1.f);
 		Delay(1.f, [this]() { SendToRoot(event_Shutdown{});  });
@@ -79,16 +87,22 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void PressedBack()
 	{
+		if (pressedPlay) return;
+
 		SetTarget(vec2(0));
 	}
 
 	void PressedHighscores()
 	{
+		if (pressedPlay) return;
+
 		SetTarget(highscoreLocation);
 	}
 
 	void PressedSettings()
 	{
+		if (pressedPlay) return;
+
 		SetTarget(settingsLocation);
 	}
 
