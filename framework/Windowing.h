@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Log.h"
 #include "Common.h"
 #include "Event.h"
 
@@ -116,6 +117,9 @@ public:
 	void Resize(int width, int height, bool center = true);
 	void SetTitle(const std::string& title);
 
+	void SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
+	void SetVSync(bool vsync);
+
 	// yes moves
 	Window(Window&& move) noexcept;
 	Window& operator=(Window&& move) noexcept;
@@ -151,4 +155,7 @@ public:
 
 	void ResizeViewport(int width, int height);
 	void Resize(int width, int height, bool center = true);
+
+	void SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
+	void SetVSync(bool vsync);
 };

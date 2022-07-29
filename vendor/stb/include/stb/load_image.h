@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <string>
+#include "Log.h"
 
 using u8 = unsigned char;
 

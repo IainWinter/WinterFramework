@@ -36,7 +36,7 @@ void Window::Init()
 {
 	m_first_glsl_version = Window::Init_Video();
 
-	m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+	m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
 	m_opengl = SDL_GL_CreateContext(m_window);
 
 	SDL_GL_MakeCurrent(m_window, m_opengl);
@@ -78,7 +78,7 @@ void Window::PumpEvents()
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
-		//printf("event: %d\n", event.type);
+		//log_window("event: %d", event.type);
 
 		ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
 
@@ -171,19 +171,19 @@ void Window::PumpEvents()
 
 			//case SDL_CONTROLLERBUTTONDOWN:
 			//case SDL_CONTROLLERBUTTONUP:
-			//	printf("controller button %d %d\n", event.cbutton.button, event.cbutton.state);
+			//	log_window("controller button %d %d", event.cbutton.button, event.cbutton.state);
 			//	break;
 
 			//case SDL_CONTROLLERAXISMOTION:
-			//	printf("controller axis %d %f\n", event.caxis.axis, event.caxis.value);
+			//	log_window("controller axis %d %f", event.caxis.axis, event.caxis.value);
 			//	break;
 
 			//case SDL_CONTROLLERDEVICEADDED:
-			//	printf("controller plugged in\n");
+			//	log_window("controller plugged in");
 			//	break;
 
 			//case SDL_CONTROLLERDEVICEREMOVED:
-			//	printf("controller unplugged\n");
+			//	log_window("controller unplugged");
 			//	break;
 		}
 	}
@@ -214,6 +214,58 @@ void Window::Resize(int width, int height, bool center)
 void Window::SetTitle(const std::string& title)
 {
 	SDL_SetWindowTitle(m_window, title.c_str());
+}
+
+
+void Window::SetFullscreen(int mode)
+{
+	switch (mode)
+	{
+		case 0: 
+		{
+			SDL_SetWindowFullscreen(m_window, 0); 
+
+			int w, h;
+			SDL_GetWindowSize(m_window, &w, &h);
+			Resize(w, h, true);
+
+			break;
+		}
+
+		case 1:
+		{
+			SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+			break;
+		}
+
+		case 2:
+		{
+			// todo: find why this has low resolution
+
+			SDL_SetWindowFullscreen(m_window, SDL_WINDOW_FULLSCREEN);
+
+			//int w, h;
+			//SDL_GetWindowSize(m_window, &w, &h);
+			//ResizeViewport(w, h);
+
+			break;
+		}
+		default:
+			log_world("Error: Tried to set invalid fullscreen mode %d", mode);
+			break;
+	}
+}
+
+void Window::SetVSync(bool vsync)
+{
+	switch ((int)vsync)
+	{
+		case 0: SDL_GL_SetSwapInterval((int)vsync); break;
+		case 1: SDL_GL_SetSwapInterval((int)vsync); break;
+		default:
+			log_world("Error: Tried to set invalid vsync mode %d", (int)vsync);
+			break;
+	}
 }
 
 void Window::EndFrame()
@@ -344,3 +396,6 @@ void WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); 
 
 void WindowRef::ResizeViewport(int width, int height) { m_window->ResizeViewport(width, height); }
 void WindowRef::Resize(int width, int height, bool center) { m_window->Resize(width, height, center); }
+
+void WindowRef::SetFullscreen(int mode) { m_window->SetFullscreen(mode); }
+void WindowRef::SetVSync(bool vsync) { m_window->SetVSync(vsync); }

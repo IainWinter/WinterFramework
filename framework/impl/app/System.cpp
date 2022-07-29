@@ -1,21 +1,9 @@
 #include "app/System.h"
 #include "InternalSystems.h"
 
-void world_log(const char* fmt, ...)
-{
-	printf("[World] ");
-
-	va_list args;
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
-
-	printf("\n");
-}
-
 void SystemBase::_Init(World* world)
 {
-	world_log("\tInitialized System");
+	log_world("\tInitialized System");
 
 	m_world = world;
 	Init();
@@ -26,12 +14,12 @@ void SystemBase::_Dnit()
 	Dnit();
 	m_world = nullptr;
 
-	world_log("\tDeinitialized System");
+	log_world("\tDeinitialized System");
 }
 
 void SystemBase::_OnAttach()
 {
-	world_log("\tAttached System");
+	log_world("\tAttached System");
 
 	m_active = true;
 	OnAttach();
@@ -43,7 +31,7 @@ void SystemBase::_OnDetach()
 	m_world->GetEventBus().Detach(this);
 	OnDetach();
 
-	world_log("\tDetached System");
+	log_world("\tDetached System");
 }
 
 void SystemBase::_Update()
@@ -70,12 +58,12 @@ SystemBase::SystemBase()
 	: m_world  (nullptr)
 	, m_active (false)
 {
-	world_log("\tCreated System");
+	log_world("\tCreated System");
 }
 
 SystemBase::~SystemBase()
 {
-	world_log("\tDestroied System");
+	log_world("\tDestroied System");
 }
 
 bool SystemBase::GetInitState() const
@@ -171,7 +159,7 @@ World::World(
 	, m_fixedTimeAcc (0.f)
 	, m_init         (false)
 {
-	world_log("Created World");
+	log_world("Created World");
 
 	// allow app events to propagate down to world
 
@@ -210,7 +198,7 @@ World::~World()
 	for (SystemBase* system : m_systems)
 		delete system;
 
-	world_log("Destroied World");
+	log_world("Destroied World");
 }
 
 void World::DetachFromRoot(EventBus* root)
@@ -222,7 +210,7 @@ void World::AttachSystem(SystemBase* system)
 {
 	if (ContainsSystem(system))
 	{
-		world_log("Error: System is already in world");
+		log_world("Error: System is already in world");
 		return;
 	}
 
@@ -238,7 +226,7 @@ void World::DetachSystem(SystemBase* system)
 {
 	if (!ContainsSystem(system))
 	{
-		world_log("Error: System is not in world");
+		log_world("Error: System is not in world");
 		return;
 	}
 
@@ -254,7 +242,7 @@ void World::DestroySystem(SystemBase* system)
 {
 	if (!ContainsSystem(system))
 	{
-		world_log("Error: System is not in world");
+		log_world("Error: System is not in world");
 		return;
 	}
 

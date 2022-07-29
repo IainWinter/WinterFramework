@@ -26,7 +26,7 @@ struct Sand_System_CreateCollider : System<Sand_System_CreateCollider>
 			if (!TrySetPolygonColliderOnSprite(e.entity))
 			{
 				// fail case: if no colliders just explode, not sure why hitbox fails sometimes, 
-				printf("Error: failed to create collider\n");
+				log_game("Error: failed to create collider");
 				Send(event_Sand_ExplodeToDust{ e.entity });
 			}
 		}

@@ -96,6 +96,12 @@ struct Regolith : EngineLoop<Regolith>
 		style.Colors[ImGuiCol_FrameBg]              = ImVec4(1, 1, 1, .2);
 		style.Colors[ImGuiCol_FrameBgHovered]       = ImVec4(1, 1, 1, .4);
 		style.Colors[ImGuiCol_FrameBgActive]        = ImVec4(1, 1, 1, .2);
+		style.Colors[ImGuiCol_SliderGrab]           = ImVec4(1, 1, 1, .5);
+		style.Colors[ImGuiCol_SliderGrabActive]     = ImVec4(1, 1, 1, .8);
+
+		style.Colors[ImGuiCol_Header]               = ImVec4(1, 1, 1, .2);
+		style.Colors[ImGuiCol_HeaderActive]         = ImVec4(1, 1, 1, .3);
+		style.Colors[ImGuiCol_HeaderHovered]        = ImVec4(1, 1, 1, .5);
 
 		//ImGuiIO& io = ImGui::GetIO();
 		//io.NavMovesMouse = true;
@@ -218,11 +224,21 @@ struct Regolith : EngineLoop<Regolith>
 
 		app.GetConsole().RegCommand("list_audio", [this](const ConsoleCommand& cmd) 
 		{
-			printf("Audio instances:");
+			log_audio("Audio instances:");
 			for (auto [name, inst] : app.GetAudio().m_loaded)
 			{
-				printf("\t%d. %s\n", inst, name.c_str());
+				log_audio("\t%d. %s", inst, name.c_str());
 			}
+		});
+
+		app.GetConsole().RegCommand("set_time_scale", [this](const ConsoleCommand& cmd)
+		{
+			Time::SetTimeScale(cmd.GetFloat(0));
+		});
+
+		app.GetConsole().RegCommand("set_fixed_step", [this](const ConsoleCommand& cmd)
+		{
+			Time::SetFixedTime(cmd.GetFloat(0));
 		});
 	}
 

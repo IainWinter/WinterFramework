@@ -3,6 +3,8 @@
 #include <string>
 #include "./util/tsque.h"
 
+#include "Log.h"
+
 #define ASIO_STANDALONE
 #include "asio/asio.hpp"
 //#include <Windows.h>
@@ -79,11 +81,11 @@ private:
 			[this](
 				std::error_code error, std::size_t size)
 			{
-				printf("received %d bytes\n", (int)size);
+				log_io("received %d bytes", (int)size);
 
 				if (error)
 				{
-					printf("Error reading incomming message header: %s\n", error.message().c_str());
+					log_io("Error reading incomming message header: %s", error.message().c_str());
 					m_socket.close();
 				}
 
@@ -106,11 +108,11 @@ private:
 			[this](
 				std::error_code error, std::size_t size)
 			{
-				printf("received %d bytes\n", (int)size);
+				log_io("received %d bytes", (int)size);
 
 				if (error)
 				{
-					printf("Error reading incomming message body: %s\n", error.message().c_str());
+					log_io("Error reading incomming message body: %s", error.message().c_str());
 					m_socket.close();
 				}
 
@@ -129,11 +131,11 @@ private:
 				std::error_code error,
 				size_t size)
 			{
-				printf("sent %d bytes\n", (int)size);
+				log_io("sent %d bytes", (int)size);
 
 				if (error)
 				{
-					printf("Error writing outgoing message header: %s\n", error.message().c_str());
+					log_io("Error writing outgoing message header: %s", error.message().c_str());
 					m_socket.close();
 				}
 
@@ -164,11 +166,11 @@ private:
 				std::error_code error,
 				size_t size)
 			{
-				printf("sent %d bytes\n", (int)size);
+				log_io("sent %d bytes", (int)size);
 				
 				if (error)
 				{
-					printf("Error writing outgoing message body: %s\n", error.message().c_str());
+					log_io("Error writing outgoing message body: %s", error.message().c_str());
 					m_socket.close();
 				}
 
@@ -211,7 +213,7 @@ struct server
         	{
 				if (error)
 				{
-					printf("Error with incomming connection: %s\n", error.message().c_str());
+					log_io("Error with incomming connection: %s", error.message().c_str());
 				}
 
 				else
@@ -229,7 +231,7 @@ struct server
 					
 					conn->start_listening();
 
-					printf("Client connected to server, number of sessions:  %d\n", (int)m_sessions.size());
+					log_io("Client connected to server, number of sessions:  %d", (int)m_sessions.size());
 				}
 
             	async_accept();

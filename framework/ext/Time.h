@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <stddef.h>
+#include "Log.h"
 
 namespace Time
 {

@@ -28,7 +28,7 @@ struct Islands
 		for (const auto& core  : coreIslands)  totalCoreCount  += core .size();
 		for (const auto& other : otherIslands) totalOtherCount += other.size();
 
-		return totalCoreCount, totalOtherCount;
+		return totalCoreCount + totalOtherCount;
 	}
 };
 

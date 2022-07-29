@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Log.h"
 #include "glad/glad.h"
 
 inline constexpr char const* GetErrorString(
@@ -25,44 +26,21 @@ inline bool MessageCallback(
 	int line)
 {
 	int finite = 0;
-	bool hadError = false, hasError = true;
-	GLenum lastErr = 0;
+	bool hasError = true;
 
-	while (hasError && finite < 3)
+	while (hasError && finite < 10)
 	{
 		GLenum err = glGetError();
 		hasError = err != GL_NO_ERROR;
-		hadError |= hasError;
 
 		if (hasError)
 		{
 			const char* str = GetErrorString(err);
-			
-			if (err == lastErr) 
-			{
-				finite += 1;
-				printf("\r");
-			}
-
-			else if (finite > 0)
-			{
-				finite = 0;
-				printf("\n"); // this inf loops on a set of repeating two errors
-			}
-
-			printf("GL ERROR: %s in file %s[%d] %s", str, fname, line, stmt);
-			if (err == lastErr) printf(" x%d", finite);
+			log_render("GL ERROR: %s in file %s[%d] %s", str, fname, line, stmt);
 		}
-
-		lastErr = err;
-	}
-
-	if (hadError)
-	{
-		printf("\n");
 	}
 	
-	return hadError;
+	return hasError;
 }
 
 #ifdef IW_DEBUG

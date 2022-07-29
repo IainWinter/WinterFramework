@@ -266,7 +266,7 @@ Texture& Texture::copy_into(const Texture& copy)
 		else
 		{
 			assert(false);
-			printf("[ERROR]\tFailed to allocate texture memory");
+			log_render("Failed to allocate texture memory");
 		}
 	}
 
@@ -383,7 +383,7 @@ void Target::_InitOnDevice()
 	GLint err = gl(glCheckFramebufferStatus(GL_FRAMEBUFFER));
 	if (err != GL_FRAMEBUFFER_COMPLETE)
 	{
-		printf("failed to create framebuffer\n");
+		log_render("failed to create framebuffer");
 	}
 }
 
@@ -871,7 +871,7 @@ void ShaderProgram::_InitOnDevice()
 			std::vector<GLchar> infoLog(maxLength);
 			glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
 			glDeleteShader(shader); // if soft error this can be removed
-			printf("Failed to compile shader: %s\n", (char*)infoLog.data());
+			log_render("Failed to compile shader: %s", (char*)infoLog.data());
 			assert(false && "Failed to compile shader"); // maybe soft error
 		}
 

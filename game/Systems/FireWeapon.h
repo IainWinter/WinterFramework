@@ -29,7 +29,7 @@ private:
 	{
 		if (!target.IsAlive())
 		{
-			printf("Warning: Target is dead.\n");
+			log_game("Warning: Target is dead.");
 			return;
 		}
 

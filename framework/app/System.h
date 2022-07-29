@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Log.h"
 #include "Windowing.h"
 #include "Entity.h"
 #include "Physics.h"
@@ -268,7 +269,7 @@ inline _t& SystemBase::First()
 	
 	if (query.begin() == query.end())
 	{
-		printf("[ERROR] First failed, no entity exists with component");
+		log_world("Error: First failed, no entity exists with component");
 		throw nullptr;
 	}
 

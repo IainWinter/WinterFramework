@@ -21,7 +21,7 @@ private:
 	{
 		if (!turn.target.IsAlive())
 		{
-			printf("Warning: Target is dead.\n");
+			log_game("Warning: Target is dead.");
 			return body.GetVelocity();
 		}
 
@@ -44,7 +44,7 @@ private:
 		// if speed is too fast, slow down
 		// doesnt really work
 		// if (speed > 20 && dot(safe_normalize(dir), safe_normalize(body.GetVelocity())) > .9) weight = -weight;
-		//printf("%f %f\n", speed, weight);
+		//log_game("%f %f", speed, weight);
 
 		return safe_normalize(dir) * weight;
 	}

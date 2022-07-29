@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Defines.h"
+#include "Log.h"
 
 #include <unordered_map>
 #include <vector>

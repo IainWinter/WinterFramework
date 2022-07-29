@@ -68,7 +68,7 @@ int ConsoleCommand::GetInt(int index) const
 {
 	if (args.size() <= index)
 	{
-		printf("[Console] Error arg index out of bounds\n");
+		log_console("Error arg index out of bounds");
 		return 0;
 	}
 
@@ -76,7 +76,7 @@ int ConsoleCommand::GetInt(int index) const
 
 	if (arg.type != ConsoleArgType::INT)
 	{
-		printf("[Console] Arg at index %d is not an int, it is %s\n", index, get_console_arg_type_name(arg.type));
+		log_console("Arg at index %d is not an int, it is %s", index, get_console_arg_type_name(arg.type));
 		return 0;
 	}
 
@@ -87,7 +87,7 @@ float ConsoleCommand::GetFloat(int index) const
 {
 	if (args.size() <= index)
 	{
-		printf("[Console] Error arg index out of bounds\n");
+		log_console("Error arg index out of bounds\n");
 		return 0.f;
 	}
 
@@ -95,27 +95,29 @@ float ConsoleCommand::GetFloat(int index) const
 
 	if (arg.type != ConsoleArgType::FLOAT)
 	{
-		printf("[Console] Arg at index %d is not a float, it is %s\n", index, get_console_arg_type_name(arg.type));
+		log_console("Arg at index %d is not a float, it is %s", index, get_console_arg_type_name(arg.type));
 		return 0.f;
 	}
 
 	return arg.as_float;
 }
 
+const std::string empty = "";
+
 const std::string& ConsoleCommand::GetString(int index) const
 {
 	if (args.size() <= index)
 	{
-		printf("[Console] Error arg index out of bounds\n");
-		return "";
+		log_console("Error arg index out of bounds");
+		return empty;
 	}
 
 	const ConsoleArg& arg = args.at(index);
 
 	if (arg.type != ConsoleArgType::STRING)
 	{
-		printf("[Console] Arg at index %d is not a string, it is %s\n", index, get_console_arg_type_name(arg.type));
-		return "";
+		log_console("Arg at index %d is not a string, it is %s", index, get_console_arg_type_name(arg.type));
+		return empty;
 	}
 
 	return arg.as_string;
@@ -143,7 +145,7 @@ void Console::Execute(const std::string& commandStr)
 
 	if (itr == m_knownCommmands.end())
 	{
-		printf("[Console] Unknown command '%s'\n", args[0].c_str());
+		log_console("Unknown command '%s'", args[0].c_str());
 		return;
 	}
 
@@ -155,15 +157,15 @@ void Console::Execute(const std::string& commandStr)
 			 
 		try // ew
 		{
-			arg.as_int = std::stoi(args[i]);
-			arg.type = ConsoleArgType::INT;
+			arg.as_float = std::stof(args[i]);
+			arg.type = ConsoleArgType::FLOAT;
 		} 
 		catch (std::exception e)
 		{
 			try
 			{
-				arg.as_float = std::stof(args[i]);
-				arg.type = ConsoleArgType::FLOAT;
+				arg.as_int = std::stoi(args[i]);
+				arg.type = ConsoleArgType::INT;
 			}
 			catch (std::exception e) 
 			{
@@ -174,7 +176,7 @@ void Console::Execute(const std::string& commandStr)
 				}
 				catch (std::exception e)
 				{
-					printf("[Console] Failed to parse arg correctly '%s'\n", args.at(i).c_str());
+					log_console("Failed to parse arg correctly '%s'", args.at(i).c_str());
 					continue;
 				}
 			}
@@ -183,7 +185,7 @@ void Console::Execute(const std::string& commandStr)
 		consoleArgs.push_back(arg);
 	}
 
-	printf("[Command] executing '%s'\n", commandStr.c_str());
+	log_console("executing '%s'", commandStr.c_str());
 
 	itr->second(ConsoleCommand(args.at(0), consoleArgs));
 }

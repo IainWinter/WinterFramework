@@ -22,8 +22,8 @@ namespace Time
 		deltaTime = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<float, std::ratio<1, 1>>(dt));
 	}
 
-	void SetFixedTime(float duration) { fixedTime = duration; }
-	void SetTimeScale(float duration) { timeScale = duration; }
+	void SetFixedTime(float duration) { fixedTime = duration; log_app("Set fixed time step to %f", duration); }
+	void SetTimeScale(float duration) { timeScale = duration; log_app("Set time scale to %f", duration); }
 
 	void UpdateTime()
 	{

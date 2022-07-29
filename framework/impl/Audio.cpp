@@ -5,9 +5,9 @@
 
 #include <time.h> // for seed
 
-#define CHECK_HANDLE(h) if (!IsLoaded(h)) { return audio_log_error(ENGINE_FAILED_HANDLE_NOT_LOADED); }
-#define CHECK(stmt, n) if (audio_error_check(stmt)) { return audio_log_error(n); }
-#define CHECK_NO_RETURN(stmt, n) if (audio_error_check(stmt)) { audio_log_error(n); }
+#define CHECK_HANDLE(h) if (!IsLoaded(h)) { return log_audio_error(ENGINE_FAILED_HANDLE_NOT_LOADED); }
+#define CHECK(stmt, n) if (audio_error_check(stmt)) { return log_audio_error(n); }
+#define CHECK_NO_RETURN(stmt, n) if (audio_error_check(stmt)) { log_audio_error(n); }
 
 #define H_BANK 1
 #define H_EVENT 2
@@ -125,21 +125,9 @@ const char* audio_error_string(audio_error code)
 	return audio_error_translation.at(code);
 }
 
-void audio_log(const char* fmt, ...)
+audio_error log_audio_error(audio_error error)
 {
-	printf("[Audio] ");
-
-	va_list args;
-	va_start(args, fmt);
-	vprintf(fmt, args);
-	va_end(args);
-
-	printf("\n");
-}
-
-audio_error audio_log_error(audio_error error)
-{
-	audio_log("%s", audio_error_string(error));
+	log_audio("%s", audio_error_string(error));
 	return error;
 }
 
@@ -148,7 +136,7 @@ bool audio_error_check(int result)
 	bool hasError = result != FMOD_OK;
 	if (hasError)
 	{
-		audio_log("[FMOD] (%d) %s", result, fmod_error_translation.at(result));
+		log_audio("[FMOD] (%d) %s", result, fmod_error_translation.at(result));
 	}
 
 	return hasError;
@@ -160,7 +148,7 @@ int audio_make_handle(int type, int index) { return audio_set_type(type, index);
 
 Audio::Audio()
 {
-	audio_log("Initializing audio space using FMOD");
+	log_audio("Initializing audio space using FMOD");
 
 	CHECK_NO_RETURN(
 		System::create(&m_system),
@@ -197,7 +185,7 @@ int Audio::Load(const std::string& path)
 {
 	if (IsLoaded(path))
 	{
-		return audio_log_error(ENGINE_ALREADY_LOADED);
+		return log_audio_error(ENGINE_ALREADY_LOADED);
 	}
 
 	FMOD::Studio::Bank* bank;
@@ -256,7 +244,7 @@ int Audio::Play(const std::string& path)
 
 		if (eventHandle == ENGINE_FAILED_HANDLE_NOT_LOADED)
 		{
-			return audio_log_error(ENGINE_FAILED_LOAD_INSTANCE);
+			return log_audio_error(ENGINE_FAILED_LOAD_INSTANCE);
 		}
 
 		EventInstance* instance;
@@ -320,7 +308,7 @@ int Audio::Set(int handle, const std::string& parameter, float value)
 			ENGINE_FAILED_SET_PARAM
 		);
 
-		audio_log("Setting instance parameter '%s' on '%d' to '%f'", parameter.c_str(), handle, value);
+		log_audio("Setting instance parameter '%s' on '%d' to '%f'", parameter.c_str(), handle, value);
 	}
 
 	return ENGINE_OK;
@@ -347,7 +335,7 @@ int Audio::Start(int handle)
 
 	if (audio_get_type(handle) != H_INSTANCE)
 	{
-		return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+		return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 	}
 
 	CHECK(m_instances[handle]->start(), ENGINE_FAILED_START_INSTANCE);
@@ -360,7 +348,7 @@ int Audio::Stop(int handle)
 
 	if (audio_get_type(handle) != H_INSTANCE)
 	{
-		return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+		return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 	}
 
 	CHECK(m_instances[handle]->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT), ENGINE_FAILED_STOP_INSTANCE);
@@ -373,7 +361,7 @@ int Audio::Free(int handle)
 
 	if (audio_get_type(handle) != H_INSTANCE)
 	{
-		return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+		return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 	}
 
 	CHECK(m_instances[handle]->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT), ENGINE_FAILED_STOP_INSTANCE);
@@ -392,7 +380,7 @@ int Audio::SetVolume(int handle, float volume)
 		case H_VCA:      m_vcas     [handle]->setVolume(volume); break;
 		default:
 		{
-			return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+			return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 		}
 	}
 
@@ -410,7 +398,7 @@ int Audio::GetVolume(int handle, float& volume)
 		case H_VCA:      m_vcas     [handle]->getVolume(&volume); break;
 		default:
 		{
-			return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+			return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 		}
 	}
 
@@ -428,7 +416,7 @@ bool Audio::IsLoaded(int handle) const
 		case H_VCA:      return m_vcas     .find(handle) != m_vcas     .end();
 		default:
 		{
-			return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
+			return log_audio_error(ENGINE_FAILED_INVALID_HANDLE);
 		}
 	}
 
@@ -445,7 +433,7 @@ int Audio::GetHandle(const std::string& path) const
 	auto itr = m_loaded.find(path);
 	if (itr == m_loaded.end())
 	{
-		return audio_log_error(ENGINE_FAILED_HANDLE_NOT_LOADED);
+		return log_audio_error(ENGINE_FAILED_HANDLE_NOT_LOADED);
 	}
 
 	return itr->second;
@@ -459,7 +447,7 @@ int Audio::MakeHandle(int type) const
 void Audio::PutLoaded(const std::string& path, int handle)
 {
 	m_loaded.emplace(path, handle);
-	audio_log("Loaded '%s' (handle: %d)", path.c_str(), handle);
+	log_audio("Loaded '%s' (handle: %d)", path.c_str(), handle);
 }
 
 int Audio::PutLoaded(const std::string& path, Bank* bank)

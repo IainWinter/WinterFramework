@@ -28,7 +28,7 @@ struct allocator
 	}
 
 	// allows for setting a block size to allocate fixed size byte arrays
-	size_t m_block_size = 0;
+	size_t m_block_size = 1;
 
 	template<typename _t>
 	_t* alloc(size_t count = 1)

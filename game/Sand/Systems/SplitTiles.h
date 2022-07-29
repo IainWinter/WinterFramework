@@ -140,13 +140,13 @@ private:
 
 		if (cellCount < TurnToDustIfUnder)
 		{
-			printf("explode to dust\n");
+			log_game("explode to dust");
 			SendNow(event_Sand_ExplodeToDust{ entity });
 		}
 
 		else
 		{
-			printf("recalc colliders\n");
+			log_game("recalc colliders");
 			SendNow(event_Sand_CreateCollider{ entity });
 		}
 	}

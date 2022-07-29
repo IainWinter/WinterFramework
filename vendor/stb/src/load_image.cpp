@@ -20,7 +20,7 @@ std::tuple<u8*, int, int, int> load_image(const std::string& filepath)
 
 	if (!pixels /*|| stbi_failure_reason()*/) // no SOI bug
 	{
-		printf("failed to load image '%s' reason: %s\n", filepath.c_str(), stbi_failure_reason());
+		log_io("failed to load image '%s' reason: %s", filepath.c_str(), stbi_failure_reason());
 	}
 
 	return std::make_tuple(pixels, width, height, channels);

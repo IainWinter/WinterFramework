@@ -111,7 +111,7 @@ struct free_list
 		if (index == -1) // insert the first free zone if none exist
 		{
 			m_list.push_back(free_range { begin, size });
-			combine_left(m_list.size() - 1); // try to combine to the end
+			combine_left((int)m_list.size() - 1); // try to combine to the end
 		}
 
 		else

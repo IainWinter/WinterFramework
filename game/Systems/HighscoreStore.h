@@ -51,7 +51,7 @@ private:
 
 		if (result != SQLITE_DONE)
 		{
-			printf("Failed to create highscores table\n");
+			log_game("Failed to create highscores table");
 		}
 	}
 
@@ -73,7 +73,7 @@ private:
 
 		if (result != SQLITE_DONE)
 		{
-			printf("Failed to write score to db\n");
+			log_game("Failed to write score to db");
 		}
 	}
 

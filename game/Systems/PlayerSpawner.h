@@ -15,7 +15,7 @@ private:
 public:
 	void Init()
 	{
-		SpawnPlayer();
+		//SpawnPlayer();
 	}
 
 	void Update()
@@ -69,7 +69,7 @@ private:
 			Send(e);
 			Send(event_RemoveLife{});
 
-			if (m_lives == 1) // if last life
+			if (m_lives == 0) // if last life
 			{
 				Send(event_Gameover());
 			}

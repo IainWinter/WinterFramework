@@ -25,6 +25,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	bool pressedPlay;
 
+	int effectsHandle;
+	int musicHandle;
+
 	void Init()
 	{
 		music = PlaySound("event:/music_menu_main");
@@ -40,6 +43,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	void OnAttach() override
 	{
+		effectsHandle = GetAudio().GetHandle("vca:/effects");
+		musicHandle = GetAudio().GetHandle("vca:/music");
+
 		pressedPlay = false;
 		records = {};
 		SendToRoot(event_RequestHighscores{});
@@ -305,12 +311,15 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	struct SettingsState
 	{
-		bool fullscreen;
+		int fullscreenMode;
+		bool vsync;
+
+		float musicVol  = 1.f;
+		float effectVol = 1.f;
 	};
 
 	SettingsState state;
-
-
+	SettingsState lastState;
 
 	void Settings(float position)
 	{
@@ -335,28 +344,56 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 		ImGui::Text("Video");
 		ImGui::Separator();
-		ImGui::Checkbox("Fullscreen", &state.fullscreen);
+		
+		const char* options[] = {
+			"Windowed",
+			"Fullscreen Borderless",
+			"Fullscreen"
+		};
+		
+		if (ImGui::BeginCombo("Window", options[state.fullscreenMode]))
+		{
+			ImGui::SetWindowFontScale(.5);
+
+			for (int n = 0; n < 3; n++)
+			{
+				bool isSelected = n == state.fullscreenMode;
+
+				if (ImGui::Selectable(options[n], isSelected))
+				{
+					state.fullscreenMode = n;
+				}
+
+				if (isSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+
+			ImGui::EndCombo();
+		}
 
 		ImGui::Spacing();
 
 		ImGui::Text("Audio");
 		ImGui::Separator();
 
-		int effectsHandle = GetAudio().GetHandle("vca:/effects");
-		float effectsVol;
-		GetAudio().GetVolume(effectsHandle, effectsVol);
-		ImGui::SliderFloat("Effects", &effectsVol, 0, 1.f);
-		GetAudio().SetVolume(effectsHandle, effectsVol);
-
-		int musicHandle = GetAudio().GetHandle("vca:/music");
-		float musicVol;
-		GetAudio().GetVolume(musicHandle, musicVol);
-		ImGui::SliderFloat("Music", &musicVol, 0, 1.f);
-		GetAudio().SetVolume(musicHandle, musicVol);
+		ImGui::SliderFloat("Effects", &state.effectVol, 0, 1.f);
+		ImGui::SliderFloat("Music",   &state.musicVol,  0, 1.f);
 
 		ImGui::EndChild();
 
 		ImGui::PopFont();
+
+		UpdateStateIfNeeded();
+	}
+
+	void UpdateStateIfNeeded()
+	{
+		if (state.fullscreenMode != lastState.fullscreenMode) { GetWindow().SetFullscreen(state.fullscreenMode);           lastState.fullscreenMode = state.fullscreenMode; }
+		if (state.vsync          != lastState.vsync)          { GetWindow().SetVSync     (state.vsync);                    lastState.vsync          = state.vsync; }
+		if (state.effectVol      != lastState.effectVol)      { GetAudio() .SetVolume    (effectsHandle, state.effectVol); lastState.effectVol      = state.effectVol; }
+		if (state.musicVol       != lastState.musicVol)       { GetAudio() .SetVolume    (effectsHandle, state.musicVol);  lastState.musicVol       = state.musicVol; }
 	}
 
 	bool MenuButton(const char* label, MenuState state)
@@ -375,6 +412,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		return active;
 	}
 
+	vec2 currentLeft = vec2(0, 0);
+	vec2 currentRight = vec2(0, 0);
+
 	void PutDotsNextToActiveButton(MenuState state)
 	{
 		if (ImGui::IsItemHovered() || state == currentState)
@@ -385,11 +425,26 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 			ImVec2 max = ImGui::GetItemRectMax();
 			float avgY = (min.y + max.y) / 2.f;
 
-			ImVec2 dotLeft  = ImVec2(min.x - 2 * margin, avgY);
-			ImVec2 dotRight = ImVec2(max.x + 2 * margin, avgY);
+			vec2 dotLeft  = vec2(min.x - 2 * margin, avgY + scale * 2.f);
+			vec2 dotRight = vec2(max.x + 2 * margin, avgY + scale * 2.f);
 
-			ImGui::GetForegroundDrawList()->AddCircleFilled(dotLeft,  5.f, Color(255, 255, 255).as_u32);
-			ImGui::GetForegroundDrawList()->AddCircleFilled(dotRight, 5.f, Color(255, 255, 255).as_u32);
+			if (currentLeft  == vec2(0, 0)) currentLeft  = dotLeft;
+			if (currentRight == vec2(0, 0)) currentRight = dotRight;
+
+			if (menuAnchorPointTransitionTimer < 1.f)
+			{
+				currentLeft  = dotLeft;
+				currentRight = dotRight;
+			}
+
+			else
+			{
+				currentLeft  = lerp(currentLeft,  dotLeft,  Time::DeltaTime() * 10.f);
+				currentRight = lerp(currentRight, dotRight, Time::DeltaTime() * 10.f);
+			}
+
+			ImGui::GetForegroundDrawList()->AddCircleFilled(ImVec2(currentLeft .x, currentLeft .y), scale * 4.f, Color(255, 255, 255, 250).as_u32);
+			ImGui::GetForegroundDrawList()->AddCircleFilled(ImVec2(currentRight.x, currentRight.y), scale * 4.f, Color(255, 255, 255, 250).as_u32);
 		}
 	}
 };

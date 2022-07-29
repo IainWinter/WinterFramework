@@ -86,7 +86,7 @@ struct System_SpawnerUpdate : System<System_SpawnerUpdate>
 					score += 100;
 				}
 			}
-			printf("Current Score %d\n", score);
+			log_game("Current Score %d", score);
 
 			float difficulty = 0;
 
@@ -98,7 +98,7 @@ struct System_SpawnerUpdate : System<System_SpawnerUpdate>
 
 		if (playerstatus == 0)
 		{
-			printf("Final Score %d\n", score);
+			log_game("Final Score %d", score);
 		}
 
 		// update level system based on score?
