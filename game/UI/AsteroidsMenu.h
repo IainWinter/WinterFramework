@@ -310,6 +310,8 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 
 	SettingsState state;
 
+
+
 	void Settings(float position)
 	{
 		auto [width, height] = GetSize(title_settings, 100);
@@ -334,6 +336,23 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::Text("Video");
 		ImGui::Separator();
 		ImGui::Checkbox("Fullscreen", &state.fullscreen);
+
+		ImGui::Spacing();
+
+		ImGui::Text("Audio");
+		ImGui::Separator();
+
+		int effectsHandle = GetAudio().GetHandle("vca:/effects");
+		float effectsVol;
+		GetAudio().GetVolume(effectsHandle, effectsVol);
+		ImGui::SliderFloat("Effects", &effectsVol, 0, 1.f);
+		GetAudio().SetVolume(effectsHandle, effectsVol);
+
+		int musicHandle = GetAudio().GetHandle("vca:/music");
+		float musicVol;
+		GetAudio().GetVolume(musicHandle, musicVol);
+		ImGui::SliderFloat("Music", &musicVol, 0, 1.f);
+		GetAudio().SetVolume(musicHandle, musicVol);
 
 		ImGui::EndChild();
 
