@@ -7,6 +7,8 @@
 #include "ext/Task.h"
 #include "ext/Time.h" // bring this in for Delay
 
+#include "app/Console.h"
+
 #include <vector>
 
 struct SystemBase;
@@ -91,8 +93,9 @@ protected:
 
 // audio
 
-	int  PlaySound(const std::string& eventPath);
-	void StopSound(int soundHandle);
+	int  PlaySound (const std::string& eventPath);
+	void StopSound (int soundHandle);
+	void PauseSound(int soundHandle);
 
 // getters
 
@@ -208,6 +211,8 @@ private:
 	EventBus   m_bus;
 	EventQueue m_queue;
 
+	Console m_console;
+
 	std::vector<World*> m_worlds;
 
 public:
@@ -215,6 +220,7 @@ public:
 	Audio&      GetAudio();
 	EventBus&   GetRootEventBus();
 	EventQueue& GetRootEventQueue();
+	Console&    GetConsole();
 
 public:
 	Application();

@@ -33,6 +33,7 @@ private:
 public:
 	void on(event_Shutdown& e);
 	void on(event_Key& e);
+	void on(event_ConsoleCommand& e);
 
 	void _Init();
 	void _Dnit();

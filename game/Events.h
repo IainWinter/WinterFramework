@@ -73,3 +73,7 @@ struct event_RemoveLife
 struct event_PlayGame
 {
 };
+
+struct event_Gameover
+{
+};

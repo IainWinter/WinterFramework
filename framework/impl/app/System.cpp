@@ -140,6 +140,11 @@ int SystemBase::PlaySound(const std::string& eventPath)
 
 void SystemBase::StopSound(int soundHandle)
 {
+	GetAudio().Free(soundHandle);
+}
+
+void SystemBase::PauseSound(int soundHandle)
+{
 	GetAudio().Stop(soundHandle);
 }
 
@@ -455,3 +460,4 @@ Window&     Application::GetWindow()         { return m_window; }
 Audio&      Application::GetAudio()          { return m_audio; }
 EventBus&   Application::GetRootEventBus()   { return m_bus; }
 EventQueue& Application::GetRootEventQueue() { return m_queue; }
+Console&    Application::GetConsole()        { return m_console; }

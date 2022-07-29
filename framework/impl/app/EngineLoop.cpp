@@ -14,11 +14,17 @@ void EngineLoopBase::on(event_Key& e)
 	}
 }
 
+void EngineLoopBase::on(event_ConsoleCommand& e)
+{
+	app.GetConsole().Execute(e.command);
+}
+
 void EngineLoopBase::_Init()
 {
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
 	app.GetRootEventBus().Attach<event_Key>(this);
+	app.GetRootEventBus().Attach<event_ConsoleCommand>(this);
 
 	// open window and create graphics context, allows sending data to device
 	app.GetWindow().Init();

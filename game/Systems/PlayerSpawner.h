@@ -68,6 +68,11 @@ private:
 
 			Send(e);
 			Send(event_RemoveLife{});
+
+			if (m_lives == 1) // if last life
+			{
+				Send(event_Gameover());
+			}
 		};
 
 		Player& player = playerEntity.Add<Player>();

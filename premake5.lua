@@ -79,7 +79,7 @@ project "Framework"
 		-- choose which extensions you need
 
 		"framework/ext/impl/Time.cpp",
-		"framework/ext/impl/physics/ClosestPointOnShape.cpp",
+		"framework/ext/impl/physics/ClosestPointOnShape.cpp"
 	}
 
 	includedirs {

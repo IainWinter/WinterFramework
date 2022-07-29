@@ -41,6 +41,7 @@
 #include "ext/systems/ParticleUpdate.h"
 #include "ext/systems/DestroyInTime.h"
 #include "ext/systems/MetricsSystem.h"
+#include "ext/systems/ConsoleSystem.h"
 
 // Idea: Make a polished version of asteroids to completion, then iterate with enemies and damage system
 
@@ -54,6 +55,8 @@ struct Regolith : EngineLoop<Regolith>
 
 		ConfigureLevel();
 		ConfigureInputMapping();
+
+		ConfigureConsole();
 
 		Attach<event_SubmitHighscore>();
 		Attach<event_PlayGame>();
@@ -187,6 +190,40 @@ struct Regolith : EngineLoop<Regolith>
 		bg->CreateSystem<System_Render_Sprites>();
 		bg->CreateSystem<Background_System>();
 		bg->CreateSystem<System_HighscoreStore>();
+		bg->CreateSystem<System_Console>();
+	}
+
+	void ConfigureConsole()
+	{
+		app.GetConsole().RegCommand("play", [this](const ConsoleCommand& cmd) 
+		{
+			app.GetAudio().Play(cmd.GetString(0));
+		});
+
+		app.GetConsole().RegCommand("stop", [this](const ConsoleCommand& cmd) 
+		{
+			int handle = 0;
+			if (cmd.Is(0, INT)) handle = cmd.GetInt(0);
+			else handle = app.GetAudio().GetHandle(cmd.GetString(0));
+			app.GetAudio().Stop(handle);
+		});
+
+		app.GetConsole().RegCommand("free", [this](const ConsoleCommand& cmd) 
+		{
+			int handle = 0;
+			if (cmd.Is(0, INT)) handle = cmd.GetInt(0);
+			else handle = app.GetAudio().GetHandle(cmd.GetString(0));
+			app.GetAudio().Free(handle);
+		});
+
+		app.GetConsole().RegCommand("list_audio", [this](const ConsoleCommand& cmd) 
+		{
+			printf("Audio instances:");
+			for (auto [name, inst] : app.GetAudio().m_loaded)
+			{
+				printf("\t%d. %s\n", inst, name.c_str());
+			}
+		});
 	}
 
 	float transitionTimer = 0;

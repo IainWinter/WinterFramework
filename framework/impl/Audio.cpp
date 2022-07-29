@@ -376,6 +376,7 @@ int Audio::Free(int handle)
 		return audio_log_error(ENGINE_FAILED_INVALID_HANDLE);
 	}
 
+	CHECK(m_instances[handle]->stop(FMOD_STUDIO_STOP_ALLOWFADEOUT), ENGINE_FAILED_STOP_INSTANCE);
 	CHECK(m_instances[handle]->release(), ENGINE_FAILED_FREE_INSTANCE);
 	return ENGINE_OK;
 }
