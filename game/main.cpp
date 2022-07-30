@@ -1,6 +1,7 @@
 #include "Common.h"
 #include "Rendering.h"
 
+#include "Data.h"
 #include "GameRender.h"
 
 #include "Sand/Sand.h"
@@ -60,6 +61,8 @@ struct Regolith : EngineLoop<Regolith>
 
 		Attach<event_SubmitHighscore>();
 		Attach<event_PlayGame>();
+
+		CreateDBAndTablesIfNeeded();
 	}
 
 	void Dnit()

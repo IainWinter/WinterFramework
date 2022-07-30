@@ -28,6 +28,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	int effectsHandle;
 	int musicHandle;
 
+	UserSettings state;
+	UserSettings lastState;
+
 	void Init()
 	{
 		music = PlaySound("event:/music_menu_main");
@@ -51,6 +54,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		SendToRoot(event_RequestHighscores{});
 
 		Attach<event_RespondHighscore>();
+
+		state = GetUserSettings();
+		UpdateStateIfNeeded();
 	}
 
 	void on(event_RespondHighscore& e)
@@ -86,6 +92,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	{
 		if (pressedPlay) return;
 
+		StopSound(music);
 		SetTarget(vec2(0, 1000.f));
 		SetTargetFade(1.f);
 		Delay(1.f, [this]() { SendToRoot(event_Shutdown{});  });
@@ -309,18 +316,6 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		ImGui::EndChild();
 	}
 
-	struct SettingsState
-	{
-		int fullscreenMode;
-		bool vsync;
-
-		float musicVol  = 1.f;
-		float effectVol = 1.f;
-	};
-
-	SettingsState state;
-	SettingsState lastState;
-
 	void Settings(float position)
 	{
 		auto [width, height] = GetSize(title_settings, 100);
@@ -332,6 +327,7 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 		if (ImGui::Button("Back"))
 		{
 			PressedBack();
+			UpdateUserSettings(state);
 		}
 
 		ImGui::PushFont(FontMap::Get("Highscore Table"));
@@ -391,9 +387,9 @@ struct System_UI_AsteroidsMenu : System<System_UI_AsteroidsMenu>
 	void UpdateStateIfNeeded()
 	{
 		if (state.fullscreenMode != lastState.fullscreenMode) { GetWindow().SetFullscreen(state.fullscreenMode);           lastState.fullscreenMode = state.fullscreenMode; }
-		if (state.vsync          != lastState.vsync)          { GetWindow().SetVSync     (state.vsync);                    lastState.vsync          = state.vsync; }
+		if (state.vsyncMode      != lastState.vsyncMode)      { GetWindow().SetVSync     (state.vsyncMode);                lastState.vsyncMode      = state.vsyncMode; }
 		if (state.effectVol      != lastState.effectVol)      { GetAudio() .SetVolume    (effectsHandle, state.effectVol); lastState.effectVol      = state.effectVol; }
-		if (state.musicVol       != lastState.musicVol)       { GetAudio() .SetVolume    (effectsHandle, state.musicVol);  lastState.musicVol       = state.musicVol; }
+		if (state.musicVol       != lastState.musicVol)       { GetAudio() .SetVolume    (musicHandle,   state.musicVol);  lastState.musicVol       = state.musicVol; }
 	}
 
 	bool MenuButton(const char* label, MenuState state)
