@@ -3,7 +3,6 @@
 #include "app/System.h"
 #include "Events.h"
 #include "HighscoreRecord.h"
-#include "sql/sqlite3.h"
 #include "Data.h"
 
 struct System_HighscoreStore : System<System_HighscoreStore>
