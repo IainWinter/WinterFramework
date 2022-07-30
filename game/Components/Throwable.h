@@ -10,7 +10,7 @@ struct Throwable
 struct Thrower
 {
 	EntityWith<Transform2D> target;
-	EntityWith<Transform2D, Rigidbody2D> throwing;
+	Entity throwing;
 	float grabRadius = 14.f;
 	float throwingForce = 30.f;
 																	     

@@ -11,7 +11,8 @@ struct System_Lightning : SystemBase
 {
 	void Update()
 	{
-		auto [physics, sand] = GetModules<PhysicsWorld, SandWorld>();
+		PhysicsWorld& physics = GetWorld()->GetPhysicsWorld();
+		SandWorld& sand = First<SandWorld>();
 
 		for (auto [entity, transform, emitter, lightning] : QueryWithEntity<Transform2D, ParticleEmitter, Lightning>())
 		{
@@ -59,7 +60,7 @@ struct System_Lightning : SystemBase
 									if (entity.Has<LightningDamage>())
 									{
 										int index1d = sprite.colliderMask->Index32(info.spriteHitIndex.x, info.spriteHitIndex.y);
-										Send(event_Sand_RemoveCell{ Wrap(info.spriteEntityID), index1d, p });
+										Send(event_Sand_RemoveCell{ WrapEntity(info.spriteEntityID), index1d, p });
 									}
 
 									targetPosition = p;
@@ -93,7 +94,14 @@ private:
 		float ang = atan2(normal.y, normal.x) + (get_rand(arc * 2) - arc);
 		vec2 nextPosition = position + vec2(cos(ang), sin(ang)) * radius * .5f;
 
-		emitter.EmitLine(position, nextPosition);
+		for (Particle& p : emitter.EmitLine(position, nextPosition))
+		{
+			Entity e = CreateEntity();
+			e.Add<Particle>(p);
+			e.Add<Transform2D>(p.original);
+
+			emitter.spawners.at(p.m_emitterSpawnerIndex).onCreate(e);
+		}
 
 		return nextPosition;
 	}

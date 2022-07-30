@@ -78,7 +78,7 @@ struct System_EnemySpawner : SystemBase
 			SpawningZone& zone = m_zones.at(get_rand((int)m_zones.size() - 1));
 			vec2 position = zone.min + vec2(get_rand(m_zoneSize.x), get_rand(m_zoneSize.y));
 
-			Send(event_Enemy_Spawn{ (EnemyType)get_rand(0), position, true }); 
+			Send(event_Enemy_Spawn{ EnemyType::ENEMY_BASE/*(EnemyType)get_rand(0)*/, position, true }); 
 		}
 	}
 

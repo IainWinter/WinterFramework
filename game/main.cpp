@@ -36,6 +36,8 @@
 #include "Systems/FlockingMovement.h"
 #include "Systems/FireWeaponAfterDelay.h"
 
+#include "Systems/LightningSystem.h"
+
 #include "UI/AsteroidsHUD.h"
 #include "UI/AsteroidsMenu.h"
 
@@ -181,6 +183,7 @@ struct Regolith : EngineLoop<Regolith>
 		game->CreateSystem<System_ItemPickup>();
 		game->CreateSystem<System_FireWeapon>();
 		game->CreateSystem<System_RockSpawner_Test>();
+		game->CreateSystem<System_Lightning>();
 
 		// enemy
 		game->CreateSystem<System_EnemySpawner>();

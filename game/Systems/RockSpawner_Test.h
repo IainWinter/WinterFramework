@@ -3,6 +3,7 @@
 #include "app/System.h"
 #include "Physics.h"
 #include "Prefabs.h"
+#include "Components/Throwable.h"
 #include "Sand/SandEvents.h"
 #include "ext/Time.h"
 #include "ext/rendering/Sprite.h"
@@ -58,6 +59,8 @@ struct System_RockSpawner_Test : SystemBase
 				.SetVelocity(vel)
 				.SetAngularVelocity(avel)
 				.SetDensity(1000.f);
+
+			rock.Add<Throwable>();
 
 			Send(event_SandAddSprite{ rock });
 		}

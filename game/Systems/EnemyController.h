@@ -71,6 +71,8 @@ struct System_EnemyController : System<System_EnemyController>
 
 			else // if holding something
 			{
+				if (!thrower.target.IsAlive()) continue;
+
 				vec2 throwingPos = thrower.throwing.Get<Transform2D>().position;
 				float dist = distance(transform.position, throwingPos);
 
