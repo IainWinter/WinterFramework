@@ -1,8 +1,8 @@
 -- Uncomment this if you want to build this standalone
 
-workspace "Winter"
-	configurations { "Debug", "Release" }
-	platforms { "x64" }
+--workspace "Winter"
+--	configurations { "Debug", "Release" }
+--	platforms { "x64" }
 
 group "vendor"
 	include "vendor/box2d"
