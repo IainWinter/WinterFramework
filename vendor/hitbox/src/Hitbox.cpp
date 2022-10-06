@@ -546,7 +546,7 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<ve
 	return polygons;
 }
 
-std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* mask_grid, int width, int height, int accuracy)
+std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(const bool* mask_grid, int width, int height, int accuracy)
 {
 	// library has issues with small dim size
 	if (width < 2 || height < 2) return {};
