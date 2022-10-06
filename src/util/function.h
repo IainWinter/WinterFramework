@@ -11,7 +11,7 @@ struct comparable_func
 	comparable_func() : function() {}
 	comparable_func(const std::function<_t>& function) : function(function) {}
 
-	bool operator==(const comparable_func& other) { return function.target<_t>() == other.function.target<_t>(); }
+	bool operator==(const comparable_func& other) { return function.template target<_t>() == other.function.template target<_t>(); }
 	bool operator!=(const comparable_func& other) { return !operator==(other); };
 
 	template<typename... _args>

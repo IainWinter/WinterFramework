@@ -173,15 +173,15 @@ void Texture::_UpdateOnDevice()
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &w);
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
 
-	if (w != m_width || h != m_height)
-	{
+	//if (w != m_width || h != m_height)
+	//{
 		gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(m_usage), Width(), Height(), 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
-	}
+	//}
 
-	else
-	{
-		gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(m_usage), gl_type(m_usage), Pixels()));
-	}
+	//else
+	//{
+		//gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(m_usage), gl_type(m_usage), Pixels()));
+	//}
 }
 
 void Texture::_UpdateFromDevice()
@@ -555,17 +555,19 @@ void Buffer::_InitOnDevice()
 {
 	gl(glGenBuffers(1, &m_device));
 	gl(glBindBuffer(GL_ARRAY_BUFFER, m_device)); // user can bind to what they want after using ::DeviceHandle
-	gl(glNamedBufferData(m_device, Bytes(), Data(), gl_buffer_draw(IsStatic())));
+	gl(glBufferData(GL_ARRAY_BUFFER, Bytes(), Data(), gl_buffer_draw(IsStatic())));
 }
 
 void Buffer::_UpdateOnDevice()
 {
 	// on realloc, does old buffer need to be destroied?
 
+    gl(glBindBuffer(GL_ARRAY_BUFFER, m_device));
+    
 	int size = 0;
-	gl(glGetNamedBufferParameteriv(m_device, GL_BUFFER_SIZE, &size));
-	if (Bytes() != size) { gl(glNamedBufferData(m_device, Bytes(), Data(), gl_buffer_draw(IsStatic()))); }
-	else                 { gl(glNamedBufferSubData(m_device, 0, Bytes(), Data())); }
+	gl(glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size));
+	if (Bytes() != size) { gl(glBufferData(GL_ARRAY_BUFFER, Bytes(), Data(), gl_buffer_draw(IsStatic()))); }
+	else                 { gl(glBufferSubData(GL_ARRAY_BUFFER, 0, Bytes(), Data())); }
 }
 
 void Buffer::_UpdateFromDevice()

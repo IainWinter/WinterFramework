@@ -20,10 +20,10 @@ public:
 
 	void Begin();
 
-	void SubmitLine(                              vec2& a, vec2& b, const Color& color);
-	void SubmitLine(                              vec2& a, vec2& b, const Color& colorA, const Color& colorB);
-	void SubmitLine(const Transform2D& transform, vec2& a, vec2& b, const Color& color);
-	void SubmitLine(const Transform2D& transform, vec2& a, vec2& b, const Color& colorA, const Color& colorB);
+	void SubmitLine(                              const vec2& a, const vec2& b, const Color& color);
+	void SubmitLine(                              const vec2& a, const vec2& b, const Color& colorA, const Color& colorB);
+	void SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& color);
+	void SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& colorA, const Color& colorB);
 
 	void Draw(const Camera& camera);
 
