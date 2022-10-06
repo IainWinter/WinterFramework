@@ -33,7 +33,8 @@ project "Framework"
 		"src/ext/impl/Time.cpp",
 		"src/ext/impl/physics/ClosestPointOnShape.cpp",
 		"src/ext/impl/rendering/BatchLineRenderer.cpp",
-		"src/ext/impl/rendering/BatchSpriteRenderer.cpp"
+		"src/ext/impl/rendering/BatchSpriteRenderer.cpp",
+		"src/ext/impl/rendering/SimpleRender.cpp"
 	}
 
 	includedirs {

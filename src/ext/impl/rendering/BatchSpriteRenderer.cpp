@@ -94,7 +94,8 @@ void BatchSpriteRenderer::InitProgram()
 	m_program.Add(ShaderProgram::sVertex,   source_vert);
 	m_program.Add(ShaderProgram::sFragment, source_frag);
 
-	m_default = mkr<Texture>(_a("white.png")); // todo: grab from prefab
+	m_default = mkr<Texture>(Texture(5, 5, Texture::uRGBA));
+	m_default->ClearHost(Color(255, 255, 255, 255));
 }
 
 void BatchSpriteRenderer::SetProgram(const mat4& projection, bool mixTint)
