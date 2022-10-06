@@ -34,7 +34,7 @@ void Window::Init()
 {
 	m_first_glsl_version = Window::Init_Video();
 
-	m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI);
+	m_window = SDL_CreateWindow(m_config.Title.c_str(), 0, 0, m_config.Width, m_config.Height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL/* | SDL_WINDOW_ALLOW_HIGHDPI*/);
 	m_opengl = SDL_GL_CreateContext(m_window);
 
 	SDL_GL_MakeCurrent(m_window, m_opengl);
