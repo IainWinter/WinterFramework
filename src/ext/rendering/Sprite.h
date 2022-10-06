@@ -21,3 +21,14 @@ struct Sprite
 	Sprite& SetUvOffset(const vec2&       offset) { this->uvOffset = offset; return *this; }
 	Sprite& SetUvScale (const vec2&       scale)  { this->uvScale  = scale;  return *this; }
 };
+
+struct SpriteMesh
+{
+    Mesh geometry;
+    Sprite sprite;
+    
+    SpriteMesh(Mesh geometry, Sprite sprite)
+        : geometry (geometry)
+        , sprite   (sprite)
+    {}
+};

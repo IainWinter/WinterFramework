@@ -70,7 +70,7 @@ void set_log_style_flag_effect(char flag, const char* effect)
 	m_styles[flag] = effect;
 }
 
-void submit_log(char* str)
+void submit_log(const char* str)
 {
 	if (m_record.size() > m_max_size)
 	{
@@ -80,7 +80,7 @@ void submit_log(char* str)
 
 	m_record.push_back(str);
 
-	printf(str);
+	printf("%s", str);
 }
 
 char* get_log_mem()

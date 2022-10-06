@@ -53,14 +53,15 @@ const char* get_console_arg_type_name(ConsoleArgType arg)
 	{
 		case ConsoleArgType::NUMBER: return "a number";
 		case ConsoleArgType::STRING: return "a string";
+        default: break;
 	}
 
 	return "unknown";
 }
 
-ConsoleCommand::ConsoleCommand(const std::string& arg, const std::vector<ConsoleArg>& args)
-	: verb(verb)
-	, args(args)
+ConsoleCommand::ConsoleCommand(const std::string& verb, const std::vector<ConsoleArg>& args)
+	: verb (verb)
+	, args (args)
 {}
 
 int ConsoleCommand::GetInt(int index) const

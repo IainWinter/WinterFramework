@@ -112,3 +112,8 @@ void BatchSpriteRenderer::DrawBatch(r<Texture> texture, BatchData& batch)
 
 	batch.finalize();
 }
+
+r<Texture> BatchSpriteRenderer::GetDefaultTexture() const
+{
+    return m_default;
+}

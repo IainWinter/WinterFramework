@@ -24,12 +24,21 @@ struct HitboxBounds
 
 	float Width()  const { return Max.x - Min.x; }
 	float Height() const { return Max.y - Min.y; }
+    
+    vec2 Dims() const { return vec2(Width(), Height()); }
 };
 
-bool is_polygon_convex(const std::vector<vec2>& polygon);
-float polygon_area(const std::vector<vec2>& polygon);
-HitboxBounds make_bounds(const std::vector<vec2>& points);
+bool IsPolygonConvex(const std::vector<vec2>& polygon);
+float GetPolygonArea(const std::vector<vec2>& polygon);
+HitboxBounds MakeHitboxBounds(const std::vector<vec2>& points);
 
-std::vector<vec2> make_contour(const bool* mask_grid, int width, int height);
-std::vector<vec2> make_polygon(const std::vector<vec2>& contour, const HitboxBounds& boundingBox, int accuracy);
-std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* mask_grid, int width, int height, int accuracy);
+std::vector<vec2> MakeContour(const bool* mask_grid, int width, int height);
+std::vector<vec2> MakePolygon(const std::vector<vec2>& contour, const HitboxBounds& boundingBox, int accuracy);
+
+std::vector<std::vector<vec2>> MakeTriangles(const std::vector<vec2>& polygon);
+std::vector<vec2> FlattenTriangleList(const std::vector<std::vector<vec2>>& triangles);
+
+std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& polygon);
+std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles);
+
+std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(const bool* mask_grid, int width, int height, int accuracy);

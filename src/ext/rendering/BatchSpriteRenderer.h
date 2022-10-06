@@ -94,4 +94,7 @@ private:
 
 	void SetProgram(const mat4& projection, bool mixTint);
 	void DrawBatch(r<Texture> texture, BatchData& batch);
+    
+public:
+    r<Texture> GetDefaultTexture() const;
 };

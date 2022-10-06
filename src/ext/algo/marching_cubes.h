@@ -28,7 +28,7 @@ MakePolygonFromField(
 {
 	bool* f = new bool[width * height];
 	for (size_t i = 0; i < width * height; i++) f[i] = test(field[i]);
-	auto out = make_hitbox(f, width, height, 80); // 80 gives best values for the station enemy, everything else looks ok too
+	auto out = MakeHitbox(f, width, height, 80); // 80 gives best values for the station enemy, everything else looks ok too
 	delete[] f;
 	return out;
 }

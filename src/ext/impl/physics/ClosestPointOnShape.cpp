@@ -78,6 +78,10 @@ vec2 GetClosestPoint(const Rigidbody2D& body, vec2 boxPoint)
 
             break;
         }
+            
+        default:
+            log_physics("e~GetClosestPoint Failed invalid collider type.");
+            break;
     }
 
     return closestPoint;

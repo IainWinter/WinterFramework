@@ -709,6 +709,16 @@ Mesh& Mesh::Add(AttribName name, const r<Buffer>& buffer)
 	return Add(name, 0, buffer->Repeat(), false, buffer);
 }
 
+void Mesh::Draw()
+{
+    Draw(topology);
+}
+
+void Mesh::DrawInstanced(int numberOfInstances)
+{
+    DrawInstanced(numberOfInstances, topology);
+}
+
 // gl() calls cause nullptr exception/
 
 void Mesh::Draw(Topology drawType)
@@ -894,6 +904,16 @@ void ShaderProgram::Set(const std::string& name, const ivec4& x) { gl(glUniform4
 void ShaderProgram::Set(const std::string& name, const fmat2& x) { gl(glUniformMatrix2fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
 void ShaderProgram::Set(const std::string& name, const fmat3& x) { gl(glUniformMatrix3fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
 void ShaderProgram::Set(const std::string& name, const fmat4& x) { gl(glUniformMatrix4fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
+
+void ShaderProgram::Set(const std::string& name, const Color& color)
+{
+    Set(name, color.as_v4());
+}
+
+void ShaderProgram::Set(const std::string& name, r<Texture> texture)
+{
+    Set(name, *texture);
+}
 
 void ShaderProgram::Set(const std::string& name, Texture& texture)
 {

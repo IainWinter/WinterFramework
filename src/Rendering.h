@@ -534,8 +534,11 @@ public:
 		return *this;
 	}
 
-	void Draw(Topology drawType = Topology::tTriangles);
-	void DrawInstanced(int numberOfInstances, Topology drawType = Topology::tTriangles);
+    void Draw();
+    void DrawInstanced(int numberOfInstances);
+    
+	void Draw(Topology drawType);
+	void DrawInstanced(int numberOfInstances, Topology drawType);
 
 // interface
 
@@ -629,8 +632,12 @@ public:
 	void Set(const std::string& name, const fmat2& x);
 	void Set(const std::string& name, const fmat3& x);
 	void Set(const std::string& name, const fmat4& x);
+    
+    // convert from Color to vec4
+    void Set(const std::string& name, const Color& color);
 
 	// auto sends texture to device
+    void Set(const std::string& name, r<Texture> texture);
 	void Set(const std::string& name, Texture& texture);
 
 // interface

@@ -23,6 +23,52 @@ void SetDrawEntityDebugMode(ShowEntityIdMode mode)
 	drawEntityIdMode = mode;
 }
 
+Color TintToDebugMode(const Entity& entity, const Sprite& sprite)
+{
+    Color tint = sprite.tint;
+        
+    if (drawEntityIdMode != NONE)
+    {
+        auto itr = spriteColors.find(entity.Id());
+        if (itr == spriteColors.end())
+        {
+            itr = spriteColors.emplace(entity.Id(), Color::rand(255)).first;
+        }
+
+        switch (drawEntityIdMode)
+        {
+            case MIX:
+                tint *= itr->second;
+                break;
+            case ONLY:
+                tint = itr->second;
+                break;
+            default:
+                break;
+        }
+    }
+    
+    return tint;
+}
+
+void SetMeshProgramDefaults(const Transform2D& transform)
+{
+    meshProgram->Set("model", transform.World());
+    meshProgram->Set("uvOffset", vec2(0.f));
+    meshProgram->Set("uvScale", vec2(1.f));
+    meshProgram->Set("sprite", spriteRender.GetDefaultTexture());
+    meshProgram->Set("tint", Color(255, 255, 255));
+}
+
+void SetMeshProgramValues(const Transform2D& transform, Sprite& sprite)
+{
+    meshProgram->Set("model", transform.World());
+    meshProgram->Set("uvOffset", sprite.uvOffset);
+    meshProgram->Set("uvScale", sprite.uvScale);
+    meshProgram->Set("sprite", sprite.source ? sprite.source : spriteRender.GetDefaultTexture());
+    meshProgram->Set("tint", sprite.tint);
+}
+
 void RenderMeshes(const Camera& camera, EntityWorld& world)
 {
 	meshProgram->Use();
@@ -30,18 +76,25 @@ void RenderMeshes(const Camera& camera, EntityWorld& world)
 
 	for (auto [transform, mesh] : world.Query<Transform2D, Mesh>())
 	{
-		meshProgram->Set("model", transform.World());
-		mesh.Draw(mesh.topology);
+        SetMeshProgramDefaults(transform);
+        mesh.Draw();
 	}
 
 	for (auto [transform, model] : world.Query<Transform2D, Model>())
 	{
-		meshProgram->Set("model", transform.World());
-		for (r<Mesh>& mesh : model.meshes)
-		{
-			mesh->Draw(mesh->topology);
-		}
-	}
+        SetMeshProgramDefaults(transform);
+        
+        for (r<Mesh>& mesh : model.meshes)
+        {
+            mesh->Draw();
+        }
+    }
+    
+    for (auto [transform, mesh] : world.Query<Transform2D, SpriteMesh>())
+    {
+        SetMeshProgramValues(transform, mesh.sprite);
+        mesh.geometry.Draw();
+    }
 }
 
 void RenderSprites(const Camera& camera, EntityWorld& world)
@@ -54,30 +107,7 @@ void RenderSprites(const Camera& camera, EntityWorld& world)
 		
 	for (auto [entity, transform, sprite] : world.QueryWithEntity<Transform2D, Sprite>())
 	{
-		// give sprites a tint based on their entity id
-
-		Color tint = sprite.tint;
-			
-		if (drawEntityIdMode != NONE)
-		{
-			auto itr = spriteColors.find(entity.Id());
-			if (itr == spriteColors.end())
-			{
-				itr = spriteColors.emplace(entity.Id(), Color::rand(255)).first;
-			}
-
-			switch (drawEntityIdMode)
-			{
-				case MIX:
-					tint *= itr->second;
-					break;
-				case ONLY:
-					tint = itr->second;
-					break;
-			}
-		}
-
-		spriteRender.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), tint);
+		spriteRender.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
 	}
 	spriteRender.Draw();
 
@@ -138,38 +168,6 @@ r<ShaderProgram> MakeVertexAndFragmentShader(const char* source_vert, const char
 	return program;
 }
 
-void InitWireframeProgram()
-{
-	const char* source_vert =
-		"#version 330 core\n"
-
-		"layout (location = 0) in vec2 vertex;"
-		"layout (location = 5) in vec4 color;"
-
-		"uniform mat4 model;"
-		"uniform mat4 projection;"
-
-		"out vec4 vertColor;"
-
-		"void main()"
-		"{"
-			"vertColor = color;"
-			"gl_Position = projection * model * vec4(vertex, 3.0, 1.0);" // hack: draw wireframes above
-		"}";
-
-	const char* source_frag =
-		"#version 330 core\n"
-		"in vec4 vertColor;"
-		"out vec4 color;"
-		"void main()"
-		"{"
-			"color = vertColor;"
-		"}";
-
-	g_wireframe = MakeVertexAndFragmentShader(source_vert, source_frag);
-
-}
-
 void InitSpriteProgram()
 {
 	const char* source_vert = 
@@ -202,98 +200,19 @@ void InitSpriteProgram()
 		"void main()"
 		"{"
 			"vec4 spriteColor = tint * texture(sprite, TexCoords);"
-
-			"if (spriteColor.a > .7) spriteColor.a = 1.f;"
-			"else                    discard;"
-
+    
+			"if (spriteColor.a < .01) discard;"
 			"color = spriteColor;"
 		"}";
 
 	g_sprite = MakeVertexAndFragmentShader(source_vert, source_frag);
 }
 
-void InitCollisionInfoProgram()
-{
-	const char* source_vert =
-		"#version 330 core\n"
-		"layout (location = 0) in vec2 pos;"
-		"layout (location = 1) in vec2 uv;"
-
-		"out vec2 TexCoords;"
-
-		"uniform mat4 model;"
-		"uniform mat4 projection;"
-
-		"void main()"
-		"{"
-			"TexCoords = uv;"
-			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
-		"}";
-
-	const char* source_frag =
-		"#version 330 core\n"
-		"in vec2 TexCoords;"
-
-		"out ivec4 spriteId;" // sprite (x, y) (entity index), (alpha for if its even there)
-
-		"uniform sampler2D colliderMask;"
-		"uniform vec2 spriteSize;"
-		"uniform uint spriteIndex;"
-
-		"void main()"
-		"{"
-			"float mask = texture(colliderMask, TexCoords).a;"
-			"if (mask == 0) discard;"
-			"spriteId = ivec4(TexCoords * spriteSize, spriteIndex, 1);"
-		"}";
-
-	g_collisionInfo = MakeVertexAndFragmentShader(source_vert, source_frag);
-}
-
-void Init_Debug_DisplayCollisionInfo()
-{
-	const char* source_vert =
-		"#version 330 core\n"
-		"layout (location = 0) in vec2 pos;"
-		"layout (location = 1) in vec2 uv;"
-		
-		"out vec2 TexCoords;"
-		
-		"uniform mat4 model;"
-		"uniform mat4 projection;"
-
-		"void main()"
-		"{"
-			"TexCoords = uv;"
-			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
-		"}";
-
-	const char* source_frag =
-		"#version 330 core\n"
-		"in vec2 TexCoords;"
-		
-		"out vec4 color;"
-		
-		"uniform isampler2D sprite;"
-
-		"void main()"
-		"{"
-			"ivec4 spriteColor = texture(sprite, TexCoords);"
-			"if (spriteColor.a == 0) discard;"
-			"color = vec4(1, 1, 1, 1);"
-		"}";
-
-	g_debug_displayCollisionInfo = MakeVertexAndFragmentShader(source_vert, source_frag);
-}
-
 void InitRendering()
 {
-	InitWireframeProgram();
 	InitSpriteProgram();
-	InitCollisionInfoProgram();
-	Init_Debug_DisplayCollisionInfo();
 
-	meshProgram = GetProgram_Wireframe();
+	meshProgram = GetProgram_Sprite();
 
 	g_quad = mkr<Mesh>();
 	InitQuadMesh2D(*g_quad);

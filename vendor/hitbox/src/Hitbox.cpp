@@ -52,7 +52,7 @@ vec2 safe_normalize(const ivec2& p)
 					: vec2(p.x / n, p.y / n);
 }
 
-HitboxBounds make_bounds(const std::vector<vec2>& points)
+HitboxBounds MakeHitboxBounds(const std::vector<vec2>& points)
 {
 	HitboxBounds bounds;
 	std::swap(bounds.Min, bounds.Max);
@@ -67,7 +67,7 @@ HitboxBounds make_bounds(const std::vector<vec2>& points)
 	return bounds;
 }
 
-bool is_polygon_convex(const std::vector<vec2>& polygon)
+bool IsPolygonConvex(const std::vector<vec2>& polygon)
 {
 	size_t polygonSize = polygon.size();
 	size_t i;
@@ -85,7 +85,7 @@ bool is_polygon_convex(const std::vector<vec2>& polygon)
 	return i == polygonSize;
 }
 
-float polygon_area(const std::vector<vec2>& polygon)
+float GetPolygonArea(const std::vector<vec2>& polygon)
 {
 	float area = 0.f;
 	for (int i = 0; i < polygon.size(); i++)
@@ -216,7 +216,7 @@ skiperror:
 	return contour;
 }
 
-std::vector<vec2> make_polygon(const std::vector<vec2>& contour, const HitboxBounds& boundingBox, int accuracy)
+std::vector<vec2> MakePolygon(const std::vector<vec2>& contour, const HitboxBounds& boundingBox, int accuracy)
 {
 	if (contour.size() <= 3)
 	{
@@ -391,17 +391,22 @@ std::pair<bool, std::vector<vec2>> nextEar(std::vector<Vertex>& polygon, size_t 
 	return { true, triangle };
 }
 
-std::vector<std::vector<vec2>> convert(std::vector<vec2> polygon)
+std::vector<std::vector<vec2>> MakeTriangles(const std::vector<vec2>& polygon)
 {
 	std::vector<Vertex> vertices;
 	std::vector<std::vector<vec2>> triangles;
 	std::vector<vec2> ear;
 	bool success;
 
-	std::transform( std::make_move_iterator(polygon.begin()),
-					std::make_move_iterator(polygon.end()),
-					std::back_inserter(vertices),
-					[](vec2&& p) { return Vertex(std::forward<vec2>(p)); });
+    for (const vec2& v : polygon)
+    {
+        vertices.push_back(Vertex(v));
+    }
+    
+//	std::transform( std::make_move_iterator(polygon.begin()),
+//					std::make_move_iterator(polygon.end()),
+//					std::back_inserter(vertices),
+//					[](vec2&& p) { return Vertex(std::forward<vec2>(p)); });
 
 	size_t verticesSize = vertices.size();
 
@@ -426,19 +431,47 @@ std::vector<std::vector<vec2>> convert(std::vector<vec2> polygon)
 		i++;
 	}
 
+    for (auto& triangle : triangles)
+    {
+        if (is_clockwise(triangle))
+        {
+            std::reverse(triangle.begin(), triangle.end());
+        }
+    }
+    
 	return triangles;
 }
 
-std::vector<std::vector<vec2>> make_multiple(std::vector<vec2> polygon)
+std::vector<vec2> FlattenTriangleList(const std::vector<std::vector<vec2>>& triangles)
 {
-	if (is_polygon_convex(polygon))
-	{
-		return { polygon };
-	}
+    std::vector<vec2> flat;
+    
+    for (const auto& triangle : triangles)
+    {
+        for (const vec2& vert : triangle)
+        {
+            flat.push_back(vert);
+        }
+    }
+    
+    return flat;
+}
 
-  	std::vector<std::vector<vec2>> triangles = convert(polygon);
+std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& contour)
+{
+    if (IsPolygonConvex(contour))
+    {
+        return { contour };
+    }
+    
+    return CombineTriangles(MakeTriangles(contour));
+}
 
-	for (auto polygonA = triangles.begin(); polygonA != triangles.end(); ++polygonA)
+std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles)
+{
+    std::vector<std::vector<vec2>> polygons = triangles;//MakeTriangles(polygon);
+
+	for (auto polygonA = polygons.begin(); polygonA != polygons.end(); ++polygonA)
 	{
 		size_t _polygonASize = polygonA->size();
 		size_t _polygonBSize;
@@ -453,7 +486,7 @@ std::vector<std::vector<vec2>> make_multiple(std::vector<vec2> polygon)
 			size_t j = 0;
 			bool diagonalFound = false;
 
-			for (polygonB = std::next(polygonA); polygonB != triangles.end(); ++polygonB)
+			for (polygonB = std::next(polygonA); polygonB != polygons.end(); ++polygonB)
 			{
 				_polygonBSize = polygonB->size();
 
@@ -504,13 +537,13 @@ std::vector<std::vector<vec2>> make_multiple(std::vector<vec2> polygon)
 			for (size_t k = j2; k != j; k = (k + 1) % _polygonBSize) polygon.push_back((*polygonB)[k]);
 
 			*polygonA = std::move(polygon);
-			triangles.erase(polygonB);
+            polygons.erase(polygonB);
 			_polygonASize = polygonA->size();
 			verticeIdx = 0;
 		}
 	}
 
-	return triangles;
+	return polygons;
 }
 
 std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* mask_grid, int width, int height, int accuracy)
@@ -523,29 +556,24 @@ std::pair<std::vector<std::vector<vec2>>, HitboxBounds> make_hitbox(const bool* 
 	// no start point found, just exit
 	if (contour.size() == 0) return {};
 
-	auto bounds   = make_bounds(contour);
+	auto bounds   = MakeHitboxBounds(contour);
 
 	// infinte loop on bounds.x/y == 0 in make_polygon
 	if (bounds.Width() == 0 || bounds.Height() == 0)
 		return {};
-
-	auto polygons = make_multiple(make_polygon(contour, bounds, accuracy));
+    
+	auto polygons = CombineTriangles(MakePolygon(contour, bounds, accuracy));
 	
 	for (int i = 0; i < polygons.size(); i++)
 	{
 		std::vector<vec2>& polygon = polygons.at(i);
 
-		if (polygon_area(polygon) < .001f)
+		if (GetPolygonArea(polygon) < .001f)
 		{
 			polygons.at(i) = std::move(polygons.back());
 			polygons.pop_back();
 			i--;
 			continue;
-		}
-
-		if (is_clockwise(polygon))
-		{
-			std::reverse(polygon.begin(), polygon.end());
 		}
 
 		for (glm::vec2& vert : polygon)
