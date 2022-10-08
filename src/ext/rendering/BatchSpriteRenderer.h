@@ -2,6 +2,7 @@
 
 #include "Rendering.h"
 #include "ext/rendering/Camera.h"
+#include "ext/rendering/Sprite.h"
 #include <unordered_map>
 
 // could use major improvments !!!
@@ -24,6 +25,10 @@ public:
 	void SubmitSprite(
 		const Transform2D& transform,
 		const Color& tint);
+
+	void SubmitSprite(
+		const Transform2D& transform,
+		const Sprite& sprite);
 
 	void SubmitSprite(
 		const Transform2D& transform, 

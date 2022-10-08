@@ -10,7 +10,6 @@
 #include "util/error_check.h" // gives gl
 #include "SDL2/SDL_surface.h"
 
-
 // I want to create the simplest graphics api that hides as much as possible away
 // I only need simple Texture/Mesh/Shader, I dont even need materials
 // user should be able to understand where the memory is without needing to know the specifics of each type
@@ -27,8 +26,13 @@
 
 // ended up using RAII, using shared pointers for most things is really what you want to instance
 
-// todo: should make asserts return bools because assert() gets removed in release mode.
-//			this would allow for soft errors
+// todo: tink about how the container objecst (Target/Mesh) should work with FreeHost/FreeDevice, should they free their Buffers?
+//			Seems like they shouldnt because they could be instanced
+// 
+//	Currently if a container's host is freeed and a buffer is static, it will be freeed. This works because if something is atatic then its host shouldnt be read
+//			  if a container's device is freeed nothing will happen to the buffers, this will wait until the lifetime of the object runs out, or you manually iterate and remove them
+//						his works because two containers could want to use the same buffer, and if one dies the other shouldnt loose the buffer's device data, but once all lifetime are up
+//						then they will be automatically destroied.
 
 #ifndef STATIC_HOST
 #	define DYNAMIC_HOST 0
@@ -36,6 +40,8 @@
 #	define INHERIT_HOST 2
 #	define PICK_INHERIT isStatic == INHERIT_HOST ? IsStatic() : isStatic
 #endif
+
+#define TEXTURE_DEFAULT_FILTER Texture::fPixelated
 
 struct IDeviceObject
 {
@@ -108,6 +114,19 @@ public:
 		uFLOAT_32 // 128 bit
 	};
 
+	enum Filter
+	{
+		fSmooth,
+		fPixelated
+	};
+
+	//enum Border
+	//{
+	//	bClamp,
+	//	bEdge,
+	//	bBorder // needs another variable 
+	//};
+
 private:
 	u8*          m_host            = nullptr; // deafult construction
 	GLuint       m_device          = 0u;
@@ -118,18 +137,26 @@ private:
 	int          m_bytesPerChannel = 0;       // bytes per component
 	Usage        m_usage           = uR;
 
+	Filter       m_filter          = TEXTURE_DEFAULT_FILTER;  // things you can change after creation
+
 // public texture specific functions
 
 public:
-	int   Width()           const;
-	int   Height()          const;
-	int   Channels()        const;
-	int   BytesPerChannel() const;
-	Usage UsageType()       const;
-	u8*   Pixels()          const;
-	int   BufferSize()      const;
-	int   Length()          const;
-	vec2  Dimensions()      const;
+	int    Width()           const;
+	int    Height()          const;
+	int    Channels()        const;
+	int    BytesPerChannel() const;
+	Usage  UsageType()       const;
+	Filter FilterType()      const;
+	u8*    Pixels()          const;
+	int    BufferSize()      const;
+	int    Length()          const;
+	vec2   Dimensions()      const;
+	float  Aspect()          const;
+
+	// setters
+
+	Texture& SetFilter(Filter filter);
 
 	// reads from the host
 	// only rgba up to Channels() belong to the pixel at (x, y)
@@ -140,23 +167,32 @@ public:
 
 	// assumed non const At will be written to so marks the texture as outdated
 
-	      Color& At(int x, int y);
-	const Color& At(int x, int y) const;
-
 	// !! need to add assert for invalid index !!!
+	
+		  Color& At(int x, int y);
+	const Color& At(int x, int y) const;
 
 		  Color& At(int index32);
 	const Color& At(int index32) const;
+
+	template<typename _t> const _t* At(int x, int y) const { return (const _t*)&At(x, y).as_u32; }
+	template<typename _t>       _t* At(int x, int y)       { return (      _t*)&At(x, y).as_u32; }
+
+	// a protected set, will only set valid channels
+
+	void Set(int x, int y, const Color& color);
+	void Set(int index32,  const Color& color);
 
 	int Index32(int x, int y) const;
 	int Index  (int x, int y) const;
 	int Index  (int index32)  const;
 
-	template<typename _t> const _t* At(int x, int y) const { return (const _t*)&At(x, y).as_u32; }
-	template<typename _t>       _t* At(int x, int y)       { return (      _t*)&At(x, y).as_u32; }
-
 	void ClearHost(Color color = Color(0, 0, 0, 0));
 	void Resize(int width, int height);
+
+	// copy a sub region of a texture
+	// supports copying to a different usage
+	Texture CopySubRegion(int minX, int minY, int maxX, int maxY, Usage usage, int isStatic = INHERIT_HOST) const;
 
 // interface
 
@@ -170,6 +206,9 @@ protected:
 	void _InitOnDevice()     override;
 	void _UpdateOnDevice()   override;
 	void _UpdateFromDevice() override;
+
+private:
+	void _SetDeviceFilter();
 
 // construction
 
@@ -197,10 +236,14 @@ private:
 private:
 	void init_texture_host_memory(void* pixels, int w, int h, Usage usage);
 
+public:
+	bool IsIndexValid(int index32) const;
+	bool IsInBounds(int x, int y) const;
+
 // asserts
 
 public:
-	bool assert_valid_index(int index32) const;
+	void assert_valid_index(int index32) const;
 };
 
 // target is a collection of textures that can get drawn onto
@@ -253,7 +296,7 @@ public:
 
 	static void UseDefault();
 	static void UseOrDefault(Target* target);
-	static void Clear(Color color);
+	static void Clear(Color color = Color(0));
 
 // interface
 
@@ -326,6 +369,12 @@ public:
 	ElementType Type()             const;
 	int         BytesPerElement()  const;
 	int         Bytes()            const;
+
+	template<typename _t>
+	const std::vector<_t>& List() const
+	{
+		return *(const std::vector<_t>*)&m_host;
+	}
 
 	template<typename _t>       _t& Get(int i)       { assert_on_host(); return *(      _t*)m_host.at(i * BytesPerElement()); }
 	template<typename _t> const _t& Get(int i) const { assert_on_host(); return *(const _t*)m_host.at(i * BytesPerElement()); }
@@ -683,6 +732,7 @@ GLenum gl_iformat             (Texture::Usage usage);
 GLenum gl_type                (Texture::Usage usage);
 int    gl_num_channels        (Texture::Usage usage);
 int    gl_bytes_per_channel   (Texture::Usage usage);
+GLenum gl_filter              (Texture::Filter filter);
 GLenum gl_attachment          (Target::AttachmentName name);
 int    gl_element_type_size   (Buffer::ElementType type);
 GLenum gl_buffer_draw         (bool isStatic);

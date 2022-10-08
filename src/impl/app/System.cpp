@@ -174,6 +174,8 @@ World::~World()
 	// to keep bound lambda memory alive
 	m_tasks.ShutdownAndWait();
 
+	// should figure out what to do with events, prob execute them
+
 	for (SystemBase* system : m_systems)
 	if (system->GetInitState())
 		system->_OnDetach();

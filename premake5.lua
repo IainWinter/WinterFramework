@@ -41,6 +41,12 @@ project "Framework"
 		"src"
 	}
 
+	if asset_root_path ~= nil then
+		defines {
+			"ASSET_ROOT_PATH=\"" .. asset_root_path .. "/\""
+		}
+	end
+
 	filter "system:Windows"
 		libdirs {
 			libdir_sdl_win32

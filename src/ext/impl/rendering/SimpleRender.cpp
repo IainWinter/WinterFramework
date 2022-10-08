@@ -6,17 +6,14 @@ r<ShaderProgram> meshProgram;
 // sprites
 std::unordered_map<int, Color> spriteColors;
 ShowEntityIdMode drawEntityIdMode;
-BatchSpriteRenderer spriteRender;
+r<BatchSpriteRenderer> spriteRender;
 
 // lines
-BatchLineRenderer lineRender;
+r<BatchLineRenderer> lineRender;
 
 // assets
 r<Mesh> g_quad;
-r<ShaderProgram> g_wireframe;
 r<ShaderProgram> g_sprite;
-r<ShaderProgram> g_collisionInfo;
-r<ShaderProgram> g_debug_displayCollisionInfo;
 
 void SetDrawEntityDebugMode(ShowEntityIdMode mode)
 {
@@ -56,7 +53,7 @@ void SetMeshProgramDefaults(const Transform2D& transform)
     meshProgram->Set("model", transform.World());
     meshProgram->Set("uvOffset", vec2(0.f));
     meshProgram->Set("uvScale", vec2(1.f));
-    meshProgram->Set("sprite", spriteRender.GetDefaultTexture());
+    meshProgram->Set("sprite", spriteRender->GetDefaultTexture());
     meshProgram->Set("tint", Color(255, 255, 255));
 }
 
@@ -65,8 +62,26 @@ void SetMeshProgramValues(const Transform2D& transform, Sprite& sprite)
     meshProgram->Set("model", transform.World());
     meshProgram->Set("uvOffset", sprite.uvOffset);
     meshProgram->Set("uvScale", sprite.uvScale);
-    meshProgram->Set("sprite", sprite.source ? sprite.source : spriteRender.GetDefaultTexture());
+    meshProgram->Set("sprite", sprite.source ? sprite.source : spriteRender->GetDefaultTexture());
     meshProgram->Set("tint", sprite.tint);
+}
+
+void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh)
+{
+	meshProgram->Use();
+	meshProgram->Set("projection", camera.Projection());
+
+	SetMeshProgramDefaults(transform);
+	mesh.Draw();
+}
+
+void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh, Sprite& sprite)
+{
+	meshProgram->Use();
+	meshProgram->Set("projection", camera.Projection());
+
+	SetMeshProgramValues(transform, sprite);
+	mesh.Draw();
 }
 
 void RenderMeshes(const Camera& camera, EntityWorld& world)
@@ -99,7 +114,7 @@ void RenderMeshes(const Camera& camera, EntityWorld& world)
 
 void RenderSprites(const Camera& camera, EntityWorld& world)
 {
-	spriteRender.Begin(camera, drawEntityIdMode == ONLY);
+	spriteRender->Begin(camera, drawEntityIdMode == ONLY);
 
 	// draw sprites
 
@@ -107,9 +122,9 @@ void RenderSprites(const Camera& camera, EntityWorld& world)
 		
 	for (auto [entity, transform, sprite] : world.QueryWithEntity<Transform2D, Sprite>())
 	{
-		spriteRender.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
+		spriteRender->SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
 	}
-	spriteRender.Draw();
+	spriteRender->Draw();
 
 	// draw particles
 
@@ -120,36 +135,32 @@ void RenderSprites(const Camera& camera, EntityWorld& world)
 		if (p.HasAtlas())
 		{
 			const TextureAtlas::Bounds& uv = p.GetCurrentFrameUV();
-			spriteRender.SubmitSprite(t, p.atlas->source, uv.uvOffset, uv.uvScale, p.GetTint());
+			spriteRender->SubmitSprite(t, p.atlas->source, uv.uvOffset, uv.uvScale, p.GetTint());
 		}
 
 		else
 		{
-			spriteRender.SubmitSprite(t, p.GetTint());
+			spriteRender->SubmitSprite(t, p.GetTint());
 		}
 	}
 
-	spriteRender.Draw();
+	spriteRender->Draw();
 }
 
 void RenderLines(const Camera& camera, EntityWorld& world)
 {
-	lineRender.Begin();
+	lineRender->Begin();
 
 	for (auto [transform, line] : world.Query<Transform2D, LineParticle>())
 	{
-		lineRender.SubmitLine(transform, line.back, line.front, line.colorBack, line.colorFront);
+		lineRender->SubmitLine(transform, line.back, line.front, line.colorBack, line.colorFront);
 	}
 
-	lineRender.Draw(camera);
+	lineRender->Draw(camera);
 }
 
 r<Mesh>          GetQuadMesh2D()             { return g_quad; }
 r<ShaderProgram> GetProgram_Sprite()         { return g_sprite; }
-r<ShaderProgram> GetProgram_Wireframe()      { return g_wireframe; }
-r<ShaderProgram> GetProgram_SandSpriteInfo() { return g_collisionInfo; }
-
-r<ShaderProgram> GetProgram_Debug_DisplayCollisionInfo() { return g_debug_displayCollisionInfo; }
 
 Mesh& InitQuadMesh2D(Mesh& mesh)
 {
@@ -208,7 +219,7 @@ void InitSpriteProgram()
 	g_sprite = MakeVertexAndFragmentShader(source_vert, source_frag);
 }
 
-void InitRendering()
+void InitSimpleRendering()
 {
 	InitSpriteProgram();
 
@@ -216,4 +227,17 @@ void InitRendering()
 
 	g_quad = mkr<Mesh>();
 	InitQuadMesh2D(*g_quad);
+
+	spriteRender = mkr<BatchSpriteRenderer>();
+	lineRender = mkr<BatchLineRenderer>();
+}
+
+void DnitSimpleRendering()
+{
+	meshProgram = nullptr;
+	g_quad      = nullptr;
+	g_sprite    = nullptr;
+
+	spriteRender = nullptr;
+	lineRender = nullptr;
 }

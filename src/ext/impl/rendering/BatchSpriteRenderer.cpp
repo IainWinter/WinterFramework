@@ -16,6 +16,13 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color
 	SubmitSprite(transform, nullptr, vec2(0.f), vec2(0.f), tint);
 }
 
+void BatchSpriteRenderer::SubmitSprite(
+	const Transform2D& transform,
+	const Sprite& sprite)
+{
+	SubmitSprite(transform, sprite.source, sprite.uvOffset, sprite.uvScale, sprite.tint);
+}
+
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Texture>& texture, const vec2& uvOffset, const vec2& uvScale, const Color& tint)
 {
 	// could compress to: 

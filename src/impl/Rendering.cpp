@@ -51,7 +51,7 @@ void IDeviceObject::SendToHost()
 
 void IDeviceObject::Cleanup()
 {
-	if (OnDevice()) _FreeDevice();
+	if (OnDevice()) _FreeDevice();	
 	if (OnHost())   _FreeHost();
 }
 
@@ -78,18 +78,33 @@ void IDeviceObject::assert_not_static() const { assert(!m_static  && "Device obj
 void IDeviceObject::copy_base(const IDeviceObject* copy)
 {
 	m_static   = copy->m_static;
-	m_outdated = copy->m_outdated;
+	m_outdated = copy->m_outdated; // this might want to always be true when copying, move should keep it the same
 }
 
-int            Texture::Width()           const { return m_width; } 
-int            Texture::Height()          const { return m_height; } 
-int            Texture::Channels()        const { return m_channels; }
-int            Texture::BytesPerChannel() const { return m_bytesPerChannel; }
-Texture::Usage Texture::UsageType()       const { return m_usage; }
-u8*            Texture::Pixels()          const { return (u8*)m_host; }
-int            Texture::BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
-int            Texture::Length()          const { return Width() * Height(); }
-vec2           Texture::Dimensions()      const { return vec2(Width(), Height()); }
+int             Texture::Width()           const { return m_width; } 
+int             Texture::Height()          const { return m_height; } 
+int             Texture::Channels()        const { return m_channels; }
+int             Texture::BytesPerChannel() const { return m_bytesPerChannel; }
+Texture::Usage  Texture::UsageType()       const { return m_usage; }
+Texture::Filter Texture::FilterType()      const { return m_filter;}
+u8*             Texture::Pixels()          const { return (u8*)m_host; }
+int             Texture::BufferSize()      const { return Width() * Height() * Channels() * BytesPerChannel(); }
+int             Texture::Length()          const { return Width() * Height(); }
+vec2            Texture::Dimensions()      const { return vec2(Width(), Height()); }
+float           Texture::Aspect()          const { return Height() / (float)Width(); }
+
+Texture& Texture::SetFilter(Filter filter)
+{
+	m_filter = filter;
+
+	if (OnDevice())
+	{
+		gl(glBindTexture(GL_TEXTURE_2D, m_device));
+		_SetDeviceFilter();
+	}
+
+	return *this;
+}
 
       Color& Texture::At(int x, int y)       { return At(Index32(x, y)); }
 const Color& Texture::At(int x, int y) const { return At(Index32(x, y)); }
@@ -109,8 +124,23 @@ const Color& Texture::At(int index32) const
 	return *(Color*)(Pixels() + Index(index32));
 }
 
-int Texture::Index32(int x, int y) const { return x + y * m_width; }
-int Texture::Index  (int x, int y) const { return Index32(x, y) * m_channels * m_bytesPerChannel; }
+void Texture::Set(int x, int y, const Color& color)
+{
+	Set(Index32(x, y), color);
+}
+
+void Texture::Set(int index32, const Color& color)
+{
+	Color& c = At(index32);
+
+	if (m_channels > 0) c.r = color.r;
+	if (m_channels > 1) c.g = color.g;
+	if (m_channels > 2) c.b = color.b;
+	if (m_channels > 3) c.a = color.a;
+}
+
+int Texture::Index32(int x, int y) const { return IsInBounds(x, y) ? x + y * m_width : -1; }
+int Texture::Index  (int x, int y) const { return IsInBounds(x, y) ? Index32(x, y) * m_channels * m_bytesPerChannel : -1; }
 int Texture::Index  (int index32)  const { return index32 * m_channels * m_bytesPerChannel; }
 
 void Texture::ClearHost(Color color)
@@ -137,7 +167,25 @@ void Texture::Resize(int width, int height)
 
 	MarkForUpdate();
 }
-	
+
+Texture Texture::CopySubRegion(int minX, int minY, int maxX, int maxY, Usage usage, int isStatic) const
+{
+	Texture tex = Texture(maxX - minX, maxY - minY, usage, PICK_INHERIT);
+    tex.ClearHost(Color(0));
+
+    for (int ix = minX; ix < maxX; ix++) // copy to new texture, could flatten loop
+    for (int iy = minY; iy < maxY; iy++)
+    {
+        const Color& c = At(ix, iy);
+        if (c.as_u32 > 0)
+        {
+            tex.Set(ix - minX, iy - minY, c);
+        }
+    }
+
+    return tex;
+}
+
 bool Texture::OnHost()       const { return m_host   != nullptr; }
 bool Texture::OnDevice()     const { return m_device != 0u;      }
 int  Texture::DeviceHandle() const { return m_device; } 
@@ -158,11 +206,11 @@ void Texture::_InitOnDevice()
 {
 	gl(glGenTextures(1, &m_device));
 	gl(glBindTexture(GL_TEXTURE_2D, m_device));
-	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 	gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(m_usage), Width(), Height(), 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
+
+	_SetDeviceFilter();
 }
 
 void Texture::_UpdateOnDevice()
@@ -190,6 +238,12 @@ void Texture::_UpdateFromDevice()
 	// is it the data or the point in time this function is getting called?
 
 	gl(glGetTextureImage(m_device, 0, gl_format(m_usage), gl_type(m_usage), BufferSize(), Pixels()));
+}
+
+void Texture::_SetDeviceFilter()
+{
+	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter(m_filter)));
+	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter(m_filter)));
 }
 
 Texture::Texture()
@@ -245,6 +299,8 @@ Texture& Texture::move_into(Texture&& move) noexcept
 	m_channels        = move.m_channels;
 	m_bytesPerChannel = move.m_bytesPerChannel;
 	m_usage           = move.m_usage;
+	m_filter          = move.m_filter;
+
 
 	m_host            = move.m_host;
 	m_device          = move.m_device;
@@ -264,6 +320,7 @@ Texture& Texture::copy_into(const Texture& copy)
 	m_channels        = copy.m_channels;
 	m_bytesPerChannel = copy.m_bytesPerChannel;
 	m_usage           = copy.m_usage;
+	m_filter          = copy.m_filter;
 
 	m_device          = 0;
 
@@ -297,11 +354,19 @@ void Texture::init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	m_bytesPerChannel = gl_bytes_per_channel(usage);
 }
 
-bool Texture::assert_valid_index(int index32) const
+bool Texture::IsIndexValid(int index32) const
 {
-	bool success = index32 >= 0 && index32 < Length();
-	assert(success && "Texture pixel index out of bounds");
-	return success;
+	return index32 >= 0 && index32 < Length();
+}
+
+bool Texture::IsInBounds(int x, int y) const
+{
+	return x >= 0 && y >= 0 && x < m_width && y < m_height;
+}
+
+void Texture::assert_valid_index(int index32) const
+{
+	assert(IsIndexValid(index32) && "Texture pixel index out of bounds");
 }
 
 int Target::NumberOfAttachments() const { return (int)m_attachments.size(); }
@@ -379,12 +444,12 @@ int  Target::DeviceHandle() const { return m_device; }
 
 void Target::_FreeHost()
 {
-	for (auto& [_, texture] : m_attachments) if (texture->OnHost()) texture->FreeHost();
+	for (auto& [_, texture] : m_attachments) if (texture->OnHost() && texture->IsStatic()) texture->FreeHost();
 }
 
 void Target::_FreeDevice()
 {
-	for (auto& [_, texture] : m_attachments) if (texture->OnDevice()) texture->FreeDevice();
+	//for (auto& [_, texture] : m_attachments) if (texture->OnDevice()) texture->FreeDevice();
 	gl(glDeleteFramebuffers(1, &m_device));
 	m_device = 0;
 }
@@ -430,7 +495,7 @@ Target::Target(
 
 Target::~Target() 
 {
-	Cleanup(); 
+	Cleanup();
 }
 
 Target::Target           (      Target&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
@@ -628,6 +693,7 @@ Buffer& Buffer::copy_into(const Buffer& copy)
 
 	m_device          = copy.IsStatic() ? copy.m_device : 0; // if its static take device
 	m_host            = copy.m_host;
+	m_onHost          = copy.m_onHost;
 
 	return *this;
 }
@@ -747,12 +813,12 @@ int  Mesh::DeviceHandle() const { return m_device; }
 
 void Mesh::_FreeHost()
 {
-	for (auto& [_, buffer] : m_buffers) if (buffer->OnHost()) buffer->FreeHost();
+	for (auto& [_, buffer] : m_buffers) if (buffer->OnHost() && buffer->IsStatic()) buffer->FreeHost();
 }
 
 void Mesh::_FreeDevice()
 {
-	for (auto& [_, buffer] : m_buffers) if (buffer->OnDevice()) buffer->FreeDevice();
+	//for (auto& [_, buffer] : m_buffers) if (buffer->OnDevice()) buffer->FreeDevice();
 	gl(glDeleteVertexArrays(1, &m_device));
 	m_device = 0;
 }
@@ -802,7 +868,7 @@ Mesh::Mesh(
 {}
 
 Mesh::~Mesh() 
-{ 
+{
 	Cleanup(); 
 }
 
@@ -855,7 +921,7 @@ Mesh& Mesh::copy_into(const Mesh& copy)
 
 		for (const AttribName& name : names)
 		{
-			m_buffers.emplace(name, copyBuffer);
+			m_buffers[name] = copyBuffer; // emplace didnt copy?
 		}
 	}
 
@@ -1116,6 +1182,18 @@ int gl_bytes_per_channel(Texture::Usage usage)
 		case Texture::Usage::uSTENCIL:   return sizeof(u8);
 		case Texture::Usage::uINT_32:    return sizeof(u32);
 		case Texture::Usage::uFLOAT_32:  return sizeof(f32);
+	}
+
+	assert(false);
+	return -1;
+}
+
+GLenum gl_filter(Texture::Filter filter)
+{
+	switch (filter)
+	{
+		case Texture::Filter::fSmooth:    return GL_LINEAR;
+		case Texture::Filter::fPixelated: return GL_NEAREST;
 	}
 
 	assert(false);

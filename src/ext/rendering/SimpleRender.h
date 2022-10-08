@@ -21,9 +21,13 @@ struct event_ShowEntityIds
 	ShowEntityIdMode mode;
 };
 
-void InitRendering();
+void InitSimpleRendering();
+void DnitSimpleRendering();
 
 void SetDrawEntityDebugMode(ShowEntityIdMode mode);
+
+void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh);
+void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh, Sprite& sprite);
 
 void RenderMeshes  (const Camera& camera, EntityWorld& world);
 void RenderSprites (const Camera& camera, EntityWorld& world);
