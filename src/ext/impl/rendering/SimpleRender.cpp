@@ -112,9 +112,9 @@ void RenderMeshes(const Camera& camera, EntityWorld& world)
     }
 }
 
-void RenderSprites(const Camera& camera, EntityWorld& world)
+void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorld& world)
 {
-	spriteRender->Begin(camera, drawEntityIdMode == ONLY);
+	render.Begin(camera, drawEntityIdMode == ONLY);
 
 	// draw sprites
 
@@ -122,9 +122,9 @@ void RenderSprites(const Camera& camera, EntityWorld& world)
 		
 	for (auto [entity, transform, sprite] : world.QueryWithEntity<Transform2D, Sprite>())
 	{
-		spriteRender->SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
+		render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
 	}
-	spriteRender->Draw();
+	render.Draw();
 
 	// draw particles
 
@@ -135,28 +135,38 @@ void RenderSprites(const Camera& camera, EntityWorld& world)
 		if (p.HasAtlas())
 		{
 			const TextureAtlas::Bounds& uv = p.GetCurrentFrameUV();
-			spriteRender->SubmitSprite(t, p.atlas->source, uv.uvOffset, uv.uvScale, p.GetTint());
+			render.SubmitSprite(t, p.atlas->source, uv.uvOffset, uv.uvScale, p.GetTint());
 		}
 
 		else
 		{
-			spriteRender->SubmitSprite(t, p.GetTint());
+			render.SubmitSprite(t, p.GetTint());
 		}
 	}
 
-	spriteRender->Draw();
+	render.Draw();
+}
+
+void RenderLines(BatchLineRenderer& render, const Camera& camera, EntityWorld& world)
+{
+	render.Begin();
+
+	for (auto [transform, line] : world.Query<Transform2D, LineParticle>())
+	{
+		render.SubmitLine(transform, line.back, line.front, line.colorBack, line.colorFront);
+	}
+
+	render.Draw(camera);
+}
+
+void RenderSprites(const Camera& camera, EntityWorld& world)
+{
+	RenderSprites(*spriteRender, camera, world);
 }
 
 void RenderLines(const Camera& camera, EntityWorld& world)
 {
-	lineRender->Begin();
-
-	for (auto [transform, line] : world.Query<Transform2D, LineParticle>())
-	{
-		lineRender->SubmitLine(transform, line.back, line.front, line.colorBack, line.colorFront);
-	}
-
-	lineRender->Draw(camera);
+	RenderLines(*lineRender, camera, world);
 }
 
 r<Mesh>          GetQuadMesh2D()             { return g_quad; }

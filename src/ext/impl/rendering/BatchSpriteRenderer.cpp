@@ -8,7 +8,7 @@ BatchSpriteRenderer::BatchSpriteRenderer()
 void BatchSpriteRenderer::Begin(const Camera& camera, bool mixTint)
 {
 	SetProgram(camera.Projection(), mixTint);
-	z = 0;
+	z = 0;// -camera.z / 2 + 0.01f;
 }
 
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color& tint)
