@@ -237,7 +237,9 @@ void Texture::_UpdateFromDevice()
 	// really slow find fix
 	// is it the data or the point in time this function is getting called?
 
-	gl(glGetTextureImage(m_device, 0, gl_format(m_usage), gl_type(m_usage), BufferSize(), Pixels()));
+	//gl(glGetTextureImage(m_device, 0, gl_format(m_usage), gl_type(m_usage), BufferSize(), Pixels()));
+    gl(glBindTexture(GL_TEXTURE_2D, m_device));
+    gl(glGetTexImage(GL_TEXTURE_2D, 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
 }
 
 void Texture::_SetDeviceFilter()
