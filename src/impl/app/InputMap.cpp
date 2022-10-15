@@ -10,7 +10,7 @@ namespace Input
 
 	// mapping of name to axis
 	// all buttons can be represented as axies with a deadzone
-	// multibutton combos can be thought as a axis with components ('A', .5) and ('B', .5) and a dead zone = 1
+	// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
 	std::unordered_map<InputName, InputAxis> Axies;
 
 	// mapping of code to inputname
@@ -54,7 +54,7 @@ namespace Input
 	InputName _GetMapping(int code)
 	{
 		auto itr = Mapping.find(code);
-		return itr != Mapping.end() ? itr->second : InputName::_NONE;
+		return itr != Mapping.end() ? itr->second : nullptr;
 	}
 
 	void _SetMapping(InputName name, int code)

@@ -7,26 +7,30 @@
 // doesnt handle mapping mouse
 // those needs custom behaviours
 
-enum class InputName
+// this is a helper class for easy if statements between these const char*s
+// most of the time they should be in the string table, so this is just an int comparison
+struct comparable_const_char
 {
-	_NONE,
+	const char* str;
 
-	UP,
-	DOWN,
-	RIGHT,
-	LEFT,
+	comparable_const_char() : str(nullptr) {}
+	comparable_const_char(const char* str) : str(str) {}
+	operator const char* () const { return str; }
 
-	AIM_X,
-	AIM_Y,
-
-	AIM,
-	MOVE,
-
-	ATTACK,
-	ATTACK_ALT,
-
-	ESCAPE
+	bool operator==(const char* s) { return str == s || strcmp(str, s) == 0; }
+	bool operator!=(const char* s) { return !operator==(s); }
 };
+
+template<>
+struct std::hash<comparable_const_char>
+{
+	std::size_t operator()(const comparable_const_char& s) const noexcept
+	{
+		return std::hash<std::string>{}(s.str);
+	}
+};
+
+using InputName = comparable_const_char;
 
 struct event_Input
 {

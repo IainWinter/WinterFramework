@@ -72,7 +72,7 @@ void EngineLoopBase::HandleInputMapping(int code, float state)
 
 	InputName input = Input::_GetMapping(code);
 
-	if (input != InputName::_NONE)
+	if (input)
 	{
 		event_Input e;
 		e.name = input;
