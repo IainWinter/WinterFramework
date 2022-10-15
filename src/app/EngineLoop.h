@@ -33,6 +33,7 @@ private:
 public:
 	void on(event_Shutdown& e);
 	void on(event_Key& e);
+	void on(event_Controller& e);
 	void on(event_ConsoleCommand& e);
 
 	void _Init();
@@ -46,6 +47,11 @@ protected:
 	virtual void PreInitUI() {};
 	virtual void InitUI() {}; // for loading fonts n such after flags have been set
 	virtual void Dnit() {};
+
+// translating framework events to Input events
+
+private:
+	void HandleInputMapping(int code, float state);
 };
 
 template<typename _me>

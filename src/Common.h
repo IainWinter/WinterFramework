@@ -7,6 +7,9 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/rotate_vector.hpp"
 
+#include "SDL2/SDL_scancode.h"
+#include "SDL2/SDL_gamecontroller.h"
+
 #include <memory>
 #include <utility>
 #include <vector>
@@ -17,7 +20,11 @@
 // be ingrained into the framework at a core level
 using namespace glm;
 
-// common components
+/*
+
+	Common Components
+
+*/
 
 struct Entity;
 
@@ -115,7 +122,11 @@ struct aabb2D
 	static aabb2D from_transform(const Transform2D& points);
 };
 
-// Math helpers
+/*
+
+	Math helpers
+
+*/
 
 float get_rand  (float x); // return a random number between (0, x)
 float get_randc (float x); // return a random number between (-x/2, x/2)
@@ -154,7 +165,11 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 	return { index % width, index / width };
 }
 
-// vector helpers
+/*
+
+	std helpers
+
+*/
 
 template<typename _t, typename _int_t>
 void pop_erase(std::vector<_t>& list, _int_t* index)
@@ -163,8 +178,6 @@ void pop_erase(std::vector<_t>& list, _int_t* index)
 	list.pop_back();
 	*index -= 1;
 }
-
-// Memory helpers
 
 template<typename _t> 
 using r = std::shared_ptr<_t>;
@@ -178,39 +191,97 @@ r<_t> mkr(_args&&... args)
 	return std::make_shared<_t>(std::forward<_args>(args)...); 
 }
 
-//inline void* alloc_and_copy(void* ptrToCopy, int sizeInBytes)
-//{
-//	void* newptr = malloc(sizeInBytes);
-//	
-//	if (newptr == nullptr)
-//	{
-//		printf("failed to allocate memory\n");
-//		assert(false);
-//		return nullptr;
-//	}
-//
-//	memcpy(newptr, ptrToCopy, sizeInBytes);
-//	return newptr;
-//}
-//
-//inline void* realloc_and_copy(void* ptrToRealloc, const void* ptrToCopy, int oldSize, int newSize)
-//{
-//	void* newptr = nullptr;
-//
-//	if (oldSize == newSize) newptr = ptrToRealloc;
-//	else                    newptr = realloc(ptrToRealloc, newSize);
-//
-//	if (newptr)
-//	{
-//		memset(newptr, 0, newSize);
-//
-//		if (newSize > oldSize) memcpy(newptr, ptrToCopy, oldSize);
-//		else                   memcpy(newptr, ptrToCopy, newSize);
-//
-//		return newptr;
-//	}
-//
-//	printf("failed to realloc_and_copy\n");
-//	assert(false);
-//	return newptr;
-//}
+/*
+
+	Events
+
+*/
+
+struct event_Shutdown
+{
+
+};
+
+struct event_WindowResize
+{
+	int width, height;
+};
+
+struct event_Mouse
+{
+	int pixel_x, pixel_y;
+	float screen_x, screen_y;
+	float vel_x, vel_y;
+
+	bool button_left;
+	bool button_middle;
+	bool button_right;
+	bool button_x1;
+	bool button_x2;
+
+	int button_repeat;
+};
+
+using KeyboardInput = SDL_Scancode; // use sdl because it has everything already
+
+struct event_Key
+{
+	KeyboardInput keycode;
+	char key;
+
+	bool state;
+	int repeat;
+
+	bool key_shift;
+	bool key_ctrl;
+	bool key_alt;
+};
+
+// easier to combine the controller axis/buttons into a single enum
+enum ControllerInput
+{
+	cAXIS_INVALID   = -10,
+	cBUTTON_INVALID = -1,
+
+    cBUTTON_A,
+    cBUTTON_B,
+    cBUTTON_X,
+    cBUTTON_Y,
+    cBUTTON_BACK,
+    cBUTTON_GUIDE,
+    cBUTTON_START,
+    cBUTTON_LEFTSTICK,
+    cBUTTON_RIGHTSTICK,
+    cBUTTON_LEFTSHOULDER,
+    cBUTTON_RIGHTSHOULDER,
+    cBUTTON_DPAD_UP,
+    cBUTTON_DPAD_DOWN,
+    cBUTTON_DPAD_LEFT,
+    cBUTTON_DPAD_RIGHT,
+    cBUTTON_MISC1,    /* Xbox Series X share button, PS5 microphone button, Nintendo Switch Pro capture button, Amazon Luna microphone button */
+    cBUTTON_PADDLE1,  /* Xbox Elite paddle P1 */
+    cBUTTON_PADDLE2,  /* Xbox Elite paddle P3 */
+    cBUTTON_PADDLE3,  /* Xbox Elite paddle P2 */
+    cBUTTON_PADDLE4,  /* Xbox Elite paddle P4 */
+    cBUTTON_TOUCHPAD, /* PS4/PS5 touchpad button */
+    
+	cBUTTON_MAX,
+
+	cAXIS_LEFTX,
+	cAXIS_LEFTY,
+	cAXIS_RIGHTX,
+	cAXIS_RIGHTY,
+	cAXIS_TRIGGERLEFT,
+	cAXIS_TRIGGERRIGHT,
+	cAXIS_MAX
+};
+
+ControllerInput MapSDLGameControllerButton(SDL_GameControllerButton button);
+ControllerInput MapSDLGameControllerAxis(SDL_GameControllerAxis axis);
+
+struct event_Controller
+{
+	int controllerId;
+	ControllerInput input;
+	float value;
+};

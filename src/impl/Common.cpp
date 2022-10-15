@@ -297,3 +297,23 @@ float angle(vec2 v)
 {
 	return atan2(v.y, v.x);
 }
+
+ControllerInput MapSDLGameControllerButton(SDL_GameControllerButton button)
+{
+	if (button == SDL_CONTROLLER_BUTTON_INVALID)
+	{
+		return ControllerInput::cBUTTON_INVALID;
+	}
+
+	return (ControllerInput)button;
+}
+
+ControllerInput MapSDLGameControllerAxis(SDL_GameControllerAxis axis)
+{
+	if (axis == SDL_CONTROLLER_AXIS_INVALID)
+	{
+		return ControllerInput::cAXIS_INVALID;
+	}
+
+	return (ControllerInput)(1 + axis + ControllerInput::cBUTTON_MAX);
+}

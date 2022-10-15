@@ -1,19 +1,21 @@
 #include "Windowing.h"
 
 Window::Window()
-	: m_window (nullptr)
-	, m_opengl (nullptr)
-	, m_events (nullptr)
+	: m_window     (nullptr)
+	, m_opengl     (nullptr)
+	, m_events     (nullptr)
+	, m_controller (nullptr)
 {}
 
 Window::Window(
 	const WindowConfig& config,
 	EventQueue* events
 )
-	: m_events (events)
-	, m_config (config)
-	, m_window (nullptr)
-	, m_opengl (nullptr)
+	: m_events     (events)
+	, m_config     (config)
+	, m_window     (nullptr)
+	, m_opengl     (nullptr)
+	, m_controller (nullptr)
 {
 	if (s_first) s_first = false;
 	else assert(false && "Only a single window has been tested");
@@ -167,22 +169,65 @@ void Window::PumpEvents()
 				break;
 			}
 
-			//case SDL_CONTROLLERBUTTONDOWN:
-			//case SDL_CONTROLLERBUTTONUP:
-			//	log_window("controller button %d %d", event.cbutton.button, event.cbutton.state);
-			//	break;
+			case SDL_CONTROLLERBUTTONDOWN:
+			case SDL_CONTROLLERBUTTONUP:
+			{
+				m_events->Send(event_Controller{
+					event.cbutton.which,
+					MapSDLGameControllerButton((SDL_GameControllerButton)event.cbutton.button),
+					(float)event.cbutton.state
+				});
 
-			//case SDL_CONTROLLERAXISMOTION:
-			//	log_window("controller axis %d %f", event.caxis.axis, event.caxis.value);
-			//	break;
+				//log_window("controller button %d %d", event.cbutton.button, event.cbutton.state);
+				break;
+			}
+			case SDL_CONTROLLERAXISMOTION:
+			{
+				float value = event.caxis.value / (float)SDL_MAX_SINT16;
 
-			//case SDL_CONTROLLERDEVICEADDED:
-			//	log_window("controller plugged in");
-			//	break;
+				// reverse Y axis
+				switch (event.caxis.axis)
+				{
+					case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_LEFTY: 
+					case SDL_GameControllerAxis::SDL_CONTROLLER_AXIS_RIGHTY: 
+						value = -value;
+						break;
+				}
 
-			//case SDL_CONTROLLERDEVICEREMOVED:
-			//	log_window("controller unplugged");
-			//	break;
+				m_events->Send(event_Controller{
+					event.caxis.which,
+					MapSDLGameControllerAxis((SDL_GameControllerAxis)event.caxis.axis),
+					value
+				});
+
+				//log_window("controller axis %d %f", event.caxis.axis, value);
+				break;
+			}
+			case SDL_CONTROLLERDEVICEADDED:
+			{
+				// what happens if this is a joystick?
+
+				if (SDL_IsGameController(event.cdevice.which))
+				{
+					m_controller = SDL_GameControllerOpen(event.cdevice.which);
+					log_window("controller plugged in");
+				}
+
+				break;
+			}
+
+			case SDL_CONTROLLERDEVICEREMOVED:
+			{
+				if (m_controller)
+				{
+					SDL_GameControllerClose(m_controller);
+					m_controller = nullptr;
+					
+					log_window("controller unplugged");
+				}
+
+				break;
+			}
 		}
 	}
 }
@@ -310,14 +355,16 @@ void Window::EndImgui()
 }
 
 Window::Window(Window&& move) noexcept
-	: m_window (move.m_window)
-	, m_opengl (move.m_opengl)
-	, m_events (move.m_events)
-	, m_config (move.m_config)
+	: m_window     (move.m_window)
+	, m_opengl     (move.m_opengl)
+	, m_events     (move.m_events)
+	, m_config     (move.m_config)
+	, m_controller (move.m_controller)
 {
-	move.m_window = nullptr;
-	move.m_opengl = nullptr;
-	move.m_events = nullptr;
+	move.m_window     = nullptr;
+	move.m_opengl     = nullptr;
+	move.m_events     = nullptr;
+	move.m_controller = nullptr;
 }
 Window& Window::operator=(Window&& move) noexcept
 {
@@ -325,15 +372,17 @@ Window& Window::operator=(Window&& move) noexcept
 	m_opengl = move.m_opengl;
 	m_events = move.m_events;
 	m_config = move.m_config;
+	m_controller = move.m_controller;
 	move.m_window = nullptr;
 	move.m_opengl = nullptr;
 	move.m_events = nullptr;
+	move.m_controller = nullptr;
 	return *this;
 }
 
 const char* Window::Init_Video()
 {
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER | SDL_INIT_HAPTIC);
 
 	// set OpenGL attributes
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);

@@ -42,7 +42,7 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Tex
 void BatchSpriteRenderer::Draw()
 {
 	for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
-	//m_batches.clear(); // can have a much better scheme for keeping vector memory alive
+	m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 }
 
 void BatchSpriteRenderer::InitProgram()

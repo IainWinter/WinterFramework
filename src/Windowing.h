@@ -21,50 +21,6 @@
 
 /*
 
-	Events
-
-*/
-
-struct event_Shutdown
-{
-
-};
-
-struct event_WindowResize
-{
-	int width, height;
-};
-
-struct event_Mouse
-{
-	int pixel_x, pixel_y;
-	float screen_x, screen_y;
-	float vel_x, vel_y;
-
-	bool button_left;
-	bool button_middle;
-	bool button_right;
-	bool button_x1;
-	bool button_x2;
-
-	int button_repeat;
-};
-
-struct event_Key
-{
-	SDL_Scancode keycode;
-	char key;
-
-	bool state;
-	int repeat;
-
-	bool key_shift;
-	bool key_ctrl;
-	bool key_alt;
-};
-
-/*
-
 	Window and UI
 
 */
@@ -84,6 +40,11 @@ private:
 	EventQueue*   m_events;
 
 	WindowConfig m_config;
+
+	// only supports first controller plugged in currently
+	// would be super simple to make this a map on controller id
+	// and send that id with the input events, but for now this is simpler
+	SDL_GameController* m_controller;
 
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;

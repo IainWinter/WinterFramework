@@ -382,6 +382,9 @@ public:
 	void Clear();
 	void Resize(int elementCount);
 
+	// should redo these functions
+	// to better suit memory allocations
+
 	void SetBytes  (int byteCount, const void* data);
 	void PushBytes (int byteCount, const void* data);
 	void EraseBytes(int byteIndex, int byteCount);

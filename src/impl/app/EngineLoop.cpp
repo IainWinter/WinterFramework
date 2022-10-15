@@ -9,14 +9,13 @@ void EngineLoopBase::on(event_Key& e)
 {
 	if (e.repeat == 0)
 	{
-		InputName input = Input::Map(e.keycode);
-
-		if (input != InputName::_NONE)
-		{
-			app.GetRootEventQueue().Send(event_Input{input, e.state ? 1.f : -1.f});
-			Input::SetState(input, e.state);
-		}
+		HandleInputMapping(Input::GetCode(e.keycode), e.state ? 1.f : 0.f);
 	}
+}
+
+void EngineLoopBase::on(event_Controller& e)
+{
+	HandleInputMapping(Input::GetCode(e.input), e.value);
 }
 
 void EngineLoopBase::on(event_ConsoleCommand& e)
@@ -29,6 +28,7 @@ void EngineLoopBase::_Init()
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
 	app.GetRootEventBus().Attach<event_Key>(this);
+	app.GetRootEventBus().Attach<event_Controller>(this);
 	app.GetRootEventBus().Attach<event_ConsoleCommand>(this);
 
 	// open window and create graphics context, allows sending data to device
@@ -64,4 +64,20 @@ bool EngineLoopBase::Tick()
 	app.Tick();
 
 	return m_running;
+}
+
+void EngineLoopBase::HandleInputMapping(int code, float state)
+{
+	Input::_SetState(code, state);
+
+	InputName input = Input::_GetMapping(code);
+
+	if (input != InputName::_NONE)
+	{
+		event_Input e;
+		e.name = input;
+		e.axis = Input::GetAxis(input);
+
+		app.GetRootEventQueue().Send(e);
+	}
 }
