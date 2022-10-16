@@ -12,3 +12,98 @@ Most of the functionality gets included no matter what, so a single file makes i
 | Rendering | Taking ideas from CUDA about host and device memory, this follows the same naming scheme through a unified interface for each OpenGL object. Currently supports Texture/Target, Buffer/Mesh and ShaderProgram |
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
 | App | Ties everything together to create an application framework. Can load Worlds and attach Systems to update the state. Each World stores its own entities, and multiple can be loaded at once to compose scenes. |
+
+# Examples
+
+This is the simplest app you can make
+
+```c++
+#include "app/EngineLoop.h"
+
+int main()
+{
+	RunEngineLoop<EngineLoopBase>();
+}
+```
+
+Here is an example of an app that draws a red square on the screen. It can be moved around with WASD and a connected controller's left joystick.
+
+```c++
+#include "app/EngineLoop.h"
+#include "ext/rendering/BatchSpriteRenderer.h"
+
+struct ExampleSystem : System<ExampleSystem>
+{
+	BatchSpriteRenderer render;
+	Entity sprite;
+	vec2 movement;
+
+	void Init() override
+	{
+		// Creating entities in the world & adding components
+		sprite = CreateEntity();
+		sprite.Add<Transform2D>();
+	}
+	
+	// event bus attachment
+
+	void OnAttach() override
+	{
+		Attach<event_Input>();
+	}
+
+	void on(event_Input& e) // events arn't virtual functions
+	{
+		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
+
+		if (e.name == "Move")
+		{
+			movement = e.axis;
+		}
+	}
+
+	void Update() override
+	{
+		render.Begin(Camera(0, 0, 10, 10));
+
+		for (auto [transform] : Query<Transform2D>()) // querying of components from ECS
+		{
+			render.SubmitSprite(transform, Color(255, 0, 0));
+		}
+
+		render.Draw();
+
+		// getting components of a specific entity
+
+		sprite.Get<Transform2D>().position += 5.f * movement * Time::DeltaTime();
+	}
+};
+
+struct Example : EngineLoop<Example>
+{
+	void Init() override
+	{
+		// Worlds hold all entity data & systems for updating state
+
+		World* world = app.CreateWorld();
+		world->CreateSystem<ExampleSystem>();
+
+		// Binding axies to keyboard and controller inputs from SDL
+
+		Input::SetAxisComponent("Move", cAXIS_LEFTX,    vec2( 1.f,  0.f));
+		Input::SetAxisComponent("Move", cAXIS_LEFTY,    vec2( 0.f,  1.f));
+		Input::SetAxisComponent("Move", SDL_SCANCODE_D, vec2( 1.f,  0.f));
+		Input::SetAxisComponent("Move", SDL_SCANCODE_A, vec2(-1.f,  0.f));
+		Input::SetAxisComponent("Move", SDL_SCANCODE_W, vec2( 0.f,  1.f));
+		Input::SetAxisComponent("Move", SDL_SCANCODE_S, vec2( 0.f, -1.f));
+		Input::SetDeadzone("Move", 0.1f);
+	}
+};
+
+// no boostrapped main function
+
+int main()
+{
+	RunEngineLoop<Example>();
+}
+```
