@@ -36,7 +36,6 @@ struct ExampleSystem : System<ExampleSystem>
 {
 	BatchSpriteRenderer render;
 	Entity sprite;
-	vec2 movement;
 
 	void Init() override
 	{
@@ -45,25 +44,14 @@ struct ExampleSystem : System<ExampleSystem>
 		sprite.Add<Transform2D>();
 	}
 	
-	// event bus attachment
-
-	void OnAttach() override
-	{
-		Attach<event_Input>();
-	}
-
-	void on(event_Input& e) // events arn't virtual functions
-	{
-		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
-
-		if (e.name == "Move")
-		{
-			movement = e.axis;
-		}
-	}
-
 	void Update() override
 	{
+		// getting components of a specific entity
+
+		sprite.Get<Transform2D>().position += Input::GetAxis("Move") * 5.f * Time::DeltaTime();
+
+		// use of an extension that provides a simple batch quad renderer
+
 		render.Begin(Camera(0, 0, 10, 10));
 
 		for (auto [transform] : Query<Transform2D>()) // querying of components from ECS
@@ -72,10 +60,6 @@ struct ExampleSystem : System<ExampleSystem>
 		}
 
 		render.Draw();
-
-		// getting components of a specific entity
-
-		sprite.Get<Transform2D>().position += 5.f * movement * Time::DeltaTime();
 	}
 };
 
@@ -97,6 +81,13 @@ struct Example : EngineLoop<Example>
 		Input::SetAxisComponent("Move", SDL_SCANCODE_W, vec2( 0.f,  1.f));
 		Input::SetAxisComponent("Move", SDL_SCANCODE_S, vec2( 0.f, -1.f));
 		Input::SetDeadzone("Move", 0.1f);
+
+		Attach<event_Input>();
+	}
+
+	void on(event_Input& e) // events arn't virtual
+	{
+		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
 	}
 };
 
