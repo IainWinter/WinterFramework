@@ -48,7 +48,7 @@ struct ExampleSystem : System<ExampleSystem>
 	{
 		// getting components of a specific entity
 
-		sprite.Get<Transform2D>().position += Input::GetAxis("Move") * 5.f * Time::DeltaTime();
+		sprite.Get<Transform2D>().position += 5.f * Input::GetAxis("Move") * Time::DeltaTime();
 
 		// use of an extension that provides a simple batch quad renderer
 
@@ -74,18 +74,31 @@ struct Example : EngineLoop<Example>
 
 		// Binding axies to keyboard and controller inputs from SDL
 
-		Input::SetAxisComponent("Move", cAXIS_LEFTX,    vec2( 1.f,  0.f));
-		Input::SetAxisComponent("Move", cAXIS_LEFTY,    vec2( 0.f,  1.f));
-		Input::SetAxisComponent("Move", SDL_SCANCODE_D, vec2( 1.f,  0.f));
-		Input::SetAxisComponent("Move", SDL_SCANCODE_A, vec2(-1.f,  0.f));
-		Input::SetAxisComponent("Move", SDL_SCANCODE_W, vec2( 0.f,  1.f));
-		Input::SetAxisComponent("Move", SDL_SCANCODE_S, vec2( 0.f, -1.f));
-		Input::SetDeadzone("Move", 0.1f);
+		// Create an axis for the left joystick 
+
+		Input::CreateAxis("Left Stick");
+		Input::SetAxisComponent("Left Stick", cAXIS_LEFTX, vec2(1.f, 0.f));
+		Input::SetAxisComponent("Left Stick", cAXIS_LEFTY, vec2(0.f, 1.f));
+		Input::SetDeadzone("Left Stick", 0.1f);
+
+		// Create an axis for the WASD keys
+
+		Input::CreateAxis("WASD");
+		Input::SetAxisComponent("WASD", SDL_SCANCODE_W, vec2( 0.f,  1.f));
+		Input::SetAxisComponent("WASD", SDL_SCANCODE_A, vec2(-1.f,  0.f));
+		Input::SetAxisComponent("WASD", SDL_SCANCODE_S, vec2( 0.f, -1.f));
+		Input::SetAxisComponent("WASD", SDL_SCANCODE_D, vec2( 1.f,  0.f));
+
+		// Combine these axes into a single virtual axis
+
+		Input::CreateVirtualAxis("Move");
+		Input::SetVirtualAxisComponent("Move", "Left Stick");
+		Input::SetVirtualAxisComponent("Move", "WASD");
 
 		Attach<event_Input>();
 	}
 
-	void on(event_Input& e) // events arn't virtual
+	void on(event_Input& e)
 	{
 		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
 	}
