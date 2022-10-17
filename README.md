@@ -72,7 +72,7 @@ struct Example : EngineLoop<Example>
 		World* world = app.CreateWorld();
 		world->CreateSystem<ExampleSystem>();
 
-		// Binding axies to keyboard and controller inputs from SDL
+		// Binding axes to keyboard and controller inputs from SDL
 
 		// Create an axis for the left joystick 
 
