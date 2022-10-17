@@ -11,7 +11,12 @@ void TransformUpdate::Update()
 void PhysicsInterpolationUpdate::Update()
 {
 	m_acc += Time::DeltaTime();
-	float ratio = clamp(m_acc / Time::FixedTime(), 0.f, 1.f);
+	
+	float ratio = Time::FixedTime() == 0.f 
+		? m_lastRatio 
+		: clamp(m_acc / Time::FixedTime(), 0.f, 1.f);
+
+	m_lastRatio = ratio;
 
 	for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
 	{

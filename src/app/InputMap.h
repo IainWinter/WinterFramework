@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "Log.h"
 #include <unordered_map>
 #include <array>
 
@@ -45,6 +46,7 @@ struct event_Input
 };
 
 // doesnt handle mouse right now
+// or updating the input map
 
 namespace Input
 {
@@ -56,24 +58,36 @@ namespace Input
 	float GetButton(InputName button);
 	vec2  GetAxis  (InputName axis);
 
+	void CreateAxis(InputName name);
+	void CreateVirtualAxis(InputName name);
+
+	bool AxisExists(InputName axis);
+	bool VirtualAxisExists(InputName axis);
+
+	// Set the deadzone of an axis. Not a virtual aixs, use this for the components
 	void SetDeadzone(InputName axis, float deadzone);
 
-	InputName _GetMapping(int code);
-	void      _SetMapping(InputName button, int code);
-	void      _SetAxisComponent(InputName axis, int code, vec2 component);
+	// Combine multiple axes into a single virtual axis
+	void SetVirtualAxisComponent(InputName axis, InputName component);
 	
-	void      _SetState(int code, float state);
-
 	// translation helpers
 
 	int GetCode(KeyboardInput scancode);
-	int GetCode(ControllerInput button);
+	int GetCode(ControllerInput input);
 
+	InputName GetMapping(int code);
 	InputName GetMapping(KeyboardInput scancode);
-	void      SetMapping(InputName name, KeyboardInput scancode);
-	void      SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 component);
+	InputName GetMapping(ControllerInput input);
+
+	void SetAxisComponent(InputName axis, int code, vec2 weight);
 	
-	InputName GetMapping(ControllerInput scancode);
-	void      SetMapping(InputName name, ControllerInput button);
-	void      SetAxisComponent(InputName axis, ControllerInput button, vec2 component);
+	// Set a key's weight on an axis
+	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 weight);
+	
+	// Set a controller input's weight on an axis
+	void SetAxisComponent(InputName axis, ControllerInput input, vec2 weight);
+
+	// Internal, for framework to set state
+
+	void SetState(int code, float state);
 }

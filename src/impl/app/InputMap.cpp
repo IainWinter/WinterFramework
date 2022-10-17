@@ -5,13 +5,23 @@ namespace Input
 	struct InputAxis
 	{
 		std::unordered_map<int, vec2> components; // sum of State[code] * component is axis state
-		float deadzone;
+		float deadzone = 0.f;
 	};
+
+	struct VirtualAxis
+	{
+		std::vector<InputName> children;
+	};
+
+	// mapping of name to virtual axis
+	// these are groups of other axes so each can have its own processing
+	// then be combined
+	std::unordered_map<InputName, VirtualAxis> VirtualAxes;
 
 	// mapping of name to axis
 	// all buttons can be represented as axies with a deadzone
 	// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
-	std::unordered_map<InputName, InputAxis> Axies;
+	std::unordered_map<InputName, InputAxis> Axes;
 
 	// mapping of code to inputname
 	// allows us to skip a search through all components of each axis to find a mapping
@@ -25,12 +35,12 @@ namespace Input
 		return GetAxis(button).x;
 	}
 
-	vec2 GetAxis(InputName axis)
+	vec2 GetAxisNoRecurse(InputName axis)
 	{
 		vec2 out = vec2(0.f);
 
-		auto itr = Axies.find(axis);
-		if (itr != Axies.end())
+		auto itr = Axes.find(axis);
+		if (itr != Axes.end())
 		{
 			for (const auto& component : itr->second.components)
 			{
@@ -46,31 +56,85 @@ namespace Input
 		return limit(out, 1.f);
 	}
 
+	vec2 GetAxis(InputName axis)
+	{
+		vec2 out = GetAxisNoRecurse(axis);
+
+		auto vitr = VirtualAxes.find(axis);
+		if (vitr != VirtualAxes.end())
+		{
+			for (const auto& child : vitr->second.children)
+			{
+				out += GetAxisNoRecurse(child);
+			}
+		}
+
+		return limit(out, 1.f);
+	}
+
+	void CreateAxis(InputName name)
+	{
+		if (AxisExists(name))
+		{
+			log_app("w~Axis already exists. %s", name);
+			return;
+		}
+
+		Axes.emplace(name, InputAxis{});
+	}
+
+	void CreateVirtualAxis(InputName name)
+	{
+		if (VirtualAxisExists(name))
+		{
+			log_app("w~Virtual axis already exists. %s", name);
+			return;
+		}
+
+		VirtualAxes.emplace(name, VirtualAxis{});
+	}
+
+	bool AxisExists(InputName axis)
+	{
+		return Axes.find(axis) != Axes.end();
+	}
+
+	bool VirtualAxisExists(InputName axis)
+	{
+		return VirtualAxes.find(axis) != VirtualAxes.end();
+	}
+
 	void SetDeadzone(InputName axis, float deadzone)
 	{
-		Axies[axis].deadzone = deadzone;
+		if (!AxisExists(axis))
+		{
+			log_app("w~Axis doesn't exist. %s", axis);
+			return;
+		}
+
+		Axes[axis].deadzone = deadzone;
 	}
 
-	InputName _GetMapping(int code)
+	void SetVirtualAxisComponent(InputName axis, InputName component)
 	{
-		auto itr = Mapping.find(code);
-		return itr != Mapping.end() ? itr->second : nullptr;
-	}
+		if (!VirtualAxisExists(axis))
+		{
+			log_app("w~Virtual axis doesn't exist. %s", axis);
+			return;
+		}
 
-	void _SetMapping(InputName name, int code)
-	{
-		_SetAxisComponent(name, code, vec2(1.f, 0.f));
-	}
+		if (!AxisExists(component))
+		{
+			log_app("w~Axis doesn't exist. %s", axis);
+			return;
+		}
 
-	void _SetAxisComponent(InputName axis, int code, vec2 component)
-	{
-		Axies[axis].components.emplace(code, component);
-		Mapping.emplace(code, axis);
-	}
+		VirtualAxes[axis].children.push_back(component);
 
-	void _SetState(int code, float state)
-	{
-		State[code] = state;
+		for (const auto& c : Axes[component].components) // we need to update mapping 
+		{
+			Mapping[c.first] = axis;
+		}
 	}
 
 	// translation helpers
@@ -80,38 +144,59 @@ namespace Input
 		return (int)scancode;
 	}
 
-	int GetCode(ControllerInput button)
+	int GetCode(ControllerInput input)
 	{
-		return 1 + (int)button + SDL_NUM_SCANCODES;
+		return 1 + (int)input + SDL_NUM_SCANCODES;
+	}
+
+	InputName GetMapping(int code)
+	{
+		auto itr = Mapping.find(code);
+		return itr != Mapping.end() ? itr->second : nullptr;
 	}
 
 	InputName GetMapping(KeyboardInput scancode)
 	{
-		return _GetMapping(GetCode(scancode));
-	}
-
-	void SetMapping(InputName name, KeyboardInput scancode)
-	{
-		_SetMapping(name, GetCode(scancode));
-	}
-
-	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 component)
-	{
-		_SetAxisComponent(axis, GetCode(scancode), component);
+		return GetMapping(GetCode(scancode));
 	}
 
 	InputName GetMapping(ControllerInput scancode)
 	{
-		return _GetMapping(GetCode(scancode));
+		return GetMapping(GetCode(scancode));
 	}
 
-	void SetMapping(InputName name, ControllerInput button)
+	void SetAxisComponent(InputName axis, int code, vec2 weight)
 	{
-		_SetMapping(name, GetCode(button));
+		if (!AxisExists(axis))
+		{
+			log_app("w~Axis doesn't exist. %s", axis);
+			return;
+		}
+
+		Axes[axis].components.emplace(code, weight);
+		Mapping.emplace(code, axis);
 	}
 
-	void SetAxisComponent(InputName axis, ControllerInput button, vec2 component)
+	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 weight)
 	{
-		_SetAxisComponent(axis, GetCode(button), component);
+		SetAxisComponent(axis, GetCode(scancode), weight);
+	}
+
+	void SetAxisComponent(InputName axis, ControllerInput input, vec2 weight)
+	{
+		SetAxisComponent(axis, GetCode(input), weight);
+	}
+
+	// internal
+
+	void SetState(int code, float state)
+	{
+		if (code < 0 || code >= NUMBER_OF_STATES)
+		{
+			log_app("e~Tried to set state of code that is invalid. %d -> %f", code, state);
+			return;
+		}
+
+		State[code] = state;
 	}
 }

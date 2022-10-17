@@ -10,6 +10,7 @@ struct TransformUpdate : SystemBase
 struct PhysicsInterpolationUpdate : SystemBase
 {
 	float m_acc = 0.f;
+	float m_lastRatio = 0.f;
 
 	void Update() override;
 	void FixedUpdate() override;

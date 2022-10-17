@@ -68,9 +68,9 @@ bool EngineLoopBase::Tick()
 
 void EngineLoopBase::HandleInputMapping(int code, float state)
 {
-	Input::_SetState(code, state);
+	Input::SetState(code, state);
 
-	InputName input = Input::_GetMapping(code);
+	InputName input = Input::GetMapping(code);
 
 	if (input)
 	{

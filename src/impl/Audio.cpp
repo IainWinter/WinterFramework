@@ -484,7 +484,7 @@ Audio& Audio::SetVolume(float volume)
 
 	if (fa(m_inst->setVolume(volume)))
 	{
-		log_audio("e~Failed to set audio instance volume ");
+		log_audio("e~Failed to set audio instance volume");
 	}
 
 	EventDescription* desc;
