@@ -95,10 +95,12 @@ struct Example : EngineLoop<Example>
 		Input::SetVirtualAxisComponent("Move", "Left Stick");
 		Input::SetVirtualAxisComponent("Move", "WASD");
 
+		// Attaching events to the main bus
+
 		Attach<event_Input>();
 	}
 
-	void on(event_Input& e)
+	void on(event_Input& e) // events aren't virtual and get attached by instance
 	{
 		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
 	}
