@@ -156,6 +156,8 @@ vec2 limit(const vec2& x, float max);
 
 vec2 turn_towards(const vec2& current, const vec2& target, float strength);
 
+vec2 on_unit(float a);
+
 float pow4(float x);
 float angle(vec2 v);
 

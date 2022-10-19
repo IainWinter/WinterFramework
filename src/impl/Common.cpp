@@ -288,6 +288,11 @@ vec2 turn_towards(const vec2& current, const vec2& target, float strength)
 	return safe_normalize(current + delta) * length(current);
 }
 
+vec2 on_unit(float a)
+{
+	return vec2(cos(a), sin(a));
+}
+
 float pow4(float x)
 {
 	return x * x * x * x;

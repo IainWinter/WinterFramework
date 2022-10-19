@@ -79,15 +79,14 @@ namespace Input
 	InputName GetMapping(KeyboardInput scancode);
 	InputName GetMapping(ControllerInput input);
 
-	void SetAxisComponent(InputName axis, int code, vec2 weight);
+	void SetAxisComponent(InputName axis, int code, vec2 weight = vec2(1.f, 0.f));
 	
 	// Set a key's weight on an axis
-	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 weight);
+	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 weight = vec2(1.f, 0.f));
 	
 	// Set a controller input's weight on an axis
-	void SetAxisComponent(InputName axis, ControllerInput input, vec2 weight);
+	void SetAxisComponent(InputName axis, ControllerInput input, vec2 weight = vec2(1.f, 0.f));
 
 	// Internal, for framework to set state
-
 	void SetState(int code, float state);
 }
