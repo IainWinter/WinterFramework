@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <unordered_set>
 #include <functional>
 
 enum class ff_cell : char
@@ -29,11 +30,19 @@ std::vector<ff_cell> flood_fill_get_states_from_array(_t* arr, size_t length, st
 	return states;
 }
 
-inline
-std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<ff_cell>& cells, ff_cell mask = ff_cell::FILLED, ff_cell set_filled = ff_cell::VISITED, bool diagonals = false)
+struct flood_fill_result
 {
-	std::vector<int> island;
+    std::vector<int> index;
+    std::unordered_set<ff_cell> types;
+};
 
+inline
+flood_fill_result flood_fill(int seed, int size_x, int size_y, std::vector<ff_cell>& cells, ff_cell mask = ff_cell::FILLED, ff_cell set_filled = ff_cell::VISITED, bool diagonals = false)
+{
+    assert(mask != set_filled && "Mask and filled must be different");
+    
+    flood_fill_result result;
+    
 	std::vector<int> queue;
 	queue.push_back(seed);
 
@@ -49,9 +58,10 @@ std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<ff_cel
 
 		if (cells[index] >= mask)
 		{
-			cells[index] = set_filled;// ff_cell::VISITED;
-			
-			island.push_back(index);
+            result.index.push_back(index);
+            result.types.insert(cells[index]);
+            
+            cells[index] = set_filled;
 
 			bool natLeft  = index % size_x != 0;
 			bool natRight = index % size_x != size_x - 1;
@@ -71,5 +81,5 @@ std::vector<int> flood_fill(int seed, int size_x, int size_y, std::vector<ff_cel
 		}
 	}
 
-	return island;
+	return result;
 }
