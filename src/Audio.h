@@ -133,6 +133,9 @@ public:
 	// resume playback from when audio instance was paused
 	Audio& Resume();
 
+	// pause or resume audio instance based on IsPlaying
+	Audio& TogglePause();
+
 	Audio& SetVolume(float volume);
 	float  GetVolume()  const;
 

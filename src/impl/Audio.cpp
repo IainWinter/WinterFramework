@@ -474,6 +474,12 @@ Audio& Audio::Resume()
 	return *this;
 }
 
+Audio& Audio::TogglePause()
+{
+	if (IsPlaying()) Pause();
+	else             Resume();
+}
+
 Audio& Audio::SetVolume(float volume)
 {
 	if (!IsAlive())
