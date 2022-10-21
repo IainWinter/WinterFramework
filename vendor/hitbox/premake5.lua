@@ -3,7 +3,7 @@ project "Hitbox"
 	language "C++"
 	cppdialect "C++17"
 	location "lib/build"
-	targetdir "lib"
+	targetdir "lib/%{cfgdir}"
 
 	files { 
 		"src/Hitbox.cpp"

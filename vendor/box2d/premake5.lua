@@ -3,7 +3,7 @@ project "box2d"
 	language "C++"
 	cppdialect "C++17"
 	location "lib/build"
-	targetdir "lib"
+	targetdir "lib/%{cfgdir}"
 
 	files { 
 		"src/**/*.cpp"

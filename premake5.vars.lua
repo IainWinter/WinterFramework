@@ -1,3 +1,5 @@
+cfgdir = "%{cfg.buildcfg}"
+
 include_all_vendor = {
 	path.getabsolute("vendor/box2d/include"),
 	path.getabsolute("vendor/imgui/include"),
@@ -22,9 +24,9 @@ src_all_vendor = {
 }
 
 libdir_all_vendor = {
-	path.getabsolute("vendor/box2d/lib"),
-	path.getabsolute("vendor/imgui/lib"),
-	path.getabsolute("vendor/hitbox/lib"),
+	path.getabsolute("vendor/box2d/lib/%{cfgdir}"),
+	path.getabsolute("vendor/imgui/lib/%{cfgdir}"),
+	path.getabsolute("vendor/hitbox/lib/%{cfgdir}"),
 	path.getabsolute("vendor/fmod/lib")
 }
 
@@ -41,7 +43,7 @@ src_framework = {
 }
 
 lib_framework = {
-	path.getabsolute("lib")
+	path.getabsolute("lib/%{cfgdir}")
 }
 
 links_all_vendor = {
