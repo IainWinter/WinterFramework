@@ -19,6 +19,13 @@ template<typename _t> struct System;
 struct World;
 struct Application;
 
+
+// wanted to use entt for this id, but this works for now
+using SystemId = size_t;
+
+template<typename _t>
+SystemId GetSystemId() { return typeid(_t).hash_code(); }
+
 // System lifecycle
 
 // constructor
@@ -35,6 +42,7 @@ struct SystemBase
 private:
 	World* m_world;
 	bool m_active;
+	SystemId m_id;
 
 private:
 	template<typename _t>
@@ -59,12 +67,16 @@ private:
 	void _UI();
 	void _Debug();
 
+	void _SetId(SystemId id);
+
 public:
 	SystemBase();
 	virtual ~SystemBase();
 
 	bool GetInitState() const;
 	bool GetActiveState() const;
+
+	SystemId Id() const;
 
 protected:
 
@@ -147,6 +159,7 @@ private:
 	EventQueue m_queue;
 
 	std::vector<SystemBase*> m_systems;
+	std::unordered_map<SystemId, SystemBase*> m_map;
 
 	float m_fixedTimeAcc;
 	const char* m_name;
@@ -159,16 +172,25 @@ public:
 	
 	void DetachFromRoot(EventBus* root);
 
-	// you could create two of the same system 
-	// dont do that
-	template<typename _t>
-	SystemBase* CreateSystem();
+	// will assert single system per type
+	// systems should communicate through events, so these only return SystemBase*
+
+	// create       type
+	// destroy      type / instance
+	// get          type
+	// attach       instance
+	// detach       instance
+	// has          type / instance
+
+	template<typename _t> SystemBase*  CreateSystem();
+	template<typename _t> SystemBase* DestroySystem();
+	template<typename _t> SystemBase*     GetSystem();
+	template<typename _t> bool            HasSystem() const;
 
 	void  AttachSystem(SystemBase* system);
 	void  DetachSystem(SystemBase* system);
 	void DestroySystem(SystemBase* system);
-
-	bool ContainsSystem(SystemBase* system) const;
+	bool     HasSystem(SystemBase* system) const;
 
 	void Init();
 	void SetDebug(bool debug);
@@ -204,6 +226,7 @@ private:
 	void TickSystemsDebug();
 
 	void AttachInactiveSystems();
+	void InitUninitializedSystems();
 
 private:
 	void AttachDefaultEntityEvents();
@@ -317,13 +340,59 @@ inline void System<_t>::Detach()
 template<typename _t>
 inline SystemBase* World::CreateSystem()
 {
-	SystemBase* s = new _t();
-	m_systems.push_back(s);
-	
-	if (m_init) // auto init if world is already
+	SystemId id = GetSystemId<_t>();
+	auto itr = m_map.find(id);
+
+	if (itr != m_map.end())
 	{
-		s->_Init(this);
+		log_world("w~Didn't add system, already exists in world");
+		return nullptr;
 	}
 
+	SystemBase* s = new _t();
+	s->_SetId(id);
+
+	m_systems.push_back(s);
+	m_map.emplace(id, s);
+
+	// actually run this in the tick loop like attachment
+	//if (m_init) // auto init if world is already
+	//{
+	//	s->_Init(this);
+	//}
+
 	return s;
+}
+
+template<typename _t> 
+inline SystemBase* World::DestroySystem()
+{
+	SystemId id = GetSystemId<_t>();
+	auto itr = m_map.find(id);
+
+	if (itr == m_map.end())
+	{
+		log_world("w~Didn't destroy system, doesn't exist in world");
+		return nullptr;
+	}
+
+	DestroySystem(itr->second);
+}
+
+template<typename _t>
+inline SystemBase* World::GetSystem()
+{
+	if (!HasSystem<_t>())
+	{
+		log_world("w~Tried to get system that doesn't exist in world");
+		return nullptr;
+	}
+
+	return m_map.find(GetSystemId<_t>())->second;
+}
+
+template<typename _t> 
+inline bool World::HasSystem() const
+{
+	return m_map.find(GetSystemId<_t>()) != m_map.end();
 }

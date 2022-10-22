@@ -478,6 +478,8 @@ Audio& Audio::TogglePause()
 {
 	if (IsPlaying()) Pause();
 	else             Resume();
+
+	return *this;
 }
 
 Audio& Audio::SetVolume(float volume)

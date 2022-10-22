@@ -181,6 +181,12 @@ void pop_erase(std::vector<_t>& list, _int_t* index)
 	*index -= 1;
 }
 
+template<typename _t, typename... _i>
+std::vector<_t> list(const _t& first, const _i&... others)
+{
+	return std::vector<_t>{ first, others... };
+}
+
 template<typename _t> 
 using r = std::shared_ptr<_t>;
 

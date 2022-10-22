@@ -135,8 +135,6 @@ struct PhysicsWorld
 	PhysicsWorld();
 	~PhysicsWorld();
 
-	void Clear();
-
 	void Add(EntityWith<Transform2D, Rigidbody2D> e);
 	void Remove(Entity& e);
 
@@ -163,8 +161,14 @@ struct PhysicsWorld
 			// better solve would be a pair hash that doesnt care about order, then a map of pair hash -> func
 			// but this is ez
 
-			if (   info.A.Has<_c1>() && info.B.Has<_c2>()
-				|| info.A.Has<_c2>() && info.B.Has<_c1>())
+			if (   !info.A.Get<Rigidbody2D>().IsCollisionEnabled()
+				|| !info.B.Get<Rigidbody2D>().IsCollisionEnabled()) // exit if collision isnt enabled, need to make a sensor bool so those can work still
+			{
+				return;
+			}
+
+			if (   (info.A.Has<_c1>() && info.B.Has<_c2>())
+				|| (info.A.Has<_c2>() && info.B.Has<_c1>()))
 			{
 				func(info);
 			}

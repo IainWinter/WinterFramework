@@ -54,6 +54,11 @@ void SystemBase::_Debug()
 	Debug();
 }
 
+void SystemBase::_SetId(SystemId id)
+{
+	m_id = id;
+}
+
 SystemBase::SystemBase()
 	: m_world  (nullptr)
 	, m_active (false)
@@ -74,6 +79,11 @@ bool SystemBase::GetInitState() const
 bool SystemBase::GetActiveState() const
 {
 	return m_active;
+}
+
+SystemId SystemBase::Id() const
+{
+	return m_id;
 }
 
 Entity SystemBase::CreateEntity()
@@ -197,14 +207,15 @@ void World::DetachFromRoot(EventBus* root)
 
 void World::AttachSystem(SystemBase* system)
 {
-	if (ContainsSystem(system))
+	if (HasSystem(system))
 	{
 		log_world("e~Error: System is already in world");
 		return;
 	}
 
 	m_systems.push_back(system);
-	
+	m_map.emplace(system->Id(), system);
+
 	if (system->GetInitState())
 	{
 		system->_OnAttach();
@@ -213,7 +224,7 @@ void World::AttachSystem(SystemBase* system)
 
 void World::DetachSystem(SystemBase* system)
 {
-	if (!ContainsSystem(system))
+	if (!HasSystem(system))
 	{
 		log_world("e~Error: System is not in world");
 		return;
@@ -225,11 +236,12 @@ void World::DetachSystem(SystemBase* system)
 	}
 
 	m_systems.erase(std::find(m_systems.begin(), m_systems.end(), system));
+	m_map.erase(system->Id());
 }
 
 void World::DestroySystem(SystemBase* system)
 {
-	if (!ContainsSystem(system))
+	if (!HasSystem(system)) // double error check
 	{
 		log_world("e~Error: System is not in world");
 		return;
@@ -245,9 +257,9 @@ void World::DestroySystem(SystemBase* system)
 	delete system;
 }
 
-bool World::ContainsSystem(SystemBase* system) const
+bool World::HasSystem(SystemBase* system) const
 {
-	return std::find(m_systems.begin(), m_systems.end(), system) != m_systems.end();
+	return m_map.find(system->Id()) != m_map.end();
 }
 
 void World::Init()
@@ -287,6 +299,7 @@ World*        World::SetName(const char* name) { m_name = name; return this; }
 
 void World::Tick()
 {
+	InitUninitializedSystems();
 	AttachInactiveSystems();
 
 	m_fixedTimeAcc += Time::DeltaTime();
@@ -347,6 +360,8 @@ void World::TickSystemsDebug()
 	}
 }
 
+// could store a list of to be init / activate
+
 void World::AttachInactiveSystems()
 {
 	for (SystemBase*& system : m_systems)
@@ -354,6 +369,17 @@ void World::AttachInactiveSystems()
 		if (!system->GetActiveState())
 		{
 			system->_OnAttach();
+		}
+	}
+}
+
+void World::InitUninitializedSystems()
+{
+	for (SystemBase*& system : m_systems)
+	{
+		if (!system->GetInitState())
+		{
+			system->_Init(this);
 		}
 	}
 }
@@ -430,8 +456,6 @@ void Application::Tick()
 		}
 	}
 
-	m_queue.Execute();
-
 	// UI
 
 	m_window.BeginImgui();
@@ -445,6 +469,10 @@ void Application::Tick()
 	}
 
 	m_window.EndImgui();
+
+	// Events
+
+	m_queue.Execute();
 
 	// OS
 	
