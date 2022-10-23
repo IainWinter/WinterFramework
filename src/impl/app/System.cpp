@@ -141,6 +141,21 @@ AudioSource SystemBase::GetAudioSource(const std::string& eventPath)
 	return GetAudio().GetAudioSource(eventPath);
 }
 
+RayQueryResult SystemBase::QueryRay(vec2 pos, vec2 end)
+{
+	return GetWorld()->GetPhysicsWorld().QueryRay(pos, end);
+}
+
+RayQueryResult SystemBase::QueryRay(vec2 pos, vec2 direction, float distance)
+{
+	return GetWorld()->GetPhysicsWorld().QueryRay(pos, direction, distance);
+}
+
+PointQueryResult SystemBase::QueryPoint(vec2 pos, float radius)
+{
+	return GetWorld()->GetPhysicsWorld().QueryPoint(pos, radius);
+}
+
 WindowRef SystemBase::GetWindow()
 {
 	return m_world->GetWindow();

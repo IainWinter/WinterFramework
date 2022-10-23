@@ -185,11 +185,11 @@ b2Fixture* Rigidbody2D::GetColList() const
 }
 
 bool   PointQueryResult::HasResult()     const { return results.size() > 0; }
-Entity PointQueryResult::FirstEntity()    const { return FirstResult().entity; }
+Entity PointQueryResult::FirstEntity()   const { return FirstResult().entity; }
 float  PointQueryResult::FirstDistance() const { return FirstResult().distance; }
 
 bool   RayQueryResult::HasResult()     const { return results.size() > 0; }
-Entity RayQueryResult::FirstEntity()    const { return FirstResult().entity; }
+Entity RayQueryResult::FirstEntity()   const { return FirstResult().entity; }
 float  RayQueryResult::FirstDistance() const { return FirstResult().distance; }
 vec2   RayQueryResult::FirstPoint()    const { return FirstResult().point; }
 vec2   RayQueryResult::FirstNormal()   const { return FirstResult().normal; }
@@ -238,7 +238,7 @@ void PhysicsWorld::Tick(float dt)
 
 RayQueryResult PhysicsWorld::QueryRay(vec2 point, vec2 direction, float distance) const
 {
-	return QueryRay(point, point + direction * distance);
+	return QueryRay(point, point + safe_normalize(direction) * distance);
 }
 
 RayQueryResult PhysicsWorld::QueryRay(vec2 point, vec2 target) const

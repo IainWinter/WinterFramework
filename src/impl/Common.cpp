@@ -123,7 +123,7 @@ Color Color::rand(u8 alpha)
 
 Color Color::from32(int bits32)
 {
-	return Color(0x000000ff & bits32, 0x0000ff00 & bits32, 0x00ff0000 & bits32, 0xff000000 & bits32);
+	return Color(r8(bits32), g8(bits32), b8(bits32), a8(bits32));
 }
 
 Color Color::fromv4(const vec4& v4)
@@ -131,6 +131,11 @@ Color Color::fromv4(const vec4& v4)
 	vec4 v = clamp(v4, vec4(0.f, 0.f, 0.f, 0.f), vec4(1.f, 1.f, 1.f, 1.f));
 	return Color(u8(255 * v.x), u8(255 * v.y), u8(255 * v.z), u8(255 * v.w));
 }
+
+u8 r8(u32 bits32) { return (u8)(bits32 & 0x000000ff); }
+u8 g8(u32 bits32) { return (u8)(bits32 & 0x0000ff00); }
+u8 b8(u32 bits32) { return (u8)(bits32 & 0x00ff0000); }
+u8 a8(u32 bits32) { return (u8)(bits32 & 0xff000000); }
 
 aabb2D::aabb2D()
 	: min ( FLT_MAX)
@@ -144,9 +149,7 @@ aabb2D::aabb2D(
 	, max (max)
 {}
 
-aabb2D::aabb2D(
-	vec2 position, vec2 scale, float rotation
-)
+aabb2D::aabb2D(vec2 position, vec2 scale, float rotation)
 {
 	*this = from_points({
 		position + rotate(vec2( scale.x,  scale.y), rotation),
@@ -156,9 +159,7 @@ aabb2D::aabb2D(
 	});
 }
 
-aabb2D::aabb2D(
-	const std::vector<vec2>& points
-)
+aabb2D::aabb2D(const std::vector<vec2>& points)
 {
 	*this = from_points(points);
 }

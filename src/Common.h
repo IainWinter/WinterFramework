@@ -96,6 +96,11 @@ struct Color
 	static Color fromv4(const vec4& v4);
 };
 
+inline u8 r8(u32 bits32);
+inline u8 g8(u32 bits32);
+inline u8 b8(u32 bits32);
+inline u8 a8(u32 bits32);
+
 struct DestroyInTime
 {
 	float InSeconds;
@@ -130,11 +135,17 @@ struct aabb2D
 
 float get_rand  (float x); // return a random number between (0, x)
 float get_randc (float x); // return a random number between (-x/2, x/2)
-int   get_rand  (int x); // return a random integer between (0, x)
+int   get_rand  (int x);   // return a random integer between (0, x)
 vec2  get_rand  (float x, float y);
 vec2  get_randc (float x, float y);
 vec2  get_randn (float scale);
 vec2  get_randnc(float scale);
+
+template<typename _t>
+_t get_rand(const std::vector<_t>& x)
+{
+	return x.size() == 0 ? _t() : x[get_rand((int)x.size())];
+}
 
 float lerp(float        a, float        b, float w);
 vec2  lerp(const vec2&  a, const vec2&  b, float w);

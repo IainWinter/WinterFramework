@@ -112,6 +112,12 @@ protected:
 	Audio       CreateAudio   (const std::string& eventPath);
 	AudioSource GetAudioSource(const std::string& eventPath);
 
+// physics
+
+	RayQueryResult   QueryRay  (vec2 pos, vec2 end);
+	RayQueryResult   QueryRay  (vec2 pos, vec2 direction, float distance);
+	PointQueryResult QueryPoint(vec2 pos, float radius);
+
 // getters
 
 	WindowRef   GetWindow();
