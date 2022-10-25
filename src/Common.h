@@ -55,7 +55,9 @@ public:
 	Transform2D  operator* (const Transform2D& other) const;
 	Transform2D& operator*=(const Transform2D& other);
 
-	mat4 World() const;
+	mat4 World()   const;
+	vec2 Forward() const;
+	vec2 Right()   const;
 
 	void UpdateLastFrameData();
 	Transform2D LastTransform() const;
@@ -168,6 +170,7 @@ vec2 limit(const vec2& x, float max);
 vec2 turn_towards(const vec2& current, const vec2& target, float strength);
 
 vec2 on_unit(float a);
+vec2 right(vec2 v);
 
 float pow4(float x);
 float angle(vec2 v);

@@ -120,9 +120,11 @@ protected:
 
 // getters
 
-	WindowRef   GetWindow();
-	AudioWorld& GetAudio();
-	World*      GetWorld();
+	World*        GetWorld();
+	WindowRef     GetWindow();
+	EntityWorld&  GetEntities();
+	PhysicsWorld& GetPhysics();
+	AudioWorld&   GetAudio();
 
 // interface
 

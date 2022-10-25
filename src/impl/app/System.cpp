@@ -156,9 +156,24 @@ PointQueryResult SystemBase::QueryPoint(vec2 pos, float radius)
 	return GetWorld()->GetPhysicsWorld().QueryPoint(pos, radius);
 }
 
+World* SystemBase::GetWorld()
+{
+	return m_world;
+}
+
 WindowRef SystemBase::GetWindow()
 {
 	return m_world->GetWindow();
+}
+
+EntityWorld& SystemBase::GetEntities()
+{
+	return m_world->GetEntityWorld();
+}
+
+PhysicsWorld& SystemBase::GetPhysics()
+{
+	return m_world->GetPhysicsWorld();
 }
 
 AudioWorld& SystemBase::GetAudio()
@@ -166,10 +181,6 @@ AudioWorld& SystemBase::GetAudio()
 	return m_world->GetAudio();
 }
 
-World* SystemBase::GetWorld()
-{
-	return m_world;
-}
 
 World::World(
 	Application* app, EventBus* root

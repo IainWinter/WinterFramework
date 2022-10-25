@@ -75,6 +75,16 @@ mat4 Transform2D::World() const
 	);
 }
 
+vec2 Transform2D::Forward() const
+{
+	return on_unit(rotation);
+}
+
+vec2 Transform2D::Right() const
+{
+	return right(on_unit(rotation));
+}
+
 void Transform2D::UpdateLastFrameData()
 {
 	positionLast = position;
@@ -292,6 +302,11 @@ vec2 turn_towards(const vec2& current, const vec2& target, float strength)
 vec2 on_unit(float a)
 {
 	return vec2(cos(a), sin(a));
+}
+
+vec2 right(vec2 v)
+{
+	return vec2(v.y, -v.x); // todo: verify this is right
 }
 
 float pow4(float x)
