@@ -114,7 +114,7 @@ void RenderMeshes(const Camera& camera, EntityWorld& world)
 
 void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorld& world)
 {
-	render.Begin(camera, drawEntityIdMode == ONLY);
+	render.Begin();
 
 	// draw sprites
 
@@ -124,7 +124,8 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 	{
 		render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
 	}
-	render.Draw();
+    
+	render.Draw(camera, drawEntityIdMode == ONLY);
 
 	// draw particles
 
@@ -144,7 +145,7 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 		}
 	}
 
-	render.Draw();
+	render.Draw(camera, drawEntityIdMode == ONLY);
 }
 
 void RenderLines(BatchLineRenderer& render, const Camera& camera, EntityWorld& world)

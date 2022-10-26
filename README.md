@@ -13,6 +13,14 @@ Most of the functionality gets included no matter what, so a single file makes i
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
 | App | Ties everything together to create an application framework. Can load Worlds and attach Systems to update the state. Each World stores its own entities, and multiple can be loaded at once to compose scenes. |
 
+# Build
+
+```
+    git pull https://github.com/IainWinter/WinterFramework
+    cd WinterFramework
+    ./tools/premake5 vs2022
+```
+
 # Examples
 
 This is the simplest app you can make

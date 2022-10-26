@@ -10,7 +10,7 @@
 
 #include "ext/Time.h" 
 #include "ext/Task.h" // bring this in for Delay
-//#include "ext/rendering/DebugRender.h"
+#include "ext/rendering/DebugRender.h" // this should be switched on W_DEBUG
 
 #include <vector>
 
@@ -191,7 +191,7 @@ public:
 	// has          type / instance
 
 	template<typename _t> SystemBase*  CreateSystem();
-	template<typename _t> SystemBase* DestroySystem();
+	template<typename _t> void        DestroySystem();
 	template<typename _t> SystemBase*     GetSystem();
 	template<typename _t> bool            HasSystem() const;
 
@@ -373,7 +373,7 @@ inline SystemBase* World::CreateSystem()
 }
 
 template<typename _t> 
-inline SystemBase* World::DestroySystem()
+inline void World::DestroySystem()
 {
 	SystemId id = GetSystemId<_t>();
 	auto itr = m_map.find(id);
@@ -381,7 +381,7 @@ inline SystemBase* World::DestroySystem()
 	if (itr == m_map.end())
 	{
 		log_world("w~Didn't destroy system, doesn't exist in world");
-		return nullptr;
+		return;
 	}
 
 	DestroySystem(itr->second);

@@ -20,8 +20,9 @@ private:
 public:
 	BatchSpriteRenderer();
 
-	void Begin(const Camera& camera, bool mixTint = false);
-
+	void Begin();
+    void Draw(const Camera& camera, bool mixTint = false);
+    
 	void SubmitSprite(
 		const Transform2D& transform,
 		const Color& tint);
@@ -36,8 +37,6 @@ public:
 		const vec2& uvOffset = vec2(0.f),
 		const vec2& uvScale  = vec2(1.f),
 		const Color& tint    = Color());
-
-	void Draw();
 
 private:
 	ShaderProgram m_program;

@@ -325,6 +325,8 @@ World*        World::SetName(const char* name) { m_name = name; return this; }
 
 void World::Tick()
 {
+    Debug::Begin();
+    
 	InitUninitializedSystems();
 	AttachInactiveSystems();
 
@@ -340,6 +342,8 @@ void World::Tick()
 	m_tasks.TickCoroutines();
 	m_queue.Execute();
 	m_entities.ExecuteDeferdDeletions();
+    
+    Debug::End(m_entities.First<Camera>()); // get scene props component
 }
 
 void World::TickUI()
@@ -473,7 +477,7 @@ void Application::DestroyWorld(World* world)
 void Application::Tick()
 {
 	// app loop
-
+    
 	for (World*& world : m_worlds)
 	{
 		if (world->GetInitState())

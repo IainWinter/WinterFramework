@@ -5,10 +5,17 @@ BatchSpriteRenderer::BatchSpriteRenderer()
 	InitProgram();
 }
 
-void BatchSpriteRenderer::Begin(const Camera& camera, bool mixTint)
+void BatchSpriteRenderer::Begin()
 {
-	SetProgram(camera.Projection(), mixTint);
 	z = 0;// -camera.z / 2 + 0.01f;
+}
+
+void BatchSpriteRenderer::Draw(const Camera& camera, bool mixTint)
+{
+    SetProgram(camera.Projection(), mixTint);
+
+    for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
+    m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 }
 
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color& tint)
@@ -37,12 +44,6 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Tex
 	vec4 uv = vec4(uvOffset, uvScale);
 
 	m_batches[texture].add(world, uv, tint.as_v4());
-}
-
-void BatchSpriteRenderer::Draw()
-{
-	for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
-	m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 }
 
 void BatchSpriteRenderer::InitProgram()

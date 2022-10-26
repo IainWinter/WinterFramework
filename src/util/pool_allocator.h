@@ -187,7 +187,7 @@ struct pool_iterator : allocator_iterator
 	pool_iterator(const pool_allocator& alloc)
 	{
 		m_pages.reserve(alloc.m_pages.size());
-		for (const auto [_, page] : alloc.m_pages)
+		for (const auto& [_, page] : alloc.m_pages)
 		{
 			linear_iterator itr = linear_iterator(*page);
 			//assert(itr.more());
