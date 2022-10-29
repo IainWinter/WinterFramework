@@ -5,9 +5,12 @@ Most of the functionality gets included no matter what, so a single file makes i
 
 | Piece of framework | Description |
 | --- | --- |
-| Audio | An interface to talk to underlying audio engines through handles. Currently implements FMOD |
+| Audio | A wrapper around FMOD exposing the API through components. |
+| Common | Some helper functions and components that get used frequently by more than a single piece of the framework. |
+| Defines | Some preprocessor macros |
 | Entity | A wrapper around EnTT exposing the API through an entity class |
 | Event | An events system based on composing std::functions to member functions. |
+| Log | A simple logging library that lets you filter on severity and type. You can also set stylings based on flags. |
 | Physics | A wrapper around box2d that ties into the entity system to automatically maintain the physics world |
 | Rendering | Taking ideas from CUDA about host and device memory, this follows the same naming scheme through a unified interface for each OpenGL object. Currently supports Texture/Target, Buffer/Mesh and ShaderProgram |
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
@@ -15,11 +18,40 @@ Most of the functionality gets included no matter what, so a single file makes i
 
 # Build
 
+## Windows
+
 ```
-    git pull https://github.com/IainWinter/WinterFramework
-    cd WinterFramework
-    ./tools/premake5 vs2022
+git pull https://github.com/IainWinter/WinterFramework
+cd WinterFramework
+./tools/premake5.exe vs2022
 ```
+
+## Linux
+
+```
+sudo apt-get install libsdl2-dev
+
+git pull https://github.com/IainWinter/WinterFramework
+cd WinterFramework
+./tools/premake5 gmake2
+```
+
+## Mac
+
+```
+brew install SDL2
+
+git pull https://github.com/IainWinter/WinterFramework
+cd WinterFramework
+./tools/mac_premake5 xcode4
+```
+
+Right now you need to copy the appropriate dlls into your project's bin folder. They are included in the vendor folder.
+* Windows: SDL.dll and fmod.dll/fmodstudio.dll
+* Linux: you need to download fmod
+* Mac: fmod.dylib/fmodstudio.dylib
+
+Fmod also requires you to have an account on their website if you have a buDgEt.
 
 # Examples
 
