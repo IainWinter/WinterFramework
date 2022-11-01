@@ -1,5 +1,7 @@
 #include "ext/rendering/DebugRender.h"
 
+#ifdef ENABLE_DEBUG_RENDER
+
 namespace Debug
 {
 	BatchLineRenderer debugLines;
@@ -45,3 +47,4 @@ namespace Debug
         debugSprites.SubmitSprite(transform, color);
     }
 }
+#endif
