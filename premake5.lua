@@ -30,7 +30,6 @@ project "Framework"
 		-- choose which extensions you need
 		-- todo: move some of these to game, last 3 ?
 
-		"src/ext/impl/Time.cpp",
 		"src/ext/impl/physics/ClosestPointOnShape.cpp",
 		"src/ext/impl/rendering/BatchLineRenderer.cpp",
 		"src/ext/impl/rendering/BatchSpriteRenderer.cpp",

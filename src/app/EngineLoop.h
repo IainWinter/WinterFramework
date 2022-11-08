@@ -14,7 +14,7 @@
 #include "app/FontMap.h"
 #include "app/InputMap.h"
 
-#include "ext/Time.h" // Time shouldnt be an ext...
+#include "app/Time.h"
 //#include "util/metrics.h" // this should only be in iw_debugger mode
 
 // holds the application and has some

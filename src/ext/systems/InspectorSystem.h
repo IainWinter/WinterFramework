@@ -11,7 +11,7 @@ void DrawComponent(const Transform2D& transform)
 
 struct System_Inspector : SystemBase
 {
-	void Debug()
+	void UI() override
 	{
 		ImGui::Begin("World Inspector");
 

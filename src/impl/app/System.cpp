@@ -62,6 +62,7 @@ void SystemBase::_SetId(SystemId id)
 SystemBase::SystemBase()
 	: m_world  (nullptr)
 	, m_active (false)
+    , m_id     (-1)
 {
 	log_world("i~\tCreated System");
 }
@@ -187,7 +188,6 @@ World::World(Application* app, EventBus* root)
 	, m_fixedTimeAcc (0.f)
 	, m_init         (false)
 	, m_debug        (false)
-	, m_name         (nullptr)
 {
 	log_world("i~Created World");
 
@@ -227,6 +227,11 @@ World::~World()
 void World::DetachFromRoot(EventBus* root)
 {
 	root->ChildDetach(&m_bus);
+}
+
+const std::vector<SystemBase*>& World::GetSystems() const
+{
+    return m_systems;
 }
 
 void World::AttachSystem(SystemBase* system)
@@ -301,7 +306,7 @@ void World::Init()
 
 void World::SetDebug(bool debug)
 {
-	log_world("World %s debug set to %s", m_name, debug ? "true" : "false");
+	log_world("World %s debug set to %s", GetName(), debug ? "true" : "false");
 	m_debug = debug;
 }
 
@@ -317,9 +322,6 @@ EventBus&     World::GetEventBus()        { return m_bus; }
 EventQueue&   World::GetEventQueue()      { return m_queue; }
 
 bool          World::GetInitState() const { return m_init; }
-
-const char*   World::GetName() const      { return m_name; }
-World*        World::SetName(const char* name) { m_name = name; return this; }
 
 void World::Tick()
 {

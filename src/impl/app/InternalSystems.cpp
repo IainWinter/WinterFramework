@@ -1,5 +1,8 @@
 #include "impl/app/InternalSystems.h"
 
+TransformUpdate::TransformUpdate()                       { SetName("Transform Update"); }
+PhysicsInterpolationUpdate::PhysicsInterpolationUpdate() { SetName("Physics interpolation update"); }
+
 void TransformUpdate::Update()
 {
 	for (auto [transform] : Query<Transform2D>())

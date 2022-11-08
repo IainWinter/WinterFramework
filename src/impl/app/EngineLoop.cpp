@@ -25,6 +25,9 @@ void EngineLoopBase::on(event_ConsoleCommand& e)
 
 void EngineLoopBase::_Init()
 {
+    // create time
+    Time::CreateContext();
+    
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
 	app.GetRootEventBus().Attach<event_Key>(this);
@@ -54,9 +57,15 @@ void EngineLoopBase::_Init()
 
 void EngineLoopBase::_Dnit()
 {
+    // dnit user worlds
 	app.DestroyAllWorlds();
 	app.GetRootEventBus().Detach(this);
+    
+    // dnit user code
 	Dnit();
+    
+    // destroy time
+    Time::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()

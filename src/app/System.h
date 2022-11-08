@@ -7,10 +7,12 @@
 #include "Audio.h"
 
 #include "app/Console.h"
+#include "app/Time.h" 
+#include "app/Task.h"
 
-#include "ext/Time.h" 
-#include "ext/Task.h" // bring this in for Delay
 #include "ext/rendering/DebugRender.h" // this should be switched on W_DEBUG
+
+#include "util/named.h"
 
 #include <vector>
 
@@ -36,13 +38,14 @@ SystemId GetSystemId() { return typeid(_t).hash_code(); }
 // Dnit
 // release shared ptr
 
-struct SystemBase
+struct SystemBase : Named<SystemBase>
 {
 private:
 	World* m_world;
 	bool m_active;
-	SystemId m_id;
-
+	
+    SystemId m_id;
+    
 private:
 	template<typename _t>
 	friend struct System; // for m_world without giving direct access to children
@@ -76,7 +79,7 @@ public:
 	bool GetActiveState() const;
 
 	SystemId Id() const;
-
+    
 protected:
 
 // creating entities
@@ -153,7 +156,7 @@ struct System : SystemBase
 	void Detach();
 };
 
-struct World final
+struct World final : Named<World>
 {
 private:
 	Application* m_app;
@@ -169,7 +172,6 @@ private:
 	std::unordered_map<SystemId, SystemBase*> m_map;
 
 	float m_fixedTimeAcc;
-	const char* m_name;
 	bool m_init;
 	bool m_debug;
 
@@ -189,6 +191,8 @@ public:
 	// detach       instance
 	// has          type / instance
 
+    const std::vector<SystemBase*>& GetSystems() const;
+    
 	template<typename _t> SystemBase*  CreateSystem();
 	template<typename _t> void        DestroySystem();
 	template<typename _t> SystemBase*     GetSystem();
@@ -218,9 +222,6 @@ public:
 	EventBus&     GetEventBus();
 
 	bool          GetInitState() const;
-
-	const char*   GetName() const;
-	World*        SetName(const char* name);
 
 public:
 	void Tick();
