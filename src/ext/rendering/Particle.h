@@ -54,6 +54,19 @@ struct Particle
 		return *this;
 	}
 
+	Particle& SetFixedFrame(int frame)
+	{
+		SetFrameCurrent(frame);
+		SetFramesPerSecond(0.f);
+		return *this;
+	}
+
+	Particle& SetFixedFrameRandom()
+	{
+		SetFixedFrame(get_rand(atlas->GetFrameCount()));
+		return *this;
+	}
+
 	void TickFrame(float dt)
 	{
 		frameCurrent += dt * framesPerSecond;

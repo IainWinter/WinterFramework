@@ -19,7 +19,6 @@ template<typename _t> struct System;
 struct World;
 struct Application;
 
-
 // wanted to use entt for this id, but this works for now
 using SystemId = size_t;
 
@@ -269,6 +268,7 @@ public:
 
 	World* CreateWorld(bool autoInit = true);
 	void DestroyWorld(World* world);
+	void DestroyAllWorlds();
 
 	void Tick();
 };

@@ -37,9 +37,6 @@ void EngineLoopBase::_Init()
 	// init the audio engine
 	app.GetAudio().Init();
 
-	// init user code
-	Init();
-
 	// set imgui config flags
 	PreInitUI();
 
@@ -49,11 +46,15 @@ void EngineLoopBase::_Init()
 	// init user UI, load fonts ect.
 	InitUI();
 
+	// init user code
+	Init();
+
 	// should prob send events from init functions before first tick
 }
 
 void EngineLoopBase::_Dnit()
 {
+	app.DestroyAllWorlds();
 	app.GetRootEventBus().Detach(this);
 	Dnit();
 }

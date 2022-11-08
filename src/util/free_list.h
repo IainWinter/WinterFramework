@@ -161,7 +161,7 @@ private:
 		{
 			if ((m_list.at(i - 1).m_begin + m_list.at(i - 1).m_size) == m_list.at(i).m_begin)
 			{
-				assert(false);
+				assert(false && "Failed to verify the free_list");
 			}
 		}
 	}

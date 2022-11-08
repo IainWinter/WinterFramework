@@ -3,6 +3,7 @@
 Window::Window()
 	: m_window     (nullptr)
 	, m_opengl     (nullptr)
+	, m_imgui      (nullptr)
 	, m_events     (nullptr)
 	, m_controller (nullptr)
 {}
@@ -13,6 +14,7 @@ Window::Window(
 )
 	: m_events     (events)
 	, m_config     (config)
+	, m_imgui      (nullptr)
 	, m_window     (nullptr)
 	, m_opengl     (nullptr)
 	, m_controller (nullptr)
@@ -31,6 +33,10 @@ int                Window::Width()      const { return m_config.Width; }
 int                Window::Height()     const { return m_config.Height; }
 vec2               Window::Dimensions() const { return vec2(Width(), Height()); }
 const std::string& Window::Title()      const { return m_config.Title; }
+
+SDL_Window*        Window::GetSDLWindow()    const { return m_window; }
+SDL_GLContext      Window::GetGLContext()    const { return m_opengl; }
+ImGuiContext*      Window::GetImGuiContext() const { return m_imgui; }
 
 void Window::Init()
 {
@@ -63,6 +69,7 @@ void Window::Init()
 void Window::InitUI()
 {
 	Init_Imgui(m_first_glsl_version);
+	m_imgui = ImGui::GetCurrentContext();
 }
 
 void Window::Dnit()
@@ -357,26 +364,32 @@ void Window::EndImgui()
 Window::Window(Window&& move) noexcept
 	: m_window     (move.m_window)
 	, m_opengl     (move.m_opengl)
+	, m_imgui      (move.m_imgui)
 	, m_events     (move.m_events)
 	, m_config     (move.m_config)
 	, m_controller (move.m_controller)
 {
 	move.m_window     = nullptr;
 	move.m_opengl     = nullptr;
+	move.m_imgui      = nullptr;
 	move.m_events     = nullptr;
 	move.m_controller = nullptr;
 }
 Window& Window::operator=(Window&& move) noexcept
 {
-	m_window = move.m_window;
-	m_opengl = move.m_opengl;
-	m_events = move.m_events;
-	m_config = move.m_config;
+	m_window     = move.m_window;
+	m_opengl     = move.m_opengl;
+	m_imgui      = move.m_imgui;
+	m_events     = move.m_events;
+	m_config     = move.m_config;
 	m_controller = move.m_controller;
-	move.m_window = nullptr;
-	move.m_opengl = nullptr;
-	move.m_events = nullptr;
+
+	move.m_window     = nullptr;
+	move.m_opengl     = nullptr;
+	move.m_imgui      = nullptr;
+	move.m_events     = nullptr;
 	move.m_controller = nullptr;
+
 	return *this;
 }
 

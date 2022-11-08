@@ -181,15 +181,13 @@ AudioWorld& SystemBase::GetAudio()
 	return m_world->GetAudio();
 }
 
-
-World::World(
-	Application* app, EventBus* root
-)
+World::World(Application* app, EventBus* root)
 	: m_app          (app)
 	, m_queue        (&m_bus)
 	, m_fixedTimeAcc (0.f)
 	, m_init         (false)
 	, m_debug        (false)
+	, m_name         (nullptr)
 {
 	log_world("i~Created World");
 
@@ -343,7 +341,10 @@ void World::Tick()
 	m_queue.Execute();
 	m_entities.ExecuteDeferdDeletions();
     
-    Debug::End(m_entities.First<Camera>()); // get scene props component
+	if (m_entities.GetNumberOf<Camera>() > 0) // this kinda sucks
+	{
+		Debug::End(m_entities.First<Camera>()); // get scene props component
+	}
 }
 
 void World::TickUI()
@@ -447,10 +448,7 @@ Application::Application()
 
 Application::~Application()
 {
-	for (World*& world : m_worlds)
-	{
-		delete world;
-	}
+	DestroyAllWorlds();
 }
 
 World* Application::CreateWorld(bool autoInit)
@@ -472,6 +470,16 @@ void Application::DestroyWorld(World* world)
 	world->DetachFromRoot(&m_bus);
 
 	delete world;
+}
+
+void Application::DestroyAllWorlds()
+{
+	for (World*& world : m_worlds)
+	{
+		delete world;
+	}
+
+	m_worlds.clear();
 }
 
 void Application::Tick()
@@ -524,7 +532,8 @@ World* Application::GetWorld(const char* name)
 {
 	for (World* world : m_worlds)
 	{
-		if (strcmp(world->GetName(), name) == 0)
+		if (   world->GetName() 
+			&& strcmp(world->GetName(), name) == 0)
 		{
 			return world;
 		}

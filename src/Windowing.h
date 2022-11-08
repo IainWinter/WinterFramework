@@ -37,6 +37,8 @@ struct Window
 private:
 	SDL_Window*   m_window;
 	SDL_GLContext m_opengl;
+	ImGuiContext* m_imgui;
+
 	EventQueue*   m_events;
 
 	WindowConfig m_config;
@@ -58,6 +60,10 @@ public:
 	int                Height()     const;
 	vec2               Dimensions() const;
 	const std::string& Title()      const;
+
+	SDL_Window*        GetSDLWindow()    const;
+	SDL_GLContext      GetGLContext()    const;
+	ImGuiContext*      GetImGuiContext() const;
 
 	void Init();
 	void InitUI();

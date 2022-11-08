@@ -12,7 +12,8 @@ include_all_vendor = {
 	path.getabsolute("vendor/json/include"),
 	path.getabsolute("vendor/fmod/include"),
 	path.getabsolute("vendor/tinyglft/include"),
-	path.getabsolute("vendor/sqlite/include")
+	path.getabsolute("vendor/sqlite/include"),
+	path.getabsolute("vendor/cr/include")
 }
 
 src_all_vendor = {

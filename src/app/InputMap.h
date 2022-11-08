@@ -27,7 +27,7 @@ struct std::hash<comparable_const_char>
 {
 	std::size_t operator()(const comparable_const_char& s) const noexcept
 	{
-		return std::hash<std::string>{}(s.str);
+		return std::hash<std::string>{}(s.str); // does this make a copy?
 	}
 };
 
