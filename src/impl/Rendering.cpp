@@ -153,7 +153,6 @@ void Texture::ClearHost(Color color)
 
 void Texture::Resize(int width, int height)
 {
-	assert_on_host();
 	assert_not_static();
 
 	if (m_width == width && m_height == height) return;
@@ -161,9 +160,12 @@ void Texture::Resize(int width, int height)
 	m_width = width;
 	m_height = height;
 
-	void* newMemory = realloc(m_host, BufferSize());
-	assert(newMemory && "failed to resize texture");
-	m_host = (u8*)newMemory;
+	if (OnHost())
+	{
+		void* newMemory = realloc(m_host, BufferSize());
+		assert(newMemory && "failed to resize texture");
+		m_host = (u8*)newMemory;
+	}
 
 	MarkForUpdate();
 }
@@ -421,23 +423,6 @@ void Target::Use()
 {
 	if (!OnDevice() || Outdated()) SendToDevice();
 	gl(glBindFramebuffer(GL_FRAMEBUFFER, m_device));
-}
-
-void Target::UseDefault()
-{
-	gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-}
-
-void Target::UseOrDefault(Target* target)
-{
-	if (target) target->Use();
-	else        Target::UseDefault();
-}
-
-void Target::Clear(Color color)
-{
-	gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
-	gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 }
 
 bool Target::OnHost()       const { return m_attachments.size() != 0; }
@@ -1281,4 +1266,97 @@ GLenum gl_shader_type(ShaderProgram::ShaderName type)
 GLint gl_program_texture_slot(int slot)
 {
 	return GL_TEXTURE0 + slot;
+}
+
+void gl_SetClearColor(const Color& color)
+{
+	gl(glClearColor(color.rf(), color.gf(), color.bf(), color.af()));
+}
+
+//
+//	Context
+//
+
+namespace Render
+{
+	RenderContext* ctx;
+
+	float RenderContext::WindowAspect() const
+	{
+		return window_width / (float)window_height;
+	}
+
+	float RenderContext::TargetAspect() const
+	{
+		if (default_target)
+		{
+			return default_target->Width() / (float)default_target->Height();
+		}
+
+		return WindowAspect();
+	}
+
+	void CreateContext()
+	{
+		DestroyContext();
+		ctx = new RenderContext();
+	}
+
+	void DestroyContext()
+	{
+		delete ctx;
+	}
+
+	RenderContext* GetContext()
+	{
+		return ctx;
+	}
+
+	void SetCurrentContext(RenderContext* context)
+	{
+		ctx = context;
+	}
+
+	void SetDefaultRenderTarget(Target* target)
+	{
+		ctx->default_target = target;
+	}
+
+	void SetClearColor(Color color)
+	{
+		ctx->clear_color = color;
+	}
+
+	void SetRenderTarget(Target* target)
+	{
+		if (!target)
+		{
+			if (!ctx->default_target) // set target to screen
+			{
+				gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+				gl(glViewport(0, 0, ctx->window_width, ctx->window_height));
+
+				return; // exit
+			}
+
+			// or use the default override
+			target = ctx->default_target;
+		}
+
+		target->Use();
+		gl(glViewport(0, 0, target->Width(), target->Height()));
+	}
+
+	void ClearRenderTarget()
+	{
+		ClearRenderTarget(ctx->clear_color);
+	}
+
+	// clear the currently bound render target
+	void ClearRenderTarget(Color color)
+	{
+		gl_SetClearColor(color);
+		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+		//gl_SetClearColor(Color(0));
+	}
 }

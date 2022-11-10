@@ -27,6 +27,14 @@ using SystemId = size_t;
 template<typename _t>
 SystemId GetSystemId() { return typeid(_t).hash_code(); }
 
+// events for dll interop
+
+struct event_CreateEntity
+{
+	World* world;
+	std::function<void(Entity)> callback;
+};
+
 // System lifecycle
 
 // constructor

@@ -31,6 +31,8 @@ namespace meta
 			: m_info (info)
 		{}
 
+		const char* name() const { return m_info->m_name.c_str(); }
+
 		virtual bool is_member() const = 0;
 
 		// asserts m_has_members = true
@@ -135,7 +137,7 @@ namespace meta
 
 		virtual void write_type(type* type, void* instance) = 0;
 
-		// these two are special conditions
+		// these are special conditions
 
 		virtual void write_length(size_t length) = 0;
 		virtual void write_array(type* type, void* instance, size_t repeat) = 0;
@@ -181,7 +183,7 @@ namespace meta
 
 		virtual void read_type(type* type, void* instance) = 0;
 
-		// these two are special conditions
+		// these are special conditions
 
 		virtual size_t read_length() = 0;
 		virtual void read_array(type* type, void* instance, size_t repeat) = 0;
@@ -359,19 +361,18 @@ namespace internal
 		}
 	};
 
+	// Template API
+
 	template<typename _t>
 	type* get_class()
 	{
 		return internal::get_class<_t>();
 	}
 
-// should add a function that can describe templated types
-// would get called like get type name
-
-// template<typename _t>
-// void describe_type(tag<_t>)
-// {
-// 	return typeid(_t).name();
-// }
+	template<typename _t>
+	const char* name()
+	{
+		return get_class<_t>()->name();
+	}
 }
 

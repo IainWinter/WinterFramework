@@ -2,14 +2,12 @@
 #define ENTT_ENTITY_RUNTIME_VIEW_HPP
 
 #include <algorithm>
+#include <cstddef>
 #include <iterator>
-#include <type_traits>
 #include <utility>
 #include <vector>
-#include "../config/config.h"
 #include "entity.hpp"
 #include "fwd.hpp"
-#include "sparse_set.hpp"
 
 namespace entt {
 
@@ -37,13 +35,13 @@ public:
     using reference = typename iterator_type::reference;
     using iterator_category = std::bidirectional_iterator_tag;
 
-    runtime_view_iterator() ENTT_NOEXCEPT
+    constexpr runtime_view_iterator() noexcept
         : pools{},
           filter{},
           it{},
           tombstone_check{} {}
 
-    runtime_view_iterator(const std::vector<const Set *> &cpools, const std::vector<const Set *> &ignore, iterator_type curr) ENTT_NOEXCEPT
+    runtime_view_iterator(const std::vector<Set *> &cpools, const std::vector<Set *> &ignore, iterator_type curr) noexcept
         : pools{&cpools},
           filter{&ignore},
           it{curr},
@@ -73,25 +71,25 @@ public:
         return operator--(), orig;
     }
 
-    [[nodiscard]] pointer operator->() const ENTT_NOEXCEPT {
+    [[nodiscard]] pointer operator->() const noexcept {
         return it.operator->();
     }
 
-    [[nodiscard]] reference operator*() const ENTT_NOEXCEPT {
+    [[nodiscard]] reference operator*() const noexcept {
         return *operator->();
     }
 
-    [[nodiscard]] bool operator==(const runtime_view_iterator &other) const ENTT_NOEXCEPT {
+    [[nodiscard]] constexpr bool operator==(const runtime_view_iterator &other) const noexcept {
         return it == other.it;
     }
 
-    [[nodiscard]] bool operator!=(const runtime_view_iterator &other) const ENTT_NOEXCEPT {
+    [[nodiscard]] constexpr bool operator!=(const runtime_view_iterator &other) const noexcept {
         return !(*this == other);
     }
 
 private:
-    const std::vector<const Set *> *pools;
-    const std::vector<const Set *> *filter;
+    const std::vector<Set *> *pools;
+    const std::vector<Set *> *filter;
     iterator_type it;
     bool tombstone_check;
 };
@@ -102,15 +100,6 @@ private:
  * Internal details not to be documented.
  * @endcond
  */
-
-/**
- * @brief Runtime view implementation.
- *
- * Primary template isn't defined on purpose. All the specializations give a
- * compile-time error, but for a few reasonable cases.
- */
-template<typename>
-struct basic_runtime_view;
 
 /**
  * @brief Generic runtime view.
@@ -148,31 +137,105 @@ struct basic_runtime_view;
  * Lifetime of a view must not overcome that of the registry that generated it.
  * In any other case, attempting to use a view results in undefined behavior.
  *
- * @tparam Entity A valid entity type (see entt_traits for more details).
+ * @tparam Type Common base type.
  * @tparam Allocator Type of allocator used to manage memory and elements.
  */
-template<typename Entity, typename Allocator>
-struct basic_runtime_view<basic_sparse_set<Entity, Allocator>> {
+template<typename Type, typename Allocator>
+class basic_runtime_view {
+    using alloc_traits = std::allocator_traits<Allocator>;
+    static_assert(std::is_same_v<typename alloc_traits::value_type, Type *>, "Invalid value type");
+    using container_type = std::vector<Type *, Allocator>;
+
+public:
+    /*! @brief Allocator type. */
+    using allocator_type = Allocator;
     /*! @brief Underlying entity identifier. */
-    using entity_type = Entity;
+    using entity_type = typename Type::entity_type;
     /*! @brief Unsigned integer type. */
     using size_type = std::size_t;
     /*! @brief Common type among all storage types. */
-    using base_type = basic_sparse_set<Entity, Allocator>;
+    using base_type = Type;
     /*! @brief Bidirectional iterator type. */
     using iterator = internal::runtime_view_iterator<base_type>;
 
     /*! @brief Default constructor to use to create empty, invalid views. */
-    basic_runtime_view() ENTT_NOEXCEPT
-        : pools{},
-          filter{} {}
+    basic_runtime_view() noexcept
+        : basic_runtime_view{allocator_type{}} {}
+
+    /**
+     * @brief Constructs an empty, invalid view with a given allocator.
+     * @param allocator The allocator to use.
+     */
+    explicit basic_runtime_view(const allocator_type &allocator)
+        : pools{allocator},
+          filter{allocator} {}
+
+    /*! @brief Default copy constructor. */
+    basic_runtime_view(const basic_runtime_view &) = default;
+
+    /**
+     * @brief Allocator-extended copy constructor.
+     * @param other The instance to copy from.
+     * @param allocator The allocator to use.
+     */
+    basic_runtime_view(const basic_runtime_view &other, const allocator_type &allocator)
+        : pools{other.pools, allocator},
+          filter{other.filter, allocator} {}
+
+    /*! @brief Default move constructor. */
+    basic_runtime_view(basic_runtime_view &&) noexcept(std::is_nothrow_move_constructible_v<container_type>) = default;
+
+    /**
+     * @brief Allocator-extended move constructor.
+     * @param other The instance to move from.
+     * @param allocator The allocator to use.
+     */
+    basic_runtime_view(basic_runtime_view &&other, const allocator_type &allocator)
+        : pools{std::move(other.pools), allocator},
+          filter{std::move(other.filter), allocator} {}
+
+    /**
+     * @brief Default copy assignment operator.
+     * @return This container.
+     */
+    basic_runtime_view &operator=(const basic_runtime_view &) = default;
+
+    /**
+     * @brief Default move assignment operator.
+     * @return This container.
+     */
+    basic_runtime_view &operator=(basic_runtime_view &&) noexcept(std::is_nothrow_move_assignable_v<container_type>) = default;
+
+    /**
+     * @brief Exchanges the contents with those of a given view.
+     * @param other View to exchange the content with.
+     */
+    void swap(basic_runtime_view &other) {
+        using std::swap;
+        swap(pools, other.pools);
+        swap(filter, other.filter);
+    }
+
+    /**
+     * @brief Returns the associated allocator.
+     * @return The associated allocator.
+     */
+    [[nodiscard]] constexpr allocator_type get_allocator() const noexcept {
+        return pools.get_allocator();
+    }
+
+    /*! @brief Clears the view. */
+    void clear() {
+        pools.clear();
+        filter.clear();
+    }
 
     /**
      * @brief Appends an opaque storage object to a runtime view.
      * @param base An opaque reference to a storage object.
      * @return This runtime view.
      */
-    basic_runtime_view &iterate(const base_type &base) {
+    basic_runtime_view &iterate(base_type &base) {
         if(pools.empty() || !(base.size() < pools[0u]->size())) {
             pools.push_back(&base);
         } else {
@@ -187,7 +250,7 @@ struct basic_runtime_view<basic_sparse_set<Entity, Allocator>> {
      * @param base An opaque reference to a storage object.
      * @return This runtime view.
      */
-    basic_runtime_view &exclude(const base_type &base) {
+    basic_runtime_view &exclude(base_type &base) {
         filter.push_back(&base);
         return *this;
     }
@@ -263,8 +326,8 @@ struct basic_runtime_view<basic_sparse_set<Entity, Allocator>> {
     }
 
 private:
-    std::vector<const base_type *> pools;
-    std::vector<const base_type *> filter;
+    container_type pools;
+    container_type filter;
 };
 
 } // namespace entt

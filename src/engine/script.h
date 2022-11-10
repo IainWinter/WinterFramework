@@ -2,7 +2,7 @@
 
 #include "app/System.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #   ifdef wEXPORT
 #       define wAPI extern "C" __declspec(dllexport)
 #   else
@@ -32,4 +32,5 @@ struct ScriptingContext
     SDL_Window*   ctx_window;
     
     Time::TimeContext* ctx_time;
+    Render::RenderContext* ctx_render;
 };

@@ -15,4 +15,7 @@ wAPI void PassContexts(ScriptingContext ctx)
     
     // set time context
     Time::SetCurrentContext(ctx.ctx_time);
+
+    // set render context
+    Render::SetCurrentContext(ctx.ctx_render);
 }

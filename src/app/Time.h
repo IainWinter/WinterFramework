@@ -1,8 +1,9 @@
 #pragma once
 
+#include "Log.h"
 #include <utility>
 #include <stddef.h>
-#include "Log.h"
+#include <chrono>
 
 namespace Time
 {

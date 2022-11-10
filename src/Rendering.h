@@ -290,13 +290,12 @@ public:
 	// creates an empty texture
 	r<Texture> Add(AttachmentName name, int width, int height, Texture::Usage usage, int isStatic = INHERIT_HOST);
 
+	// resize all attached textures
 	void Resize(int width, int height);
 
+	// !! Use Render::SetRenderTarget !!
+	// send to device & bind for drawing
 	void Use();
-
-	static void UseDefault();
-	static void UseOrDefault(Target* target);
-	static void Clear(Color color = Color(0));
 
 // interface
 
@@ -728,7 +727,9 @@ private:
 	GLint gl_location(const std::string& name) const;
 };
 
+//
 // Translations
+//
 
 GLenum gl_format              (Texture::Usage usage);
 GLenum gl_iformat             (Texture::Usage usage);
@@ -743,3 +744,45 @@ GLenum gl_format              (Buffer::ElementType type);
 GLenum gl_drawtype            (Mesh::Topology drawType);
 GLenum gl_shader_type         (ShaderProgram::ShaderName type);
 GLint  gl_program_texture_slot(int slot);
+
+// set the glClearColor to the color
+void gl_SetClearColor(const Color& color);
+
+//
+//	Context
+//
+
+namespace Render
+{
+	struct RenderContext
+	{
+		Target* default_target = nullptr; // if we set the target to nullptr, actually set it to this
+		int window_width = 0;
+		int window_height = 0;
+		Color clear_color = Color(20, 38, 66);
+
+		float WindowAspect() const;
+		float TargetAspect() const;
+	};
+
+	void CreateContext();
+	void DestroyContext();
+	RenderContext* GetContext();
+	void SetCurrentContext(RenderContext* context);
+
+	// Set a target to bind when SetRenderTarget is called with nullptr
+	// can be nullptr for the screen
+	void SetDefaultRenderTarget(Target* target);
+
+	// Set the clear color in the context
+	void SetClearColor(Color color);
+
+	// Set the render target, if nullptr will use the default_target from the context
+	void SetRenderTarget(Target* target);
+
+	// clear the currently bounds render target with the color from the RenderContext
+	void ClearRenderTarget();
+
+	// clear the currently bound render target with the color
+	void ClearRenderTarget(Color color);
+}

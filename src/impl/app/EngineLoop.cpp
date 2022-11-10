@@ -23,16 +23,24 @@ void EngineLoopBase::on(event_ConsoleCommand& e)
 	app.GetConsole().Execute(e.command);
 }
 
+void EngineLoopBase::on(event_CreateEntity& e)
+{
+	Entity entity = e.world->GetEntityWorld().Create();
+	if (e.callback) e.callback(entity);
+}
+
 void EngineLoopBase::_Init()
 {
-    // create time
+    // create framework contexts
     Time::CreateContext();
-    
+	Render::CreateContext();
+
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
 	app.GetRootEventBus().Attach<event_Key>(this);
 	app.GetRootEventBus().Attach<event_Controller>(this);
 	app.GetRootEventBus().Attach<event_ConsoleCommand>(this);
+	app.GetRootEventBus().Attach<event_CreateEntity>(this);
 
 	// open window and create graphics context, allows sending data to device
 	app.GetWindow().Init();
@@ -64,13 +72,20 @@ void EngineLoopBase::_Dnit()
     // dnit user code
 	Dnit();
     
-    // destroy time
+    // destroy framework contexts
     Time::DestroyContext();
+	Render::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()
 {
 	Time::UpdateTime();
+
+	// update render state
+	// put this in a better spot
+	Render::GetContext()->window_width  = app.GetWindow().Width();
+	Render::GetContext()->window_height = app.GetWindow().Height();
+
 	app.Tick();
 
 	return m_running;

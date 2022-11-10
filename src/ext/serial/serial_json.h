@@ -1,16 +1,12 @@
 #pragma once
 
-#include "../Serial.h"
+#include "ext/serial/serial.h"
 
 // these are in cpp so user doesn't need json.h
 
 struct json_writer : meta::serial_writer
 {
-	json_writer(
-		std::ostream& out
-	)
-		: meta::serial_writer(out, false)
-	{}
+	json_writer(std::ostream& out);
 
 	void write_type(meta::type* type, void* instance) override;
 	void write_length(size_t length) override;
@@ -22,19 +18,9 @@ struct json_value_s; // wish this didn't have to be exposed, json.h impls this
 
 struct json_reader : meta::serial_reader
 {
-	json_reader(
-		std::istream& in
-	)
-		: meta::serial_reader (in, false)
-		, m_json              (nullptr)
-	{
-		init_json();
-	}
+	json_reader(std::istream& in);
 
-	bool is_valid() const
-	{
-		return m_json != nullptr;
-	}
+	bool is_valid() const;
 
 	void read_type(meta::type* type, void* instance) override;
 	size_t read_length() override;

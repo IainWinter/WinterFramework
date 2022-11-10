@@ -1,7 +1,13 @@
-#include "../serial_json.h"
+#include "ext/serial/serial_json.h"
 #include <cstring>
 
+#include "json/json.h" // only reads
+
 // writer
+
+json_writer::json_writer(std::ostream& out)
+	: meta::serial_writer(out, false)
+{}
 
 void json_writer::write_type(meta::type* type, void* instance)
 {
@@ -57,7 +63,17 @@ void json_writer::write_string(const char* str, size_t length)
 
 // reader
 
-#include "json/json.h"
+json_reader::json_reader(std::istream& in)
+	: meta::serial_reader (in, false)
+	, m_json              (nullptr)
+{
+	init_json();
+}
+
+bool json_reader::is_valid() const
+{
+	return m_json != nullptr;
+}
 
 void json_reader::init_json()
 {

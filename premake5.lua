@@ -34,7 +34,8 @@ project "Framework"
 		"src/ext/impl/rendering/BatchLineRenderer.cpp",
 		"src/ext/impl/rendering/BatchSpriteRenderer.cpp",
 		"src/ext/impl/rendering/SimpleRender.cpp",
-		"src/ext/impl/rendering/DebugRender.cpp"
+		"src/ext/impl/rendering/DebugRender.cpp",
+		"src/ext/impl/serial_json.cpp"
 	}
 
 	includedirs {

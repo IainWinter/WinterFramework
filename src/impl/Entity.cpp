@@ -122,7 +122,7 @@ const char* Entity::GetName()
 
 Entity Entity::Clone()
 {
-	Entity entity;
+	Entity entity = m_owning->Create();
 
 	for (auto [id, storage] : m_owning->m_registry.storage())  // like visit function
 	{

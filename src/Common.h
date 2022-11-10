@@ -103,11 +103,6 @@ inline u8 g8(u32 bits32);
 inline u8 b8(u32 bits32);
 inline u8 a8(u32 bits32);
 
-struct DestroyInTime
-{
-	float InSeconds;
-};
-
 struct aabb2D
 {
 	vec2 min;
@@ -307,3 +302,4 @@ struct event_Controller
 	ControllerInput input;
 	float value;
 };
+

@@ -24,9 +24,17 @@ namespace entt {
  * @tparam Service Service type.
  */
 template<typename Service>
-struct locator final {
+class locator final {
+    class service_handle {
+        friend class locator<Service>;
+        std::shared_ptr<Service> value{};
+    };
+
+public:
     /*! @brief Service type. */
     using type = Service;
+    /*! @brief Service node type. */
+    using node_type = service_handle;
 
     /*! @brief Default constructor, deleted on purpose. */
     locator() = delete;
@@ -37,7 +45,7 @@ struct locator final {
      * @brief Checks whether a service locator contains a value.
      * @return True if the service locator contains a value, false otherwise.
      */
-    [[nodiscard]] static bool has_value() ENTT_NOEXCEPT {
+    [[nodiscard]] static bool has_value() noexcept {
         return (service != nullptr);
     }
 
@@ -50,7 +58,7 @@ struct locator final {
      *
      * @return A reference to the service currently set, if any.
      */
-    [[nodiscard]] static Service &value() ENTT_NOEXCEPT {
+    [[nodiscard]] static Service &value() noexcept {
         ENTT_ASSERT(has_value(), "Service not available");
         return *service;
     }
@@ -99,14 +107,27 @@ struct locator final {
         return *service;
     }
 
-    /*! @brief Resets a service. */
-    static void reset() ENTT_NOEXCEPT {
-        service.reset();
+    /**
+     * @brief Returns a handle to the underlying service.
+     * @return A handle to the underlying service.
+     */
+    static node_type handle() noexcept {
+        node_type node{};
+        node.value = service;
+        return node;
+    }
+
+    /**
+     * @brief Resets or replaces a service.
+     * @param other Optional handle with which to replace the service.
+     */
+    static void reset(const node_type &other = {}) noexcept {
+        service = other.value;
     }
 
 private:
-    // std::shared_ptr because of its type erased allocator which is pretty useful here
-    inline static std::shared_ptr<Service> service = nullptr;
+    // std::shared_ptr because of its type erased allocator which is useful here
+    inline static std::shared_ptr<Service> service{};
 };
 
 } // namespace entt

@@ -3,6 +3,11 @@
 #include "Defines.h"
 #include "Log.h"
 #include "entt/entity/registry.hpp"
+#include "entt/meta/meta.hpp"
+#include "entt/meta/resolve.hpp"
+
+#include "ext/serial/serial.h" // serial should be a util
+
 #include <unordered_set>
 #include <unordered_map>
 #include <mutex>
@@ -175,6 +180,8 @@ public:
 	void ExecuteDeferdDeletions();
 	void Clear();
 
+	entt::registry& entt() { return m_registry; }
+
 	// event handlers
 
 	template<typename _c>
@@ -297,21 +304,33 @@ public:
 	{
 		assert_is_valid();
 		assert_no_components<_t>();
+
+		if constexpr (!std::is_same<_t, EntityMeta>())
+		{
+			Get<EntityMeta>().components.emplace(meta::name<_t>());
+		}
+
 		return m_owning->m_registry.emplace<_t>(m_handle, std::forward<_args>(args)...);
 	}
 
-	template<typename... _t>
-	Entity& AddAll(const _t&... components)
-	{
-		(Add<_t>(_t(components)),...);
-		return *this;
-	}
+	//template<typename... _t>
+	//Entity& AddAll(const _t&... components)
+	//{
+	//	(Add<_t>(_t(components)),...);
+	//	return *this;
+	//}
 
-	template<typename... _t>
+	template<typename _t>
 	void Remove()
 	{
-		assert_has_components<_t...>();
-		m_owning->m_registry.remove<_t...>(m_handle);
+		assert_has_components<_t>();
+
+		if constexpr (!std::is_same<_t, EntityMeta>()) // should assert that you arn't removing this as it is essential
+		{
+			Get<EntityMeta>().components.erase(meta::name<_t>());
+		}
+
+		m_owning->m_registry.remove<_t>(m_handle);
 	}
 
 	// Asserts
@@ -377,7 +396,8 @@ struct OnDestroyComponent
 struct EntityMeta
 {
 	Entity parent;
-	const char* name = nullptr;
+	const char* name = "Unnamed Entity";
+	std::unordered_set</*const char**/std::string> components;
 };
 
 // template impl

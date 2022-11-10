@@ -35,6 +35,7 @@ public:
 	void on(event_Key& e);
 	void on(event_Controller& e);
 	void on(event_ConsoleCommand& e);
+	void on(event_CreateEntity& e);
 
 	void _Init();
 	void _Dnit();

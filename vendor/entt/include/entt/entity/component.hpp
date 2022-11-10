@@ -14,8 +14,8 @@ namespace entt {
 
 namespace internal {
 
-template<typename, typename = void>
-struct in_place_delete: std::false_type {};
+template<typename Type, typename = void>
+struct in_place_delete: std::bool_constant<!(std::is_move_constructible_v<Type> && std::is_move_assignable_v<Type>)> {};
 
 template<typename Type>
 struct in_place_delete<Type, std::enable_if_t<Type::in_place_delete>>
@@ -41,7 +41,7 @@ struct page_size<Type, std::enable_if_t<std::is_convertible_v<decltype(Type::pag
  */
 template<typename Type, typename = void>
 struct component_traits {
-    static_assert(std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, Type>, "Unsupported type");
+    static_assert(std::is_same_v<std::decay_t<Type>, Type>, "Unsupported type");
 
     /*! @brief Component type. */
     using type = Type;
