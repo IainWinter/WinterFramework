@@ -384,11 +384,7 @@ struct OnDestroyComponent
 struct EntityMeta
 {
 	Entity parent;
-<<<<<<< HEAD
 	std::string name = "Unnamed Entity";
-=======
-	const char* name = "Unnamed Entity";
->>>>>>> 9972c18352454f6697c321b6085cab0103dc59fd
 };
 
 // template impl
