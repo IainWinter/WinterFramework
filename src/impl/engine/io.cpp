@@ -1,8 +1,6 @@
 #include "engine/io.h"
 #include "engine/script.h"
 
-#include <filesystem>
-
 // this gets used for its ability to relink pdb files in windows dlls
 #define CR_HOST
 #include "cr/cr.h"
@@ -200,6 +198,25 @@ World* LoadWorldFromData(Application& app, const WorldFileData& data)
     {
         void* oldlib = dlls[GetExt(data.dll)];
         FreeSystemsOnWorld(oldlib, old, data);
+
+        // serialize entity world
+        // there is def a way to write then read to ram
+
+        std::string tempfile = "./hot/temp_entities.json";
+
+        {
+            std::ofstream fout(tempfile);
+            json_writer writer(fout);
+            WriteWorld(old, writer);
+        }
+
+        {
+            std::ifstream fin(tempfile);
+            json_reader reader(fin);
+            ReadWorld(old, reader);
+        }
+
+        // recreate entity world
     }
 
     // Load the dll containing the systems attached to this world

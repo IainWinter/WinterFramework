@@ -33,4 +33,5 @@ struct ScriptingContext
     
     Time::TimeContext* ctx_time;
     Render::RenderContext* ctx_render;
+    meta::serial_context* ctx_meta;
 };

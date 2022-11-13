@@ -36,7 +36,7 @@ struct bin_writer : meta::serial_writer
 	{
 		for (int i =  0; i < repeat; i++)
 		{
-			write_type(type, (char*)instance + i * type->m_info->m_size);
+			write_type(type, (char*)instance + i * type->info()->m_size);
 		}
 	}
 
@@ -82,7 +82,7 @@ struct bin_reader : meta::serial_reader
 	{
 		for (int i = 0; i < repeat; i++)
 		{
-			read_type(type, (char*)instance + i * type->m_info->m_size);
+			read_type(type, (char*)instance + i * type->info()->m_size);
 		}
 	}
 

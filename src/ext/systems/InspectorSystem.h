@@ -72,8 +72,7 @@ private:
 		EntityMeta& meta = current.Get<EntityMeta>();
 
 		std::stringstream ss;
-		if (meta.name) ss << meta.name << "######";
-		else           ss << current.raw_id();
+		ss << meta.name << "######";
 
 		auto itr = children.find(current);
 

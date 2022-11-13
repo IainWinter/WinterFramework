@@ -3,8 +3,6 @@
 #include "Log.h"
 #include "Common.h"
 
-#include "util/type_info.h"
-
 #include <string>
 #include <vector>
 #include <unordered_map>

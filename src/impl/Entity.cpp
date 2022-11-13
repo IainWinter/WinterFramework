@@ -115,7 +115,7 @@ Entity& Entity::SetName(const char* name)
 	return *this;
 }
 
-const char* Entity::GetName()
+const std::string& Entity::GetName()
 {
 	return Get<EntityMeta>().name;
 }

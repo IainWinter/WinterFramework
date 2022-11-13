@@ -249,7 +249,7 @@ public:
 	Entity GetParent();
 
 	Entity& SetName(const char* name);
-	const char* GetName();
+	const std::string& GetName();
 
 	Entity Clone();
 	
@@ -304,12 +304,6 @@ public:
 	{
 		assert_is_valid();
 		assert_no_components<_t>();
-
-		if constexpr (!std::is_same<_t, EntityMeta>())
-		{
-			Get<EntityMeta>().components.emplace(meta::name<_t>());
-		}
-
 		return m_owning->m_registry.emplace<_t>(m_handle, std::forward<_args>(args)...);
 	}
 
@@ -324,12 +318,6 @@ public:
 	void Remove()
 	{
 		assert_has_components<_t>();
-
-		if constexpr (!std::is_same<_t, EntityMeta>()) // should assert that you arn't removing this as it is essential
-		{
-			Get<EntityMeta>().components.erase(meta::name<_t>());
-		}
-
 		m_owning->m_registry.remove<_t>(m_handle);
 	}
 
@@ -396,8 +384,7 @@ struct OnDestroyComponent
 struct EntityMeta
 {
 	Entity parent;
-	const char* name = "Unnamed Entity";
-	std::unordered_set</*const char**/std::string> components;
+	std::string name = "Unnamed Entity";
 };
 
 // template impl
