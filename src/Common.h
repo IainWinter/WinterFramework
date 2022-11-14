@@ -208,6 +208,12 @@ r<_t> mkr(_args&&... args)
 	return std::make_shared<_t>(std::forward<_args>(args)...); 
 }
 
+template<typename _t>
+float* f(_t& vec)
+{
+	return (float*)&vec;
+}
+
 /*
 
 	Events

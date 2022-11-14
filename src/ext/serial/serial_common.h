@@ -36,10 +36,13 @@ namespace meta
 
 		describe<Color>()
 			.name("Color")
-			.member<&Color::r>("r")
-			.member<&Color::g>("g")
-			.member<&Color::b>("b")
-			.member<&Color::a>("a");
+			//.member<&Color::r>("r")
+			//.member<&Color::g>("g")
+			//.member<&Color::b>("b")
+			//.member<&Color::a>("a")
+			.member<&Color::as_u32>("u32")
+			/*.has_custom_write()
+			.has_custom_read()*/;
 
 		describe<aabb2D>()
 			.name("aabb2D")
@@ -50,19 +53,27 @@ namespace meta
 			.name("EntityMeta")
 			.member<&EntityMeta::name>("name")/*
 			.member<&EntityMeta::parent>("parent")*/;
+
+		describe<Sprite>()
+			.name("Sprite")
+			.member<&Sprite::tint>    ("tint")
+			.member<&Sprite::uvOffset>("uvOffset").min(0.f).max(1.f)
+			.member<&Sprite::uvScale> ("uvScale") .min(0.f).max(1.f);
+
+		describe<any>()
+			.has_custom_read()
+			.has_custom_write();
 	}
 
 	//template<>
-	//inline void serial_write(serial_writer* writer, const Entity& instance)
+	//inline void serial_write(serial_writer* writer, const Color& instance)
 	//{
-	//	writer->write_value(instance.raw_id());
+	//	writer->write(instance.as_u32);
 	//}
 
 	//template<>
-	//inline void serial_read(serial_reader* reader, Entity& instance)
+	//inline void serial_read(serial_reader* reader, Color& instance)
 	//{
-	//	u32 id;
-	//	reader->read_value(id);
-	//	instance = Entity((entt::entity)id, nullptr);
+	//	reader->read(instance.as_u32);
 	//}
 }

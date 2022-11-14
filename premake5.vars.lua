@@ -13,7 +13,8 @@ include_all_vendor = {
 	path.getabsolute("vendor/fmod/include"),
 	path.getabsolute("vendor/tinyglft/include"),
 	path.getabsolute("vendor/sqlite/include"),
-	path.getabsolute("vendor/cr/include")
+	path.getabsolute("vendor/cr/include"),
+	path.getabsolute("vendor/tinyfiledialogs/include")
 }
 
 src_all_vendor = {
@@ -21,7 +22,8 @@ src_all_vendor = {
 	path.getabsolute("vendor/imgui/backends/imgui_impl_sdl.cpp"),
 	path.getabsolute("vendor/imgui/backends/imgui_impl_opengl3.cpp"),
 	path.getabsolute("vendor/stb/src/load_image.cpp"),
-	path.getabsolute("vendor/sqlite/src/sqlite3.c")
+	path.getabsolute("vendor/sqlite/src/sqlite3.c"),
+	path.getabsolute("vendor/tinyfiledialogs/src/tinyfiledialogs.c")
 }
 
 libdir_all_vendor = {

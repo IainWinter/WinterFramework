@@ -2,7 +2,7 @@
 
 namespace meta
 {
-	walker::walker(type* type, void* instance)
+	walker::walker(meta::type* type, void* instance)
 		: m_type(type)
 		, m_instance(instance)
 	{
@@ -25,6 +25,11 @@ namespace meta
 		return m_instance;
 	}
 
+	type* walker::type() const
+	{
+		return m_type;
+	}
+
 	const walker& walker::get(const std::string& name) const
 	{
 		return *m_children.at(name);
@@ -35,7 +40,7 @@ namespace meta
 		return get(name);
 	}
 
-	void walker::walk(std::function<void(type*, void*)> walker) const
+	void walker::walk(std::function<void(meta::type*, void*)> walker) const
 	{
 		walker(m_type, m_instance);
 

@@ -10,14 +10,14 @@ struct json_writer : meta::serial_writer
 {
 	json_writer(std::ostream& out);
 
-	void write_class (meta::type* type, void* instance) override;
-	void write_member(meta::type* type, const char* name, void* instance) override;
-	void write_array (meta::type* type, void* instance, size_t length) override;
+	void write_class (meta::type* type, const void* instance) override;
+	void write_member(meta::type* type, const char* name, const void* instance) override;
+	void write_array (meta::type* type, const void* instance, size_t length) override;
 	void write_string(const char* string, size_t length) override;
 
 	void write_length(size_t length) override;
 
-	void class_begin() override;
+	void class_begin(meta::type* type) override;
 	void class_delim() override;
 	void class_end() override;
 
@@ -46,7 +46,7 @@ struct json_reader : meta::serial_reader
 	
 	size_t read_length() override;
 
-	void class_begin() override;
+	void class_begin(meta::type* type) override;
 	void class_delim() override;
 	void class_end()   override;
 	
@@ -67,9 +67,9 @@ private:
 		meta::type* current_type;
 		std::vector<meta::type*>::const_iterator current_member_type;
 		json_object_element_s* current_member_json;
+		int real_members_left;
 	};
 
-	meta::type* m_objnow;
 	std::stack<obj_frame> m_objs;
 
 	void init_json();

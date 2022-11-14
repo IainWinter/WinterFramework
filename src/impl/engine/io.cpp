@@ -1,6 +1,8 @@
 #include "engine/io.h"
 #include "engine/script.h"
 
+#include <iostream>
+
 // this gets used for its ability to relink pdb files in windows dlls
 #define CR_HOST
 #include "cr/cr.h"
@@ -202,19 +204,21 @@ World* LoadWorldFromData(Application& app, const WorldFileData& data)
         // serialize entity world
         // there is def a way to write then read to ram
 
-        std::string tempfile = "./hot/temp_entities.json";
+        //std::string tempfile = "./hot/temp_entities.json";
 
-        {
-            std::ofstream fout(tempfile);
-            json_writer writer(fout);
-            WriteWorld(old, writer);
-        }
+        std::stringstream ss;
 
-        {
-            std::ifstream fin(tempfile);
-            json_reader reader(fin);
-            ReadWorld(old, reader);
-        }
+        json_writer writer(ss);
+        WriteWorld(old, writer);
+
+        // debug print json to console
+        //ss << "\n";
+        //log_io("World json: %s", ss.str().c_str());
+
+        ss.seekp(0);
+        
+        json_reader reader(ss);
+        ReadWorld(old, reader);
 
         // recreate entity world
     }

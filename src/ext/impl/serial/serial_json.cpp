@@ -1,7 +1,12 @@
 #include "ext/serial/serial_json.h"
 #include <cstring>
 
+
 #include "json/json.h" // only reads
+
+#ifdef SERIAL_JSON_LOG_DEBUG
+#	include "Log.h"
+#endif
 
 //
 //		Writer
@@ -11,18 +16,20 @@ json_writer::json_writer(std::ostream& out)
 	: meta::serial_writer(out, false)
 {}
 
-void json_writer::write_class(meta::type* type, void* instance)
+void json_writer::write_class(meta::type* type, const void* instance)
 {
-	auto& members = type->get_members();
-
-	// this check breaks down when a class has a custom writer
-	// but also has members
-	// should add a check to see if a type has a custom writer
-
-	if (members.size() > 0) // json objects
+	if (type->has_custom_write() || !type->has_members())
 	{
-		class_begin();
+		// either custom write, or write the value to the stream with <<
 
+		type->_serial_write(this, instance);
+	}
+
+	else // json objects
+	{
+		class_begin(type);
+
+		auto& members = type->get_members();
 		for (int i = 0; i < members.size(); i++)
 		{
 			meta::type* member = members.at(i);
@@ -37,20 +44,15 @@ void json_writer::write_class(meta::type* type, void* instance)
 
 		class_end();
 	}
-
-	else // json values
-	{
-		type->_serial_write(this, instance);
-	}
 }
 
-void json_writer::write_member(meta::type* type, const char* name, void* instance)
+void json_writer::write_member(meta::type* type, const char* name, const void* instance)
 {
 	m_out << '"' << name << '"' << ':';
 	write_class(type, instance);
 }
 
-void json_writer::write_array(meta::type* type, void* instance, size_t length)
+void json_writer::write_array(meta::type* type, const void* instance, size_t length)
 {
 	array_begin();
 
@@ -79,7 +81,7 @@ void json_writer::write_length(size_t length)
 	// do nothing
 }
 
-void json_writer::class_begin() { m_out << '{'; }
+void json_writer::class_begin(meta::type* type) { m_out << '{'; }
 void json_writer::class_end()   { m_out << '}'; }
 void json_writer::class_delim() { m_out << ','; }
 
@@ -126,9 +128,7 @@ void json_reader::read_class(meta::type* type, void* instance)
 	{
 		case json_type_object: // recurse if complex
 		{
-			m_objnow = type;
-
-			class_begin();
+			class_begin(type);
 
 			obj_frame& curr = m_objs.top();
 
@@ -191,15 +191,27 @@ void json_reader::read_class(meta::type* type, void* instance)
 void json_reader::read_member(meta::type* type, void* instance)
 {
 	obj_frame& curr = m_objs.top();
-
+#ifdef SERIAL_JSON_LOG_DEBUG
+	log_io("Read Json member: %s", curr.current_member_json->name->string);
+#endif
 	m_json = curr.current_member_json->value;
+
 	type->_serial_read(this, instance);
+
 	curr.current_member_json = curr.current_member_json->next;
-	++curr.current_member_type;
+	if (curr.real_members_left > 0)
+	{
+		++curr.current_member_type;
+		--curr.real_members_left;
+	}
 }
 
 void json_reader::read_array(meta::type* type, void* instance, size_t length)
 {
+#ifdef SERIAL_JSON_LOG_DEBUG
+	log_io("Read Json array begin: %s x %d", type->name(), length);
+#endif
+
 	json_array_s* arr = json_value_as_array(m_json);
 	
 	assert(arr && "json type was not array");
@@ -241,18 +253,24 @@ size_t json_reader::read_length() // returns the length of the current string or
 	return 0;
 }
 
-void json_reader::class_begin()
+void json_reader::class_begin(meta::type* type)
 {
+#ifdef SERIAL_JSON_LOG_DEBUG
+	log_io("Read Json class begin: %s", type->name());
+#endif
+
 	json_object_s* object = json_value_as_object(m_json);
 
 	obj_frame f;
-	f.current_type = m_objnow;
+	f.current_type = type;
 
 	assert(object && "json type want not object");
-	assert(object->length == f.current_type->get_members().size() && "json object length did not match reader length");
+	assert(object->length == f.current_type->get_members().size()
+		|| f.current_type->has_custom_read() && "json object length did not match reader length, or hasnt been marked with a custom read");
 
 	f.current_member_type = f.current_type->get_members().begin();
 	f.current_member_json = object->start;
+	f.real_members_left = type->get_members().size();
 
 	m_objs.push(f);
 }
@@ -264,12 +282,18 @@ void json_reader::class_delim()
 
 void json_reader::class_end()
 {
+#ifdef SERIAL_JSON_LOG_DEBUG
+	log_io("Read Json class end: %s", m_objs.top().current_type->name());
+#endif
+
 	m_objs.pop();
 }
 	
 void json_reader::array_begin()
 {
-
+#ifdef SERIAL_JSON_LOG_DEBUG
+	log_io("Read Json array end");
+#endif
 }
 
 void json_reader::array_delim()
