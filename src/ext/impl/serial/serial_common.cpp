@@ -2,21 +2,37 @@
 
 namespace meta
 {
+    template<>
 	void serial_write(serial_writer* serial, const Color& instance)
 	{
 		serial->write(instance.as_u32);
 	}
 
+    template<>
 	void serial_read(serial_reader* serial, Color& instance)
 	{
 		serial->read(instance.as_u32);
 	}
 
+    template<>
 	void serial_write(serial_writer* serial, const Rigidbody2D& instance)
 	{
-		serial->write(instance.GetBodyDef());
+        serial->class_begin(get_class<Rigidbody2D>());
+        
+        b2BodyDef def = instance.GetBodyDef();
+		serial->write(def);
+        
+        serial->class_delim();
+        
+        std::vector<any> colliders;
+        
+        for (const b2Fixture* fix = instance.GetCollider(); fix; fix = fix->GetNext())
+        {
+            colliders.push_back(any());
+        }
 	}
 
+    template<>
 	void serial_read(serial_reader* serial, Rigidbody2D& instance)
 	{
 		b2BodyDef def;
@@ -96,8 +112,15 @@ namespace meta
 			.member<&b2BodyDef::enabled>("enabled")
 			//.member<&b2BodyDef::userData>("userData")
 			.member<&b2BodyDef::gravityScale>("gravityScale");
-
+        
+        describe<b2CircleShape>()
+            .name("b2CircleShape")
+            .member<&b2CircleShape::m_type>("m_type")
+            .member<&b2CircleShape::m_radius>("m_radius")
+            .member<&b2CircleShape::m_p>("m_p");
+        
 		describe<Rigidbody2D>()
+            .name("Rigidbody2D")
 			.has_custom_read()
 			.has_custom_write();
 

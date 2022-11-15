@@ -6,10 +6,7 @@ namespace meta
 		: m_type(type)
 		, m_instance(instance)
 	{
-		for (meta::type* child : type->get_members())
-		{
-			m_children[child->member_name()] = new walker(child, child->walk_ptr(instance));
-		}
+        init_children();
 	}
 
 	walker::~walker()
@@ -49,4 +46,12 @@ namespace meta
 			child->walk(walker);
 		}
 	}
+
+    void walker::init_children()
+    {
+        for (meta::type* child : m_type->get_members())
+        {
+            m_children[child->member_name()] = new walker(child, child->walk_ptr(m_instance));
+        }
+    }
 }

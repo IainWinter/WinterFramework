@@ -53,18 +53,21 @@ namespace meta
 		return ctx->known_info[type_id];
 	}
 
+    template<>
 	void serial_write(serial_writer* writer, const std::string& instance)
 	{
 		writer->write_length(instance.size());
 		writer->write_string(instance.data(), instance.size());
 	}
 
+    template<>
 	void serial_read(serial_reader* reader, std::string& instance)
 	{
 		instance.resize(reader->read_length());
 		reader->read_string(instance.data(), instance.size());
 	}
 
+    template<>
 	void serial_write(serial_writer* serial, const any& value)
 	{
 		serial->class_begin(get_class<any>());
@@ -74,6 +77,7 @@ namespace meta
 		serial->class_end();
 	}
 
+    template<>
 	void serial_read(serial_reader* serial, any& value)
 	{
 		id_type id;

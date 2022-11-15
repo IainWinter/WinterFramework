@@ -1,5 +1,4 @@
 #include "Physics.h"
-#include "Physics.h"
 
 b2Vec2 _tb(const vec2& v)   { return b2Vec2(v.x, v.y); }
 vec2   _fb(const b2Vec2& v) { return vec2(v.x, v.y); }
@@ -67,6 +66,70 @@ struct ContactCallback : b2ContactListener
 		});
 	}
 };
+
+//
+//  colliders
+//
+
+Collider::Collider()
+    : m_fixture (nullptr)
+{}
+
+void Collider::AddToBody(Rigidbody2D& body)
+{
+    CreateShape(body);
+}
+
+void Collider::CreateFixture(Rigidbody2D& body, b2Shape& shape)
+{
+    b2FixtureDef def;
+    def.shape = &shape;
+    
+    body.m_instance->CreateFixture(&def);
+}
+
+CircleCollider::CircleCollider(float radius, vec2 origin)
+    : m_radius (radius)
+    , m_origin (origin)
+{}
+
+float CircleCollider::GetRadius() const { return m_radius; }
+vec2  CircleCollider::GetOrigin() const { return m_origin; }
+
+CircleCollider& CircleCollider::SetRadius(float radius)
+{
+    m_radius = radius;
+    
+    if (m_fixture)
+    {
+        m_fixture->GetShape()->m_radius = m_radius;
+    }
+    
+    return *this;
+}
+
+CircleCollider& CircleCollider::SetOrigin(vec2 origin)
+{
+    m_origin = origin;
+    
+    if (m_fixture)
+    {
+        static_cast<b2CircleShape*>(m_fixture->GetShape())->m_p = _tb(m_origin);
+    }
+    
+    return *this;
+}
+
+void CircleCollider::CreateShape(Rigidbody2D& body)
+{
+    b2CircleShape circle;
+    circle.m_radius = m_radius;
+    circle.m_p = _tb(m_origin);
+    
+    
+    
+    m_fixture = body.m_instance->CreateFixture();
+}
 
 Rigidbody2D::Rigidbody2D()
 	: m_instance         (nullptr)
@@ -151,6 +214,14 @@ int Rigidbody2D::GetColliderCount() const
 	int count = 0;
 	for (b2Fixture* fix = GetColList(); fix; fix = fix->GetNext()) count += 1;
 	return count;
+}
+
+Rigidbody2D& AddCollider(const Collider& collider)
+{
+    
+    
+    collider.AddToBody(this);
+    return *this;
 }
 
 b2Fixture* Rigidbody2D::AddCollider(const b2Shape& shape) 
@@ -238,7 +309,7 @@ void PhysicsWorld::ReallocWorld()
 	m_world->SetContactListener(new ContactCallback(this));
 }
 
-void PhysicsWorld::Add(EntityWith<Transform2D, Rigidbody2D> e)
+void PhysicsWorld::Add(EntityWith<Rigidbody2D> e)
 {
 	Rigidbody2D& body = e.Get<Rigidbody2D>();
 
@@ -250,8 +321,11 @@ void PhysicsWorld::Add(EntityWith<Transform2D, Rigidbody2D> e)
 	data.entityId     = e.Id();
 	data.entityOwning = e.Owning();
 
-	e.Get<Rigidbody2D>()
-		.SetTransform(e.Get<Transform2D>());
+    if (e.Has<Transform2D>())
+    {
+        e.Get<Rigidbody2D>()
+            .SetTransform(e.Get<Transform2D>());
+    }
 }
 	
 void PhysicsWorld::Remove(Entity& e)

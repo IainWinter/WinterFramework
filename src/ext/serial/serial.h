@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -183,6 +183,8 @@ namespace meta
 			: m_info (info)
 		{}
 
+        virtual ~type() {} // leave info alone
+        
 		// getters
 
 		const type_info* info() const { return m_info; }
@@ -615,6 +617,12 @@ namespace meta
 			return;
 		}
 
+        if constexpr (std::is_enum<_t>::value)
+        {
+            serial->write_value((size_t)value);
+            return;
+        }
+        
 		// this has to write the value because of type erasure
 
 		serial->write_value(value);
@@ -640,6 +648,12 @@ namespace meta
 			return;
 		}
 
+        if constexpr (std::is_enum<_t>::value)
+        {
+            serial->read((size_t&)value);
+            return;
+        }
+        
 		serial->read(value);
 	}
 
@@ -674,6 +688,8 @@ namespace meta
 			, m_class (member_class_type)
 			, m_name  (member_name)
 		{}
+        
+        virtual ~_class_member() {}
 
 		bool is_member() const override
 		{
@@ -697,12 +713,12 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			meta::serial_write(serial, *(const _mtype*)instance);
+			serial_write(serial, *(const _mtype*)instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			meta::serial_read(serial, *(_mtype*)instance);
+			serial_read(serial, *(_mtype*)instance);
 		}
 
 		any construct() const override
@@ -736,6 +752,10 @@ namespace meta
 		}
 	};
 
+    // fwd
+    template<typename _t>
+    _class_type<_t>* _get_class();
+
 	// internal representation of a class
 	//
 	template<typename _t>
@@ -749,7 +769,7 @@ namespace meta
 			: type (info)
 		{}
 
-		~_class_type()
+		virtual ~_class_type()
 		{
 			for (type* m : m_members) delete m;
 		}
@@ -757,8 +777,6 @@ namespace meta
 		// setters / getters for internal
 
 		type_info* info() { return m_info; }
-		void set_custom_write() { m_has_custom_write = true; }
-		void set_custom_read()  { m_has_custom_read = true; }
 
 		template<auto _m>
 		void add_member(const char* name)
@@ -791,12 +809,12 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			meta::serial_write(serial, *(const _t*)instance);
+			serial_write(serial, *(const _t*)instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			meta::serial_read(serial, *(_t*)instance);
+			serial_read(serial, *(_t*)instance);
 		}
 
 		any construct() const override
@@ -903,7 +921,7 @@ namespace meta
 		template<auto _m>
 		describe<_t>& member(const char* name)
 		{
-			m_current->add_member<_m>(name);
+			m_current->template add_member<_m>(name);
 			return *this;
 		}
 

@@ -423,6 +423,12 @@ void World::AttachDefaultEntityEvents()
 
 	m_entities.OnAdd   <Rigidbody2D>([this](Entity e) { GetPhysicsWorld().Add(e); });
 	m_entities.OnRemove<Rigidbody2D>([this](Entity e) { GetPhysicsWorld().Remove(e); });
+    
+    m_entities.OnAdd<Transform2D>([this](Entity e)
+    {
+        if (e.Has<Rigidbody2D>())
+            e.Get<Rigidbody2D>().SetTransform(e.Get<Transform2D>());
+    });
 }
 
 void World::ReallocWorlds()
