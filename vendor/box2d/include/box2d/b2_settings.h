@@ -66,9 +66,11 @@ struct B2_API b2BodyUserData
 	/// For legacy compatibility
 	uintptr_t pointer;
 
+	// For Winter Framework:
+
 	/// To return Entities from the world Queries
 	uint32 entityId;
-	void*  entityOwning;
+	void*  entityOwning; // this is the entity world
 };
 
 /// You can define this to inject whatever data you want in b2Fixture

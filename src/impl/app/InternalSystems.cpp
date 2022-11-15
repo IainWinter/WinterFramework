@@ -37,6 +37,12 @@ void PhysicsInterpolationUpdate::FixedUpdate()
 	{
 		body.UpdateLastTransform();
 	}
+
+	for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
+	{
+		body.SetPosition(transform.position);
+		body.SetAngle(transform.rotation);
+	}
 }
 
 //void AudioUpdate::Update()

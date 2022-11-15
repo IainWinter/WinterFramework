@@ -29,10 +29,17 @@ public:
 	func<void(CollisionInfo)> OnCollision;
 
 private:
-	b2Body* m_instance; // If null, not in physics world
-	float m_density;    // deafult value on each new collider, if the new collider had 0 density
+	// If null, not in physics world
+	b2Body* m_instance;
+	
+	// this is for serialization loading
+	b2BodyDef m_preinit;
+	
+	// deafult value on each new collider, if the new collider had 0 density
+	float m_density;
 	bool m_collisionEnabled;
 
+	// last physics tick location for interpolation
 	Transform2D m_lastTransform;
 
 	friend struct PhysicsWorld;
@@ -84,6 +91,11 @@ public:
 	      b2Fixture* GetCollider(int i = 0);
 	const b2Fixture* GetCollider(int i = 0) const;
 
+	void SetPreInit(const b2BodyDef& def);
+	
+	// return a body def that can be used to serialize this Rigidbody
+	b2BodyDef GetBodyDef() const;
+
 private:
 	b2Fixture* GetCol(int index) const;
 	b2Fixture* GetColList() const;
@@ -129,11 +141,15 @@ using OnCollisionFunc = std::function<void(WorldCollsionInfo)>;
 
 struct PhysicsWorld
 {
+private:
 	b2World* m_world;
 	func<void(WorldCollsionInfo)> m_onCollision;
 
+public:
 	PhysicsWorld();
 	~PhysicsWorld();
+
+	void ReallocWorld();
 
 	void Add(EntityWith<Transform2D, Rigidbody2D> e);
 	void Remove(Entity& e);
@@ -182,5 +198,10 @@ struct PhysicsWorld
 	void RemoveOnCollision(const OnCollisionFunc& func)
 	{
 		m_onCollision -= func;
+	}
+
+	void FireOnCollision(const WorldCollsionInfo& info)
+	{
+		m_onCollision(info);
 	}
 };

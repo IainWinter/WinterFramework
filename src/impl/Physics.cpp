@@ -61,7 +61,7 @@ struct ContactCallback : b2ContactListener
 		if (bodyA.IsCollisionEnabled()) bodyA.OnCollision(CollisionInfo { entityA, entityB, contact, true });
 		if (bodyB.IsCollisionEnabled()) bodyB.OnCollision(CollisionInfo { entityB, entityA, contact, false });
 
-		m_world->m_onCollision(WorldCollsionInfo
+		m_world->FireOnCollision(WorldCollsionInfo
 		{
 			entityA, entityB, contact
 		});
@@ -149,11 +149,7 @@ void Rigidbody2D::RemoveColliders()
 int Rigidbody2D::GetColliderCount() const
 {
 	int count = 0;
-	for (b2Fixture* fix = GetColList(); fix; fix = fix->GetNext())
-	{
-		count += 1;
-	}
-
+	for (b2Fixture* fix = GetColList(); fix; fix = fix->GetNext()) count += 1;
 	return count;
 }
 
@@ -171,6 +167,33 @@ b2Fixture* Rigidbody2D::AddCollider(const b2Shape& shape, float density)
 	
 	  b2Fixture* Rigidbody2D::GetCollider(int i)       { return GetCol(i); }
 const b2Fixture* Rigidbody2D::GetCollider(int i) const { return GetCol(i); }
+
+void Rigidbody2D::SetPreInit(const b2BodyDef& def)
+{
+	m_preinit = def;
+}
+
+b2BodyDef Rigidbody2D::GetBodyDef() const
+{
+	b2BodyDef def;
+
+	def.type            = m_instance->GetType();
+	def.position        = m_instance->GetPosition();
+	def.angle           = m_instance->GetAngle();
+	def.linearVelocity  = m_instance->GetLinearVelocity();
+	def.angularVelocity = m_instance->GetAngularVelocity();
+	def.linearDamping   = m_instance->GetLinearDamping();
+	def.angularDamping  = m_instance->GetAngularDamping();
+	def.allowSleep      = m_instance->IsSleepingAllowed();
+	def.awake           = m_instance->IsAwake();
+	def.fixedRotation   = m_instance->IsFixedRotation();
+	def.bullet          = m_instance->IsBullet();
+	def.enabled         = m_instance->IsEnabled();
+	def.userData        = m_instance->GetUserData();
+	def.gravityScale    = m_instance->GetGravityScale();
+
+	return def;
+}
 
 b2Fixture* Rigidbody2D::GetCol(int index) const
 {
@@ -198,9 +221,9 @@ const PointQueryResult::Result& PointQueryResult::FirstResult() const { return r
 const   RayQueryResult::Result&   RayQueryResult::FirstResult() const { return results.at(0); }
 
 PhysicsWorld::PhysicsWorld()
+	: m_world (nullptr)
 {
-	m_world = new b2World();
-	m_world->SetContactListener(new ContactCallback(this));
+	ReallocWorld();
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -208,12 +231,19 @@ PhysicsWorld::~PhysicsWorld()
 	delete m_world;
 }
 
+void PhysicsWorld::ReallocWorld()
+{
+	delete m_world;
+	m_world = new b2World();
+	m_world->SetContactListener(new ContactCallback(this));
+}
+
 void PhysicsWorld::Add(EntityWith<Transform2D, Rigidbody2D> e)
 {
-	b2BodyDef def;
-	def.type = b2_dynamicBody;
-
 	Rigidbody2D& body = e.Get<Rigidbody2D>();
+
+	b2BodyDef def = body.m_preinit;
+	def.type = b2_dynamicBody;
 	body.m_instance = m_world->CreateBody(&def);
 
 	b2BodyUserData& data = body.m_instance->GetUserData();

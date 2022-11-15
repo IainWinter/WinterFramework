@@ -1,5 +1,6 @@
 #include "engine/io.h"
 #include "engine/script.h"
+#include "ext/serial/serial_common.h"
 
 #include <iostream>
 
@@ -52,8 +53,14 @@ std::string CopyToHotDll(const std::string& filepath)
     path src = path(filepath);
     path dst = GetHotPath(filepath);
 
-    // this is what we would do on linux and mac
-    copy_file(src, dst, copy_options::overwrite_existing);
+    try {
+        // this is what we would do on linux and mac
+        copy_file(src, dst, copy_options::overwrite_existing);
+    }
+    catch (std::exception e)
+    {
+        log_io("Failed to write new dll. reason: %s", e.what());
+    }
 
     // then passed here is all windows
 #ifdef WIN32
@@ -67,8 +74,14 @@ std::string CopyToHotDll(const std::string& filepath)
         std::stringstream ss; ss << "." << pdbId << ".pdb";
         path dst_pdb = "./hot/" / src_pdb.filename().replace_extension(ss.str());
     
-        // simple copy for pdb
-        copy_file(src_pdb, dst_pdb, copy_options::overwrite_existing);
+        try {
+            // simple copy for pdb
+            copy_file(src_pdb, dst_pdb, copy_options::overwrite_existing);
+        }
+        catch (std::exception e)
+        {
+            log_io("Failed to write new pdb. reason: %s", e.what());
+        }
 
         // replace pdb link in dll
         std::string _;
@@ -212,8 +225,8 @@ World* LoadWorldFromData(Application& app, const WorldFileData& data)
         WriteWorld(old, writer);
 
         // debug print json to console
-        //ss << "\n";
-        //log_io("World json: %s", ss.str().c_str());
+        ss << "\n";
+        log_io("World json: %s", ss.str().c_str());
 
         ss.seekp(0);
         

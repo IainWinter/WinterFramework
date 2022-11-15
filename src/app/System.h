@@ -246,6 +246,9 @@ private:
 
 private:
 	void AttachDefaultEntityEvents();
+
+public:
+	void ReallocWorlds();
 };
 
 struct Application final

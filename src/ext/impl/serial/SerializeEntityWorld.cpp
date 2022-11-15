@@ -51,8 +51,9 @@ void ReadWorld(World* world, meta::serial_reader& reader)
     std::vector<EntityData> entities;
     reader.read(entities);
 
+    world->ReallocWorlds();
+
     entt::registry& reg = world->GetEntityWorld().entt();
-    reg = {}; // clear all memory to reallocate here
 
     for (EntityData& data : entities)
     {

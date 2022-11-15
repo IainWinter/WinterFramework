@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -60,6 +60,18 @@ namespace meta
 namespace meta
 {
 	//
+	// serial forward declare
+	//
+
+	class serial_writer;
+	class serial_reader;
+	struct any;
+
+	template<typename _t> class describe;
+	template<typename _t> class _class_type;
+	template<typename _t, auto _m> class _class_member;
+
+	//
 	//	template for getting type of auto template args
 	//
 
@@ -73,6 +85,37 @@ namespace meta
 
 	template<auto _m>
 	using ptrtype = typename _ptrtype<decltype(_m)>::type;
+
+	//
+	//	template for detecting if a function exists on type
+	//
+
+	using y = std::true_type;
+	using n = std::false_type;
+
+	template <class _t>
+	struct has_custom_write
+	{
+	private:
+		template <typename _c, _c> struct check;
+		template <typename _c> static y test(check<void(_c::*)(serial_writer*) const, &_c::serial_write>*);
+		template <typename>    static n test(...);
+	public:
+		static const bool value = std::is_same<decltype(test<_t>(0)), y>::value;
+	};
+
+	template <class _t>
+	struct has_custom_read
+	{
+	private:
+		template <typename _c, _c> struct check;
+		template <typename _c> static y test(check<void(_c::*)(serial_reader*), &_c::serial_read>*);
+		template <typename>    static n test(...);
+	public:
+		static const bool value = std::is_same<decltype(test<_t>(0)), y>::value;
+	};
+
+	// can these be combined?
 
 	//
 	//	type info, gets cached in type / serial_context
@@ -126,18 +169,6 @@ namespace meta
 
 		return info;
 	}
-
-	//
-	// serial forward declare
-	//
-
-	class serial_writer;
-	class serial_reader;
-	struct any;
-
-	template<typename _t> class describe;
-	template<typename _t> class _class_type;
-	template<typename _t, auto _m> class _class_member;
 
 	// represents a type, treats all data the same, ie. an int/float are a class with 0 members
 	// types with no members can have custom serializers so can still be saved/loaded
@@ -578,6 +609,12 @@ namespace meta
 	template<typename _t>
 	void serial_write(serial_writer* serial, const _t& value)
 	{
+		if constexpr (meta::has_custom_write<_t>::value)
+		{
+			value.serial_write(serial);
+			return;
+		}
+
 		// this has to write the value because of type erasure
 
 		serial->write_value(value);
@@ -596,6 +633,12 @@ namespace meta
 
 		// seems a little funky to have these be different, but this is how the
 		// logic seems to work out...
+
+		if constexpr (meta::has_custom_read<_t>::value)
+		{
+			value.serial_read(serial);
+			return;
+		}
 
 		serial->read(value);
 	}
@@ -654,12 +697,12 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			serial_write(serial, *(const _mtype*)instance);
+			meta::serial_write(serial, *(const _mtype*)instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			serial_read(serial, *(_mtype*)instance);
+			meta::serial_read(serial, *(_mtype*)instance);
 		}
 
 		any construct() const override
@@ -748,12 +791,12 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			serial_write(serial, *(const _t*)instance);
+			meta::serial_write(serial, *(const _t*)instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			serial_read(serial, *(_t*)instance);
+			meta::serial_read(serial, *(_t*)instance);
 		}
 
 		any construct() const override
@@ -792,6 +835,7 @@ namespace meta
 		}
 	};
 
+	// specialize void because of min/max/construct
 	template<>
 	class _class_type<void> : public type
 	{
@@ -800,55 +844,19 @@ namespace meta
 			: type (info)
 		{}
 
-		// setters / getters for internal
-
-		type_info* info() { return m_info; }
-
-		bool is_member() const override { return false; }
-
-		const std::vector<type*>& get_members() const override { return {}; }
-
-		const char* member_name() const override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		void* walk_ptr(const void* instance) const override
-		{
-			assert(false && "type was void");
-			throw nullptr;
-		}
-
-		void _serial_write(serial_writer* serial, const void* instance) const override {}
-		void _serial_read(serial_reader* serial, void* instance) const override {}
-		any construct() const override { return any((type*)this, nullptr); }
-
-		const any& min() const override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		const any& max() const override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		void set_min(const any& value) override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		void set_max(const any& value) override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		void ping(void* userdata = nullptr, int message = 0) const override { }
+		type_info*                info() { return m_info; }
+		bool                      is_member()                                                const override { return false; }
+		const std::vector<type*>& get_members()                                              const override { assert(false && "type was void"); throw nullptr; }
+		const char*               member_name()                                              const override { assert(false && "type was not a member"); throw nullptr; }
+		void*                     walk_ptr(const void* instance)                             const override { assert(false && "type was void"); throw nullptr; }
+		void                      _serial_write(serial_writer* serial, const void* instance) const override { assert(false && "type was void"); throw nullptr; }
+		void                      _serial_read(serial_reader* serial, void* instance)        const override { assert(false && "type was void"); throw nullptr; }
+		any                       construct()                                                const override { return any((type*)this, nullptr); }
+		const any&                min()                                                      const override { assert(false && "type was not a member"); throw nullptr; }
+		const any&                max()                                                      const override { assert(false && "type was not a member"); throw nullptr; }
+		void                      set_min(const any& value)                                        override { assert(false && "type was not a member"); throw nullptr; }
+		void                      set_max(const any& value)                                        override { assert(false && "type was not a member"); throw nullptr; }
+		void                      ping(void* userdata = nullptr, int message = 0)            const override { assert(false && "type was void"); throw nullptr; }
 	};
 
 	template<typename _t>
@@ -989,55 +997,29 @@ namespace meta
 
 namespace meta
 {
-	template<>
-	inline void serial_write(serial_writer* writer, const std::string& instance)
-	{
-		writer->write_length(instance.size());
-		writer->write_string(instance.data(), instance.size());
-	}
-
-	template<>
-	inline void serial_read(serial_reader* reader, std::string& instance)
-	{
-		instance.resize(reader->read_length());
-		reader->read_string(instance.data(), instance.size());
-	}
-
-	template<typename _t> void serial_write(serial_writer* writer, const std::vector<_t>& instance)
+	template<typename _t>
+	void serial_write(serial_writer* writer, const std::vector<_t>& instance)
 	{
 		writer->write_length(instance.size());
 		writer->write_array(meta::get_class<_t>(), (void*)instance.data(), instance.size());
 	}
 
-	template<typename _t> void serial_read(serial_reader* reader, std::vector<_t>& instance)
+	template<typename _t>
+	void serial_read(serial_reader* reader, std::vector<_t>& instance)
 	{
 		instance.resize(reader->read_length());
 		reader->read_array(meta::get_class<_t>(), instance.data(), instance.size());
 	}
+
+	template<>
+	void serial_write(serial_writer* writer, const std::string& instance);
+
+	template<>
+	void serial_read(serial_reader* reader, std::string& instance);
 	
 	template<>
-	inline void serial_write(serial_writer* serial, const any& value)
-	{
-		serial->class_begin(get_class<any>());
-		serial->write_member(get_class<id_type>(), "type", &value.type()->info()->m_id);
-		serial->class_delim();
-		serial->write_member(value.type(), "data", value.data());
-		serial->class_end();
-	}
+	void serial_write(serial_writer* serial, const any& value);
 
 	template<>
-	inline void serial_read(serial_reader* serial, any& value)
-	{
-		id_type id;
-
-		serial->class_begin(get_class<any>());
-		serial->read_member(get_class<id_type>(), &id);
-
-		serial->class_delim();
-
-		value = get_registered_type(id)->construct();
-
-		serial->read_member(value.type(), value.data());
-		serial->class_end();
-	}
+	void serial_read(serial_reader* serial, any& value);
 }

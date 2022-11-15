@@ -421,8 +421,21 @@ void World::AttachDefaultEntityEvents()
 {
 	// auto add/remove to physics world
 
-	m_entities.OnAdd   <Rigidbody2D>([this](Entity e) { m_physics.Add(e); });
-	m_entities.OnRemove<Rigidbody2D>([this](Entity e) { m_physics.Remove(e); });
+	m_entities.OnAdd   <Rigidbody2D>([this](Entity e) { GetPhysicsWorld().Add(e); });
+	m_entities.OnRemove<Rigidbody2D>([this](Entity e) { GetPhysicsWorld().Remove(e); });
+}
+
+void World::ReallocWorlds()
+{
+	// free all entt memory that could have been allocated across dll bounds
+	entt::registry& reg = m_entities.entt();
+	reg = {};
+
+	// clear all box2d memory
+	m_physics.ReallocWorld();
+
+	// reattach default events
+	AttachDefaultEntityEvents();
 }
 
 //void World::on_add_rigidbody(entt::registry& reg, entt::entity e)
