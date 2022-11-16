@@ -713,12 +713,12 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			serial_write(serial, *(const _mtype*)instance);
+			m_class->_serial_write(serial, instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			serial_read(serial, *(_mtype*)instance);
+			m_class->_serial_read(serial, instance);
 		}
 
 		any construct() const override
@@ -764,6 +764,9 @@ namespace meta
 	private:
 		std::vector<type*> m_members;
 
+		std::function<void(serial_writer*, const _t&)> m_write;
+		std::function<void(serial_reader*,       _t&)> m_read;
+
 	public:
 		_class_type(type_info* info)
 			: type (info)
@@ -785,6 +788,30 @@ namespace meta
 				new _class_member<_t, _m>(_get_class<ptrtype<_m>>(), name)
 			);
 		}
+
+		void set_custom_writer(const std::function<void(serial_writer*, const _t&)>& func)
+		{
+			m_info->m_has_custom_write = true;
+			m_write = func;
+		}
+
+		void set_custom_reader(const std::function<void(serial_reader*, _t&)>& func)
+		{
+			m_info->m_has_custom_read = true;
+			m_read = func;
+		}
+
+		void call_custom_write(serial_writer* serial, const void* instance) const
+		{
+			m_write(serial, *(_t*)instance);
+		}
+
+		void call_custom_read(serial_reader* serial, void* instance) const
+		{
+			m_read(serial, *(_t*)instance);
+		}
+
+		// interface
 
 		bool is_member() const override
 		{
@@ -809,12 +836,14 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			serial_write(serial, *(const _t*)instance);
+			if (has_custom_write()) call_custom_write(serial, instance);
+			else serial_write(serial, *(const _t*)instance);
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			serial_read(serial, *(_t*)instance);
+			if (has_custom_read()) call_custom_read(serial, instance);
+			else serial_read(serial, *(_t*)instance);
 		}
 
 		any construct() const override
@@ -946,18 +975,18 @@ namespace meta
 		// mark this class as having a custom writer,
 		// this is needed for the serial_writers to pick up if the class has members
 		// but doesnt want default serialization behaviour
-		describe<_t>& has_custom_write()
+		describe<_t>& custom_write(const std::function<void(serial_writer*, const _t&)>& func)
 		{
-			m_current->info()->m_has_custom_write = true;
+			m_current->set_custom_writer(func);
 			return *this;
 		}
 
 		// mark this class as having a custom readear,
 		// this is needed for the serial_readers to pick up if the class has members
 		// but doesnt want default deserialization behaviour
-		describe<_t>& has_custom_read()
+		describe<_t>& custom_read(const std::function<void(serial_reader*, _t&)>& func)
 		{
-			m_current->info()->m_has_custom_read = true;
+			m_current->set_custom_reader(func);
 			return *this;
 		}
 
@@ -1029,15 +1058,8 @@ namespace meta
 		reader->read_array(meta::get_class<_t>(), instance.data(), instance.size());
 	}
 
-	template<>
 	void serial_write(serial_writer* writer, const std::string& instance);
-
-	template<>
 	void serial_read(serial_reader* reader, std::string& instance);
-	
-	template<>
 	void serial_write(serial_writer* serial, const any& value);
-
-	template<>
 	void serial_read(serial_reader* serial, any& value);
 }
