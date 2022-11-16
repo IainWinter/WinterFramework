@@ -23,51 +23,6 @@ struct WorldCollsionInfo
 	b2Contact* contact;
 };
 
-// fwd
-struct Rigidbody2D;
-
-enum ColliderType
-{
-    cCircle,
-    cBox,
-    cPolygon
-};
-
-struct Collider
-{
-protected:
-    b2Fixture* m_fixture;
-    
-    Collider();
-
-    // this gets called from AddToBody
-    virtual void CreateShape(Rigidbody2D& body) const = 0;
-    
-    // this gets called from CreateShape
-    void CreateFixture(Rigidbody2D& body, b2Shape& shape);
-    
-public:
-    void AddToBody(Rigidbody2D& body);
-};
-
-struct CircleCollider : Collider
-{
-private:
-    float m_radius;
-    vec2 m_origin;
-    
-public:
-    CircleCollider(float radius, vec2 origin = vec2(0.f, 0.f));
-    
-    float GetRadius() const;
-    vec2  GetOrigin() const;
-    
-    CircleCollider& SetRadius(float radius);
-    CircleCollider& SetOrigin(vec2 origin);
-    
-    void CreateShape(Rigidbody2D& body) const override;
-};
-
 struct Rigidbody2D
 {
 public:
@@ -130,8 +85,6 @@ public:
 	int GetColliderCount() const;
 
 	// functions that should hide the box2d api, but dont right now
-
-    Rigidbody2D& AddCollider(const Collider& collider);
     
 	b2Fixture* AddCollider(const b2Shape& shape);
 	b2Fixture* AddCollider(const b2Shape& shape, float density);
