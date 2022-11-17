@@ -12,26 +12,46 @@ void read_Color(meta::serial_reader* serial, Color& instance)
 
 void write_Rigidbody2D(meta::serial_writer* serial, const Rigidbody2D& instance)
 {
-    serial->class_begin(meta::get_class<Rigidbody2D>());
-        
     b2BodyDef def = instance.GetBodyDef();
-	serial->write(def);
-        
-    serial->class_end();
-        
     std::vector<meta::any> colliders;
         
     for (const b2Fixture* fix = instance.GetCollider(); fix; fix = fix->GetNext())
     {
-        colliders.push_back(meta::any());
+        switch (fix->GetType())
+        {
+            case b2Shape::e_circle:
+                colliders.push_back(meta::any(meta::get_class<b2CircleShape>(), (void*)fix->GetShape()));
+                break;
+            default:
+                log_io("w~Error, type not");
+                break;
+        }
     }
+    
+    serial->class_begin(meta::get_class<Rigidbody2D>());
+    serial->write_member(meta::get_class<b2BodyDef>(), "body", &def);
+    serial->class_delim();
+    serial->write_member(meta::get_class<std::vector<meta::any>>(), "colliders", &colliders);
+    serial->class_end();
 }
 
 void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
 {
-	b2BodyDef def;
-	serial->read(def);
-	instance.SetPreInit(def);
+    b2BodyDef def;
+    std::vector<meta::any> colliders;
+    
+    serial->class_begin(meta::get_class<Rigidbody2D>());
+    serial->read_member(meta::get_class<b2BodyDef>(), &def);
+    serial->class_delim();
+    serial->read_member(meta::get_class<std::vector<meta::any>>(), &colliders);
+    serial->class_end();
+    
+    for (const meta::any& collider : colliders)
+    {
+        instance.AddCollider(*(b2Shape*)collider.data());
+    }
+    
+    instance.SetPreInit(def);
 }
 
 void register_common_types()

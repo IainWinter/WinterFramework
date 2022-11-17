@@ -373,6 +373,8 @@ namespace meta
 			: m_storage (nullptr)
 		{}
 
+        // should add a const refernce 
+        
 		//	makes a refernce to instance
 		// 
 		any(type* type, void* instance)
@@ -1057,9 +1059,4 @@ namespace meta
 		instance.resize(reader->read_length());
 		reader->read_array(meta::get_class<_t>(), instance.data(), instance.size());
 	}
-
-	void serial_write(serial_writer* writer, const std::string& instance);
-	void serial_read(serial_reader* reader, std::string& instance);
-	void serial_write(serial_writer* serial, const any& value);
-	void serial_read(serial_reader* serial, any& value);
 }

@@ -67,6 +67,26 @@ struct ContactCallback : b2ContactListener
 	}
 };
 
+//
+//  collider
+//
+
+void Collider::AddToBody(Rigidbody2D &body)
+{
+    b2FixtureDef def;
+    def.shape = m_pass;
+    
+    m_fixture = body.m_instance->CreateFixture(&def);
+    
+    // when creating the fixture, box2d copies the shape, so we can delete it
+    delete m_pass;
+    m_pass = nullptr;
+}
+
+//
+//  Rigidbody2D
+//
+
 Rigidbody2D::Rigidbody2D()
 	: m_instance         (nullptr)
 	, m_density          (1.f)

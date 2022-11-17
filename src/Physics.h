@@ -23,6 +23,62 @@ struct WorldCollsionInfo
 	b2Contact* contact;
 };
 
+// to pass collider from framework to box2d, the body needs to be already created, so we need to store a b2Shape* but also mamnage it because we need to delete
+// it when it gets added to the body
+
+// fwd
+struct Rigidbody2D;
+
+struct Collider
+{
+protected:
+    b2Fixture* m_fixture;
+    b2Shape* m_pass;       // this will be inited to hold temp values before being copied into the fixture
+    
+public:
+    Collider()
+        : m_fixture (nullptr)
+        , m_pass    (nullptr)
+    {}
+    
+    virtual ~Collider()
+    {
+        if (!OnBody()) // if this has never been added to a body, delete the temp shape
+        {
+            delete m_pass;
+        }
+    }
+    
+    bool OnBody() const
+    {
+        return !!m_pass;
+    }
+    
+    void AddToBody(Rigidbody2D& body);
+};
+
+struct CircleCollider : Collider
+{
+    CircleCollider(float radius, vec2 origin = vec2(0, 0))
+        : Collider()
+    {
+        m_pass = new b2CircleShape();
+        GetShape().m_radius = radius;
+        GetShape().m_p = _tb(origin);
+    }
+    
+    float GetRadius() const { return GetShape().m_radius; }
+    vec2  GetOrigin() const { return _fb(GetShape().m_p); }
+    
+    CircleCollider& SetRadius(float radius) { GetShape().m_radius = radius; return *this; }
+    CircleCollider& SetOrigin(vec2 origin) { GetShape().m_p = _tb(origin); return *this; }
+    
+    b2CircleShape& GetShape() const
+    {
+        return *(b2CircleShape*) (OnBody() ? m_fixture->GetShape() : m_pass);
+    }
+};
+
 struct Rigidbody2D
 {
 public:
@@ -34,7 +90,8 @@ private:
 	
 	// this is for serialization loading
 	b2BodyDef m_preinit;
-	
+    std::vector<b2Shape*> colliders;
+    
 	// deafult value on each new collider, if the new collider had 0 density
 	float m_density;
 	bool m_collisionEnabled;
