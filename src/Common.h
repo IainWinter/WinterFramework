@@ -214,6 +214,9 @@ float* f(_t& vec)
 	return (float*)&vec;
 }
 
+template<auto val>
+using constant = std::integral_constant<decltype(val), val>;
+
 /*
 
 	Events

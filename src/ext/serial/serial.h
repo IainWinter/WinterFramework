@@ -382,6 +382,14 @@ namespace meta
 			m_storage = new any_storage_t<void>(type, instance);
 		}
 
+		//	makes a reference to instance
+		//
+		template<typename _t>
+		any(_t* instance)
+		{
+			m_storage = new any_storage_t<_t>(get_class<_t>(), false, instance);
+		}
+
 		// makes a reference or a copy of instance based on 'owns'
 		//
 		template<typename _t>

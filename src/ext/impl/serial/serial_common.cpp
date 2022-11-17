@@ -14,16 +14,16 @@ void write_Rigidbody2D(meta::serial_writer* serial, const Rigidbody2D& instance)
 {
     b2BodyDef def = instance.GetBodyDef();
     std::vector<meta::any> colliders;
-        
-    for (const b2Fixture* fix = instance.GetCollider(); fix; fix = fix->GetNext())
+    
+    for (const r<Collider>& collider : instance.GetColliders())
     {
-        switch (fix->GetType())
+        switch (collider->GetType())
         {
-            case b2Shape::e_circle:
-                colliders.push_back(meta::any(meta::get_class<b2CircleShape>(), (void*)fix->GetShape()));
+            case Collider::tCircle:
+                colliders.push_back(meta::any(collider->As<CircleCollider>()));
                 break;
             default:
-                log_io("w~Error, type not");
+                log_io("e~Error, type not supported by write_Rigidbody2D");
                 break;
         }
     }
@@ -48,10 +48,36 @@ void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
     
     for (const meta::any& collider : colliders)
     {
-        instance.AddCollider(*(b2Shape*)collider.data());
+        instance.AddCollider(*(Collider*)collider.data());
     }
     
     instance.SetPreInit(def);
+}
+
+void write_CircleCollider(meta::serial_writer * writer, const CircleCollider& instance)
+{
+	vec2 origin = instance.GetOrigin();
+	float radius = instance.GetRadius();
+
+	writer->class_begin(meta::get_class<CircleCollider>());
+	writer->write_member(meta::get_class<float>(), "radius", &radius);
+	writer->class_delim();
+	writer->write_member(meta::get_class<vec2>(), "origin", &origin);
+	writer->class_end();
+}
+
+void read_CircleCollider(meta::serial_reader* writer, CircleCollider& instance)
+{
+	vec2 origin;
+	float radius;
+
+	writer->class_begin(meta::get_class<CircleCollider>());
+	writer->read_member(meta::get_class<float>(), &radius);
+	writer->class_delim();
+	writer->read_member(meta::get_class<vec2>(), &origin);
+	writer->class_end();
+
+	instance = CircleCollider(radius, origin);
 }
 
 void register_common_types()
@@ -139,6 +165,11 @@ void register_common_types()
 		.name("Rigidbody2D")
 		.custom_read(&read_Rigidbody2D)
 		.custom_write(&write_Rigidbody2D);
+
+	describe<CircleCollider>()
+		.name("CircleCollider")
+		.custom_write(&write_CircleCollider)
+		.custom_read(&read_CircleCollider);
 
 	//describe<b2BodyUserData>()
 	//	.name("b2BodyUserData")

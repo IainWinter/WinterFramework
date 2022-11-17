@@ -68,19 +68,97 @@ struct ContactCallback : b2ContactListener
 };
 
 //
-//  collider
+//  Collider
 //
+
+Collider::Collider()
+	: m_fixture (nullptr)
+	, m_pass    (nullptr)
+{}
+
+Collider::ColliderType Collider::GetType() const
+{
+	switch (GetShape().GetType())
+	{
+		case b2Shape::e_circle: return Collider::tCircle;
+	}
+
+	log_physics("e~Collider was invalid type");
+	throw nullptr;
+}
+
+bool Collider::OnBody() const
+{
+	return !!m_fixture;
+}
 
 void Collider::AddToBody(Rigidbody2D &body)
 {
+	if (m_fixture)
+	{
+		log_physics("w~Failed to add collider to body: It is already attached");
+		return;
+	}
+
     b2FixtureDef def;
-    def.shape = m_pass;
-    
+    def.shape = m_pass.get();
+	def.density = 1.f;
+
     m_fixture = body.m_instance->CreateFixture(&def);
     
     // when creating the fixture, box2d copies the shape, so we can delete it
-    delete m_pass;
     m_pass = nullptr;
+	
+	// fixture settings
+
+	// this is wrong, should use filters
+	m_fixture->SetSensor(!body.IsCollisionEnabled());
+}
+
+void Collider::RemoveFromBody(Rigidbody2D& body)
+{
+	if (m_fixture)
+	{
+		log_physics("w~Failed to remove collider from body: It is not attached");
+		return;
+	}
+
+	body.m_instance->DestroyFixture(m_fixture);
+	m_fixture = nullptr;
+}
+
+b2Shape& Collider::GetShape() const
+{
+	return *(OnBody() ? m_fixture->GetShape() : m_pass.get());
+}
+
+//
+//	Circle Collider
+//
+
+CircleCollider::CircleCollider(float radius, vec2 origin)
+{
+	r<b2CircleShape> circle = mkr<b2CircleShape>();
+	circle->m_radius = radius;
+	circle->m_p = _tb(origin);
+
+	m_pass = circle;
+}
+
+r<Collider> CircleCollider::MakeCopy() const
+{
+	return mkr<CircleCollider>(GetRadius(), GetOrigin());
+}
+
+float CircleCollider::GetRadius() const { return GetShape().m_radius; }
+vec2  CircleCollider::GetOrigin() const { return _fb(GetShape().m_p); }
+
+CircleCollider& CircleCollider::SetRadius(float radius) { GetShape().m_radius = radius; return *this; }
+CircleCollider& CircleCollider::SetOrigin(vec2 origin)  { GetShape().m_p = _tb(origin); return *this; }
+
+b2CircleShape& CircleCollider::GetShape() const
+{
+	return *(b2CircleShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
 }
 
 //
@@ -125,6 +203,9 @@ float Rigidbody2D::GetAngularDamping()  const { return m_instance->GetAngularDam
 bool  Rigidbody2D::IsRotationFixed()    const { return m_instance->IsFixedRotation(); }
 bool  Rigidbody2D::IsCollisionEnabled() const { return m_collisionEnabled; }
 float Rigidbody2D::GetDensity()         const { return m_density; }
+float Rigidbody2D::GetMass()            const { return m_instance->GetMass(); }
+float Rigidbody2D::GetSpeed()           const { return length(GetVelocity()); }
+float Rigidbody2D::GetAngularSpeed()    const { return abs(GetAngularVelocity()); }
 
 Rigidbody2D& Rigidbody2D::SetPosition       (vec2  pos)      { m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); return *this; }
 Rigidbody2D& Rigidbody2D::SetVelocity       (vec2  vel)      { m_instance->SetLinearVelocity (_tb(vel));                         return *this; }
@@ -148,44 +229,52 @@ Rigidbody2D& Rigidbody2D::SetDensity(float density)
 	return *this; 
 }
 
-float Rigidbody2D::GetMass()            const { return m_instance->GetMass(); }
-float Rigidbody2D::GetSpeed()           const { return length(GetVelocity()); }
-float Rigidbody2D::GetAngularSpeed()    const { return abs(GetAngularVelocity()); }
-
-void Rigidbody2D::RemoveColliders()
+Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 {
-	if (!m_instance) return;
-
-	b2Fixture* fix = GetColList();
-	while (fix)
+	r<Collider> c = collider.MakeCopy();
+	
+	if (m_instance)
 	{
-		b2Fixture* next = fix->GetNext();
-		m_instance->DestroyFixture(fix);
-		fix = next;
+		c->AddToBody(*this);
 	}
+
+	m_colliders.push_back(c);
+
+	return *this;
+}
+
+void Rigidbody2D::ClearColliders()
+{
+	if (m_instance)
+	{
+		for (r<Collider>& c : m_colliders)
+		{
+			c->RemoveFromBody(*this);
+		}
+	}
+
+	m_colliders.clear();
 }
 
 int Rigidbody2D::GetColliderCount() const
 {
-	int count = 0;
-	for (b2Fixture* fix = GetColList(); fix; fix = fix->GetNext()) count += 1;
-	return count;
+	return (int)m_colliders.size();
 }
 
-b2Fixture* Rigidbody2D::AddCollider(const b2Shape& shape) 
-{ 
-	return AddCollider(shape, m_density); 
-}
-
-b2Fixture* Rigidbody2D::AddCollider(const b2Shape& shape, float density)
+r<Collider>& Rigidbody2D::GetCollider(int colliderIndex)
 {
-	b2Fixture* fixture = m_instance->CreateFixture(&shape, density);
-	fixture->SetSensor(!m_collisionEnabled);
-	return fixture;
+	return m_colliders.at(colliderIndex);
+}
+
+const r<Collider>& Rigidbody2D::GetCollider(int colliderIndex) const
+{
+	return m_colliders.at(colliderIndex);
 }
 	
-	  b2Fixture* Rigidbody2D::GetCollider(int i)       { return GetCol(i); }
-const b2Fixture* Rigidbody2D::GetCollider(int i) const { return GetCol(i); }
+const std::vector<r<Collider>>& Rigidbody2D::GetColliders() const
+{
+	return m_colliders;
+}
 
 void Rigidbody2D::SetPreInit(const b2BodyDef& def)
 {
@@ -261,13 +350,27 @@ void PhysicsWorld::Add(EntityWith<Rigidbody2D> e)
 {
 	Rigidbody2D& body = e.Get<Rigidbody2D>();
 
+	// add body to world
+
 	b2BodyDef def = body.m_preinit;
 	def.type = b2_dynamicBody;
+
 	body.m_instance = m_world->CreateBody(&def);
+
+	// add colliders
+
+	for (r<Collider>& collider : body.m_colliders)
+	{
+		collider->AddToBody(body);
+	}
+
+	// set user data for the collision callbacks to be able to create entities
 
 	b2BodyUserData& data = body.m_instance->GetUserData();
 	data.entityId     = e.Id();
 	data.entityOwning = e.Owning();
+
+	// Set position to where transform is if entity has one
 
     if (e.Has<Transform2D>())
     {

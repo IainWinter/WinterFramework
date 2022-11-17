@@ -31,52 +31,63 @@ struct Rigidbody2D;
 
 struct Collider
 {
+public:
+	enum ColliderType
+	{
+		tCircle
+	};
+
 protected:
-    b2Fixture* m_fixture;
-    b2Shape* m_pass;       // this will be inited to hold temp values before being copied into the fixture
+    b2Fixture* m_fixture; // owned by box2d
+    r<b2Shape> m_pass;    // this is to hold temp values before being copied into the fixture
     
 public:
-    Collider()
-        : m_fixture (nullptr)
-        , m_pass    (nullptr)
-    {}
-    
-    virtual ~Collider()
-    {
-        if (!OnBody()) // if this has never been added to a body, delete the temp shape
-        {
-            delete m_pass;
-        }
-    }
-    
-    bool OnBody() const
-    {
-        return !!m_pass;
-    }
-    
+	Collider();
+
+	virtual ~Collider() {}
+
+	virtual r<Collider> MakeCopy() const = 0;
+
+	ColliderType GetType() const;
+	bool OnBody() const;
+
     void AddToBody(Rigidbody2D& body);
+	void RemoveFromBody(Rigidbody2D& body);
+
+	template<typename _t>
+	_t* As()
+	{
+		ColliderType type = _t::cType::value;
+
+		if (type != GetType())
+		{
+			log_physics("e~Tried to cast collider to an invalid type");
+			return nullptr;
+		}
+
+		return static_cast<_t*>(this);
+	}
+
+private:
+	b2Shape& GetShape() const;
 };
 
 struct CircleCollider : Collider
 {
-    CircleCollider(float radius, vec2 origin = vec2(0, 0))
-        : Collider()
-    {
-        m_pass = new b2CircleShape();
-        GetShape().m_radius = radius;
-        GetShape().m_p = _tb(origin);
-    }
+	using cType = constant<Collider::tCircle>;
+
+	CircleCollider(float radius = 1.f, vec2 origin = vec2(0.f, 0.f));
     
-    float GetRadius() const { return GetShape().m_radius; }
-    vec2  GetOrigin() const { return _fb(GetShape().m_p); }
+	r<Collider> MakeCopy() const override;
+
+	float GetRadius() const;
+	vec2  GetOrigin() const;
     
-    CircleCollider& SetRadius(float radius) { GetShape().m_radius = radius; return *this; }
-    CircleCollider& SetOrigin(vec2 origin) { GetShape().m_p = _tb(origin); return *this; }
+	CircleCollider& SetRadius(float radius);
+	CircleCollider& SetOrigin(vec2 origin);
     
-    b2CircleShape& GetShape() const
-    {
-        return *(b2CircleShape*) (OnBody() ? m_fixture->GetShape() : m_pass);
-    }
+private:
+	b2CircleShape& GetShape() const;
 };
 
 struct Rigidbody2D
@@ -85,7 +96,7 @@ public:
 	func<void(CollisionInfo)> OnCollision;
 
 private:
-	// If null, not in physics world
+	// If null, not in physics world. This pointer is not owned
 	b2Body* m_instance;
 	
 	// this is for serialization loading
@@ -98,6 +109,9 @@ private:
 
 	// last physics tick location for interpolation
 	Transform2D m_lastTransform;
+
+	// attached colliders
+	std::vector<r<Collider>> m_colliders;
 
 	friend struct PhysicsWorld;
     friend struct Collider;
@@ -123,6 +137,9 @@ public:
 	bool  IsRotationFixed()    const;
 	bool  IsCollisionEnabled() const;
 	float GetDensity()         const;
+	float GetMass()            const;
+	float GetSpeed()           const;
+	float GetAngularSpeed()    const;
 
 	Rigidbody2D& SetPosition       (vec2  pos);
 	Rigidbody2D& SetVelocity       (vec2  vel);
@@ -134,21 +151,19 @@ public:
 	Rigidbody2D& SetRotationFixed  (bool  isFixed);
 	Rigidbody2D& SetDensity        (float density);
 
-	float GetMass()            const;
-	float GetSpeed()           const;
-	float GetAngularSpeed()    const;
+	// colliders
 
-	void RemoveColliders();
+	Rigidbody2D& AddCollider(const Collider& collider);
+
+	void ClearColliders();
+
 	int GetColliderCount() const;
 
-	// functions that should hide the box2d api, but dont right now
-    
-	b2Fixture* AddCollider(const b2Shape& shape);
-	b2Fixture* AddCollider(const b2Shape& shape, float density);
+	      r<Collider>& GetCollider(int colliderIndex = 0);
+	const r<Collider>& GetCollider(int colliderIndex = 0) const;
 	
-	      b2Fixture* GetCollider(int i = 0);
-	const b2Fixture* GetCollider(int i = 0) const;
-
+	const std::vector<r<Collider>>& GetColliders() const;
+	
 	void SetPreInit(const b2BodyDef& def);
 	
 	// return a body def that can be used to serialize this Rigidbody
