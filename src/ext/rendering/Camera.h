@@ -4,7 +4,7 @@
 
 struct Camera
 {
-	float x, y, w, h, z;
+	float x, y, w, h, z, aspect;
 
 	Camera()
 		: x(0), y(0), w(12), h(8), z(10)
@@ -16,7 +16,11 @@ struct Camera
 
 	mat4 Projection() const
 	{
-		mat4 camera = ortho(-w, w, -h, h, -z, z);
+        // figure out the correct way to do this
+        // I kinda like being able to set the aspect without destroying the w/h
+        float wr = w * aspect;
+        
+		mat4 camera = ortho(-wr, wr, -h, h, -z, z);
 		camera = translate(camera, vec3(x, y, 0.f));
 
 		return camera;

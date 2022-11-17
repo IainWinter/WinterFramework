@@ -34,7 +34,8 @@ struct Collider
 public:
 	enum ColliderType
 	{
-		tCircle
+		tCircle,
+        tPolygon
 	};
 
 protected:
@@ -47,7 +48,7 @@ public:
 	virtual ~Collider() {}
 
 	virtual r<Collider> MakeCopy() const = 0;
-
+    
 	ColliderType GetType() const;
 	bool OnBody() const;
 
@@ -68,6 +69,9 @@ public:
 		return static_cast<_t*>(this);
 	}
 
+protected:
+    vec2 GetBodyPosition() const;
+    
 private:
 	b2Shape& GetShape() const;
 };
@@ -86,8 +90,36 @@ struct CircleCollider : Collider
 	CircleCollider& SetRadius(float radius);
 	CircleCollider& SetOrigin(vec2 origin);
     
+    vec2 GetWorldCenter() const;
+    
 private:
 	b2CircleShape& GetShape() const;
+};
+
+struct PolygonCollider : Collider
+{
+    using cType = constant<Collider::tPolygon>;
+    using VertLimit = constant<b2_maxPolygonVertices>;
+    
+    PolygonCollider(const std::vector<vec2>& convexHull = {});
+    
+    r<Collider> MakeCopy() const override;
+    
+    vec2                     GetCenter() const;
+    const std::vector<vec2>& GetPoints() const;
+    
+    PolygonCollider& SetCenter(vec2 center);
+    PolygonCollider& SetPoints(const std::vector<vec2>& convexHull);
+    
+    vec2 GetWorldCenter() const;
+    
+private:
+    b2PolygonShape& GetShape() const;
+    
+    // cache the points in our data format
+    // this is for returning the points without copying, but we need to make sure
+    // to keep this in sync with box2d
+    std::vector<vec2> m_points;
 };
 
 struct Rigidbody2D

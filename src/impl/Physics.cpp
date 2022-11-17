@@ -127,6 +127,11 @@ void Collider::RemoveFromBody(Rigidbody2D& body)
 	m_fixture = nullptr;
 }
 
+vec2 Collider::GetBodyPosition() const
+{
+    return (m_fixture ? _fb(m_fixture->GetBody()->GetPosition()) : vec2(0.f, 0.f));
+}
+
 b2Shape& Collider::GetShape() const
 {
 	return *(OnBody() ? m_fixture->GetShape() : m_pass.get());
@@ -159,6 +164,70 @@ CircleCollider& CircleCollider::SetOrigin(vec2 origin)  { GetShape().m_p = _tb(o
 b2CircleShape& CircleCollider::GetShape() const
 {
 	return *(b2CircleShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
+}
+
+vec2 CircleCollider::GetWorldCenter() const
+{
+    return GetOrigin() + GetBodyPosition();
+}
+
+//
+//  Polygon Collider
+//
+    
+PolygonCollider::PolygonCollider(const std::vector<vec2>& convexHull)
+{
+    m_pass = mkr<b2PolygonShape>();
+    SetPoints(convexHull);
+}
+    
+r<Collider> PolygonCollider::MakeCopy() const
+{
+    return mkr<PolygonCollider>(m_points);
+}
+
+vec2 PolygonCollider::GetCenter() const
+{
+    return _fb(GetShape().m_centroid);
+}
+
+const std::vector<vec2>& PolygonCollider::GetPoints() const
+{
+    return m_points;
+}
+
+PolygonCollider& PolygonCollider::SetCenter(vec2 center)
+{
+    GetShape().m_centroid = _tb(center); // is this valid or do we need to add center to each vert
+    return *this;
+}
+
+PolygonCollider& PolygonCollider::SetPoints(const std::vector<vec2>& convexHull)
+{
+    b2PolygonShape& p = GetShape();
+    
+    p.Set((b2Vec2*)convexHull.data(), (int32)convexHull.size()); // this is not 100% safe, but glm and box2d have same memory layout by default
+    
+    // box2d will edit the point, so lets copy them back into our array to sync
+    
+    m_points.clear();
+    m_points.reserve(p.m_count);
+    for (int i = 0; i < p.m_count; i++)
+    {
+        m_points.push_back(_fb(p.m_vertices[i]));
+    }
+    
+    return *this;
+}
+
+vec2 PolygonCollider::GetWorldCenter() const
+{
+    return GetCenter() + GetBodyPosition();
+}
+
+b2PolygonShape& PolygonCollider::GetShape() const
+{
+    return *(b2PolygonShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
 }
 
 //

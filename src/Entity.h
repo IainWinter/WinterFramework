@@ -7,6 +7,7 @@
 #include "entt/meta/resolve.hpp"
 
 #include "ext/serial/serial.h" // serial should be a util
+#include "util/nonce.h"
 
 #include <unordered_set>
 #include <unordered_map>
@@ -385,6 +386,7 @@ struct EntityMeta
 {
 	Entity parent;
 	std::string name = "Unnamed Entity";
+    std::string id = nonce(16);  // should use a uuid
 };
 
 // template impl

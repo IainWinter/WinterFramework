@@ -6,6 +6,7 @@
 #include "Physics.h"
 
 #include "ext/rendering/Sprite.h"
+#include "ext/rendering/Camera.h"
 
 #include <string>
 #include <vector>

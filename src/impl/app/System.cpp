@@ -200,6 +200,12 @@ World::World(Application* app, EventBus* root)
 	CreateSystem<TransformUpdate>();
 	CreateSystem<PhysicsInterpolationUpdate>();
 	//CreateSystem<AudioUpdate>();
+    
+    // create a default camera just so there is one for First<Camera>(), in future I want to have a scene with a MainCamera type deal
+    
+    Entity e = m_entities.Create().SetName("Main Camera");
+    e.Add<Transform2D>();
+    e.Add<Camera>(0, 0, 10, 10);
 }
 
 World::~World()

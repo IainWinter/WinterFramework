@@ -11,14 +11,18 @@ void BatchLineRenderer::Begin()
 	m_mesh.Clear();
 }	
 
-void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& color)
+void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& color, float z)
 {
-	SubmitLine({}, a, b, color, color);
+    Transform2D t;
+    t.z = z;
+	SubmitLine(t, a, b, color, color);
 }
 
-void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB)
+void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, float z)
 {
-	SubmitLine({}, a, b, colorA, colorB);
+    Transform2D t;
+    t.z = z;
+	SubmitLine(t, a, b, colorA, colorB);
 }
 
 void BatchLineRenderer::SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& color)
