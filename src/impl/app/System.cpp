@@ -503,7 +503,7 @@ void Application::DestroyAllWorlds()
 {
 	for (World*& world : m_worlds)
 	{
-		delete world;
+        DestroyWorld(world);
 	}
 
 	m_worlds.clear();

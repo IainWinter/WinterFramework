@@ -308,12 +308,12 @@ public:
 		return m_owning->m_registry.emplace<_t>(m_handle, std::forward<_args>(args)...);
 	}
 
-	//template<typename... _t>
-	//Entity& AddAll(const _t&... components)
-	//{
-	//	(Add<_t>(_t(components)),...);
-	//	return *this;
-	//}
+	template<typename... _t>
+	Entity& AddAll(const _t&... components)
+	{
+		(Add<_t>(_t(components)),...);
+		return *this;
+	}
 
 	template<typename _t>
 	void Remove()

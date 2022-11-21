@@ -66,10 +66,10 @@ void EventBus::Send(event_type type, void* event)
 
 	// if we remove a child while sending, we need to loop on an iterator
 
-	for (int i = 0; i < m_children.size(); i++)
-	//for (EventBus* child : m_children)
+	//for (int i = 0; i < m_children.size(); i++)
+	for (EventBus* child : m_children)
 	{
-		EventBus* child = m_children.at(i);
+		//EventBus* child = m_children.at(i);
 		child->Send(type, event);
 	}
 }
@@ -80,9 +80,7 @@ void EventBus::ChildAttach(EventBus* child)
 	{
 		if (child == c)
 		{
-			// we also have to fail silently here
-
-			//assert(false && "Child already added");
+			assert(false && "Child already added");
 			return;
 		}
 	}

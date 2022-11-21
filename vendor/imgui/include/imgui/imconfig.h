@@ -94,7 +94,7 @@
 #include "glm/vec2.hpp"
 
 #define IM_VEC2_CLASS_EXTRA \
-    constexpr ImVec2(glm::vec2& f) : x(f.x), y(f.y) {} \
+    constexpr ImVec2(const glm::vec2& f) : x(f.x), y(f.y) {} \
     operator glm::vec2() const { return glm::vec2(x, y); }
 
 //---- Use 32-bit vertex indices (default is 16-bit) is one way to allow large meshes with more than 64K vertices.
