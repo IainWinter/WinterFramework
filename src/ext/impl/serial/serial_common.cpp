@@ -1,5 +1,7 @@
 #include "ext/serial/serial_common.h"
 
+#include "ext/serial/serial_walker.h"
+
 void write_Color(meta::serial_writer* serial, const Color& instance)
 {
 	serial->write(instance.as_u32);
@@ -20,7 +22,7 @@ void write_Rigidbody2D(meta::serial_writer* serial, const Rigidbody2D& instance)
         switch (collider->GetType())
         {
             case Collider::tCircle:
-                colliders.push_back(meta::any(collider->As<CircleCollider>()));
+                colliders.push_back(meta::any(&collider->As<CircleCollider>()));
                 break;
             default:
                 log_io("e~Error, type not supported by write_Rigidbody2D");
@@ -56,28 +58,29 @@ void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
 
 void write_CircleCollider(meta::serial_writer * writer, const CircleCollider& instance)
 {
-	vec2 origin = instance.GetOrigin();
+	vec2 center = instance.GetCenter();
 	float radius = instance.GetRadius();
 
 	writer->class_begin(meta::get_class<CircleCollider>());
 	writer->write_member(meta::get_class<float>(), "radius", &radius);
 	writer->class_delim();
-	writer->write_member(meta::get_class<vec2>(), "origin", &origin);
+	writer->write_member(meta::get_class<vec2>(), "center", &center);
 	writer->class_end();
 }
 
 void read_CircleCollider(meta::serial_reader* writer, CircleCollider& instance)
 {
-	vec2 origin;
+	vec2 center;
 	float radius;
 
 	writer->class_begin(meta::get_class<CircleCollider>());
 	writer->read_member(meta::get_class<float>(), &radius);
 	writer->class_delim();
-	writer->read_member(meta::get_class<vec2>(), &origin);
+	writer->read_member(meta::get_class<vec2>(), &center);
 	writer->class_end();
 
-	instance = CircleCollider(radius, origin);
+	instance.SetRadius(radius);
+	instance.SetCenter(center);
 }
 
 void register_common_types()
@@ -97,8 +100,6 @@ void register_common_types()
 	describe< vec4>().name( "vec4").member<& vec4::x>("x").member<& vec4::y>("y").member<& vec4::z>("z").member<& vec4::w>("w");
 	describe<ivec4>().name("ivec4").member<&ivec4::x>("x").member<&ivec4::y>("y").member<&ivec4::z>("z").member<&ivec4::w>("w");
 	describe<bvec4>().name("bvec4").member<&bvec4::x>("x").member<&bvec4::y>("y").member<&bvec4::z>("z").member<&bvec4::w>("w");
-
-	// serial, this should go in the create context
 
 	describe<Transform2D>()
 		.name("Transform2D")

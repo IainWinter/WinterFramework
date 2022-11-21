@@ -23,11 +23,40 @@ struct WorldCollsionInfo
 	b2Contact* contact;
 };
 
-// to pass collider from framework to box2d, the body needs to be already created, so we need to store a b2Shape* but also mamnage it because we need to delete
-// it when it gets added to the body
-
 // fwd
 struct Rigidbody2D;
+
+///// colliders
+
+// maybe split the collider ref and the framework colliders
+
+struct ColliderAttachment
+{
+private:
+	b2Fixture* m_fixture; // not owned
+	r<b2Shape> m_temp; // owned
+
+public:
+	ColliderAttachment();
+
+	void InitTemp(b2CircleShape& circe);
+	void InitTemp(b2PolygonShape& polygon);
+
+	void InitFixture(Rigidbody2D& body);
+	void DnitFixture(Rigidbody2D& body);
+
+	b2Shape& GetShape() const; // non const ref from inner datatype
+
+	vec2 GetBodyPosition() const
+	{
+		return (m_fixture ? _fb(m_fixture->GetBody()->GetPosition()) : vec2(0.f, 0.f));
+	}
+
+	bool OnBody() const
+	{
+		return m_temp || m_fixture;
+	}
+};
 
 struct Collider
 {
@@ -35,92 +64,147 @@ public:
 	enum ColliderType
 	{
 		tCircle,
-        tPolygon
+		tHull,
+		tPolygon
 	};
 
-protected:
-    b2Fixture* m_fixture; // owned by box2d
-    r<b2Shape> m_pass;    // this is to hold temp values before being copied into the fixture
-    
+private:
+	ColliderType m_type;
+
 public:
-	Collider();
+	Collider(ColliderType type)
+		: m_type(type)
+	{}
+
+	// allow no copies on stack, only MakeCopy
+	//Collider(const Collider& copy) = delete;
+	//Collider& operator=(const Collider& copy) = delete;
 
 	virtual ~Collider() {}
 
 	virtual r<Collider> MakeCopy() const = 0;
-    
-	ColliderType GetType() const;
-	bool OnBody() const;
 
-    void AddToBody(Rigidbody2D& body);
-	void RemoveFromBody(Rigidbody2D& body);
+	virtual void AddToBody     (Rigidbody2D& body) = 0;
+	virtual void RemoveFromBody(Rigidbody2D& body) = 0;
 
-	template<typename _t>
-	_t* As()
+	virtual vec2 GetWorldCenter() const = 0;
+	virtual vec2 GetCenter() const = 0;
+
+	ColliderType GetType() const
 	{
-		ColliderType type = _t::cType::value;
-
-		if (type != GetType())
-		{
-			log_physics("e~Tried to cast collider to an invalid type");
-			return nullptr;
-		}
-
-		return static_cast<_t*>(this);
+		return m_type;
 	}
 
-protected:
-    vec2 GetBodyPosition() const;
-    
-private:
-	b2Shape& GetShape() const;
+	template<typename _t>
+	_t& As() const
+	{
+		static_assert(
+			   _t::cType::value == tCircle 
+			|| _t::cType::value == tHull 
+			|| _t::cType::value == tPolygon
+		);
+
+		return *(_t*)this;
+	}
 };
 
 struct CircleCollider : Collider
 {
-	using cType = constant<Collider::tCircle>;
+	using cType = constant<tCircle>;
 
-	CircleCollider(float radius = 1.f, vec2 origin = vec2(0.f, 0.f));
-    
+	ColliderAttachment m_attachment;
+
+	CircleCollider(float radius = 1.f, vec2 center = vec2(0.f, 0.f));
+
 	r<Collider> MakeCopy() const override;
 
+	void AddToBody(Rigidbody2D& body) override;
+	void RemoveFromBody(Rigidbody2D& body) override;
+
+	vec2 GetWorldCenter() const override;
+
 	float GetRadius() const;
-	vec2  GetOrigin() const;
-    
+	vec2  GetCenter() const override;
+
 	CircleCollider& SetRadius(float radius);
-	CircleCollider& SetOrigin(vec2 origin);
-    
-    vec2 GetWorldCenter() const;
-    
+	CircleCollider& SetCenter(vec2 center);
+
 private:
 	b2CircleShape& GetShape() const;
 };
 
-struct PolygonCollider : Collider
+struct HullCollider : Collider
 {
-    using cType = constant<Collider::tPolygon>;
-    using VertLimit = constant<b2_maxPolygonVertices>;
-    
-    PolygonCollider(const std::vector<vec2>& convexHull = {});
-    
-    r<Collider> MakeCopy() const override;
-    
-    vec2                     GetCenter() const;
-    const std::vector<vec2>& GetPoints() const;
-    
-    PolygonCollider& SetCenter(vec2 center);
-    PolygonCollider& SetPoints(const std::vector<vec2>& convexHull);
-    
-    vec2 GetWorldCenter() const;
-    
+	using cType = constant<tHull>;
+	using MaxPoints = constant<b2_maxPolygonVertices>;
+
+	ColliderAttachment m_attachment;
+
+	HullCollider();
+
+	r<Collider> MakeCopy() const override;
+
+	void AddToBody(Rigidbody2D& body) override;
+	void RemoveFromBody(Rigidbody2D& body) override;
+
+	vec2 GetWorldCenter() const override;
+	vec2 GetCenter() const override;
+
+	// return a view of a fixed size array of points
+	ArrayView<vec2> GetPoints() const;
+
+	// set points as a box
+	HullCollider& SetPointsBox(float w = 1.f, float h = 1.f, float a = 0.f, vec2 center = vec2(0.f));
+
+	// set points from an array
+	HullCollider& SetPoints(const ArrayView<vec2>& list);
+
+	// set points from a range
+	template<typename _itr>
+	HullCollider& SetPoints(const _itr& begin, const _itr& end)
+	{
+		// convert points to box2d
+		std::vector<b2Vec2> converted;
+		for (_itr b = begin; b != end; ++b) converted.push_back(_tb(*b));
+
+		GetShape().Set(converted.data(), converted.size());
+		return *this;
+	}
+
 private:
-    b2PolygonShape& GetShape() const;
-    
-    // cache the points in our data format
-    // this is for returning the points without copying, but we need to make sure
-    // to keep this in sync with box2d
-    std::vector<vec2> m_points;
+	b2PolygonShape& GetShape() const;
 };
+
+//struct PolygonCollider : Collider
+//{
+//	using cType = constant<tPolygon>;
+//
+//	std::vector<HullCollider> m_hulls;
+//
+//	PolygonCollider();
+//	PolygonCollider(const std::vector<vec2>& points);
+//	PolygonCollider(const ArrayView<vec2>& points);
+//
+//	r<Collider> MakeCopy() const override;
+//
+//	void AddToBody(Rigidbody2D& body) override;
+//	void RemoveFromBody(Rigidbody2D& body) override;
+//
+//	vec2 GetWorldCenter() const override;
+//	vec2 GetCenter() const override;
+//
+//	ArrayView<vec2> GetPoints() const;
+//
+//	HullCollider& SetPoints(const std::vector<vec2>& points);
+//	HullCollider& SetPoints(const ArrayView<vec2>& points);
+//
+//	//HullCollider& SetPointsBox(float w = 1.f, float h = 1.f, float a = 0.f, vec2 center = vec2(0.f));
+//
+//private:
+//	b2PolygonShape& GetShape() const;
+//
+//	void InitPoints(const ArrayView<vec2>& points);
+//};
 
 struct Rigidbody2D
 {
@@ -146,7 +230,7 @@ private:
 	std::vector<r<Collider>> m_colliders;
 
 	friend struct PhysicsWorld;
-    friend struct Collider;
+	friend struct ColliderAttachment;
     
 public:
 	Rigidbody2D();

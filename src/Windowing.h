@@ -79,13 +79,13 @@ public:
 	
 	// for now this works, but shouldnt be here
 	// dont call this func to make removing it ezpz
-	void ResizeViewport(int width, int height);
+	Window& ResizeViewport(int width, int height);
 
-	void Resize(int width, int height, bool center = true);
-	void SetTitle(const std::string& title);
+	Window& Resize(int width, int height, bool center = true);
+	Window& SetTitle(const std::string& title);
 
-	void SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
-	void SetVSync(bool vsync);
+	Window& SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
+	Window& SetVSync(bool vsync);
 
 	// yes moves
 	Window(Window&& move) noexcept;
@@ -118,11 +118,11 @@ public:
 	vec2               Dimensions() const;
 	const std::string& Title()      const;
 	
-	void SetTitle(const std::string& title);
+	WindowRef& SetTitle(const std::string& title);
 
-	void ResizeViewport(int width, int height);
-	void Resize(int width, int height, bool center = true);
+	WindowRef& ResizeViewport(int width, int height);
+	WindowRef& Resize(int width, int height, bool center = true);
 
-	void SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
-	void SetVSync(bool vsync);
+	WindowRef& SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
+	WindowRef& SetVSync(bool vsync);
 };

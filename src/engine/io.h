@@ -23,8 +23,8 @@ struct WorldFileData
     bool reloadSystems = true; //
 };
 
-void CleanHotDlls();
+inline void CleanHotDlls() {}
 
 // Load a world from file data
 // this creates the world in the application
-World* LoadWorldFromData(Application& app, const WorldFileData& data);
+inline World* LoadWorldFromData(Application& app, const WorldFileData& data) { return nullptr;  }

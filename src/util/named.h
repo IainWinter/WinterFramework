@@ -1,13 +1,15 @@
 #pragma once
 
+#include <string>
+
 // Adds a string name to a class
 template<typename _t>
 class Named
 {
-    const char* m_name = "unnamed";
+    std::string m_name = "unnamed";
     
 public:
-    _t* SetName(const char* name)
+    _t* SetName(const std::string& name)
     {
         m_name = name;
         return (_t*)this;
@@ -15,6 +17,6 @@ public:
     
     const char* GetName() const
     {
-        return m_name;
+        return m_name.c_str();
     }
 };

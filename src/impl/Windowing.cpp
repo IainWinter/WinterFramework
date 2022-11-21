@@ -239,7 +239,7 @@ void Window::PumpEvents()
 	}
 }
 
-void Window::ResizeViewport(int width, int height)
+Window& Window::ResizeViewport(int width, int height)
 {
 	m_config.Width  = width;
 	m_config.Height = height;
@@ -249,9 +249,11 @@ void Window::ResizeViewport(int width, int height)
 		gl(glViewport(0, 0, m_config.Width, m_config.Height));
 		log_window("d~Set viewport to %d %d", m_config.Width, m_config.Height);
 	}
+
+	return *this;
 }
 
-void Window::Resize(int width, int height, bool center)
+Window& Window::Resize(int width, int height, bool center)
 {
 	if (m_window) // only if open
 	{
@@ -261,15 +263,19 @@ void Window::Resize(int width, int height, bool center)
 	}
 
 	ResizeViewport(width, height);
+
+	return *this;
 }
 
-void Window::SetTitle(const std::string& title)
+Window& Window::SetTitle(const std::string& title)
 {
 	SDL_SetWindowTitle(m_window, title.c_str());
 	log_window("d~Set window title to %s", title.c_str());
+
+	return *this;
 }
 
-void Window::SetFullscreen(int mode)
+Window& Window::SetFullscreen(int mode)
 {
 	switch (mode)
 	{
@@ -308,9 +314,11 @@ void Window::SetFullscreen(int mode)
 	}
 
 	log_window("d~Set window fullscreen mode to %d", mode);
+
+	return *this;
 }
 
-void Window::SetVSync(bool vsync)
+Window& Window::SetVSync(bool vsync)
 {
 	switch ((int)vsync)
 	{
@@ -322,6 +330,8 @@ void Window::SetVSync(bool vsync)
 	}
 
 	log_window("d~Set window vsync mode to %d", vsync);
+
+	return *this;
 }
 
 void Window::EndFrame()
@@ -467,10 +477,10 @@ int                WindowRef::Height()     const { return m_window->Height(); }
 vec2               WindowRef::Dimensions() const { return m_window->Dimensions(); }
 const std::string& WindowRef::Title()      const { return m_window->Title(); }
 
-void WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); }
+WindowRef& WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); return *this;  }
 
-void WindowRef::ResizeViewport(int width, int height) { m_window->ResizeViewport(width, height); }
-void WindowRef::Resize(int width, int height, bool center) { m_window->Resize(width, height, center); }
+WindowRef& WindowRef::ResizeViewport(int width, int height) { m_window->ResizeViewport(width, height); return *this; }
+WindowRef& WindowRef::Resize(int width, int height, bool center) { m_window->Resize(width, height, center); return *this; }
 
-void WindowRef::SetFullscreen(int mode) { m_window->SetFullscreen(mode); }
-void WindowRef::SetVSync(bool vsync) { m_window->SetVSync(vsync); }
+WindowRef& WindowRef::SetFullscreen(int mode) { m_window->SetFullscreen(mode); return *this; }
+WindowRef& WindowRef::SetVSync(bool vsync) { m_window->SetVSync(vsync); return *this; }

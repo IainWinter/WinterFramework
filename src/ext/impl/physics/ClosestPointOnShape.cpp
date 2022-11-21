@@ -57,9 +57,9 @@ vec2 GetClosestPoint(const Rigidbody2D& body, vec2 point)
         switch (collider->GetType())
         {
             case Collider::tCircle:
-                CircleCollider* circle = collider->As<CircleCollider>();
-                vec2 center = circle->GetOrigin() + body.GetPosition();
-                float radius = circle->GetRadius();
+                CircleCollider& circle = collider->As<CircleCollider>();
+                vec2 center = circle.GetCenter() + body.GetPosition();
+                float radius = circle.GetRadius();
 
                 point = GetClosestPointOnCircle(center, radius, point);
                 break;

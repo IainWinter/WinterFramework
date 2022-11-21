@@ -68,31 +68,25 @@ struct ContactCallback : b2ContactListener
 };
 
 //
-//  Collider
+//	Collider attachment
 //
 
-Collider::Collider()
+ColliderAttachment::ColliderAttachment()
 	: m_fixture (nullptr)
-	, m_pass    (nullptr)
+	, m_temp    (nullptr)
 {}
 
-Collider::ColliderType Collider::GetType() const
+void ColliderAttachment::InitTemp(b2CircleShape& shape)
 {
-	switch (GetShape().GetType())
-	{
-		case b2Shape::e_circle: return Collider::tCircle;
-	}
-
-	log_physics("e~Collider was invalid type");
-	throw nullptr;
+	m_temp = mkr<b2CircleShape>(shape);
 }
 
-bool Collider::OnBody() const
+void ColliderAttachment::InitTemp(b2PolygonShape& shape)
 {
-	return !!m_fixture;
+	m_temp = mkr<b2PolygonShape>(shape);
 }
 
-void Collider::AddToBody(Rigidbody2D &body)
+void ColliderAttachment::InitFixture(Rigidbody2D& body)
 {
 	if (m_fixture)
 	{
@@ -101,13 +95,13 @@ void Collider::AddToBody(Rigidbody2D &body)
 	}
 
     b2FixtureDef def;
-    def.shape = m_pass.get();
+	def.shape = m_temp.get();
 	def.density = 1.f;
 
     m_fixture = body.m_instance->CreateFixture(&def);
     
     // when creating the fixture, box2d copies the shape, so we can delete it
-    m_pass = nullptr;
+    m_temp = nullptr;
 	
 	// fixture settings
 
@@ -115,9 +109,9 @@ void Collider::AddToBody(Rigidbody2D &body)
 	m_fixture->SetSensor(!body.IsCollisionEnabled());
 }
 
-void Collider::RemoveFromBody(Rigidbody2D& body)
+void ColliderAttachment::DnitFixture(Rigidbody2D& body)
 {
-	if (m_fixture)
+	if (!m_fixture)
 	{
 		log_physics("w~Failed to remove collider from body: It is not attached");
 		return;
@@ -127,108 +121,209 @@ void Collider::RemoveFromBody(Rigidbody2D& body)
 	m_fixture = nullptr;
 }
 
-vec2 Collider::GetBodyPosition() const
+b2Shape& ColliderAttachment::GetShape() const
 {
-    return (m_fixture ? _fb(m_fixture->GetBody()->GetPosition()) : vec2(0.f, 0.f));
-}
-
-b2Shape& Collider::GetShape() const
-{
-	return *(OnBody() ? m_fixture->GetShape() : m_pass.get());
+	return *(m_fixture ? m_fixture->GetShape() : m_temp.get());
 }
 
 //
-//	Circle Collider
+//  Circle Collider
 //
 
-CircleCollider::CircleCollider(float radius, vec2 origin)
+CircleCollider::CircleCollider(float radius, vec2 center)
+	: Collider(tCircle)
 {
-	r<b2CircleShape> circle = mkr<b2CircleShape>();
-	circle->m_radius = radius;
-	circle->m_p = _tb(origin);
+	b2CircleShape circle;
+	circle.m_radius = radius;
+	circle.m_p = _tb(center);
 
-	m_pass = circle;
+	m_attachment.InitTemp(circle);
 }
 
 r<Collider> CircleCollider::MakeCopy() const
 {
-	return mkr<CircleCollider>(GetRadius(), GetOrigin());
+	return mkr<CircleCollider>(GetRadius(), GetCenter());
 }
 
-float CircleCollider::GetRadius() const { return GetShape().m_radius; }
-vec2  CircleCollider::GetOrigin() const { return _fb(GetShape().m_p); }
-
-CircleCollider& CircleCollider::SetRadius(float radius) { GetShape().m_radius = radius; return *this; }
-CircleCollider& CircleCollider::SetOrigin(vec2 origin)  { GetShape().m_p = _tb(origin); return *this; }
-
-b2CircleShape& CircleCollider::GetShape() const
+void CircleCollider::AddToBody(Rigidbody2D& body)
 {
-	return *(b2CircleShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
+	m_attachment.InitFixture(body);
+}
+
+void CircleCollider::RemoveFromBody(Rigidbody2D& body)
+{
+	m_attachment.DnitFixture(body);
 }
 
 vec2 CircleCollider::GetWorldCenter() const
 {
-    return GetOrigin() + GetBodyPosition();
+	return GetCenter() + m_attachment.GetBodyPosition();
+}
+
+float CircleCollider::GetRadius() const { return GetShape().m_radius; }
+vec2  CircleCollider::GetCenter() const { return _fb(GetShape().m_p); }
+
+CircleCollider& CircleCollider::SetRadius(float radius) { GetShape().m_radius = radius; return *this; }
+CircleCollider& CircleCollider::SetCenter(vec2 center)  { GetShape().m_p = _tb(center); return *this; }
+
+b2CircleShape& CircleCollider::GetShape() const
+{
+	return (b2CircleShape&)m_attachment.GetShape();
 }
 
 //
-//  Polygon Collider
+//	Hull Collider
 //
-    
-PolygonCollider::PolygonCollider(const std::vector<vec2>& convexHull)
+
+HullCollider::HullCollider()
+	: Collider(tHull)
 {
-    m_pass = mkr<b2PolygonShape>();
-    SetPoints(convexHull);
-}
-    
-r<Collider> PolygonCollider::MakeCopy() const
-{
-    return mkr<PolygonCollider>(m_points);
+	b2PolygonShape shape;
+	m_attachment.InitTemp(shape);
 }
 
-vec2 PolygonCollider::GetCenter() const
+r<Collider> HullCollider::MakeCopy() const
 {
-    return _fb(GetShape().m_centroid);
+	ArrayView<vec2> view = GetPoints();
+
+	r<HullCollider> hull = mkr<HullCollider>();
+	hull->SetPoints(view.begin(), view.end());
+
+	return hull;
 }
 
-const std::vector<vec2>& PolygonCollider::GetPoints() const
+void HullCollider::AddToBody(Rigidbody2D& body)
 {
-    return m_points;
+	m_attachment.InitFixture(body);
 }
 
-PolygonCollider& PolygonCollider::SetCenter(vec2 center)
+void HullCollider::RemoveFromBody(Rigidbody2D& body)
 {
-    GetShape().m_centroid = _tb(center); // is this valid or do we need to add center to each vert
-    return *this;
+	m_attachment.DnitFixture(body);
 }
 
-PolygonCollider& PolygonCollider::SetPoints(const std::vector<vec2>& convexHull)
+vec2 HullCollider::GetWorldCenter() const
 {
-    b2PolygonShape& p = GetShape();
-    
-    p.Set((b2Vec2*)convexHull.data(), (int32)convexHull.size()); // this is not 100% safe, but glm and box2d have same memory layout by default
-    
-    // box2d will edit the point, so lets copy them back into our array to sync
-    
-    m_points.clear();
-    m_points.reserve(p.m_count);
-    for (int i = 0; i < p.m_count; i++)
-    {
-        m_points.push_back(_fb(p.m_vertices[i]));
-    }
-    
-    return *this;
+	return /*GetCenter() +*/ m_attachment.GetBodyPosition();
 }
 
-vec2 PolygonCollider::GetWorldCenter() const
+vec2 HullCollider::GetCenter() const
 {
-    return GetCenter() + GetBodyPosition();
+	return _fb(GetShape().m_centroid);
 }
 
-b2PolygonShape& PolygonCollider::GetShape() const
+ArrayView<vec2> HullCollider::GetPoints() const
 {
-    return *(b2PolygonShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
+	b2Vec2* b = GetShape().m_vertices;
+	b2Vec2* e = b + GetShape().m_count;
+
+	return ArrayView<vec2>((vec2*)b, (vec2*)e); // casts to vec2
 }
+
+HullCollider& HullCollider::SetPointsBox(float w, float h, float a, vec2 center)
+{
+	GetShape().SetAsBox(w, h, _tb(center), a);
+	return *this;
+}
+
+HullCollider& HullCollider::SetPoints(const ArrayView<vec2>& list)
+{
+	return SetPoints(list.begin(), list.end());
+}
+
+b2PolygonShape& HullCollider::GetShape() const
+{
+	return (b2PolygonShape&)m_attachment.GetShape();
+}
+
+//b2PolygonShape& PolygonCollider::GetShape() const
+//{
+//	return *(b2PolygonShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
+//}
+//
+////
+////  Polygon Collider
+////
+//    
+//PolygonCollider::PolygonCollider(const std::vector<vec2>& convexHull)
+//	: Collider(tPolygon)
+//{
+//    m_pass = mkr<b2PolygonShape>();
+//    SetPoints(convexHull);
+//}
+//    
+//r<Collider> PolygonCollider::MakeCopy() const
+//{
+//    return mkr<PolygonCollider>(m_points);
+//}
+//
+//vec2 PolygonCollider::GetCenter() const
+//{
+//    return _fb(GetShape().m_centroid);
+//}
+//
+//const std::vector<vec2>& PolygonCollider::GetPoints() const
+//{
+//    return m_points;
+//}
+//
+//PolygonCollider& PolygonCollider::SetCenter(vec2 center)
+//{
+//    GetShape().m_centroid = _tb(center); // is this valid or do we need to add center to each vert
+//    return *this;
+//}
+//
+//PolygonCollider& PolygonCollider::SetPoints(const std::vector<vec2>& convexHull)
+//{
+//	// this is not 100% safe, but glm and box2d have same memory layout by default
+//
+//	if (convexHull.size() >= VertLimit::value) // exit on too many points
+//	{
+//		log_physics("e~Failed to set points on polygon collider, too many points");
+//		return *this;
+//	}
+//
+//	if (convexHull.size() > 0) // only set points if there are more than 0 verts
+//	{
+//		GetShape().Set((b2Vec2*)convexHull.data(), (int32)convexHull.size());
+//	}
+//
+//	UpdatePoints();
+//    
+//    return *this;
+//}
+//
+//PolygonCollider& PolygonCollider::SetPointsBox(float w, float h, float a, vec2 center)
+//{
+//	GetShape().SetAsBox(w, h, _tb(center), a);
+//	UpdatePoints();
+//
+//	return *this;
+//}
+//
+//vec2 PolygonCollider::GetWorldCenter() const
+//{
+//    return GetCenter() + GetBodyPosition();
+//}
+//
+//b2PolygonShape& PolygonCollider::GetShape() const
+//{
+//    return *(b2PolygonShape*)(OnBody() ? m_fixture->GetShape() : m_pass.get());
+//}
+//
+//void PolygonCollider::UpdatePoints()
+//{
+//	b2PolygonShape& p = GetShape();
+//
+//	// box2d will edit the point, so lets copy them back into our array to sync
+//
+//	m_points.clear();
+//	m_points.reserve(p.m_count);
+//	for (int i = 0; i < p.m_count; i++)
+//	{
+//		m_points.push_back(_fb(p.m_vertices[i]));
+//	}
+//}
 
 //
 //  Rigidbody2D

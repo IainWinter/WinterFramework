@@ -6,6 +6,8 @@ namespace FontMap
 
 	void Load(const std::string& name, float size, const std::string& path)
 	{
+		if (Fonts.count(name) > 0) return; // soft exit on already loaded
+
 		ImFontAtlas* atlas = ImGui::GetIO().Fonts;
 		ImFont* font = atlas->AddFontFromFileTTF(_a(path).c_str(), size);
 		Fonts.emplace(name, font);
