@@ -34,6 +34,7 @@ void EngineLoopBase::_Init()
     // create framework contexts
     Time::CreateContext();
 	Render::CreateContext();
+	Asset::CreateContext();
 
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
@@ -66,7 +67,7 @@ void EngineLoopBase::_Init()
 void EngineLoopBase::_Dnit()
 {
     // dnit user worlds
-	app.DestroyAllWorlds();
+	app.RemoveAllWorlds();
 	app.GetRootEventBus().Detach(this);
     
     // dnit user code
@@ -75,6 +76,7 @@ void EngineLoopBase::_Dnit()
     // destroy framework contexts
     Time::DestroyContext();
 	Render::DestroyContext();
+	Asset::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()

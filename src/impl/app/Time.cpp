@@ -17,14 +17,14 @@ namespace Time
         delete ctx;
     }
 
-    TimeContext* GetContext()
-    {
-        return ctx;
-    }
-
     void SetCurrentContext(TimeContext* context)
     {
         ctx = context;
+    }
+
+    TimeContext* GetContext()
+    {
+        return ctx;
     }
 
 	void UpdateTime()

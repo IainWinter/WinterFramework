@@ -27,10 +27,10 @@ void IDeviceObject::SendToDevice()
 {
 	assert_on_host(); // always require at least something on host to be copied to device
 
-	if (OnDevice())
+	if (OnDevice()) // if on device and outdated
 	{
 		assert_not_static();
-		_UpdateOnDevice();
+		if (m_outdated) _UpdateOnDevice();
 	}
 
 	else // if no device then init
@@ -194,12 +194,16 @@ int  Texture::DeviceHandle() const { return m_device; }
 
 void Texture::_FreeHost()
 {
+	log_render("i~Texture Free Host - bytes: %d", BufferSize());
+
 	free(m_host);
 	m_host = nullptr;
 }
 
 void Texture::_FreeDevice()
 {
+	log_render("i~Texture Free Device - bytes: %d handle: %d", BufferSize(), m_device);
+
 	gl(glDeleteTextures(1, &m_device));
 	m_device = 0;
 }
@@ -213,6 +217,8 @@ void Texture::_InitOnDevice()
 	gl(glTexImage2D(GL_TEXTURE_2D, 0, gl_iformat(m_usage), Width(), Height(), 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
 
 	_SetDeviceFilter();
+
+	log_render("i~Texture Init Device - dim: (%d, %d, %d) bytes: %d handle: %d", Width(), Height(), Channels(), BufferSize(), m_device);
 }
 
 void Texture::_UpdateOnDevice()
@@ -232,6 +238,8 @@ void Texture::_UpdateOnDevice()
 	//{
 		//gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(m_usage), gl_type(m_usage), Pixels()));
 	//}
+
+	log_render("i~Texture Update Device - dim: (%d, %d, %d) bytes: %d handle: %d", Width(), Height(), Channels(), BufferSize(), m_device);
 }
 
 void Texture::_UpdateFromDevice()
@@ -242,6 +250,8 @@ void Texture::_UpdateFromDevice()
 	//gl(glGetTextureImage(m_device, 0, gl_format(m_usage), gl_type(m_usage), BufferSize(), Pixels()));
     gl(glBindTexture(GL_TEXTURE_2D, m_device));
     gl(glGetTexImage(GL_TEXTURE_2D, 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
+
+	log_render("i~Texture Copy to Host - handle: %d", m_device);
 }
 
 void Texture::_SetDeviceFilter()
@@ -925,50 +935,55 @@ bool Mesh::SendBindAndReturnHasIndex()
 int ShaderProgram::NumberOfShaders()       const { return (int)m_buffers.size(); }
 int ShaderProgram::NumberOfBoundTextures() const { return m_slot; }
 
-void ShaderProgram::Add(ShaderName name, const char* str)
+ShaderProgram& ShaderProgram::Add(ShaderName name, const char* str)
 {
-	m_buffers[name] += str;
+	m_buffers[name].append(str);
+	return *this;
 }
 
-void ShaderProgram::Add(ShaderName name, const std::string& str)
+ShaderProgram& ShaderProgram::Add(ShaderName name, const std::string& str)
 {
 	Add(name, str.c_str());
+	return *this;
 }
 
-void ShaderProgram::Use()
+ShaderProgram& ShaderProgram::Use()
 {
 	if (!OnDevice()) SendToDevice();
 	gl(glUseProgram(m_device));
 
 	//m_slot = 0; // reset for texture bindings
+	return *this;
 }
 
-void ShaderProgram::Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fvec4& x) { gl(glUniform4fv       (gl_location(name), 1,            (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const ivec1& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const ivec2& x) { gl(glUniform2iv       (gl_location(name), 1,            (  int*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const ivec3& x) { gl(glUniform3iv       (gl_location(name), 1,            (  int*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const ivec4& x) { gl(glUniform4iv       (gl_location(name), 1,            (  int*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fmat2& x) { gl(glUniformMatrix2fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fmat3& x) { gl(glUniformMatrix3fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
-void ShaderProgram::Set(const std::string& name, const fmat4& x) { gl(glUniformMatrix4fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec4& x) { gl(glUniform4fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec1& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec2& x) { gl(glUniform2iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec3& x) { gl(glUniform3iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec4& x) { gl(glUniform4iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat2& x) { gl(glUniformMatrix2fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat3& x) { gl(glUniformMatrix3fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
+ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat4& x) { gl(glUniformMatrix4fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
 
-void ShaderProgram::Set(const std::string& name, const Color& color)
+ShaderProgram& ShaderProgram::Set(const std::string& name, const Color& color)
 {
     Set(name, color.as_v4());
+	return *this;
 }
 
-void ShaderProgram::Set(const std::string& name, r<Texture> texture)
+ShaderProgram& ShaderProgram::Set(const std::string& name, r<Texture> texture)
 {
     Set(name, *texture);
+	return *this;
 }
 
-void ShaderProgram::Set(const std::string& name, Texture& texture)
+ShaderProgram& ShaderProgram::Set(const std::string& name, Texture& texture)
 {
 	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
 	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
@@ -976,6 +991,8 @@ void ShaderProgram::Set(const std::string& name, Texture& texture)
 	gl(glUniform1i(gl_location(name), m_slot));
 
 	//m_slot += 1;
+
+	return *this;
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }
@@ -1240,9 +1257,10 @@ GLenum gl_drawtype(Mesh::Topology drawType)
 {
 	switch (drawType)
 	{
-		case Mesh::Topology::tTriangles: return GL_TRIANGLES;
-		case Mesh::Topology::tLines:     return GL_LINES;
-		case Mesh::Topology::tLoops:     return GL_LINE_LOOP;
+		case Mesh::Topology::tTriangles:     return GL_TRIANGLES;
+		case Mesh::Topology::tLines:         return GL_LINES;
+		case Mesh::Topology::tLoops:         return GL_LINE_LOOP;
+		case Mesh::Topology::tTriangleStrip: return GL_TRIANGLE_STRIP;
 	}
 
 	assert(false);
@@ -1317,7 +1335,7 @@ namespace Render
 		ctx = context;
 	}
 
-	void SetDefaultRenderTarget(Target* target)
+	void SetDefaultRenderTarget(r<Target> target)
 	{
 		ctx->default_target = target;
 	}
@@ -1327,7 +1345,7 @@ namespace Render
 		ctx->clear_color = color;
 	}
 
-	void SetRenderTarget(Target* target)
+	void SetRenderTarget(r<Target> target)
 	{
 		if (!target)
 		{

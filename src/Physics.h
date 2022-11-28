@@ -28,13 +28,17 @@ struct Rigidbody2D;
 
 ///// colliders
 
-// maybe split the collider ref and the framework colliders
-
+//	The bridge between box2d and winter framework
+//
 struct ColliderAttachment
 {
 private:
 	b2Fixture* m_fixture; // not owned
-	r<b2Shape> m_temp; // owned
+
+	// Config before we attach this to a body
+
+	r<b2FixtureDef> m_tempDef;   // owned
+	r<b2Shape>      m_tempShape; // owned, we also need this as the def doesnt own the shape ptr
 
 public:
 	ColliderAttachment();
@@ -47,17 +51,17 @@ public:
 
 	b2Shape& GetShape() const; // non const ref from inner datatype
 
-	vec2 GetBodyPosition() const
-	{
-		return (m_fixture ? _fb(m_fixture->GetBody()->GetPosition()) : vec2(0.f, 0.f));
-	}
+	vec2 GetBodyPosition() const;
+	bool OnBody() const;
 
-	bool OnBody() const
-	{
-		return m_temp || m_fixture;
-	}
+	// settings
+	void SetDensity(float density);
+
+	float GetDensity() const;
 };
 
+//	The base type of a collider
+//
 struct Collider
 {
 public:
@@ -71,10 +75,11 @@ public:
 private:
 	ColliderType m_type;
 
+protected:
+	std::vector<ColliderAttachment> m_attachments;
+
 public:
-	Collider(ColliderType type)
-		: m_type(type)
-	{}
+	Collider(ColliderType type);
 
 	// allow no copies on stack, only MakeCopy
 	//Collider(const Collider& copy) = delete;
@@ -90,10 +95,7 @@ public:
 	virtual vec2 GetWorldCenter() const = 0;
 	virtual vec2 GetCenter() const = 0;
 
-	ColliderType GetType() const
-	{
-		return m_type;
-	}
+	ColliderType GetType() const;
 
 	template<typename _t>
 	_t& As() const
@@ -106,13 +108,18 @@ public:
 
 		return *(_t*)this;
 	}
+
+	// Settings
+
+	Collider& SetDensity(float density, int attachment = -1);
+	float GetDensity(int attachment = -1) const;
 };
 
+//	A circle with a radius and origin
+//
 struct CircleCollider : Collider
 {
 	using cType = constant<tCircle>;
-
-	ColliderAttachment m_attachment;
 
 	CircleCollider(float radius = 1.f, vec2 center = vec2(0.f, 0.f));
 
@@ -133,12 +140,12 @@ private:
 	b2CircleShape& GetShape() const;
 };
 
+//	A convex polygon. There is a hard limit on the number of points equal to MaxPoints 
+//
 struct HullCollider : Collider
 {
 	using cType = constant<tHull>;
 	using MaxPoints = constant<b2_maxPolygonVertices>;
-
-	ColliderAttachment m_attachment;
 
 	HullCollider();
 
@@ -269,7 +276,7 @@ public:
 
 	// colliders
 
-	Rigidbody2D& AddCollider(const Collider& collider);
+	Collider& AddCollider(const Collider& collider);
 
 	void ClearColliders();
 

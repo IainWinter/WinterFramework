@@ -3,6 +3,7 @@
 #include "Defines.h"
 
 #include "glm/glm.hpp"
+#include "glm/gtx/quaternion.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtx/rotate_vector.hpp"
@@ -14,6 +15,7 @@
 #include <utility>
 #include <vector>
 #include <functional>
+#include <tuple>
 
 // make glm the deafult math library
 // no need to think about if something is glm or not because it should
@@ -150,6 +152,27 @@ vec3  lerp(const vec3&  a, const vec3&  b, float w);
 vec4  lerp(const vec4&  a, const vec4&  b, float w);
 Color lerp(const Color& a, const Color& b, float w);
 
+// do a lerp per value
+// casts to a float array
+template<typename _t>
+_t lerpf(const _t& a, const _t& b, float w)
+{
+	float* af = (float*)&a;
+	float* bf = (float*)&b;
+
+	size_t length = sizeof(_t) / sizeof(float);
+
+	_t out;
+	float* of = (float*)&out;
+
+	for (size_t i = 0; i < length; i++)
+	{
+		of[i] = lerp(af[i], bf[i], w);
+	}
+
+	return out;
+}
+
 float clamp(float x, float min, float max);
 vec2  clamp(vec2 x, const vec2& min, const vec2& max);
 vec3  clamp(vec3 x, const vec3& min, const vec3& max);
@@ -216,6 +239,9 @@ float* f(_t& vec)
 
 template<auto val>
 using constant = std::integral_constant<decltype(val), val>;
+
+template<typename... _t>
+using t = std::tuple<_t...>;
 
 /*
 
@@ -293,6 +319,10 @@ struct event_Mouse
 	bool button_x2;
 
 	int button_repeat;
+
+	// If this is true, this mouse event is from the mouse wheel being scrolled
+	// vel_x and vel_y hold the direction of scrolling
+	bool is_wheel;
 };
 
 using KeyboardInput = SDL_Scancode; // use sdl because it has everything already

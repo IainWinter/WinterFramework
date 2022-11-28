@@ -3,8 +3,6 @@
 #include "app/System.h"
 #include "ext/serial/serial_json.h"
 
-#include "ext/serial/SerializeEntityWorld.h"
-
 #include <string>
 #include <vector>
 #include <fstream>

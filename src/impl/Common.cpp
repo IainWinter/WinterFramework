@@ -49,8 +49,10 @@ Transform2D& Transform2D::SetZIndex  (float z)        { this->z        = z;     
 
 Transform2D Transform2D::operator*(const Transform2D& other) const
 {
+	vec2 pos = rotate(vec2(other.position), rotation) * scale;
+
 	return Transform2D(
-		vec3(position, z) + vec3(other.position, other.z), 
+		vec3(position, z) + vec3(pos, other.z),
 		scale * other.scale, 
 		rotation + other.rotation
 	);

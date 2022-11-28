@@ -14,14 +14,13 @@
 
 struct BatchSpriteRenderer
 {
-private:
-	float z = 0;
-
 public:
 	BatchSpriteRenderer();
+	//BatchSpriteRenderer(const char* vertexShader, const char* fragmentShader);
 
 	void Begin();
-    void Draw(const Camera& camera, bool mixTint = false);
+	void Draw(const Camera& camera, bool mixTint = false);
+	void Draw(const Camera& camera, const quat& rot, bool mixTint = false);
     
 	void SubmitSprite(
 		const Transform2D& transform,
@@ -40,8 +39,14 @@ public:
 
 private:
 	ShaderProgram m_program;
+
+	// for custom shaders
+	const char* m_vertexSource;
+	const char* m_fragmentSource;
+
 	Mesh m_quad;
 	r<Texture> m_default;
+	float z = 0;
 
 	void InitProgram();
 
@@ -96,7 +101,7 @@ private:
 
 	std::unordered_map<r<Texture>, BatchData> m_batches;
 
-	void SetProgram(const mat4& projection, bool mixTint);
+	void SetProgram(const mat4& proj, const mat4& view, bool mixTint);
 	void DrawBatch(r<Texture> texture, BatchData& batch);
     
 public:

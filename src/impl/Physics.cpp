@@ -72,18 +72,22 @@ struct ContactCallback : b2ContactListener
 //
 
 ColliderAttachment::ColliderAttachment()
-	: m_fixture (nullptr)
-	, m_temp    (nullptr)
-{}
+	: m_fixture   (nullptr)
+	, m_tempDef   (nullptr)
+	, m_tempShape (nullptr)
+{
+	m_tempDef = mkr<b2FixtureDef>();
+	m_tempDef->density = 1.0f;
+}
 
 void ColliderAttachment::InitTemp(b2CircleShape& shape)
 {
-	m_temp = mkr<b2CircleShape>(shape);
+	m_tempShape = mkr<b2CircleShape>(shape);
 }
 
 void ColliderAttachment::InitTemp(b2PolygonShape& shape)
 {
-	m_temp = mkr<b2PolygonShape>(shape);
+	m_tempShape = mkr<b2PolygonShape>(shape);
 }
 
 void ColliderAttachment::InitFixture(Rigidbody2D& body)
@@ -94,15 +98,16 @@ void ColliderAttachment::InitFixture(Rigidbody2D& body)
 		return;
 	}
 
-    b2FixtureDef def;
-	def.shape = m_temp.get();
-	def.density = 1.f;
+	// assign the shape, this will get copied into box2d
+	m_tempDef->shape = m_tempShape.get();
 
-    m_fixture = body.m_instance->CreateFixture(&def);
+	// create the fixture from the temp def
+    m_fixture = body.m_instance->CreateFixture(m_tempDef.get());
     
-    // when creating the fixture, box2d copies the shape, so we can delete it
-    m_temp = nullptr;
-	
+    // reset temp, this indicates that the fixture has been created
+	m_tempDef = nullptr;
+	m_tempShape = nullptr;
+
 	// fixture settings
 
 	// this is wrong, should use filters
@@ -123,7 +128,101 @@ void ColliderAttachment::DnitFixture(Rigidbody2D& body)
 
 b2Shape& ColliderAttachment::GetShape() const
 {
-	return *(m_fixture ? m_fixture->GetShape() : m_temp.get());
+	return *(m_fixture ? m_fixture->GetShape() : m_tempShape.get());
+}
+
+vec2 ColliderAttachment::GetBodyPosition() const
+{
+	return (m_fixture ? _fb(m_fixture->GetBody()->GetPosition()) : vec2(0.f, 0.f));
+}
+
+bool ColliderAttachment::OnBody() const
+{
+	return !!m_fixture;
+}
+
+// settings
+
+void ColliderAttachment::SetDensity(float density)
+{
+	m_fixture ? m_fixture->SetDensity(density) 
+		      : m_tempDef->density = density;
+}
+
+float ColliderAttachment::GetDensity() const
+{
+	return m_fixture ? m_fixture->GetDensity()
+		             : m_tempDef->density;
+}
+
+//
+//	Collider
+//
+
+Collider::Collider(ColliderType type)
+	: m_type(type)
+{
+	// all colliders have at least one attachment
+	// allow them to store a refernece to this
+
+	m_attachments.push_back(ColliderAttachment());
+}
+
+Collider::ColliderType Collider::GetType() const
+{
+	return m_type;
+}
+
+Collider& Collider::SetDensity(float density, int attachment)
+{
+	if (attachment == -1)
+	{
+		for (ColliderAttachment& attachment : m_attachments)
+		{
+			attachment.SetDensity(density);
+		}
+	}
+
+	else if (m_attachments.size() < attachment)
+	{
+		m_attachments.at(attachment).SetDensity(density);
+	}
+
+	else
+	{
+		log_physics("w~Tried to set the density of an attachment that doesnt exist: "
+			"%d. There are only %d on this body", attachment, m_attachments.size());
+	}
+
+	return *this;
+}
+
+float Collider::GetDensity(int attachment) const
+{
+	float density = 0.f;
+
+	if (attachment == -1)
+	{
+		for (const ColliderAttachment& attachment : m_attachments)
+		{
+			density += attachment.GetDensity();
+		}
+
+		density /= m_attachments.size();
+	}
+
+	else if (m_attachments.size() < attachment)
+	{
+		density = m_attachments.at(attachment).GetDensity();
+	}
+
+	else
+	{
+		log_physics("w~Tried to get the density of an attachment that doesnt exist: "
+			"%d. There are only %d on this body", attachment, m_attachments.size());
+	}
+
+	return density;
 }
 
 //
@@ -131,13 +230,13 @@ b2Shape& ColliderAttachment::GetShape() const
 //
 
 CircleCollider::CircleCollider(float radius, vec2 center)
-	: Collider(tCircle)
+	: Collider     (tCircle)
 {
 	b2CircleShape circle;
 	circle.m_radius = radius;
 	circle.m_p = _tb(center);
 
-	m_attachment.InitTemp(circle);
+	m_attachments.at(0).InitTemp(circle);
 }
 
 r<Collider> CircleCollider::MakeCopy() const
@@ -147,17 +246,17 @@ r<Collider> CircleCollider::MakeCopy() const
 
 void CircleCollider::AddToBody(Rigidbody2D& body)
 {
-	m_attachment.InitFixture(body);
+	m_attachments.at(0).InitFixture(body);
 }
 
 void CircleCollider::RemoveFromBody(Rigidbody2D& body)
 {
-	m_attachment.DnitFixture(body);
+	m_attachments.at(0).DnitFixture(body);
 }
 
 vec2 CircleCollider::GetWorldCenter() const
 {
-	return GetCenter() + m_attachment.GetBodyPosition();
+	return GetCenter() + m_attachments.at(0).GetBodyPosition();
 }
 
 float CircleCollider::GetRadius() const { return GetShape().m_radius; }
@@ -168,7 +267,7 @@ CircleCollider& CircleCollider::SetCenter(vec2 center)  { GetShape().m_p = _tb(c
 
 b2CircleShape& CircleCollider::GetShape() const
 {
-	return (b2CircleShape&)m_attachment.GetShape();
+	return (b2CircleShape&)m_attachments.at(0).GetShape();
 }
 
 //
@@ -176,10 +275,10 @@ b2CircleShape& CircleCollider::GetShape() const
 //
 
 HullCollider::HullCollider()
-	: Collider(tHull)
+	: Collider     (tHull)
 {
 	b2PolygonShape shape;
-	m_attachment.InitTemp(shape);
+	m_attachments.at(0).InitTemp(shape);
 }
 
 r<Collider> HullCollider::MakeCopy() const
@@ -194,17 +293,17 @@ r<Collider> HullCollider::MakeCopy() const
 
 void HullCollider::AddToBody(Rigidbody2D& body)
 {
-	m_attachment.InitFixture(body);
+	m_attachments.at(0).InitFixture(body);
 }
 
 void HullCollider::RemoveFromBody(Rigidbody2D& body)
 {
-	m_attachment.DnitFixture(body);
+	m_attachments.at(0).DnitFixture(body);
 }
 
 vec2 HullCollider::GetWorldCenter() const
 {
-	return /*GetCenter() +*/ m_attachment.GetBodyPosition();
+	return /*GetCenter() +*/ m_attachments.at(0).GetBodyPosition();
 }
 
 vec2 HullCollider::GetCenter() const
@@ -233,7 +332,7 @@ HullCollider& HullCollider::SetPoints(const ArrayView<vec2>& list)
 
 b2PolygonShape& HullCollider::GetShape() const
 {
-	return (b2PolygonShape&)m_attachment.GetShape();
+	return (b2PolygonShape&)m_attachments.at(0).GetShape();
 }
 
 //b2PolygonShape& PolygonCollider::GetShape() const
@@ -393,7 +492,7 @@ Rigidbody2D& Rigidbody2D::SetDensity(float density)
 	return *this; 
 }
 
-Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
+Collider& Rigidbody2D::AddCollider(const Collider& collider)
 {
 	r<Collider> c = collider.MakeCopy();
 	
@@ -404,7 +503,7 @@ Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 
 	m_colliders.push_back(c);
 
-	return *this;
+	return *c;
 }
 
 void Rigidbody2D::ClearColliders()

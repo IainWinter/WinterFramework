@@ -2,6 +2,7 @@
 
 #include "Event.h"
 #include "Common.h"
+#include "Log.h"
 #include <string>
 #include <cmath>
 #include <tuple>
@@ -33,6 +34,9 @@
 //			  if a container's device is freeed nothing will happen to the buffers, this will wait until the lifetime of the object runs out, or you manually iterate and remove them
 //						his works because two containers could want to use the same buffer, and if one dies the other shouldnt loose the buffer's device data, but once all lifetime are up
 //						then they will be automatically destroied.
+
+// todo: Texture cannot resize on device without having data on host...
+//			this is an issue because the memory on the host gets resized as well, which could be a big alloc & copy
 
 #ifndef STATIC_HOST
 #	define DYNAMIC_HOST 0
@@ -497,7 +501,9 @@ public:
 	{
 		tTriangles,
 		tLines,
-		tLoops
+		tLoops,
+
+		tTriangleStrip
 	};
 
 	struct BufferInfo
@@ -664,32 +670,32 @@ public:
 
 	// append source onto a shader
 
-	void Add(ShaderName name, const char* str);
-	void Add(ShaderName name, const std::string& str);
+	ShaderProgram& Add(ShaderName name, const char* str);
+	ShaderProgram& Add(ShaderName name, const std::string& str);
 
-	void Use();
+	ShaderProgram& Use();
 
-	void Set(const std::string& name, const   int& x);
-	void Set(const std::string& name, const   u32& x);
-	void Set(const std::string& name, const   f32& x);
-	void Set(const std::string& name, const fvec1& x);
-	void Set(const std::string& name, const fvec2& x);
-	void Set(const std::string& name, const fvec3& x);
-	void Set(const std::string& name, const fvec4& x);
-	void Set(const std::string& name, const ivec1& x);
-	void Set(const std::string& name, const ivec2& x);
-	void Set(const std::string& name, const ivec3& x);
-	void Set(const std::string& name, const ivec4& x);
-	void Set(const std::string& name, const fmat2& x);
-	void Set(const std::string& name, const fmat3& x);
-	void Set(const std::string& name, const fmat4& x);
+	ShaderProgram& Set(const std::string& name, const   int& x);
+	ShaderProgram& Set(const std::string& name, const   u32& x);
+	ShaderProgram& Set(const std::string& name, const   f32& x);
+	ShaderProgram& Set(const std::string& name, const fvec1& x);
+	ShaderProgram& Set(const std::string& name, const fvec2& x);
+	ShaderProgram& Set(const std::string& name, const fvec3& x);
+	ShaderProgram& Set(const std::string& name, const fvec4& x);
+	ShaderProgram& Set(const std::string& name, const ivec1& x);
+	ShaderProgram& Set(const std::string& name, const ivec2& x);
+	ShaderProgram& Set(const std::string& name, const ivec3& x);
+	ShaderProgram& Set(const std::string& name, const ivec4& x);
+	ShaderProgram& Set(const std::string& name, const fmat2& x);
+	ShaderProgram& Set(const std::string& name, const fmat3& x);
+	ShaderProgram& Set(const std::string& name, const fmat4& x);
     
     // convert from Color to vec4
-    void Set(const std::string& name, const Color& color);
+	ShaderProgram& Set(const std::string& name, const Color& color);
 
 	// auto sends texture to device
-    void Set(const std::string& name, r<Texture> texture);
-	void Set(const std::string& name, Texture& texture);
+    ShaderProgram& Set(const std::string& name, r<Texture> texture);
+	ShaderProgram& Set(const std::string& name, Texture& texture);
 
 // interface
 
@@ -756,7 +762,7 @@ namespace Render
 {
 	struct RenderContext
 	{
-		Target* default_target = nullptr; // if we set the target to nullptr, actually set it to this
+		r<Target> default_target; // if we set the target to nullptr, actually set it to this
 		int window_width = 0;
 		int window_height = 0;
 		Color clear_color = Color(20, 38, 66);
@@ -772,13 +778,13 @@ namespace Render
 
 	// Set a target to bind when SetRenderTarget is called with nullptr
 	// can be nullptr for the screen
-	void SetDefaultRenderTarget(Target* target);
+	void SetDefaultRenderTarget(r<Target> target);
 
 	// Set the clear color in the context
 	void SetClearColor(Color color);
 
 	// Set the render target, if nullptr will use the default_target from the context
-	void SetRenderTarget(Target* target);
+	void SetRenderTarget(r<Target> target);
 
 	// clear the currently bounds render target with the color from the RenderContext
 	void ClearRenderTarget();

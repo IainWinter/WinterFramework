@@ -9,7 +9,7 @@ void BatchLineRenderer::Begin()
 {
 	z = 0;
 	m_mesh.Clear();
-}	
+}
 
 void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& color, float z)
 {

@@ -99,8 +99,13 @@ struct event_sink
 
 struct EventBus
 {
+private:
 	std::unordered_map<hash_t, event_sink> m_sinks;
 	std::vector<EventBus*> m_children; // doesnt own
+	EventBus* m_parent; // to be able to detach
+
+public:
+	EventBus();
 
 	template<typename _e, typename _h>
 	event_pipe_wrapper<_e> Attach(_h* handler_ptr)
@@ -119,6 +124,8 @@ struct EventBus
 
 	void ChildAttach(EventBus* child);
 	void ChildDetach(EventBus* child);
+
+	void DetachFromParent();
 
 	// template headers
 

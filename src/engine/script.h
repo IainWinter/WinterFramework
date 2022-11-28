@@ -14,13 +14,13 @@
 
 #define wSystemExport(system_name)                            \
                                                               \
-    wAPI void w_add_to_world_##system_name(World* world)      \
+    wAPI void w_add_to_world_##system_name(r<World> world)      \
     {                                                         \
         world->CreateSystem<system_name>()                    \
              ->SetName(#system_name);                         \
     }                                                         \
                                                               \
-    wAPI void w_remove_from_world_##system_name(World* world) \
+    wAPI void w_remove_from_world_##system_name(r<World> world) \
     {                                                         \
         world->DestroySystem<system_name>();                  \
     }

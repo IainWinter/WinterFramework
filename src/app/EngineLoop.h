@@ -15,6 +15,9 @@
 #include "app/InputMap.h"
 
 #include "app/Time.h"
+
+#include "ext/AssetStore.h"
+
 //#include "util/metrics.h" // this should only be in iw_debugger mode
 
 // holds the application and has some

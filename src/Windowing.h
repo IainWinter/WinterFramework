@@ -98,7 +98,6 @@ public:
 // init funcs
 
 private:
-
 	const char* Init_Video();
 	void Init_Imgui(const char* glsl_version);
 	void Dnit_Imgui();

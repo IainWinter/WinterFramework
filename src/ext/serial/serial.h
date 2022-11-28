@@ -215,17 +215,14 @@ namespace meta
 		// create a new instance of a class
 		virtual any construct() const = 0;
 
-		// if the type is a member, returns an any with the min value hint
-		virtual const any& min() const = 0;
-
-		// if the type is a member, returns an any with the max value hint
-		virtual const any& max() const = 0;
+		// if the type is a member, returns an any with the value of a named property
+		virtual const any& prop(const char* name) const = 0;
 		
-		// if the type is a member, set the min value. value in any must be castable to the member type
-		virtual void set_min(const any& value) = 0;
+		// if the type is a member, return if this member has a property
+		virtual bool has_prop(const char* name) const = 0;
 
-		// if the type is a member, set the max value. value in any must be castable to the member type
-		virtual void set_max(const any& value) = 0;
+		// if the type is a member, set the named a property
+		virtual void set_prop(const char* name, const any& value) = 0;
 
 		// this calls the function meta::ping specialized with the underlying type
 		virtual void ping(void* userdata = nullptr, int message = 0) const = 0;
@@ -689,8 +686,10 @@ namespace meta
 		// mainly for imgui display these set the range
 		// doesnt make sense for all types
 		// these are stored as any to lazy init them
-		any m_min;
-		any m_max;
+		//any m_min;
+		//any m_max;
+
+		std::unordered_map<const char*, any> m_props;
 
 	public:
 		_class_member(_class_type<_mtype>* member_class_type, const char* member_name)
@@ -733,27 +732,22 @@ namespace meta
 
 		any construct() const override
 		{
-			return m_min;
+			return m_class->construct();
 		}
 
-		const any& min() const override
+		const any& prop(const char* name) const override
 		{
-			return m_min;
+			return m_props.at(name);
 		}
 
-		const any& max() const override
+		bool has_prop(const char* name) const override
 		{
-			return m_max;
+			return m_props.count(name) > 0;
 		}
 
-		void set_min(const any& value) override
+		void set_prop(const char* name, const any& value) override
 		{
-			m_min.copy_own(value);
-		}
-
-		void set_max(const any& value) override
-		{
-			m_max.copy_own(value);
+			m_props[name].copy_own(value);
 		}
 
 		void ping(void* userdata = nullptr, int message = 0) const override
@@ -862,25 +856,19 @@ namespace meta
 			return any(t, true);
 		}
 
-		const any& min() const override
+		const any& prop(const char* name) const override
 		{
 			assert(false && "type was not a member");
 			throw nullptr;
 		}
 
-		const any& max() const override
+		bool has_prop(const char* name) const override
 		{
 			assert(false && "type was not a member");
 			throw nullptr;
 		}
 
-		void set_min(const any& value) override
-		{
-			assert(false && "type was not a member");
-			throw nullptr;
-		}
-
-		void set_max(const any& value) override
+		void set_prop(const char* name, const any& value) override
 		{
 			assert(false && "type was not a member");
 			throw nullptr;
@@ -901,7 +889,7 @@ namespace meta
 			: type (info)
 		{}
 
-		type_info*                info() { return m_info; }
+		type_info*                info()                                                                    { return m_info; }
 		bool                      is_member()                                                const override { return false; }
 		const std::vector<type*>& get_members()                                              const override { assert(false && "type was void"); throw nullptr; }
 		const char*               member_name()                                              const override { assert(false && "type was not a member"); throw nullptr; }
@@ -909,10 +897,9 @@ namespace meta
 		void                      _serial_write(serial_writer* serial, const void* instance) const override { assert(false && "type was void"); throw nullptr; }
 		void                      _serial_read(serial_reader* serial, void* instance)        const override { assert(false && "type was void"); throw nullptr; }
 		any                       construct()                                                const override { return any((type*)this, nullptr); }
-		const any&                min()                                                      const override { assert(false && "type was not a member"); throw nullptr; }
-		const any&                max()                                                      const override { assert(false && "type was not a member"); throw nullptr; }
-		void                      set_min(const any& value)                                        override { assert(false && "type was not a member"); throw nullptr; }
-		void                      set_max(const any& value)                                        override { assert(false && "type was not a member"); throw nullptr; }
+		const any&                prop(const char* name)                                     const override { assert(false && "type was not a member"); throw nullptr; }
+		bool                      has_prop(const char* name)                                 const override { assert(false && "type was not a member"); throw nullptr; }
+		void                      set_prop(const char* name, const any& value)                     override { assert(false && "type was not a member"); throw nullptr; }
 		void                      ping(void* userdata = nullptr, int message = 0)            const override { assert(false && "type was void"); throw nullptr; }
 	};
 
@@ -964,21 +951,11 @@ namespace meta
 			return *this;
 		}
 
-		// for the last member added, set the min value
-		// assumes at least one member has been added
+		// for the last member added, set a property
 		template<typename _v>
-		describe<_t>& min(_v value)
+		describe<_t>& prop(const char* name, _v value)
 		{
-			m_current->get_members().back()->set_min(any(value, false));
-			return *this;
-		}
-
-		// for the last member added, set the max value
-		// assumes at least one member has been added
-		template<typename _v>
-		describe<_t>& max(_v value)
-		{
-			m_current->get_members().back()->set_max(any(value, false));
+			m_current->get_members().back()->set_prop(name, any(value, false));
 			return *this;
 		}
 

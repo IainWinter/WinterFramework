@@ -34,8 +34,8 @@ namespace Time
 
     void CreateContext();
     void DestroyContext();
-    TimeContext* GetContext();
     void SetCurrentContext(TimeContext* context);
+    TimeContext* GetContext();
 
 	void UpdateTime();
 

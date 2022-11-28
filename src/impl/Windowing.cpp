@@ -111,7 +111,8 @@ void Window::PumpEvents()
 			{
 				bool pressed = event.button.state == SDL_PRESSED;
 
-				m_events->Send(event_Mouse {
+				m_events->Send(event_Mouse
+				{
 					event.button.x,                                                           // position as (0, width/height)
 					event.button.y,
 					(                    event.button.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
@@ -123,26 +124,52 @@ void Window::PumpEvents()
 					bool( pressed * (event.button.button == SDL_BUTTON_RIGHT) ),
 					bool( pressed * (event.button.button == SDL_BUTTON_X1) ),
 					bool( pressed * (event.button.button == SDL_BUTTON_X2) ),
-					event.button.clicks
+					event.button.clicks,
+					false
 				});
 				break;
 			}
 			case SDL_MOUSEMOTION:
 			{
-				m_events->Send(event_Mouse { 
+				m_events->Send(event_Mouse 
+				{ 
 					event.motion.x,                                                          // position as (0, width/height)
 					event.motion.y,
 					(                   event.motion.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
 					((m_config.Height - event.button.y) / (float)m_config.Height) * 2 - 1,
-					(event.motion.xrel / (float)m_config.Width)  * 2 - 1,                    // velocity
-					(event.motion.yrel / (float)m_config.Height) * 2 - 1,
+					float(event.motion.xrel), /// (float)m_config.Width),                    // velocity
+					float(event.motion.yrel), /// (float)m_config.Height),
 					bool(event.motion.state & SDL_BUTTON_LMASK),
 					bool(event.motion.state & SDL_BUTTON_MMASK),
 					bool(event.motion.state & SDL_BUTTON_RMASK),
 					bool(event.motion.state & SDL_BUTTON_X1MASK),
 					bool(event.motion.state & SDL_BUTTON_X2MASK),
-					0
+					0,
+					false
 				});
+				break;
+			}
+			case SDL_MOUSEWHEEL:
+			{
+				float flip = event.wheel.direction == SDL_MOUSEWHEEL_NORMAL ? 1.f : -1.f;
+
+				m_events->Send(event_Mouse
+				{
+					0, 
+					0, 
+					0.f, 
+					0.f,
+					event.wheel.preciseX * flip,
+					event.wheel.preciseY * flip,
+					false,
+					false,
+					false,
+					false,
+					false,
+					0,
+					true
+				});
+
 				break;
 			}
 			case SDL_WINDOWEVENT:

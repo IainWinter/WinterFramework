@@ -5,6 +5,10 @@ BatchSpriteRenderer::BatchSpriteRenderer()
 	InitProgram();
 }
 
+//BatchSpriteRenderer::BatchSpriteRenderer(const char* vertexShader, const char* fragmentShader)
+//{
+//}
+
 void BatchSpriteRenderer::Begin()
 {
 	z = 0;// -camera.z / 2 + 0.01f;
@@ -12,10 +16,15 @@ void BatchSpriteRenderer::Begin()
 
 void BatchSpriteRenderer::Draw(const Camera& camera, bool mixTint)
 {
-    SetProgram(camera.Projection(), mixTint);
+	Draw(camera, mat4(1.f), mixTint);
+}
 
-    for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
-    m_batches.clear(); // can have a much better scheme for keeping vector memory alive
+void BatchSpriteRenderer::Draw(const Camera& camera, const quat& rot, bool mixTint)
+{
+	SetProgram(camera.Projection(), camera.View(rot), mixTint);
+
+	for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
+	m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 }
 
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color& tint)
@@ -59,13 +68,14 @@ void BatchSpriteRenderer::InitProgram()
 		"out vec2 TexCoords;"
 		"out vec4 Tint;"
 
-		"uniform mat4 projection;"
+		"uniform mat4 view;"
+		"uniform mat4 proj;"
 
 		"void main()"
 		"{"
 			"TexCoords = uv * uvOffsetAndScale.zw + uvOffsetAndScale.xy;"
 			"Tint = tint;"
-			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
+			"gl_Position = proj * view * model * vec4(pos, 0.0, 1.0);"
 		"}";
 
 	const char* source_frag = 
@@ -104,11 +114,12 @@ void BatchSpriteRenderer::InitProgram()
 	m_default->ClearHost(Color(255, 255, 255, 255));
 }
 
-void BatchSpriteRenderer::SetProgram(const mat4& projection, bool mixTint)
+void BatchSpriteRenderer::SetProgram(const mat4& proj, const mat4& view, bool mixTint)
 {
-	m_program.Use();
-	m_program.Set("projection", projection);
-	m_program.Set("mixTint", (float)mixTint);
+	m_program.Use()
+		.Set("proj", proj)
+		.Set("view", view)
+		.Set("mixTint", (float)mixTint);
 }
 
 void BatchSpriteRenderer::DrawBatch(r<Texture> texture, BatchData& batch)

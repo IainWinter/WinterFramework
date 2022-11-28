@@ -72,7 +72,13 @@ void json_writer::write_array(meta::type* type, const void* instance, size_t len
 void json_writer::write_string(const char* string, size_t length)
 {
 	string_begin();
-	m_out << string;
+
+	for (size_t i = 0; i < length; i++)
+	{
+		m_out << string[i];
+		if (string[i] == '\\') m_out << '\\'; // escape slash? figure out where to do this
+	}
+
 	string_end();
 }
 

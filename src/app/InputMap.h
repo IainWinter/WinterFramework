@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <array>
 
+// need context
+
 // doesnt handle mapping mouse
 // those needs custom behaviours
 
@@ -44,9 +46,6 @@ struct event_Input
 
 	bool enabled() { return state == 1.f; }
 };
-
-// doesnt handle mouse right now
-// or updating the input map
 
 namespace Input
 {

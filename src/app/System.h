@@ -11,6 +11,7 @@
 #include "app/Task.h"
 
 #include "ext/rendering/DebugRender.h" // this should be switched on W_DEBUG
+#include "ext/Transform.h"
 
 #include "util/named.h"
 
@@ -46,14 +47,16 @@ struct event_CreateEntity
 // Dnit
 // release shared ptr
 
-struct SystemBase : Named<SystemBase>
+struct SystemBase
 {
 private:
-	World* m_world;
+	r<World> m_world;
 	bool m_active;
 	
     SystemId m_id;
     
+	std::string m_name;
+
 private:
 	template<typename _t>
 	friend struct System; // for m_world without giving direct access to children
@@ -65,7 +68,7 @@ private:
 	// some of these do extra stuff, but I like the idea of having the ability to
 	// put the metrics here instead of in the location where they are called
 
-	void _Init(World* world); // pass world so every system doestn need a constructor
+	void _Init(r<World> world); // pass world so every system doesnt need a constructor
 	void _Dnit();
 
 	void _OnAttach();
@@ -88,6 +91,9 @@ public:
 
 	SystemId Id() const;
     
+	SystemBase* SetName(const std::string& name);
+	const char* GetName() const;
+
 protected:
 
 // creating entities
@@ -130,7 +136,7 @@ protected:
 
 // getters
 
-	World*        GetWorld();
+	r<World>      GetWorld();
 	WindowRef     GetWindow();
 	EntityWorld&  GetEntities();
 	PhysicsWorld& GetPhysics();
@@ -164,7 +170,12 @@ struct System : SystemBase
 	void Detach();
 };
 
-struct World final : Named<World>
+//
+//	A world is a seperated state and transformation functions that update the state
+//		Each world is seperate, but it is possible to talk through events
+//
+//
+struct World final : std::enable_shared_from_this<World>
 {
 private:
 	Application* m_app;
@@ -183,12 +194,18 @@ private:
 	bool m_init;
 	bool m_debug;
 
-public:
-	World(Application* app, EventBus* root);
-	~World();
-	
-	void DetachFromRoot(EventBus* root);
+	std::string m_name;
 
+public:
+	static r<World> Make(Application* app, EventBus* root);
+
+private:
+	World(Application* app, EventBus* root);
+
+public:
+	~World();
+
+public:
 	// will assert single system per type
 	// systems should communicate through events, so these only return SystemBase*
 
@@ -211,8 +228,13 @@ public:
 	void DestroySystem(SystemBase* system);
 	bool     HasSystem(SystemBase* system) const;
 
+	void DestroyAllSystems();
+
 	void Init();
 	void SetDebug(bool debug);
+
+	r<World> SetName(const std::string& name);
+	const char* GetName() const;
 
 public:
 	Application*  GetApplication();
@@ -251,6 +273,21 @@ public:
 	void ReallocWorlds();
 };
 
+//
+//	Attach multiple worlds at once
+//
+
+struct WorldPackage
+{
+	std::vector<r<World>> worlds;
+};
+
+//
+//	This holds state that is shared between worlds/
+//	-> Mainly the A/V system (Fmod Audio / SDL Window)
+//  -> A root event bus provides communication between worlds if they bubble up events
+//
+//
 struct Application final
 {
 private:
@@ -262,7 +299,7 @@ private:
 
 	Console m_console;
 
-	std::vector<World*> m_worlds;
+	std::vector<r<World>> m_worlds;
 
 public:
 	Window&     GetWindow();
@@ -271,16 +308,26 @@ public:
 	EventQueue& GetRootEventQueue();
 	Console&    GetConsole();
 
-	const std::vector<World*>& GetWorlds() const;
-	World* GetWorld(const char* name);
-
 public:
 	Application();
 	~Application();
 
-	World* CreateWorld(bool autoInit = true);
-	void DestroyWorld(World* world);
-	void DestroyAllWorlds();
+	const std::vector<r<World>>& GetWorlds() const;
+
+	// construct a new world and attach it
+	r<World> CreateWorld();
+
+	void     AttachWorld(r<World> world);
+	void     DetachWorld(r<World> world);
+	r<World>    GetWorld(const std::string& name) const;
+	bool        HasWorld(const std::string& name) const;
+	bool        HasWorld(const r<World>& world) const;
+
+	void AttachPackage(const WorldPackage& package);
+	void DetachPackage(const WorldPackage& package);
+
+	// remove all worlds from the application update loop
+	void RemoveAllWorlds();
 
 	void Tick();
 };

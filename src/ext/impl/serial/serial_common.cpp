@@ -131,18 +131,22 @@ void register_common_types()
 	describe<Sprite>()
 		.name("Sprite")
 		.member<&Sprite::tint>    ("tint")
-		.member<&Sprite::uvOffset>("uvOffset").min(0.f).max(1.f)
-		.member<&Sprite::uvScale> ("uvScale") .min(0.f).max(1.f);
+		.member<&Sprite::source>  ("source")
+		.member<&Sprite::uvOffset>("uvOffset").prop("min", 0.f).prop("max", 1.f)
+		.member<&Sprite::uvScale> ("uvScale") .prop("min", 0.f).prop("max", 1.f);
 
-    describe<Camera>()
-        .name("Camera")
-        .member<&Camera::x>("x")
-        .member<&Camera::y>("y")
-        .member<&Camera::w>("w")
-        .member<&Camera::h>("h")
-        .member<&Camera::z>("z")
-        .member<&Camera::aspect>("aspect");
-    
+	describe<Camera>()
+		.name("Camera")
+		.member<&Camera::x>("x")
+		.member<&Camera::y>("y")
+		.member<&Camera::z>("z")
+		.member<&Camera::width>("width")
+		.member<&Camera::height>("height")
+		.member<&Camera::near>("near")
+		.member<&Camera::far>("far")
+		.member<&Camera::aspect>("aspect")
+		.member<&Camera::is_ortho>("is_ortho");
+
 	describe<b2Vec2>()
 		.name("b2Vec2")
 		.member<&b2Vec2::x>("x")

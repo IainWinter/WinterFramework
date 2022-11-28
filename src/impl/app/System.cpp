@@ -1,9 +1,9 @@
 #include "app/System.h"
 #include "InternalSystems.h"
 
-void SystemBase::_Init(World* world)
+void SystemBase::_Init(r<World> world)
 {
-	log_world("i~\tInitialized System");
+	log_world("i~\tInitialized System %s", GetName());
 
 	m_world = world;
 	Init();
@@ -12,14 +12,14 @@ void SystemBase::_Init(World* world)
 void SystemBase::_Dnit()
 {
 	Dnit();
-	m_world = nullptr;
+	m_world.reset();
 
-	log_world("i~\tDeinitialized System");
+	log_world("i~\tDeinitialized System %s", GetName());
 }
 
 void SystemBase::_OnAttach()
 {
-	log_world("i~\tAttached System");
+	log_world("i~\tAttached System %s", GetName());
 
 	m_active = true;
 	OnAttach();
@@ -28,10 +28,10 @@ void SystemBase::_OnAttach()
 void SystemBase::_OnDetach()
 {
 	m_active = false;
-	m_world->GetEventBus().Detach(this);
+	GetWorld()->GetEventBus().Detach(this);
 	OnDetach();
 
-	log_world("i~\tDetached System");
+	log_world("i~\tDetached System %s", GetName());
 }
 
 void SystemBase::_Update()
@@ -60,8 +60,7 @@ void SystemBase::_SetId(SystemId id)
 }
 
 SystemBase::SystemBase()
-	: m_world  (nullptr)
-	, m_active (false)
+	: m_active (false)
     , m_id     (-1)
 {
 	log_world("i~\tCreated System");
@@ -69,7 +68,7 @@ SystemBase::SystemBase()
 
 SystemBase::~SystemBase()
 {
-	log_world("i~\tDestroied System");
+	log_world("i~\tDestroied System %s", GetName());
 }
 
 bool SystemBase::GetInitState() const
@@ -85,6 +84,17 @@ bool SystemBase::GetActiveState() const
 SystemId SystemBase::Id() const
 {
 	return m_id;
+}
+
+SystemBase* SystemBase::SetName(const std::string& name)
+{
+	m_name = name;
+	return this;
+}
+
+const char* SystemBase::GetName() const
+{
+	return m_name.c_str();
 }
 
 Entity SystemBase::CreateEntity()
@@ -144,20 +154,20 @@ AudioSource SystemBase::GetAudioSource(const std::string& eventPath)
 
 RayQueryResult SystemBase::QueryRay(vec2 pos, vec2 end)
 {
-	return GetWorld()->GetPhysicsWorld().QueryRay(pos, end);
+	return m_world->GetPhysicsWorld().QueryRay(pos, end);
 }
 
 RayQueryResult SystemBase::QueryRay(vec2 pos, vec2 direction, float distance)
 {
-	return GetWorld()->GetPhysicsWorld().QueryRay(pos, direction, distance);
+	return m_world->GetPhysicsWorld().QueryRay(pos, direction, distance);
 }
 
 PointQueryResult SystemBase::QueryPoint(vec2 pos, float radius)
 {
-	return GetWorld()->GetPhysicsWorld().QueryPoint(pos, radius);
+	return m_world->GetPhysicsWorld().QueryPoint(pos, radius);
 }
 
-World* SystemBase::GetWorld()
+r<World> SystemBase::GetWorld()
 {
 	return m_world;
 }
@@ -205,7 +215,12 @@ World::World(Application* app, EventBus* root)
     
     Entity e = m_entities.Create().SetName("Main Camera");
     e.Add<Transform2D>();
-    e.Add<Camera>(0, 0, 10, 10);
+    e.Add<Camera>(10, 10, 10); // ortho camera as default
+}
+
+r<World> World::Make(Application* app, EventBus* root)
+{
+	return r<World>(new World(app, root));
 }
 
 World::~World()
@@ -216,23 +231,11 @@ World::~World()
 
 	// should figure out what to do with events, prob execute them
 
-	for (SystemBase* system : m_systems)
-	if (system->GetInitState())
-		system->_OnDetach();
+	DestroyAllSystems();
 
-	for (SystemBase* system : m_systems)
-	if (system->GetInitState())
-		system->_Dnit();
+	m_bus.DetachFromParent();
 
-	for (SystemBase* system : m_systems)
-		delete system;
-
-	log_world("i~Destroied World");
-}
-
-void World::DetachFromRoot(EventBus* root)
-{
-	root->ChildDetach(&m_bus);
+	log_world("i~Destroied World %s", GetName());
 }
 
 const std::vector<SystemBase*>& World::GetSystems() const
@@ -244,7 +247,7 @@ void World::AttachSystem(SystemBase* system)
 {
 	if (HasSystem(system))
 	{
-		log_world("e~Error: System is already in world");
+		log_world("e~Error: System is already in world: %s", system->GetName());
 		return;
 	}
 
@@ -261,7 +264,7 @@ void World::DetachSystem(SystemBase* system)
 {
 	if (!HasSystem(system))
 	{
-		log_world("e~Error: System is not in world");
+		log_world("e~Error: System is not in world: %s", system->GetName());
 		return;
 	}
 
@@ -278,7 +281,7 @@ void World::DestroySystem(SystemBase* system)
 {
 	if (!HasSystem(system)) // double error check
 	{
-		log_world("e~Error: System is not in world");
+		log_world("e~Error: System is not in world: %s", GetName());
 		return;
 	}
 
@@ -297,23 +300,44 @@ bool World::HasSystem(SystemBase* system) const
 	return m_map.find(system->Id()) != m_map.end();
 }
 
+void World::DestroyAllSystems()
+{
+	for (SystemBase* system : m_systems)
+	if (system->GetInitState())
+		system->_OnDetach();
+
+	for (SystemBase* system : m_systems)
+	if (system->GetInitState())
+		system->_Dnit();
+
+	for (SystemBase* system : m_systems)
+		delete system;
+
+	m_systems.clear();
+}
+
 void World::Init()
 {
 	m_init = true;
-
-	for (SystemBase*& system : m_systems) // init systems that need it
-	{
-		if (!system->GetInitState())
-		{
-			system->_Init(this);
-		}
-	}
+	InitUninitializedSystems();
+	AttachInactiveSystems();
 }
 
 void World::SetDebug(bool debug)
 {
 	log_world("World %s debug set to %s", GetName(), debug ? "true" : "false");
 	m_debug = debug;
+}
+
+r<World> World::SetName(const std::string& name)
+{
+	m_name = name;
+	return shared_from_this();
+}
+
+const char* World::GetName() const
+{
+	return m_name.c_str();
 }
 
 Application*  World::GetApplication()     { return m_app; }
@@ -418,7 +442,7 @@ void World::InitUninitializedSystems()
 	{
 		if (!system->GetInitState())
 		{
-			system->_Init(this);
+			system->_Init(shared_from_this());
 		}
 	}
 }
@@ -475,37 +499,90 @@ Application::Application()
 
 Application::~Application()
 {
-	DestroyAllWorlds();
+	RemoveAllWorlds();
 }
 
-World* Application::CreateWorld(bool autoInit)
+const std::vector<r<World>>& Application::GetWorlds() const
 {
-	World* world = new World(this, &m_bus);
-	m_worlds.push_back(world);
-	
-	if (autoInit)
-	{
-		world->Init();
-	}
+	return m_worlds;
+}
+
+r<World> Application::CreateWorld()
+{
+	r<World> world = World::Make(this, &m_bus);
+	AttachWorld(world);
 
 	return world;
 }
 
-void Application::DestroyWorld(World* world)
+void Application::AttachWorld(r<World> world)
 {
-	m_worlds.erase(std::find(m_worlds.begin(), m_worlds.end(), world));
-	world->DetachFromRoot(&m_bus);
-
-	delete world;
-}
-
-void Application::DestroyAllWorlds()
-{
-	for (World*& world : m_worlds)
+	if (HasWorld(world))
 	{
-        DestroyWorld(world);
+		log_app("w~Tried to attach a world to an application that already contains it");
+		return;
 	}
 
+	if (!world->GetInitState())
+	{
+		world->Init();
+	}
+
+	m_worlds.push_back(world);
+}
+
+void Application::DetachWorld(r<World> world)
+{
+	if (!HasWorld(world))
+	{
+		log_app("w~Tried to detach a world from an application that doesn't contain it");
+		return;
+	}
+
+	m_worlds.erase(std::find(m_worlds.begin(), m_worlds.end(), world));
+}
+
+r<World> Application::GetWorld(const std::string& name) const
+{
+	for (const r<World>& world : m_worlds)
+	{
+		if (world->GetName() == name)
+		{
+			return world;
+		}
+	}
+
+	return nullptr;
+}
+
+bool Application::HasWorld(const std::string& name) const
+{
+	return GetWorld(name) != nullptr;
+}
+
+bool Application::HasWorld(const r<World>& world) const
+{
+	return std::find(m_worlds.begin(), m_worlds.end(), world) != m_worlds.end();
+}
+
+void Application::AttachPackage(const WorldPackage& package)
+{
+	for (auto world : package.worlds)
+	{
+		AttachWorld(world);
+	}
+}
+
+void Application::DetachPackage(const WorldPackage& package)
+{
+	for (auto world : package.worlds)
+	{
+		DetachWorld(world);
+	}
+}
+
+void Application::RemoveAllWorlds()
+{
 	m_worlds.clear();
 }
 
@@ -513,7 +590,7 @@ void Application::Tick()
 {
 	// app loop
     
-	for (World*& world : m_worlds)
+	for (r<World>& world : m_worlds)
 	{
 		if (world->GetInitState())
 		{
@@ -525,7 +602,7 @@ void Application::Tick()
 
 	m_window.BeginImgui();
 
-	for (World*& world : m_worlds)
+	for (r<World>& world : m_worlds)
 	{
 		if (world->GetInitState())
 		{
@@ -552,19 +629,3 @@ AudioWorld& Application::GetAudio()          { return m_audio; }
 EventBus&   Application::GetRootEventBus()   { return m_bus; }
 EventQueue& Application::GetRootEventQueue() { return m_queue; }
 Console&    Application::GetConsole()        { return m_console; }
-
-const std::vector<World*>& Application::GetWorlds() const { return m_worlds; }
-
-World* Application::GetWorld(const char* name)
-{
-	for (World* world : m_worlds)
-	{
-		if (   world->GetName() 
-			&& strcmp(world->GetName(), name) == 0)
-		{
-			return world;
-		}
-	}
-
-	return nullptr;
-}

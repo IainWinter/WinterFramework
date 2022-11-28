@@ -45,6 +45,10 @@ void EventBus::Detach(void* handler)
 	}
 }
 
+EventBus::EventBus()
+	: m_parent (nullptr)
+{}
+
 void EventBus::Detach(event_type type, void* handler)
 {
 	event_sink& sink = m_sinks.at(type.m_hash);
@@ -86,6 +90,7 @@ void EventBus::ChildAttach(EventBus* child)
 	}
 
 	m_children.push_back(child);
+	child->m_parent = this;
 }
 
 void EventBus::ChildDetach(EventBus* child)
@@ -94,12 +99,22 @@ void EventBus::ChildDetach(EventBus* child)
 	{
 		if (*itr == child)
 		{
+			(*itr)->m_parent = nullptr;
 			m_children.erase(itr);
+
 			return;
 		}
 	}
 
 	assert(false && "Child not in manager");
+}
+
+void EventBus::DetachFromParent()
+{
+	if (m_parent)
+	{
+		m_parent->ChildDetach(this);
+	}
 }
 
 EventQueue::EventQueue(
