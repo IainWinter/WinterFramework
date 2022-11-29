@@ -556,10 +556,6 @@ namespace meta
 		void read_array (type* type, void* instance, size_t length);
 		void read_string(char* string, size_t length);
 
-		virtual void read_bytes(char* bytes, size_t length) = 0;
-
-		virtual size_t read_length() = 0;
-
 		virtual void class_begin(type* type) = 0;
 		virtual void class_delim() = 0;
 		virtual void class_end() = 0;
@@ -573,6 +569,9 @@ namespace meta
 
 		virtual void string_begin(size_t length) = 0;
 		virtual void string_end() = 0;
+        
+        virtual size_t read_length() = 0;
+        virtual void read_bytes(char* bytes, size_t length) = 0;
 
 		template<typename _t>
 		void read_value(_t& value)

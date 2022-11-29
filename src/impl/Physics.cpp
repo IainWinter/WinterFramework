@@ -145,8 +145,8 @@ bool ColliderAttachment::OnBody() const
 
 void ColliderAttachment::SetDensity(float density)
 {
-	m_fixture ? m_fixture->SetDensity(density) 
-		      : m_tempDef->density = density;
+    if (m_fixture) m_fixture->SetDensity(density);
+    else           m_tempDef->density = density;
 }
 
 float ColliderAttachment::GetDensity() const

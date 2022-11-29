@@ -59,10 +59,12 @@ void SetMeshProgramDefaults(const Transform2D& transform)
 
 void SetMeshProgramValues(const Transform2D& transform, Sprite& sprite)
 {
+    r<Texture> source = sprite.source ? (r<Texture>)sprite.source : spriteRender->GetDefaultTexture();
+    
     meshProgram->Set("model", transform.World());
     meshProgram->Set("uvOffset", sprite.uvOffset);
     meshProgram->Set("uvScale", sprite.uvScale);
-    meshProgram->Set("sprite", sprite.source ? sprite.source : spriteRender->GetDefaultTexture());
+    meshProgram->Set("sprite", source);
     meshProgram->Set("tint", sprite.tint);
 }
 
