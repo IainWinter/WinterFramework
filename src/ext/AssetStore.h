@@ -32,7 +32,13 @@ using a = AssetItem<_t>;
 
 struct AssetContext
 {
-	std::unordered_map<std::string, r<void>> m_loaded;
+    struct Loaded
+    {
+        r<void> instance;
+        meta::type* type;
+    };
+    
+	std::unordered_map<std::string, Loaded> m_loaded;
 };
 
 namespace Asset
@@ -42,11 +48,11 @@ namespace Asset
 	void SetCurrentContext(AssetContext* context);
 	AssetContext* GetContext();
 
-	inline bool Has(const std::string& name)
-	{
-		AssetContext* ctx = GetContext();
-		return ctx->m_loaded.find(name) != ctx->m_loaded.end();
-	}
+    void WriteAssetPack(const std::string& filepath);
+    void  ReadAssetPack(const std::string& filepath);
+
+    bool Has (const std::string& name);
+    void Free(const std::string& name);
 
 	template<typename _t>
 	a<_t> Get(const std::string& name)
@@ -69,12 +75,6 @@ namespace Asset
 		}
 
 		return a<_t>(itr->first.c_str(), (r<_t>&)itr->second);
-	}
-
-	inline void Free(const std::string& name)
-	{
-		AssetContext* ctx = GetContext();
-		ctx->m_loaded.erase(name);
 	}
 
 	// This loads an asset by passing the filename as the first arg
