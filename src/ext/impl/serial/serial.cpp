@@ -2,13 +2,144 @@
 
 namespace meta
 {
+	//
+	//	serial_writer
+	//
+
+	void serial_writer::write_class(meta::type* type, const void* instance)
+	{
+		if (type->has_custom_write() || !type->has_members()) // custom write / no members
+		{
+			type->_serial_write(this, instance);
+		}
+
+		else // objects
+		{
+			class_begin(type);
+
+			auto& members = type->get_members();
+			for (int i = 0; i < members.size(); i++)
+			{
+				meta::type* member = members.at(i);
+
+				write_member(member, member->walk_ptr(instance), member->member_name());
+
+				if (i != members.size() - 1)
+				{
+					class_delim();
+				}
+			}
+
+			class_end();
+		}
+	}
+
+	void serial_writer::write_member(meta::type* type, const void* instance, const char* name)
+	{
+		member_begin(type, name);
+		write_class(type, instance);
+		member_end();
+	}
+
+	void serial_writer::write_array(meta::type* type, const void* instance, size_t length)
+	{
+		array_begin(type, length);
+
+		for (int i =  0; i < length; i++)
+		{
+			write_class(type, (char*)instance + i * type->info()->m_size);
+
+			if (i != length - 1)
+			{
+				array_delim();
+			}
+		}
+
+		array_end();
+	}
+
+	void serial_writer::write_string(const char* string, size_t length)
+	{
+		string_begin(length);
+
+		for (size_t i = 0; i < length; i++)
+		{
+			m_out << string[i];
+			if (string[i] == '\\') m_out << '\\'; // escape slash? figure out where to do this
+		}
+
+		string_end();
+	}
+
+	//
+	//	serial_reader
+	//
+
+	void serial_reader::read_class(type* type, void* instance)
+	{
+		if (type->has_custom_read() || !type->has_members()) // custom read / no members
+		{
+			type->_serial_read(this, instance);
+		}
+
+		else // objects
+		{
+			class_begin(type);
+
+			auto& members = type->get_members();
+			for (int i = 0; i < members.size(); i++)
+			{
+				meta::type* member = members.at(i);
+
+				read_member(member, member->walk_ptr(instance), member->member_name());
+
+				if (i != members.size() - 1)
+				{
+					class_delim();
+				}
+			}
+
+			class_end();
+		}
+	}
+
+	void serial_reader::read_member(type* type, void* instance, const char* name)
+	{
+		member_begin(type, name);
+		read_class(type, instance);
+		member_end();
+	}
+
+	void serial_reader::read_array(type* type, void* instance, size_t length)
+	{
+		array_begin(type, length);
+
+		for (int i =  0; i < length; i++)
+		{
+			read_class(type, (char*)instance + i * type->info()->m_size);
+
+			if (i != length - 1)
+			{
+				array_delim();
+			}
+		}
+
+		array_end();
+	}
+
+	void serial_reader::read_string(char* string, size_t length)
+	{
+		string_begin(length);
+		read_bytes(string, length);
+		string_end();
+	}
+
     //
-    //  read/writers
+    //	custom read/writers
     //
 
     void write_string(serial_writer* writer, const std::string& instance)
     {
-        writer->write_length(instance.size());
         writer->write_string(instance.data(), instance.size());
     }
 
@@ -21,9 +152,9 @@ namespace meta
     void write_any(serial_writer* serial, const any& value)
     {
         serial->class_begin(get_class<any>());
-        serial->write_member(get_class<id_type>(), "type", &value.type()->info()->m_id);
+        serial->write_member(get_class<id_type>(), &value.type()->info()->m_id, "type");
         serial->class_delim();
-        serial->write_member(value.type(), "data", value.data());
+        serial->write_member(value.type(), value.data(), "data");
         serial->class_end();
     }
 
@@ -32,13 +163,13 @@ namespace meta
         id_type id;
 
         serial->class_begin(get_class<any>());
-        serial->read_member(get_class<id_type>(), &id);
+        serial->read_member(get_class<id_type>(), &id, "type");
 
         serial->class_delim();
 
         value = get_registered_type(id)->construct();
 
-        serial->read_member(value.type(), value.data());
+        serial->read_member(value.type(), value.data(), "data");
         serial->class_end();
     }
 

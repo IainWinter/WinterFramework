@@ -108,11 +108,7 @@ namespace meta
 	void serial_write(serial_writer* serial, const a<_t>& instance)
 	{
 		const char* protectedName = instance.name ? instance.name : "";
-
-		size_t size = strlen(protectedName);
-
-		serial->write_length(size);
-		serial->write_string(protectedName, size);
+		serial->write_string(protectedName, strlen(protectedName));
 	}
 
 	template<typename _t>

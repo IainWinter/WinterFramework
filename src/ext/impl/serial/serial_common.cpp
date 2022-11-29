@@ -31,9 +31,9 @@ void write_Rigidbody2D(meta::serial_writer* serial, const Rigidbody2D& instance)
     }
     
     serial->class_begin(meta::get_class<Rigidbody2D>());
-    serial->write_member(meta::get_class<b2BodyDef>(), "body", &def);
+    serial->write_member(meta::get_class<b2BodyDef>(), &def, "body");
     serial->class_delim();
-    serial->write_member(meta::get_class<std::vector<meta::any>>(), "colliders", &colliders);
+    serial->write_member(meta::get_class<std::vector<meta::any>>(), &colliders, "colliders");
     serial->class_end();
 }
 
@@ -43,9 +43,9 @@ void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
     std::vector<meta::any> colliders;
     
     serial->class_begin(meta::get_class<Rigidbody2D>());
-    serial->read_member(meta::get_class<b2BodyDef>(), &def);
+    serial->read_member(meta::get_class<b2BodyDef>(), &def, "body");
     serial->class_delim();
-    serial->read_member(meta::get_class<std::vector<meta::any>>(), &colliders);
+    serial->read_member(meta::get_class<std::vector<meta::any>>(), &colliders, "colliders");
     serial->class_end();
     
     for (const meta::any& collider : colliders)
@@ -62,9 +62,9 @@ void write_CircleCollider(meta::serial_writer * writer, const CircleCollider& in
 	float radius = instance.GetRadius();
 
 	writer->class_begin(meta::get_class<CircleCollider>());
-	writer->write_member(meta::get_class<float>(), "radius", &radius);
+	writer->write_member(meta::get_class<float>(), &radius, "radius");
 	writer->class_delim();
-	writer->write_member(meta::get_class<vec2>(), "center", &center);
+	writer->write_member(meta::get_class<vec2>(), &center, "center");
 	writer->class_end();
 }
 
@@ -74,9 +74,9 @@ void read_CircleCollider(meta::serial_reader* writer, CircleCollider& instance)
 	float radius;
 
 	writer->class_begin(meta::get_class<CircleCollider>());
-	writer->read_member(meta::get_class<float>(), &radius);
+	writer->read_member(meta::get_class<float>(), &radius, "radius");
 	writer->class_delim();
-	writer->read_member(meta::get_class<vec2>(), &center);
+	writer->read_member(meta::get_class<vec2>(), &center, "center");
 	writer->class_end();
 
 	instance.SetRadius(radius);

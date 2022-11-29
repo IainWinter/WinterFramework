@@ -485,44 +485,35 @@ namespace meta
 		std::ostream& m_out;
 		const bool m_binary;
 
-		//struct pointer_ref
-		//{
-		//	type* type;
-		//	void* instance;
-		//};
-
-		//std::vector<pointer_ref> m_pointer_table;
-
 	public:
 		serial_writer(std::ostream& out, bool binary)
 			: m_out    (out)
 			, m_binary (binary)
 		{}
 
-		// public call this
-		//
 		template<typename _t>
 		void write(const _t& value)
 		{
 			write_class(get_class<_t>(), (const void*)&value);
 		}
 
-		virtual void write_class (type* type, const void* instance) = 0;
-		virtual void write_member(type* type, const char* name, const void* instance) = 0;
-		virtual void write_array (type* type, const void* instance, size_t length) = 0;
-		virtual void write_string(const char* string, size_t length) = 0;
-
-		virtual void write_length(size_t length) = 0;
+		void write_class (type* type, const void* instance);
+		void write_member(type* type, const void* instance, const char* name);
+		void write_array (type* type, const void* instance, size_t length);
+		void write_string(const char* string, size_t length);
 
 		virtual void class_begin(type* type) = 0;
 		virtual void class_delim() = 0;
 		virtual void class_end() = 0;
 
-		virtual void array_begin() = 0;
+		virtual void member_begin(type* type, const char* name) = 0;
+		virtual void member_end() = 0;
+
+		virtual void array_begin(type* type, size_t length) = 0;
 		virtual void array_delim() = 0;
 		virtual void array_end() = 0;
 
-		virtual void string_begin() = 0;
+		virtual void string_begin(size_t length) = 0;
 		virtual void string_end() = 0;
 
 		template<typename _t>
@@ -530,7 +521,7 @@ namespace meta
 		{
 			if (m_binary)
 			{
-				write_string((const char*)&value, sizeof(_t));
+				m_out.write((const char*)&value, sizeof(_t));
 			}
 
 			else if constexpr (std::is_integral<_t>::value || std::is_floating_point<_t>::value) // should just test for << op
@@ -560,45 +551,35 @@ namespace meta
 			read_class(meta::get_class<_t>(), &value);
 		}
 
-		virtual void read_class (type* type, void* instance) = 0;
-		virtual void read_member(type* type, void* instance) = 0;
-		virtual void read_array (type* type, void* instance, size_t length) = 0;
-		virtual void read_string(char* string, size_t length) = 0;
-		
+		void read_class (type* type, void* instance);
+		void read_member(type* type, void* instance, const char* name);
+		void read_array (type* type, void* instance, size_t length);
+		void read_string(char* string, size_t length);
+
+		virtual void read_bytes(char* bytes, size_t length) = 0;
+
 		virtual size_t read_length() = 0;
 
 		virtual void class_begin(type* type) = 0;
 		virtual void class_delim() = 0;
 		virtual void class_end() = 0;
 
-		virtual void array_begin() = 0;
+		virtual void member_begin(type* type, const char* name) = 0;
+		virtual void member_end() = 0;
+
+		virtual void array_begin(type* type, size_t length) = 0;
 		virtual void array_delim() = 0;
 		virtual void array_end() = 0;
 
-		virtual void string_begin() = 0;
+		virtual void string_begin(size_t length) = 0;
 		virtual void string_end() = 0;
-
-		//// this should recurse down the tree of type
-
-		//virtual void read_type(type* type, void* instance) = 0;
-
-		//// these are special conditions
-
-		//// read a single member of a type,
-		//// type must be a member and current
-		//// iteration has to have correct context
-		//virtual void read_member(type* type, void* instance) = 0;
-
-		//virtual size_t read_length() = 0;
-		//virtual void read_array(type* type, void* instance, size_t repeat) = 0;
-		//virtual void read_string(char* str, size_t length) = 0;
 
 		template<typename _t>
 		void read_value(_t& value)
 		{
 			if (m_binary)
 			{
-				read_string((char*)&value, sizeof(_t));
+				read_bytes((char*)&value, sizeof(_t));
 			}
 
 			else if constexpr (std::is_integral<_t>::value || std::is_floating_point<_t>::value) // should just test for << op
@@ -612,8 +593,10 @@ namespace meta
 		}
 	};
 
+	//
 	// default behaviour is to just write the value
 	// specialize these for custom types
+	//
 
 	template<typename _t>
 	void serial_write(serial_writer* serial, const _t& value)
@@ -630,25 +613,12 @@ namespace meta
             return;
         }
         
-		// this has to write the value because of type erasure
-
 		serial->write_value(value);
 	}
 
 	template<typename _t>
 	void serial_read(serial_reader* serial, _t& value)
 	{
-		// this doesnt need to read the value because the
-		// json reader know the type, and the bin reader doesnt care
-		// about types
-
-		// main reason is that the json tree needs to be walked
-		// and if we were to read the value, it would read from the stream
-		// which is not correct
-
-		// seems a little funky to have these be different, but this is how the
-		// logic seems to work out...
-
 		if constexpr (meta::has_custom_read<_t>::value)
 		{
 			value.serial_read(serial);
@@ -657,11 +627,14 @@ namespace meta
 
         if constexpr (std::is_enum<_t>::value)
         {
-            serial->read((size_t&)value);
+			size_t largest = 0;
+            serial->read_value(largest);
+			value = (_t)largest;
+
             return;
         }
         
-		serial->read(value);
+		serial->read_value(value);
 	}
 
 	// 
@@ -1007,6 +980,12 @@ namespace meta
 	{
 		return get_class<_t>()->m_info;
 	}
+
+	template<typename _t>
+	bool is_same(type* type)
+	{
+		return id<_t>() == type->info()->m_id;
+	}
 }
 
 // this is so you can call meta::from_entt(entt::type_id) -> meta::type*
@@ -1034,7 +1013,6 @@ namespace meta
 	template<typename _t>
 	void serial_write(serial_writer* writer, const std::vector<_t>& instance)
 	{
-		writer->write_length(instance.size());
 		writer->write_array(meta::get_class<_t>(), (void*)instance.data(), instance.size());
 	}
 
