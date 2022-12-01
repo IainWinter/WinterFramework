@@ -34,11 +34,30 @@ struct AssetContext
 {
     struct Loaded
     {
-        r<void> instance;
+		std::string name;
         meta::type* type;
+        r<void>     instance;
+		r<void>     original; // this is too pack into an asset pack, it is needed because when sending
+							  // some assets to the device, they are freeed from the host
+							  // not sure if this is the best way
+
+		template<typename _t>
+		a<_t> GetAsset() { return a<_t>(name.c_str(), (r<_t>&)instance); }
     };
     
-	std::unordered_map<std::string, Loaded> m_loaded;
+	std::unordered_map<std::string, Loaded> loaded;
+
+	template<typename _t>
+	void RegisterAsset(const std::string& name, r<_t> instance)
+	{
+		Loaded l;
+		l.name = name;
+		l.type = meta::get_class<_t>();
+		l.instance = instance;
+		l.original = mkr<_t>(*instance); // make a copy
+
+		loaded.emplace(name, l).first;
+	}
 };
 
 namespace Asset
@@ -48,33 +67,24 @@ namespace Asset
 	void SetCurrentContext(AssetContext* context);
 	AssetContext* GetContext();
 
-    void WriteAssetPack(const std::string& filepath);
-    void  ReadAssetPack(const std::string& filepath);
-
     bool Has (const std::string& name);
     void Free(const std::string& name);
 
 	template<typename _t>
 	a<_t> Get(const std::string& name)
 	{
-		AssetContext* ctx = GetContext();
-
-		auto itr = ctx->m_loaded.find(name);
-		return a<_t>(itr->first.c_str(), (r<_t>&)itr->second);
+		return GetContext()->loaded.at(name).GetAsset<_t>();
 	}
 
 	template<typename _t, typename... _a>
 	a<_t> Load(const std::string& name, const _a&... args)
 	{
-		AssetContext* ctx = GetContext();
-
-		auto itr = ctx->m_loaded.find(name);
-		if (itr == ctx->m_loaded.end())
+		if (!Has(name))
 		{
-			itr = ctx->m_loaded.emplace(name, mkr<_t>(args...)).first;
+			GetContext()->RegisterAsset<_t>(name, mkr<_t>(args...));
 		}
 
-		return a<_t>(itr->first.c_str(), (r<_t>&)itr->second);
+		return Get<_t>(name);
 	}
 
 	// This loads an asset by passing the filename as the first arg
@@ -91,7 +101,7 @@ namespace Asset
 	{
 		AssetContext* ctx = GetContext();
 
-		for (auto [name, loaded] : ctx->m_loaded)
+		for (auto [name, loaded] : ctx->loaded)
 		{
 			if (asset == loaded) // compare pointers
 			{
@@ -100,6 +110,11 @@ namespace Asset
 			}
 		}
 	}
+
+	// Asset packing
+
+	void WriteAssetPack(const std::string& filepath);
+	void  ReadAssetPack(const std::string& filepath);
 }
 
 namespace meta

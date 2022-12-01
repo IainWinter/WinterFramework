@@ -5,6 +5,7 @@
 #include <ostream>
 #include <istream>
 #include <assert.h>
+#include <stack>
 
 #define SERIAL_ENTT_TIE_IN
 
@@ -65,6 +66,8 @@ namespace meta
 
 	class serial_writer;
 	class serial_reader;
+	class pseudo_writer;
+	class pseudo_reader;
 	struct any;
 
 	template<typename _t> class describe;
@@ -227,6 +230,12 @@ namespace meta
 		// this calls the function meta::ping specialized with the underlying type
 		virtual void ping(void* userdata = nullptr, int message = 0) const = 0;
 
+		// copy the data into instance, type must be the same as instance. This is unsafe
+		virtual void copy_to(void* to, const void* from) const = 0;
+
+		// move the data into instance, type must be the same as instance. This is unsafe
+		virtual void move_to(void* to, const void* from) const = 0;
+
 		// helpers
 
 		bool has_members() const
@@ -260,8 +269,11 @@ namespace meta
 
 		virtual const void* data() const = 0;
 		virtual void* data() = 0;
+		virtual std::shared_ptr<void> make_ref() const = 0;
 		virtual any_storage* copy() const = 0;
 		virtual any_storage* new_copy() const = 0;
+		virtual void copy_to(void* instance) const = 0;
+		virtual void move_to(void* instance) const = 0;
 		virtual bool is_type(meta::type* type) const = 0;
 
 		meta::type* type() const
@@ -310,6 +322,11 @@ namespace meta
 			return (void*)m_instance;
 		}
 
+		std::shared_ptr<void> make_ref() const override
+		{
+			return std::make_shared<_t>(*m_instance);
+		}
+
 		any_storage* copy() const override
 		{
 			return new any_storage_t<_t>(m_type, m_owns, m_instance);
@@ -318,6 +335,16 @@ namespace meta
 		any_storage* new_copy() const override
 		{
 			return new any_storage_t<_t>(m_type, true, m_instance);
+		}
+
+		void copy_to(void* instance) const override
+		{
+			m_type->copy_to(instance, m_instance);
+		}
+
+		void move_to(void* instance) const override
+		{
+			m_type->move_to(instance, m_instance);
 		}
 
 		bool is_type(meta::type* type) const override
@@ -346,6 +373,11 @@ namespace meta
 			return m_instance;
 		}
 
+		std::shared_ptr<void> make_ref() const override
+		{
+			throw nullptr;
+		}
+
 		any_storage* copy() const override
 		{
 			return new any_storage_t<void>(m_type, m_instance);
@@ -354,6 +386,16 @@ namespace meta
 		any_storage* new_copy() const override
 		{
 			throw nullptr; // this makes no sense for void*
+		}
+
+		void copy_to(void* instance) const override
+		{
+			throw nullptr;
+		}
+
+		void move_to(void* instance) const override
+		{
+			throw nullptr;
 		}
 
 		bool is_type(meta::type* type) const override
@@ -428,9 +470,24 @@ namespace meta
 			return *this;
 		}
 
+		std::shared_ptr<void> make_ref() const
+		{
+			return m_storage->make_ref();
+		}
+
 		void copy_own(const any& other)
 		{
 			m_storage = other.m_storage->new_copy();
+		}
+
+		void copy_to(void* instance) const
+		{
+			m_storage->copy_to(instance);
+		}
+
+		void move_to(void* instance) const
+		{
+			m_storage->move_to(instance);
 		}
 
 		type* type() const { return m_storage->type(); }
@@ -491,11 +548,19 @@ namespace meta
 			, m_binary (binary)
 		{}
 
+		// write any type to the serializer stream
 		template<typename _t>
 		void write(const _t& value)
 		{
 			write_class(get_class<_t>(), (const void*)&value);
 		}
+
+		// create a temperary writer for custom data
+		pseudo_writer pseudo();
+
+		//
+		//	internal
+		//
 
 		void write_class (type* type, const void* instance);
 		void write_member(type* type, const void* instance, const char* name);
@@ -515,6 +580,8 @@ namespace meta
 
 		virtual void string_begin(size_t length) = 0;
 		virtual void string_end() = 0;
+
+		virtual void write_bytes(const char* bytes, size_t length) = 0;
 
 		template<typename _t>
 		void write_value(const _t& value)
@@ -545,11 +612,19 @@ namespace meta
 			, m_binary (binary)
 		{}
 
+		// read any type from the deserializer stream
 		template<typename _t>
 		void read(_t& value)
 		{
 			read_class(meta::get_class<_t>(), &value);
 		}
+
+		// create a temperary reader for custom data
+		pseudo_reader pseudo();
+
+		//
+		//	internal
+		//
 
 		void read_class (type* type, void* instance);
 		void read_member(type* type, void* instance, const char* name);
@@ -589,6 +664,156 @@ namespace meta
 			}
 
 			// could assert for not reading
+		}
+	};
+
+	//
+	// Syntax sugar for custom writers
+	//
+	class pseudo_writer
+	{
+	private:
+		struct pseudo_writer_frame
+		{
+			bool m_first_member = true;
+		};
+
+		serial_writer* m_writer;
+		std::stack<pseudo_writer_frame> m_frames;
+
+	public:
+		pseudo_writer(serial_writer* writer)
+			: m_writer(writer)
+		{}
+
+		~pseudo_writer()
+		{
+			while (m_frames.size() > 0)
+			{
+				end();
+			}
+		}
+
+		template<typename _t>
+		pseudo_writer& begin()
+		{
+			m_frames.push(pseudo_writer_frame{});
+
+			m_writer->class_begin(meta::get_class<_t>());
+			return *this;
+		}
+
+		template<typename _t>
+		pseudo_writer& member(const char* name, const _t& instance)
+		{
+			member_delim();
+
+			m_writer->write_member(get_class<_t>(), &instance, name);
+			return *this;
+		}
+
+		template<typename _t>
+		pseudo_writer& custom(const char* name, const std::function<void()>& func)
+		{
+			member_delim();
+
+			m_writer->member_begin(meta::get_class<_t>(), name);
+			func();
+			m_writer->member_end();
+
+			return *this;
+		}
+
+		// Gets called in destructor
+		// Only need to call if you want to be explicit or if 
+		// there are multiple pseudo writers in scope
+		void end()
+		{
+			m_writer->class_end();
+			m_frames.pop();
+		}
+
+	private:
+		void member_delim()
+		{
+			bool& first = m_frames.top().m_first_member;
+			if (!first) m_writer->class_delim();
+			first = false;
+		}
+	};
+
+	//
+	// Syntax sugar for custom readers
+	//
+	class pseudo_reader
+	{
+	private:
+		struct pseudo_reader_frame
+		{
+			bool m_first_member = true;
+		};
+
+		serial_reader* m_reader;
+		std::stack<pseudo_reader_frame> m_frames;
+
+	public:
+		pseudo_reader(serial_reader* reader)
+			: m_reader (reader)
+		{}
+
+		~pseudo_reader()
+		{
+			while (m_frames.size() > 0)
+			{
+				end();
+			}
+		}
+
+		template<typename _t>
+		pseudo_reader& begin()
+		{
+			m_frames.push(pseudo_reader_frame{});
+
+			m_reader->class_begin(meta::get_class<_t>());
+			return *this;
+		}
+
+		template<typename _t>
+		pseudo_reader& member(const char* name, _t& instance)
+		{
+			member_delim();
+
+			m_reader->read_member(get_class<_t>(), &instance, name);
+			return *this;
+		}
+
+		template<typename _t>
+		pseudo_reader& custom(const char* name, const std::function<void()>& func)
+		{
+			member_delim();
+
+			m_reader->member_begin(meta::get_class<_t>(), name);
+			func();
+			m_reader->member_end();
+
+			return *this;
+		}
+
+		// Gets called in destructor
+		// Only need to call if you want to be explicit or if 
+		// there are multiple pseudo writers in scope
+		void end()
+		{
+			m_reader->class_end();
+			m_frames.pop();
+		}
+
+	private:
+		void member_delim()
+		{
+			bool& first = m_frames.top().m_first_member;
+			if (!first) m_reader->class_delim();
+			first = false;
 		}
 	};
 
@@ -726,6 +951,16 @@ namespace meta
 		{
 			meta::ping<_mtype>(userdata, message);
 		}
+
+		void copy_to(void* to, const void* from) const override
+		{
+			m_class->copy_to(to, from);
+		}
+
+		void move_to(void* to, const void* from) const override
+		{
+			m_class->move_to(to, from);
+		}
 	};
 
     // fwd
@@ -850,6 +1085,16 @@ namespace meta
 		{
 			meta::ping<_t>(userdata, message);
 		}
+
+		void copy_to(void* to, const void* from) const override
+		{
+			*(_t*)to = *(_t*)from;
+		}
+
+		void move_to(void* to, const void* from) const override
+		{
+			*(_t*)to = std::forward<_t>(*(_t*)from);
+		}
 	};
 
 	// specialize void because of min/max/construct
@@ -873,6 +1118,8 @@ namespace meta
 		bool                      has_prop(const char* name)                                 const override { assert(false && "type was not a member"); throw nullptr; }
 		void                      set_prop(const char* name, const any& value)                     override { assert(false && "type was not a member"); throw nullptr; }
 		void                      ping(void* userdata = nullptr, int message = 0)            const override { assert(false && "type was void"); throw nullptr; }
+		void                      copy_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
+		void                      move_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
 	};
 
 	template<typename _t>

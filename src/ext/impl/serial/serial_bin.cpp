@@ -5,7 +5,7 @@
 //
 
 bin_writer::bin_writer(std::ostream& out)
-	: serial_writer(out, true)
+	: serial_writer (out, true)
 {}
 
 void bin_writer::class_begin(meta::type* type) {}
@@ -22,12 +22,17 @@ void bin_writer::array_end() {}
 void bin_writer::string_begin(size_t length) { write_value(length); }
 void bin_writer::string_end() {}
 
+void bin_writer::write_bytes(const char* bytes, size_t length)
+{
+    m_out.write(bytes, length);
+}
+
 //
 //		Reader
 //
 
 bin_reader::bin_reader(std::istream& in)
-    : meta::serial_reader(in, true)
+    : serial_reader (in, true)
 {}
 
 void bin_reader::class_begin(meta::type* type) {}

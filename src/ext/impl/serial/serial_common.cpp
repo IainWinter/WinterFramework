@@ -30,11 +30,10 @@ void write_Rigidbody2D(meta::serial_writer* serial, const Rigidbody2D& instance)
         }
     }
     
-    serial->class_begin(meta::get_class<Rigidbody2D>());
-    serial->write_member(meta::get_class<b2BodyDef>(), &def, "body");
-    serial->class_delim();
-    serial->write_member(meta::get_class<std::vector<meta::any>>(), &colliders, "colliders");
-    serial->class_end();
+	serial->pseudo().begin<Rigidbody2D>()
+		.member("body", def)
+		.member("colliders", colliders)
+		.end();
 }
 
 void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
@@ -42,12 +41,11 @@ void read_Rigidbody2D(meta::serial_reader* serial, Rigidbody2D& instance)
     b2BodyDef def;
     std::vector<meta::any> colliders;
     
-    serial->class_begin(meta::get_class<Rigidbody2D>());
-    serial->read_member(meta::get_class<b2BodyDef>(), &def, "body");
-    serial->class_delim();
-    serial->read_member(meta::get_class<std::vector<meta::any>>(), &colliders, "colliders");
-    serial->class_end();
-    
+	serial->pseudo().begin<Rigidbody2D>()
+		.member("body", def)
+		.member("colliders", colliders)
+		.end();
+
     for (const meta::any& collider : colliders)
     {
         instance.AddCollider(*(Collider*)collider.data());
@@ -61,11 +59,10 @@ void write_CircleCollider(meta::serial_writer * writer, const CircleCollider& in
 	vec2 center = instance.GetCenter();
 	float radius = instance.GetRadius();
 
-	writer->class_begin(meta::get_class<CircleCollider>());
-	writer->write_member(meta::get_class<float>(), &radius, "radius");
-	writer->class_delim();
-	writer->write_member(meta::get_class<vec2>(), &center, "center");
-	writer->class_end();
+	writer->pseudo().begin<CircleCollider>()
+		.member("radius", radius)
+		.member("center", center)
+		.end();
 }
 
 void read_CircleCollider(meta::serial_reader* writer, CircleCollider& instance)
@@ -73,14 +70,50 @@ void read_CircleCollider(meta::serial_reader* writer, CircleCollider& instance)
 	vec2 center;
 	float radius;
 
-	writer->class_begin(meta::get_class<CircleCollider>());
-	writer->read_member(meta::get_class<float>(), &radius, "radius");
-	writer->class_delim();
-	writer->read_member(meta::get_class<vec2>(), &center, "center");
-	writer->class_end();
+	writer->pseudo().begin<CircleCollider>()
+		.member("radius", radius)
+		.member("center", center)
+		.end();
 
 	instance.SetRadius(radius);
 	instance.SetCenter(center);
+}
+
+void write_Texture(meta::serial_writer* serial, const Texture& instance)
+{
+	serial->pseudo()
+		.begin<Texture>()
+		.member("width", instance.Width())
+		.member("height", instance.Height())
+		.member("usage", instance.UsageType())
+		.member("filter", instance.FilterType())
+		
+		// hmm this doesnt really work cus most assets free their host memory when being drawn
+		// AssetStore may need to store a copy of each asset...
+		// I dont htink this would work through....
+
+		.custom<u8>("host", [&]() { serial->write_bytes((const char*)instance.Pixels(), instance.BufferSize()); })
+		.end();
+}
+
+void read_Texture(meta::serial_reader* serial, Texture& instance)
+{
+	int width, height;
+	Texture::Usage usage;
+	Texture::Filter filter;
+
+	meta::pseudo_reader r = serial->pseudo()
+		.begin<Texture>()
+		.member("width",  width)
+		.member("height", height)
+		.member("usage",  usage)
+		.member("filter", filter);
+
+	instance = Texture(width, height, usage);
+	instance.SetFilter(filter);
+
+	r.custom<u8>("host", [&]() { serial->read_bytes((char*)instance.Pixels(), instance.BufferSize()); })
+	 .end();
 }
 
 void register_common_types()
@@ -184,6 +217,11 @@ void register_common_types()
 		.name("CircleCollider")
 		.custom_write(&write_CircleCollider)
 		.custom_read(&read_CircleCollider);
+
+	describe<Texture>()
+		.name("Texture")
+		.custom_write(&write_Texture)
+		.custom_read(&read_Texture);
 
 	//describe<b2BodyUserData>()
 	//	.name("b2BodyUserData")

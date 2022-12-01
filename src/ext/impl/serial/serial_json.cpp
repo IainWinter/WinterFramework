@@ -25,6 +25,19 @@ void json_writer::array_end()                                  { m_out << ']'; }
 void json_writer::string_begin(size_t length) { m_out << '"'; }
 void json_writer::string_end()                { m_out << '"'; }
 
+void json_writer::write_bytes(const char* bytes, size_t length)
+{
+	// this changes the length in begin_string, but json doesnt care about the reported length
+	// the reader uses json.h's length, which doesnt include escaped chars
+	// should investigate this fully
+
+	for (size_t i = 0; i < length; i++)
+	{
+		m_out << bytes[i];
+		if (bytes[i] == '\\') m_out << '\\'; // escape slash? figure out where to do this
+	}
+}
+
 //
 //		Reader
 //

@@ -20,6 +20,8 @@ struct json_writer : meta::serial_writer
 
 	void string_begin(size_t length) override;
 	void string_end() override;
+
+	void write_bytes(const char* bytes, size_t length) override;
 };
 
 // fwd json.h
@@ -36,7 +38,7 @@ public:
 	void class_delim() override;
 	void class_end() override;
 
-	void member_begin(meta::type* type, const char* name ) override;
+	void member_begin(meta::type* type, const char* name) override;
 	void member_end() override;
 
 	void array_begin(meta::type* type, size_t length) override;

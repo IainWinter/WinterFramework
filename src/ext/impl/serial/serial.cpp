@@ -61,14 +61,13 @@ namespace meta
 	void serial_writer::write_string(const char* string, size_t length)
 	{
 		string_begin(length);
-
-		for (size_t i = 0; i < length; i++)
-		{
-			m_out << string[i];
-			if (string[i] == '\\') m_out << '\\'; // escape slash? figure out where to do this
-		}
-
+		write_bytes(string, length);
 		string_end();
+	}
+
+	pseudo_writer serial_writer::pseudo()
+	{
+		return pseudo_writer(this);
 	}
 
 	//
@@ -132,6 +131,11 @@ namespace meta
 		string_begin(length);
 		read_bytes(string, length);
 		string_end();
+	}
+
+	pseudo_reader serial_reader::pseudo()
+	{
+		return pseudo_reader(this);
 	}
 
     //

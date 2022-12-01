@@ -19,6 +19,7 @@ namespace Time
 
     void SetCurrentContext(TimeContext* context)
     {
+        DestroyContext();
         ctx = context;
     }
 

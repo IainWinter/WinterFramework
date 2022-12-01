@@ -19,6 +19,8 @@ struct bin_writer : meta::serial_writer
 
 	void string_begin(size_t length) override;
 	void string_end() override;
+
+    void write_bytes(const char* bytes, size_t length) override;
 };
 
 struct bin_reader : meta::serial_reader
