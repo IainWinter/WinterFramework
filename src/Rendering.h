@@ -791,4 +791,7 @@ namespace Render
 
 	// clear the currently bound render target with the color
 	void ClearRenderTarget(Color color);
+
+	// set the current alpha blend
+	void SetAlphaBlend(bool blend);
 }

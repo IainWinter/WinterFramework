@@ -33,5 +33,6 @@ struct ScriptingContext
     
     Time::TimeContext* ctx_time;
     Render::RenderContext* ctx_render;
+    Asset::AssetContext* ctx_asset;
     meta::serial_context* ctx_meta;
 };

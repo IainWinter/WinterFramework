@@ -46,6 +46,7 @@ namespace meta
 		
 		switch (message)
 		{
+			// register storage for types not seen by entt
 			case REG_STORAGE:
 				as<entt::registry>(userdata)->storage<_t>();
 				break;

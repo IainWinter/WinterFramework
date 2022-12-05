@@ -212,10 +212,12 @@ World::World(Application* app, EventBus* root)
 	//CreateSystem<AudioUpdate>();
     
     // create a default camera just so there is one for First<Camera>(), in future I want to have a scene with a MainCamera type deal
-    
-    Entity e = m_entities.Create().SetName("Main Camera");
-    e.Add<Transform2D>();
-    e.Add<Camera>(10, 10, 10); // ortho camera as default
+    // allow another system to take care of this
+	// this screws with the saving / loading
+
+    //Entity e = m_entities.Create().SetName("Main Camera");
+    //e.Add<Transform2D>();
+    //e.Add<Camera>(10, 10, 10); // ortho camera as default
 }
 
 r<World> World::Make(Application* app, EventBus* root)

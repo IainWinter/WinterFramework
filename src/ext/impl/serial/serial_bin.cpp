@@ -1,4 +1,5 @@
 #include "ext/serial/serial_bin.h"
+#include "Log.h"
 
 //
 //		Writer
@@ -24,6 +25,8 @@ void bin_writer::string_end() {}
 
 void bin_writer::write_bytes(const char* bytes, size_t length)
 {
+    log_io("write bytes: %d", length);
+
     m_out.write(bytes, length);
 }
 
@@ -58,5 +61,8 @@ size_t bin_reader::read_length()
 
 void bin_reader::read_bytes(char* bytes, size_t length)
 {
+
+    log_io("read bytes: %d", length);
+
     m_in.read(bytes, length);
 }

@@ -101,7 +101,7 @@ namespace Asset
 
     void WriteAssetPack(const std::string& filepath)
     {
-        std::ofstream out(filepath);
+        std::ofstream out(filepath, std::fstream::binary);
         bin_writer(out).write(*GetContext());
 
 
@@ -115,7 +115,7 @@ namespace Asset
 
     void ReadAssetPack(const std::string& filepath)
     {
-        std::ifstream in(filepath);
+        std::ifstream in(filepath, std::fstream::binary);
         bin_reader(in).read(*GetContext());
     }
 

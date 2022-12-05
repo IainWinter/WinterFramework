@@ -13,6 +13,8 @@ struct TextureAtlas
 	r<Texture> source;
 	std::vector<Bounds> bounds;
 
+	TextureAtlas() = default;
+
 	TextureAtlas(r<Texture> source, const std::vector<Bounds>& bounds)
 		: source (source)
 		, bounds (bounds)
@@ -21,15 +23,21 @@ struct TextureAtlas
 	TextureAtlas(r<Texture> source, int numberOfTilesX = 1, int numberOfTilesY = 1)
 		: source (source)
 	{
+		SetAutoTile(numberOfTilesX, numberOfTilesY);
+	}
+
+	void SetAutoTile(int numberOfTilesX, int numberOfTilesY)
+	{
+		bounds.clear();
 		bounds.reserve(numberOfTilesX * numberOfTilesY);
 
-		vec2 scale  = vec2(1.f, 1.f) / vec2(numberOfTilesX, numberOfTilesY);
+		vec2 scale = vec2(1.f, 1.f) / vec2(numberOfTilesX, numberOfTilesY);
 
 		for (int y = 0; y < numberOfTilesY; y++)
 		{
 			for (int x = 0; x < numberOfTilesX; x++)
 			{
-				bounds.push_back(Bounds { vec2(x, y) * scale, scale});
+				bounds.push_back(Bounds{ vec2(x, y) * scale, scale });
 			}
 		}
 	}

@@ -30,38 +30,37 @@ struct AssetItem
 template<typename _t>
 using a = AssetItem<_t>;
 
-struct AssetContext
-{
-    struct Loaded
-    {
-		std::string name;
-        meta::type* type;
-        r<void>     instance;
-		r<void>     original; // this is too pack into an asset pack, it is needed because when sending
-							  // some assets to the device, they are freeed from the host
-							  // not sure if this is the best way
-
-		template<typename _t>
-		a<_t> GetAsset() { return a<_t>(name.c_str(), (r<_t>&)instance); }
-    };
-    
-	std::unordered_map<std::string, Loaded> loaded;
-
-	template<typename _t>
-	void RegisterAsset(const std::string& name, r<_t> instance)
-	{
-		Loaded l;
-		l.name = name;
-		l.type = meta::get_class<_t>();
-		l.instance = instance;
-		l.original = mkr<_t>(*instance); // make a copy
-
-		loaded.emplace(name, l).first;
-	}
-};
-
 namespace Asset
 {
+	struct AssetContext
+	{
+		struct Loaded
+		{
+			std::string name;
+			meta::type* type;
+			r<void>     instance;
+			r<void>     original; // this is to pack into an asset pack, it is needed because when sending
+								  // some assets to the device, they are freeed from the host.
+
+			template<typename _t>
+			a<_t> GetAsset() { return a<_t>(name.c_str(), (r<_t>&)instance); }
+		};
+    
+		std::unordered_map<std::string, Loaded> loaded;
+
+		template<typename _t>
+		void RegisterAsset(const std::string& name, r<_t> instance)
+		{
+			Loaded l;
+			l.name = name;
+			l.type = meta::get_class<_t>();
+			l.instance = instance;
+			l.original = mkr<_t>(*instance); // make a copy
+
+			loaded.emplace(name, l).first;
+		}
+	};
+
 	void CreateContext();
 	void DestroyContext();
 	void SetCurrentContext(AssetContext* context);
@@ -134,11 +133,9 @@ namespace meta
 		name.resize(serial->read_length());
 		serial->read_string(name.data(), name.size());
 
-		// asset must be loaded
-		// this will be done through an asset pack loader
-		if (Asset::Has(name))
+		if (!name.empty())
 		{
-			instance = Asset::Get<_t>(name);
+			instance = Asset::LoadFromFile<_t>(name);
 		}
 	}
 }

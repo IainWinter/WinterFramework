@@ -1370,11 +1370,15 @@ namespace Render
 		ClearRenderTarget(ctx->clear_color);
 	}
 
-	// clear the currently bound render target
 	void ClearRenderTarget(Color color)
 	{
 		gl_SetClearColor(color);
 		gl(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 		//gl_SetClearColor(Color(0));
+	}
+
+	void SetAlphaBlend(bool blend)
+	{
+		gl(glBlendFunc(GL_SRC_ALPHA, blend ? GL_ONE_MINUS_SRC_ALPHA : GL_ONE));
 	}
 }
