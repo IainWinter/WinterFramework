@@ -4,13 +4,16 @@
 
 struct Camera
 {
-	union
-	{
+	// this is just a transform...
+	// kinda weird to have stored in the camera
+	union {
 		vec3 position;
 		struct {
 			float x, y, z;
 		};
 	};
+
+	quat rotation;
 
 	union {
 		vec2 dimension;
@@ -27,17 +30,17 @@ struct Camera
 
 	// default, simple ortho
 	Camera()
-		: x(0), y(0), z(0), width(12), height(8), near(-10), far(10), aspect(1), is_ortho(true)
+		: position(0, 0, 0), rotation(1, 0, 0, 0), dimension(12, 8), near(-10), far(10), aspect(1), is_ortho(true)
 	{}
 
 	// simple, ortho
 	Camera(float width, float height, float depth)
-		: x(0), y(0), z(0), width(width), height(height), near(-depth), far(depth), aspect(1), is_ortho(true)
+		: position(0, 0, 0), rotation(1, 0, 0, 0), dimension(width, height), near(-depth), far(depth), aspect(1), is_ortho(true)
 	{}
 
 	// simple persp
 	Camera(float fov, float fovy, float near, float far)
-		: x(0), y(0), z(0), width(fov), height(fovy), near(near), far(far), aspect(1), is_ortho(false)
+		: position(0, 0, 0), rotation(1, 0, 0, 0), dimension(fov, fovy), near(near), far(far), aspect(1), is_ortho(false)
 	{}
 
 	mat4 Projection() const
@@ -54,7 +57,7 @@ struct Camera
 		}
 	}
 
-	mat4 View(quat rotation = quat(1, 0, 0, 0)) const
+	mat4 View() const
 	{
 		return translate(toMat4(-rotation), -position);
 	}

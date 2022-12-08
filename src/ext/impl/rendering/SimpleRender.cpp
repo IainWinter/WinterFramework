@@ -124,7 +124,7 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 		
 	for (auto [entity, transform, sprite] : world.QueryWithEntity<Transform2D, Sprite>())
 	{
-		render.SubmitSprite(transform, sprite.source, vec2(0.f, 0.f), vec2(1.f, 1.f), TintToDebugMode(entity, sprite));
+		render.SubmitSprite(transform, sprite.source, sprite.uvOffset, sprite.uvScale, TintToDebugMode(entity, sprite));
 	}
     
 	render.Draw(camera, drawEntityIdMode == ONLY);

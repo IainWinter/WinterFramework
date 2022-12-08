@@ -20,7 +20,6 @@ public:
 
 	void Begin();
 	void Draw(const Camera& camera, bool mixTint = false);
-	void Draw(const Camera& camera, const quat& rot, bool mixTint = false);
     
 	void SubmitSprite(
 		const Transform2D& transform,

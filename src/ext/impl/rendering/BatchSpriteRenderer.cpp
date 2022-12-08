@@ -16,12 +16,7 @@ void BatchSpriteRenderer::Begin()
 
 void BatchSpriteRenderer::Draw(const Camera& camera, bool mixTint)
 {
-	Draw(camera, mat4(1.f), mixTint);
-}
-
-void BatchSpriteRenderer::Draw(const Camera& camera, const quat& rot, bool mixTint)
-{
-	SetProgram(camera.Projection(), camera.View(rot), mixTint);
+	SetProgram(camera.Projection(), camera.View(), mixTint);
 
 	for (auto& [texture, batch] : m_batches) DrawBatch(texture, batch);
 	m_batches.clear(); // can have a much better scheme for keeping vector memory alive
