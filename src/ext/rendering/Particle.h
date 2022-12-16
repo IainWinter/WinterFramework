@@ -5,7 +5,7 @@
 
 struct Particle
 {
-	r<TextureAtlas> atlas;
+	a<TextureAtlas> atlas;
 	int m_emitterSpawnerIndex = -1;
 
 	float framesPerSecond = 30.f;
@@ -22,7 +22,7 @@ struct Particle
 	Particle() {}
 	
 	Particle(
-		r<TextureAtlas> atlas, int fixedFrame = -1
+		a<TextureAtlas> atlas, int fixedFrame = -1
 	)
 		: atlas           (atlas)
 		, frameCurrent    (fixedFrame == -1 ? 0    : fixedFrame)
@@ -32,10 +32,12 @@ struct Particle
 	Particle(
 		const std::string& path, int tilesX = 1, int tilesY = 1, int fixedFrame = -1
 	)
-		: atlas           (mkr<TextureAtlas>(mkr<Texture>(path), tilesX, tilesY))
-		, frameCurrent    (fixedFrame == -1 ? 0    : fixedFrame)
+		: frameCurrent    (fixedFrame == -1 ? 0    : fixedFrame)
 		, framesPerSecond (fixedFrame == -1 ? 30.f : 0.f)
-	{}
+	{
+		atlas = Asset::Make<TextureAtlas>(path, path);
+		atlas->SetAutoTile(tilesX, tilesY);
+	}
 
 	Particle& SetAtlas           (const r<TextureAtlas>&    atlas)           { this->atlas           = atlas;           return *this; }
 	Particle& SetFramesPerSecond (float                     framesPerSecond) { this->framesPerSecond = framesPerSecond; return *this; }
@@ -70,10 +72,10 @@ struct Particle
 	void TickFrame(float dt)
 	{
 		frameCurrent += dt * framesPerSecond;
-		lifeCurrent -= dt;
+		lifeCurrent  -= dt;
 	}
 
-	bool  HasAtlas()        const { return atlas != nullptr; }
+	bool  HasAtlas()        const { return atlas.IsLoaded(); }
 	bool  EndOfLife()       const { return lifeCurrent <= 0.f; }
 	float Age()             const { return life == 0.f ? 0.f : lifeCurrent / life; }
 	float AgeLeft()         const { return 1.f - Age(); }
@@ -118,7 +120,7 @@ struct Particle
 	}
 };
 
-inline Particle RandomParticle(const r<TextureAtlas>& atlas)
+inline Particle RandomParticle(const a<TextureAtlas>& atlas)
 {
 	return Particle(atlas, atlas->GetFrameCount());
 }

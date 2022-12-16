@@ -267,8 +267,14 @@ public:
 
 	Entity& OnDestroy(const std::function<void(Entity)>& func);
 
-	// could use template meta nonsense to remove Get/GetAll
-	// this api isnt the best :(
+	// components from a runtime id
+
+	bool Has(meta::id_type component) const;
+	meta::any Get(meta::id_type component) const;
+	void Add(meta::id_type component);
+	void Remove(meta::id_type component);
+
+	// components from a templated type
 
 	template<typename... _t>
 	bool Has() const
@@ -293,7 +299,7 @@ public:
 	}
 
 	template<typename... _t>
-	std::tuple<_t&...> GetAll()  const
+	std::tuple<_t&...> GetAll() const
 	{
 		assert_is_valid();
 		assert_has_components<_t...>();

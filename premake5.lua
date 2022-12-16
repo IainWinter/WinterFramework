@@ -27,16 +27,10 @@ project "Framework"
 		"src/**.h",
 		"src/impl/**.cpp",
 
-		-- choose which extensions you need
-		-- todo: move some of these to game, last 3 ?
+		-- choose which extensions you need, right now it's all of them
 
-		"src/ext/impl/physics/ClosestPointOnShape.cpp",
-		"src/ext/impl/rendering/BatchLineRenderer.cpp",
-		"src/ext/impl/rendering/BatchSpriteRenderer.cpp",
-		"src/ext/impl/rendering/SimpleRender.cpp",
-		"src/ext/impl/rendering/DebugRender.cpp",
-		"src/ext/impl/serial/*.cpp",
-		"src/ext/impl/AssetStore.cpp"
+		"src/ext/impl/**.h",
+		"src/ext/impl/**.cpp"
 	}
 
 	includedirs {
@@ -59,6 +53,8 @@ project "Framework"
 		}
 
 		defines { "IW_PLATFORM_WINDOWS" }
+
+		buildoptions ("/bigobj /FS")
 
 	filter "system:macosx"
 		libdirs {

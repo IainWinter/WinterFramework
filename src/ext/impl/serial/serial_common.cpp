@@ -1,6 +1,14 @@
 #include "ext/serial/serial_common.h"
 
-#include "ext/serial/serial_walker.h"
+#include "Common.h"
+#include "Physics.h"
+
+#include "ext/rendering/Sprite.h"
+#include "ext/rendering/Camera.h"
+#include "ext/rendering/Particle.h"
+
+#include <string>
+#include <vector>
 
 void write_Color(meta::serial_writer* serial, const Color& instance)
 {
@@ -87,10 +95,9 @@ void write_Texture(meta::serial_writer* serial, const Texture& instance)
 		.member("height", instance.Height())
 		.member("usage", instance.UsageType())
 		.member("filter", instance.FilterType())
-		
-		// hmm this doesnt really work cus most assets free their host memory when being drawn
-		// AssetStore may need to store a copy of each asset...
-		// I dont htink this would work through....
+
+		// storing a copy of the host is kinda annoying because if you edit the texture
+		// you cannot save it properly
 
 		.custom<u8>("host", [&]() { serial->write_bytes((const char*)instance.Pixels(), instance.BufferSize()); })
 		.end();
@@ -114,6 +121,30 @@ void read_Texture(meta::serial_reader* serial, Texture& instance)
 
 	r.custom<u8>("host", [&]() { serial->read_bytes((char*)instance.Pixels(), instance.BufferSize()); })
 	 .end();
+}
+
+void write_TextureAtlas(meta::serial_writer* serial, const TextureAtlas& atlas)
+{
+	std::string sourceName = atlas.source.Name();
+
+	serial->pseudo()
+		.begin<TextureAtlas>()
+		.member("source", sourceName)
+		.member("bounds", atlas.bounds)
+		.end();
+}
+
+void read_TextureAtlas(meta::serial_reader* serial, TextureAtlas& atlas)
+{
+	std::string sourceName;
+
+	serial->pseudo()
+		.begin<TextureAtlas>()
+		.member("source", sourceName)
+		.member("bounds", atlas.bounds)
+		.end();
+
+	atlas.source = Asset::LoadFromFile<Texture>(sourceName);
 }
 
 void register_common_types()
@@ -167,6 +198,17 @@ void register_common_types()
 		.member<&Sprite::source>  ("source")
 		.member<&Sprite::uvOffset>("uvOffset").prop("min", 0.f).prop("max", 1.f)
 		.member<&Sprite::uvScale> ("uvScale") .prop("min", 0.f).prop("max", 1.f);
+
+	describe<Particle>()
+		.name("Particle")
+		.member<&Particle::atlas>("atlas")
+		.member<&Particle::framesPerSecond>("framesPerSecond")
+		.member<&Particle::frameCurrent>("frameCurrent")
+		.member<&Particle::life>("life")
+		.member<&Particle::lifeCurrent>("lifeCurrent")
+		.member<&Particle::original>("original")
+		.member<&Particle::tints>("tints")
+		.member<&Particle::tint>("tint");
 
 	describe<Camera>()
 		.name("Camera")
@@ -222,6 +264,13 @@ void register_common_types()
 		.name("Texture")
 		.custom_write(&write_Texture)
 		.custom_read(&read_Texture);
+
+	describe<TextureAtlas>()
+		.name("TextureAtlas")
+		.member<&TextureAtlas::source>("source")
+		.member<&TextureAtlas::bounds>("bounds")
+		.custom_write(&write_TextureAtlas)
+		.custom_read (&read_TextureAtlas);
 
 	//describe<b2BodyUserData>()
 	//	.name("b2BodyUserData")

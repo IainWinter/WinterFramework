@@ -204,12 +204,9 @@ World::World(Application* app, EventBus* root)
 	// allow app events to propagate down to world
 	root->ChildAttach(&m_bus);
 
+	// Default systems
 	AttachDefaultEntityEvents();
-
-	// Default system
-	CreateSystem<TransformUpdate>();
-	CreateSystem<PhysicsInterpolationUpdate>();
-	//CreateSystem<AudioUpdate>();
+	_AddInternalSystemsToWorld(this);
     
     // create a default camera just so there is one for First<Camera>(), in future I want to have a scene with a MainCamera type deal
     // allow another system to take care of this

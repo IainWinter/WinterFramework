@@ -7,6 +7,8 @@
 #include <assert.h>
 #include <stack>
 
+//#include "util/graph.h"
+
 #define SERIAL_ENTT_TIE_IN
 
 #ifdef SERIAL_ENTT_TIE_IN
@@ -196,6 +198,10 @@ namespace meta
 		bool has_custom_write() const { return m_info->m_has_custom_write; }
 		bool has_custom_read()  const { return m_info->m_has_custom_read; }
 
+		// return the underlying type
+		virtual type* get_type() const = 0;
+
+		// return if type is a member of another class
 		virtual bool is_member() const = 0;
 
 		// asserts m_has_members = true
@@ -257,11 +263,11 @@ namespace meta
 	struct any_storage
 	{
 	protected:
-		meta::type* m_type;
+		type* m_type;
 		bool m_owns;
 
 	public:
-		any_storage(meta::type* type, bool owns)
+		any_storage(type* type, bool owns)
 			: m_type (type)
 			, m_owns (owns)
 		{}
@@ -275,9 +281,11 @@ namespace meta
 		virtual any_storage* new_copy() const = 0;
 		virtual void copy_to(void* instance) const = 0;
 		virtual void move_to(void* instance) const = 0;
-		virtual bool is_type(meta::type* type) const = 0;
+		virtual void copy_in(void* instance) const = 0;
+		virtual void move_in(void* instance) const = 0;
+		virtual bool is_type(type* type) const = 0;
 
-		meta::type* type() const
+		type* type() const
 		{
 			return m_type;
 		}
@@ -348,6 +356,16 @@ namespace meta
 			m_type->move_to(instance, m_instance);
 		}
 
+		void copy_in(void* instance) const override
+		{
+			m_type->copy_to(m_instance, instance);
+		}
+
+		void move_in(void* instance) const override
+		{
+			m_type->move_to(m_instance, instance);
+		}
+
 		bool is_type(meta::type* type) const override
 		{
 			return get_class<_t>()->info()->m_id == type->info()->m_id;
@@ -395,6 +413,16 @@ namespace meta
 		}
 
 		void move_to(void* instance) const override
+		{
+			throw nullptr;
+		}
+
+		void copy_in(void* instance) const override
+		{
+			throw nullptr;
+		}
+
+		void move_in(void* instance) const override
 		{
 			throw nullptr;
 		}
@@ -491,6 +519,16 @@ namespace meta
 			m_storage->move_to(instance);
 		}
 
+		void copy_in(void* instance) const
+		{
+			m_storage->copy_in(instance);
+		}
+
+		void move_in(void* instance) const
+		{
+			m_storage->move_in(instance);
+		}
+
 		type* type() const { return m_storage->type(); }
 		void* data() const { return m_storage->data(); }
 		id_type type_id() const { return type()->info()->m_id; }
@@ -522,6 +560,7 @@ namespace meta
 	struct serial_context
 	{
 		std::unordered_map<id_type, type*> known_info;
+		//graph<type*> known_dependencies;
 	};
 
 	void create_context();
@@ -881,12 +920,6 @@ namespace meta
 		_class_type<_mtype>* m_class;
 		const char* m_name;
 
-		// mainly for imgui display these set the range
-		// doesnt make sense for all types
-		// these are stored as any to lazy init them
-		//any m_min;
-		//any m_max;
-
 		std::unordered_map<const char*, any> m_props;
 
 	public:
@@ -897,6 +930,11 @@ namespace meta
 		{}
         
         virtual ~_class_member() {}
+
+		meta::type* get_type() const override
+		{
+			return (type*)m_class;
+		}
 
 		bool is_member() const override
 		{
@@ -1024,6 +1062,11 @@ namespace meta
 		}
 
 		// interface
+		
+		type* get_type() const override
+		{
+			return (type*)this;
+		}
 
 		bool is_member() const override
 		{
@@ -1108,6 +1151,7 @@ namespace meta
 		{}
 
 		type_info*                info()                                                                    { return m_info; }
+		type*                     get_type()                                                 const override { return (type*)this; }
 		bool                      is_member()                                                const override { return false; }
 		const std::vector<type*>& get_members()                                              const override { assert(false && "type was void"); throw nullptr; }
 		const char*               member_name()                                              const override { assert(false && "type was not a member"); throw nullptr; }

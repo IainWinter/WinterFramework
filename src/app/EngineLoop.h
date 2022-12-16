@@ -13,7 +13,6 @@
 #include "app/System.h"
 #include "app/FontMap.h"
 #include "app/InputMap.h"
-
 #include "app/Time.h"
 
 #include "ext/AssetStore.h"

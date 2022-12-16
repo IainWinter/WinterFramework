@@ -1,11 +1,10 @@
 #pragma once
 
-#include "Defines.h"
-#include "imgui/imgui.h"
-#include <unordered_map>
 #include <string>
 
 // doesnt unload anything...
+
+struct ImFont;
 
 namespace FontMap
 {

@@ -1,4 +1,7 @@
 #include "app/FontMap.h"
+#include "util/filesystem.h"
+#include "imgui/imgui.h"
+#include <unordered_map>
 
 namespace FontMap
 {

@@ -6,7 +6,7 @@
 IDeviceObject::IDeviceObject(
 	bool isStatic
 )
-	: m_static   (isStatic)
+	: m_static   (false/*isStatic*/) // false for asset packing...
 	, m_outdated (true)
 {}
 
@@ -51,7 +51,7 @@ void IDeviceObject::SendToHost()
 
 void IDeviceObject::Cleanup()
 {
-	if (OnDevice()) _FreeDevice();	
+	if (OnDevice()) _FreeDevice();
 	if (OnHost())   _FreeHost();
 }
 
@@ -194,7 +194,7 @@ int  Texture::DeviceHandle() const { return m_device; }
 
 void Texture::_FreeHost()
 {
-	log_render("i~Texture Free Host - bytes: %d", BufferSize());
+	log_render("i~[Texture] (%p) Host Free - bytes: %d", this, BufferSize());
 
 	free(m_host);
 	m_host = nullptr;
@@ -202,7 +202,7 @@ void Texture::_FreeHost()
 
 void Texture::_FreeDevice()
 {
-	log_render("i~Texture Free Device - bytes: %d handle: %d", BufferSize(), m_device);
+	log_render("i~[Texture] (%p) Device Free - bytes: %d, handle: %d", this, BufferSize(), m_device);
 
 	gl(glDeleteTextures(1, &m_device));
 	m_device = 0;
@@ -218,7 +218,7 @@ void Texture::_InitOnDevice()
 
 	_SetDeviceFilter();
 
-	log_render("i~Texture Init Device - dim: (%d, %d, %d) bytes: %d handle: %d", Width(), Height(), Channels(), BufferSize(), m_device);
+	log_render("i~[Texture] (%p) Device Alloc - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_UpdateOnDevice()
@@ -239,7 +239,7 @@ void Texture::_UpdateOnDevice()
 		//gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(m_usage), gl_type(m_usage), Pixels()));
 	//}
 
-	log_render("i~Texture Update Device - dim: (%d, %d, %d) bytes: %d handle: %d", Width(), Height(), Channels(), BufferSize(), m_device);
+	log_render("i~[Texture] (%p) Device Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_UpdateFromDevice()
@@ -251,7 +251,7 @@ void Texture::_UpdateFromDevice()
     gl(glBindTexture(GL_TEXTURE_2D, m_device));
     gl(glGetTexImage(GL_TEXTURE_2D, 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
 
-	log_render("i~Texture Copy to Host - handle: %d", m_device);
+	log_render("i~[Texture] (%p) Host Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_SetDeviceFilter()
@@ -345,7 +345,10 @@ Texture& Texture::copy_into(const Texture& copy)
 		if (m_host)
 		{
 			memcpy(m_host, copy.m_host, BufferSize());
+		
+			log_render("i~[Texture] (%p) Host Init (copy) - bytes: %d", this, BufferSize());
 		}
+
 		else
 		{
 			assert(false);
@@ -366,6 +369,8 @@ void Texture::init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	m_usage = usage;
 	m_channels = gl_num_channels(usage);
 	m_bytesPerChannel = gl_bytes_per_channel(usage);
+
+	log_render("i~[Texture] (%p) Host Init - bytes: %d", this, BufferSize());
 }
 
 bool Texture::IsIndexValid(int index32) const

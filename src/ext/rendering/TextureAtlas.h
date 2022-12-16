@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rendering.h"
+#include "ext/AssetStore.h"
 
 struct TextureAtlas
 {
@@ -10,48 +11,17 @@ struct TextureAtlas
 		vec2 uvScale;
 	};
 
-	r<Texture> source;
+	a<Texture> source;
 	std::vector<Bounds> bounds;
 
 	TextureAtlas() = default;
+	TextureAtlas(a<Texture> source, const std::vector<Bounds>& bounds);
+	TextureAtlas(a<Texture> source);
+	TextureAtlas(const std::string& filename);
 
-	TextureAtlas(r<Texture> source, const std::vector<Bounds>& bounds)
-		: source (source)
-		, bounds (bounds)
-	{}
+	TextureAtlas& SetAutoTile(int numberOfTilesX, int numberOfTilesY);
 
-	TextureAtlas(r<Texture> source, int numberOfTilesX = 1, int numberOfTilesY = 1)
-		: source (source)
-	{
-		SetAutoTile(numberOfTilesX, numberOfTilesY);
-	}
+	const Bounds& GetUVForFrame(int frame) const;
 
-	void SetAutoTile(int numberOfTilesX, int numberOfTilesY)
-	{
-		bounds.clear();
-		bounds.reserve(numberOfTilesX * numberOfTilesY);
-
-		vec2 scale = vec2(1.f, 1.f) / vec2(numberOfTilesX, numberOfTilesY);
-
-		for (int y = 0; y < numberOfTilesY; y++)
-		{
-			for (int x = 0; x < numberOfTilesX; x++)
-			{
-				bounds.push_back(Bounds{ vec2(x, y) * scale, scale });
-			}
-		}
-	}
-
-	// add a constructor for loading a json file that contains the bounds...
-
-	const Bounds& GetUVForFrame(int frame) const
-	{
-		assert(frame >= 0 && frame < bounds.size() && "Frame out of bounds");
-		return bounds.at(frame);
-	}
-
-	int GetFrameCount() const
-	{
-		return (int)bounds.size();
-	}
+	int GetFrameCount() const;
 };

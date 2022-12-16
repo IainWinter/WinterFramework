@@ -1,28 +1,18 @@
 #pragma once
 
-#include "app/System.h"
-#include "ext/serial/serial_json.h"
-
 #include <string>
-#include <vector>
-#include <fstream>
-#include <filesystem>
 
-struct WorldFileData
-{
-    std::string dll;
-    std::vector<std::string> systems;
+//
+//  If a path is a fullpath or a relitive path
+//	Returns a fullpath into the ASSET_ROOT_FOLDER
+//
+std::pair<bool, std::string> IsPathRelative(const std::string& path);
 
-    // loading options -- not sure if these would be in file or not
-
-    std::string name;
-    bool reloadAllState = true; // destroies all world data by creating a new world
-    
-    bool reloadSystems = true; //
-};
-
-inline void CleanHotDlls() {}
-
-// Load a world from file data
-// this creates the world in the application
-inline World* LoadWorldFromData(Application& app, const WorldFileData& data) { return nullptr;  }
+// takes an image file and creates a .atlas file that points to it with default tiling
+//
+// it will name the file like this
+// example.png -> example.png.atlas
+//
+//	returns the new filename
+//
+std::string CreateTextureAtlasFileFromImageFile(const std::string& textureFilename);

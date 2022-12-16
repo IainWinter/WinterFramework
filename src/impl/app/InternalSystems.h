@@ -20,6 +20,13 @@ struct PhysicsInterpolationUpdate : SystemBase
 	void FixedUpdate() override;
 };
 
+struct ParticleUpdate : SystemBase
+{
+	void Update() override;
+};
+
+void _AddInternalSystemsToWorld(World* world);
+
 //struct AudioUpdate : SystemBase
 //{
 //	void Update() override;

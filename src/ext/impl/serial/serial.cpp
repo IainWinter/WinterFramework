@@ -221,6 +221,8 @@ namespace meta
 	{
 		if (has_registered_type(type_id))
 		{
+			//	delete types made in _get_class. This seems like an odd place for delete
+			//
 			delete ctx->known_info[type_id];
 		}
 
@@ -229,6 +231,11 @@ namespace meta
 
 	type* get_registered_type(id_type type_id)
 	{
-		return ctx->known_info[type_id];
+		if (!has_registered_type(type_id))
+		{
+			return nullptr;
+		}
+
+		return ctx->known_info.at(type_id);
 	}
 }

@@ -138,7 +138,12 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 		if (p.HasAtlas())
 		{
 			const TextureAtlas::Bounds& uv = p.GetCurrentFrameUV();
-			render.SubmitSprite(t, p.atlas->source, uv.uvOffset, uv.uvScale, p.GetTint());
+
+			a<TextureAtlas>& atlas = p.atlas;
+			a<Texture>& source = atlas->source;
+			r<Texture> s = source;
+
+			render.SubmitSprite(t, s, uv.uvOffset, uv.uvScale, p.GetTint());
 		}
 
 		else

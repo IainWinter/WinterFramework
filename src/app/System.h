@@ -14,6 +14,7 @@
 #include "ext/Transform.h"
 
 #include "util/named.h"
+#include "util/filesystem.h"
 
 #include <vector>
 
@@ -49,6 +50,21 @@ struct event_CreateEntity
 
 struct SystemBase
 {
+// interface
+
+protected:
+	virtual void Init() {} // alloc resources
+	virtual void Dnit() {} // free resources
+
+	virtual void OnAttach() {} // attach events
+	virtual void OnDetach() {} // detach events
+
+	virtual void Update() {}
+	virtual void FixedUpdate() {}
+
+	virtual void UI() {}
+	virtual void Debug() {}
+
 private:
 	r<World> m_world;
 	bool m_active;
@@ -141,21 +157,6 @@ protected:
 	EntityWorld&  GetEntities();
 	PhysicsWorld& GetPhysics();
 	AudioWorld&   GetAudio();
-
-// interface
-
-protected:
-	virtual void Init() {} // alloc resources
-	virtual void Dnit() {} // free resources
-
-	virtual void OnAttach() {} // attach events
-	virtual void OnDetach() {} // detach events, happens automatically in _Detach
-
-	virtual void Update() {}
-	virtual void FixedUpdate() {}
-
-	virtual void UI() {}
-	virtual void Debug() {}
 };
 
 template<typename _t>

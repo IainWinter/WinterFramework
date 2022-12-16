@@ -198,3 +198,42 @@ Entity& Entity::OnDestroy(const std::function<void(Entity)>& func)
 
 	return *this;
 }
+
+bool Entity::Has(meta::id_type component) const
+{
+	entt::sparse_set* store = m_owning->entt().storage(component);
+	return store && store->contains(m_handle);
+}
+
+meta::any Entity::Get(meta::id_type component) const
+{
+	entt::sparse_set* store = m_owning->entt().storage(component);
+	meta::any any;
+
+	if (store && store->contains(m_handle))
+	{
+		any = meta::any(meta::get_registered_type(component), store->get(m_handle));
+	}
+
+	return any;
+}
+
+void Entity::Add(meta::id_type component)
+{
+	entt::sparse_set* store = m_owning->entt().storage(component);
+
+	if (store && !store->contains(m_handle))
+	{
+		store->emplace(m_handle);
+	}
+}
+
+void Entity::Remove(meta::id_type component)
+{
+	entt::sparse_set* store = m_owning->entt().storage(component);
+
+	if (store && store->contains(m_handle))
+	{
+		store->remove(m_handle);
+	}
+}

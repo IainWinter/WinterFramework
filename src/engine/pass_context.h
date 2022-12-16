@@ -13,7 +13,7 @@ wAPI void PassContexts(ScriptingContext ctx)
     ImGui::SetCurrentContext(ctx.ctx_imgui);
     Time::SetCurrentContext(ctx.ctx_time);
     Render::SetCurrentContext(ctx.ctx_render);
-    meta::set_current_context(ctx.ctx_meta);
-
     Asset::SetCurrentContext(ctx.ctx_asset);
+    File::SetCurrentContext(ctx.ctx_file);
+    meta::set_current_context(ctx.ctx_meta);
 }

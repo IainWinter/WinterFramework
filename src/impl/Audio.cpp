@@ -2,6 +2,8 @@
 #include "fmod/fmod.hpp"
 #include "fmod/fmod_studio.hpp"
 
+#include "util/filesystem.h"
+
 #include <array>
 #include <time.h> // for seed
 

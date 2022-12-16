@@ -12,27 +12,28 @@
 #   define wAPI extern "C"
 #endif
 
-#define wSystemExport(system_name)                            \
-                                                              \
+#define wSystemExport(system_name)                              \
+                                                                \
     wAPI void w_add_to_world_##system_name(r<World> world)      \
-    {                                                         \
-        world->CreateSystem<system_name>()                    \
-             ->SetName(#system_name);                         \
-    }                                                         \
-                                                              \
+    {                                                           \
+        world->CreateSystem<system_name>()                      \
+             ->SetName(#system_name);                           \
+    }                                                           \
+                                                                \
     wAPI void w_remove_from_world_##system_name(r<World> world) \
-    {                                                         \
-        world->DestroySystem<system_name>();                  \
+    {                                                           \
+        world->DestroySystem<system_name>();                    \
     }
 
 struct ScriptingContext
 {
     ImGuiContext* ctx_imgui;
     SDL_GLContext ctx_opengl;
-    SDL_Window*   ctx_window;
-    
+    SDL_Window* ctx_window;
+
     Time::TimeContext* ctx_time;
     Render::RenderContext* ctx_render;
     Asset::AssetContext* ctx_asset;
+    File::FileContext* ctx_file;
     meta::serial_context* ctx_meta;
 };
