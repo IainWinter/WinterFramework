@@ -35,5 +35,6 @@ struct ScriptingContext
     Render::RenderContext* ctx_render;
     Asset::AssetContext* ctx_asset;
     File::FileContext* ctx_file;
+    Input::InputContext* ctx_input;
     meta::serial_context* ctx_meta;
 };

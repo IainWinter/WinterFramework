@@ -167,6 +167,7 @@ void register_common_types()
 
 	describe<Transform2D>()
 		.name("Transform2D")
+		.prop("is_component", true)
 		.member<&Transform2D::position>("position")
 		.member<&Transform2D::z>("z")
 		.member<&Transform2D::scale>("scale")
@@ -189,11 +190,13 @@ void register_common_types()
 
 	describe<EntityMeta>()
 		.name("EntityMeta")
+		.prop("is_component", true)
 		.member<&EntityMeta::name>("name")/*
 		.member<&EntityMeta::parent>("parent")*/;
 
 	describe<Sprite>()
 		.name("Sprite")
+		.prop("is_component", true)
 		.member<&Sprite::tint>    ("tint")
 		.member<&Sprite::source>  ("source")
 		.member<&Sprite::uvOffset>("uvOffset").prop("min", 0.f).prop("max", 1.f)
@@ -201,6 +204,7 @@ void register_common_types()
 
 	describe<Particle>()
 		.name("Particle")
+		.prop("is_component", true)
 		.member<&Particle::atlas>("atlas")
 		.member<&Particle::framesPerSecond>("framesPerSecond")
 		.member<&Particle::frameCurrent>("frameCurrent")
@@ -212,6 +216,7 @@ void register_common_types()
 
 	describe<Camera>()
 		.name("Camera")
+		.prop("is_component", true)
 		.member<&Camera::x>("x")
 		.member<&Camera::y>("y")
 		.member<&Camera::z>("z")
@@ -252,6 +257,7 @@ void register_common_types()
         
 	describe<Rigidbody2D>()
 		.name("Rigidbody2D")
+		.prop("is_component", true)
 		.custom_read(&read_Rigidbody2D)
 		.custom_write(&write_Rigidbody2D);
 

@@ -22,6 +22,8 @@ struct PhysicsInterpolationUpdate : SystemBase
 
 struct ParticleUpdate : SystemBase
 {
+	ParticleUpdate();
+
 	void Update() override;
 };
 

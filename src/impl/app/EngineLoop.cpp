@@ -36,6 +36,7 @@ void EngineLoopBase::_Init()
 	Render::CreateContext();
 	Asset::CreateContext();
 	File::CreateContext();
+	Input::CreateContext();
 
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
@@ -79,6 +80,7 @@ void EngineLoopBase::_Dnit()
 	Render::DestroyContext();
 	Asset::DestroyContext();
 	File::DestroyContext();
+	Input::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()

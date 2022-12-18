@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "Log.h"
+#include "util/comparable_str.h"
 #include <unordered_map>
 #include <array>
 
@@ -9,29 +10,6 @@
 
 // doesnt handle mapping mouse
 // those needs custom behaviours
-
-// this is a helper class for easy if statements between these const char*s
-// most of the time they should be in the string table, so this is just an int comparison
-struct comparable_const_char
-{
-	const char* str;
-
-	comparable_const_char() : str(nullptr) {}
-	comparable_const_char(const char* str) : str(str) {}
-	operator const char* () const { return str; }
-
-	bool operator==(const char* s) { return str == s || strcmp(str, s) == 0; }
-	bool operator!=(const char* s) { return !operator==(s); }
-};
-
-template<>
-struct std::hash<comparable_const_char>
-{
-	std::size_t operator()(const comparable_const_char& s) const noexcept
-	{
-		return std::hash<std::string>{}(s.str); // does this make a copy?
-	}
-};
 
 using InputName = comparable_const_char;
 
@@ -53,6 +31,42 @@ namespace Input
 	{
 		NUMBER_OF_STATES = 1 + cAXIS_MAX + SDL_NUM_SCANCODES
 	};
+
+	struct InputAxis
+	{
+		std::unordered_map<int, vec2> components; // sum of State[code] * component is axis state
+		float deadzone = 0.f;
+	};
+
+	struct VirtualAxis
+	{
+		std::vector<InputName> children;
+	};
+
+	struct InputContext
+	{
+		// mapping of name to virtual axis
+		// these are groups of other axes so each can have its own processing
+		// then be combined
+		std::unordered_map<InputName, VirtualAxis> VirtualAxes;
+
+		// mapping of name to axis
+		// all buttons can be represented as axies with a deadzone
+		// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
+		std::unordered_map<InputName, InputAxis> Axes;
+
+		// mapping of code to inputname
+		// allows us to skip a search through all components of each axis to find a mapping
+		std::unordered_map<int, InputName> Mapping;
+
+		// raw states
+		std::array<float, NUMBER_OF_STATES> State;
+	};
+
+	void CreateContext();
+	void DestroyContext();
+	void SetCurrentContext(InputContext* context);
+	InputContext* GetContext();
 
 	float GetButton(InputName button);
 	vec2  GetAxis  (InputName axis);

@@ -6,6 +6,7 @@
 #include "Physics.h"
 #include "Audio.h"
 
+#include "app/InputMap.h"
 #include "app/Console.h"
 #include "app/Time.h" 
 #include "app/Task.h"
@@ -48,6 +49,19 @@ struct event_CreateEntity
 // Dnit
 // release shared ptr
 
+enum SystemBreakOn : int
+{
+	ON_NONE        = 0,
+	ON_INIT        = 1 << 0,
+	ON_DNIT        = 1 << 1,
+	ON_ATTACH      = 1 << 2,
+	ON_DETACH      = 1 << 3,
+	ON_UPDATE      = 1 << 4,
+	ON_FIXEDUPDATE = 1 << 5,
+	ON_UI          = 1 << 6,
+	ON_DEBUG       = 1 << 7
+};
+
 struct SystemBase
 {
 // interface
@@ -72,6 +86,8 @@ private:
     SystemId m_id;
     
 	std::string m_name;
+
+	SystemBreakOn m_break;
 
 private:
 	template<typename _t>
@@ -109,6 +125,9 @@ public:
     
 	SystemBase* SetName(const std::string& name);
 	const char* GetName() const;
+
+	SystemBase* BreakOn(SystemBreakOn on);
+	SystemBreakOn GetBreakOn() const;
 
 protected:
 

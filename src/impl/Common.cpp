@@ -1,4 +1,5 @@
 #include "Common.h"
+#include <filesystem>
 
 Transform2D::Transform2D()
 	: position (0.f, 0.f)
@@ -339,4 +340,43 @@ ControllerInput MapSDLGameControllerAxis(SDL_GameControllerAxis axis)
 	}
 
 	return (ControllerInput)(1 + axis + ControllerInput::cBUTTON_MAX);
+}
+
+std::string GetPremake5Command()
+{
+	std::filesystem::path tools(wTOOLS);
+	std::filesystem::path premake;
+
+#ifdef _WIN32
+	premake = "premake5.exe";
+#endif
+
+#ifdef __APPLE__
+	premake = "mac_premake5";
+#endif
+
+#ifdef __linux__
+	premake = "premake5";
+#endif
+
+	return (tools / premake).make_preferred().string() + " " + wPREMAKE_BUILD;
+}
+
+std::string GetBuildCommand(const std::string& solutionFilename)
+{
+	std::string builCommand;
+
+#ifdef _WIN32
+	builCommand = "msbuild " + solutionFilename;
+#endif
+
+#ifdef __APPLE__
+	builCommand = "needs impl" + solutionFilename;
+#endif
+
+#ifdef __linux__
+	builCommand = "make";
+#endif
+
+	return builCommand;
 }

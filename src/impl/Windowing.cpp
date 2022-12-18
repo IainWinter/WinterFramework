@@ -387,7 +387,7 @@ void Window::EndImgui()
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-#ifdef IW_PLATFORM_WINDOWS
+#ifdef _WIN32
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 #endif

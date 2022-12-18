@@ -131,7 +131,9 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 		text += 2; // dont write style flag
 	}
 
-	if (strlen(header) > 0) // write header
+	int header_length = strlen(header);
+
+	if (header_length > 0) // write header
 	{
 		put(&itr, '[');
 
@@ -144,6 +146,22 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 		put(&itr, ']');
 		put(&itr, ' ');
 	}
+
+	// tab over newlines
+	//while (*text != '\0')
+	//{
+	//	put(&itr, *text);
+
+	//	if (*text == '\n')
+	//	{
+	//		for (int i = 0; i < header_length; i++)
+	//		{
+	//			put(&itr, ' ');
+	//		}
+	//	}
+
+	//	text += 1;
+	//}
 
 	vsprintf(itr, text, args); // write text
 	itr += strlen(itr);

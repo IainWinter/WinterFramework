@@ -2,33 +2,28 @@
 
 namespace Input
 {
-	struct InputAxis
+	InputContext* ctx;
+
+	void CreateContext()
 	{
-		std::unordered_map<int, vec2> components; // sum of State[code] * component is axis state
-		float deadzone = 0.f;
-	};
+		DestroyContext();
+		ctx = new InputContext();
+	}
 
-	struct VirtualAxis
+	void DestroyContext()
 	{
-		std::vector<InputName> children;
-	};
+		delete ctx;
+	}
 
-	// mapping of name to virtual axis
-	// these are groups of other axes so each can have its own processing
-	// then be combined
-	std::unordered_map<InputName, VirtualAxis> VirtualAxes;
+	void SetCurrentContext(InputContext* context)
+	{
+		ctx = context;
+	}
 
-	// mapping of name to axis
-	// all buttons can be represented as axies with a deadzone
-	// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
-	std::unordered_map<InputName, InputAxis> Axes;
-
-	// mapping of code to inputname
-	// allows us to skip a search through all components of each axis to find a mapping
-	std::unordered_map<int, InputName> Mapping;
-
-	// raw states
-	std::array<float, NUMBER_OF_STATES> State;
+	InputContext* GetContext()
+	{
+		return ctx;
+	}
 
 	float GetButton(InputName button)
 	{
@@ -39,12 +34,12 @@ namespace Input
 	{
 		vec2 out = vec2(0.f);
 
-		auto itr = Axes.find(axis);
-		if (itr != Axes.end())
+		auto itr = ctx->Axes.find(axis);
+		if (itr != ctx->Axes.end())
 		{
 			for (const auto& component : itr->second.components)
 			{
-				out += State[component.first] * component.second;
+				out += ctx->State[component.first] * component.second;
 			}
 
 			if (length(out) < itr->second.deadzone)
@@ -60,8 +55,8 @@ namespace Input
 	{
 		vec2 out = GetAxisNoRecurse(axis);
 
-		auto vitr = VirtualAxes.find(axis);
-		if (vitr != VirtualAxes.end())
+		auto vitr = ctx->VirtualAxes.find(axis);
+		if (vitr != ctx->VirtualAxes.end())
 		{
 			for (const auto& child : vitr->second.children)
 			{
@@ -80,7 +75,7 @@ namespace Input
 			return;
 		}
 
-		Axes.emplace(name, InputAxis{});
+		ctx->Axes.emplace(name, InputAxis{});
 	}
 
 	void CreateVirtualAxis(InputName name)
@@ -91,17 +86,17 @@ namespace Input
 			return;
 		}
 
-		VirtualAxes.emplace(name, VirtualAxis{});
+		ctx->VirtualAxes.emplace(name, VirtualAxis{});
 	}
 
 	bool AxisExists(InputName axis)
 	{
-		return Axes.find(axis) != Axes.end();
+		return ctx->Axes.find(axis) != ctx->Axes.end();
 	}
 
 	bool VirtualAxisExists(InputName axis)
 	{
-		return VirtualAxes.find(axis) != VirtualAxes.end();
+		return ctx->VirtualAxes.find(axis) != ctx->VirtualAxes.end();
 	}
 
 	void SetDeadzone(InputName axis, float deadzone)
@@ -112,7 +107,7 @@ namespace Input
 			return;
 		}
 
-		Axes[axis].deadzone = deadzone;
+		ctx->Axes[axis].deadzone = deadzone;
 	}
 
 	void SetVirtualAxisComponent(InputName axis, InputName component)
@@ -129,11 +124,11 @@ namespace Input
 			return;
 		}
 
-		VirtualAxes[axis].children.push_back(component);
+		ctx->VirtualAxes[axis].children.push_back(component);
 
-		for (const auto& c : Axes[component].components) // we need to update mapping 
+		for (const auto& c : ctx->Axes[component].components) // we need to update mapping 
 		{
-			Mapping[c.first] = axis;
+			ctx->Mapping[c.first] = axis;
 		}
 	}
 
@@ -151,8 +146,8 @@ namespace Input
 
 	InputName GetMapping(int code)
 	{
-		auto itr = Mapping.find(code);
-		return itr != Mapping.end() ? itr->second : nullptr;
+		auto itr = ctx->Mapping.find(code);
+		return itr != ctx->Mapping.end() ? itr->second : nullptr;
 	}
 
 	InputName GetMapping(KeyboardInput scancode)
@@ -173,8 +168,8 @@ namespace Input
 			return;
 		}
 
-		Axes[axis].components.emplace(code, weight);
-		Mapping.emplace(code, axis);
+		ctx->Axes[axis].components.emplace(code, weight);
+		ctx->Mapping.emplace(code, axis);
 	}
 
 	void SetAxisComponent(InputName axis, KeyboardInput scancode, vec2 weight)
@@ -197,6 +192,6 @@ namespace Input
 			return;
 		}
 
-		State[code] = state;
+		ctx->State[code] = state;
 	}
 }

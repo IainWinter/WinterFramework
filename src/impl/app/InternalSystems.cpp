@@ -2,7 +2,8 @@
 #include "ext/rendering/Particle.h"
 
 TransformUpdate::TransformUpdate()                       { SetName("Transform Update"); }
-PhysicsInterpolationUpdate::PhysicsInterpolationUpdate() { SetName("Physics interpolation update"); }
+PhysicsInterpolationUpdate::PhysicsInterpolationUpdate() { SetName("Physics Interpolation Update"); }
+ParticleUpdate::ParticleUpdate()                         { SetName("Particle Update"); }
 
 void TransformUpdate::Update()
 {

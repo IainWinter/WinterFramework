@@ -2,6 +2,10 @@
 
 #include "engine/script.h"
 
+void ModuleMain();
+
+#define RegisterComponent(component) meta::describe<component>().name(#component).prop("is_component", true)
+
 wAPI void PassContexts(ScriptingContext ctx)
 {
     // Load GL functions for this dll
@@ -15,5 +19,8 @@ wAPI void PassContexts(ScriptingContext ctx)
     Render::SetCurrentContext(ctx.ctx_render);
     Asset::SetCurrentContext(ctx.ctx_asset);
     File::SetCurrentContext(ctx.ctx_file);
+    Input::SetCurrentContext(ctx.ctx_input);
     meta::set_current_context(ctx.ctx_meta);
+
+    ModuleMain();
 }

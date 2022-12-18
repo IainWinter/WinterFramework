@@ -1,17 +1,23 @@
 #include "app/System.h"
 #include "InternalSystems.h"
 
+#define _break(on) if ((int)m_break & on) { (int&)m_break &= ~on; __debugbreak(); }
+
 void SystemBase::_Init(r<World> world)
 {
 	log_world("i~\tInitialized System %s", GetName());
 
 	m_world = world;
+
+	_break(ON_INIT);
 	Init();
 }
 
 void SystemBase::_Dnit()
 {
+	_break(ON_DNIT);
 	Dnit();
+
 	m_world.reset();
 
 	log_world("i~\tDeinitialized System %s", GetName());
@@ -22,6 +28,8 @@ void SystemBase::_OnAttach()
 	log_world("i~\tAttached System %s", GetName());
 
 	m_active = true;
+	
+	_break(ON_ATTACH);
 	OnAttach();
 }
 
@@ -29,6 +37,8 @@ void SystemBase::_OnDetach()
 {
 	m_active = false;
 	GetWorld()->GetEventBus().Detach(this);
+
+	_break(ON_DETACH);
 	OnDetach();
 
 	log_world("i~\tDetached System %s", GetName());
@@ -36,21 +46,25 @@ void SystemBase::_OnDetach()
 
 void SystemBase::_Update()
 {
+	_break(ON_UPDATE);
 	Update();
 }
 
 void SystemBase::_FixedUpdate()
 {
+	_break(ON_FIXEDUPDATE);
 	FixedUpdate();
 }
 
 void SystemBase::_UI()
 {
+	_break(ON_UI);
 	UI();
 }
 
 void SystemBase::_Debug()
 {
+	_break(ON_DEBUG);
 	Debug();
 }
 
@@ -62,6 +76,7 @@ void SystemBase::_SetId(SystemId id)
 SystemBase::SystemBase()
 	: m_active (false)
     , m_id     (-1)
+	, m_break  (ON_NONE)
 {
 	log_world("i~\tCreated System");
 }
@@ -95,6 +110,17 @@ SystemBase* SystemBase::SetName(const std::string& name)
 const char* SystemBase::GetName() const
 {
 	return m_name.c_str();
+}
+
+SystemBase* SystemBase::BreakOn(SystemBreakOn on)
+{
+	m_break = on;
+	return this;
+}
+
+SystemBreakOn SystemBase::GetBreakOn() const
+{
+	return m_break;
 }
 
 Entity SystemBase::CreateEntity()

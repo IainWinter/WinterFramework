@@ -37,11 +37,9 @@ project "Framework"
 		"src"
 	}
 
-	if asset_root_path ~= nil then
-		defines {
-			"ASSET_ROOT_PATH=\"" .. asset_root_path .. "/\""
-		}
-	end
+	defines {
+		"wTOOLS=\"" .. path.getabsolute("tools/") .. "\""
+	}
 
 	filter "system:Windows"
 		libdirs {
@@ -52,7 +50,11 @@ project "Framework"
 			include_sdl_win32
 		}
 
-		defines { "IW_PLATFORM_WINDOWS" }
+		defines {
+			"wPREMAKE=\"premake5.exe\"",
+			"wPREMAKE_BUILD=\"vs2022\"",
+			"wBUILD_CLI=\"msbuild\""
+		}
 
 		buildoptions ("/bigobj /FS")
 
@@ -63,6 +65,19 @@ project "Framework"
 
 		includedirs {
 			"/opt/homebrew/Cellar/sdl2/2.0.22/include"
+		}
+
+		defines {
+			"wPREMAKE=\"mac_premake5\"",
+			"wPREMAKE_BUILD=\"xcode4\"",
+			"wBUILD_CLI=\"needs link\""
+		}
+
+	filter "system:linux"
+		defines {
+			"wPREMAKE=\"premake5\"",
+			"wPREMAKE_BUILD=\"gmake2\"",
+			"wBUILD_CLI=\"make\""
 		}
 
 	filter "configurations:Debug"

@@ -201,6 +201,24 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 
 /*
 
+	Pointer helpers
+
+*/
+
+template<typename _t>
+_t value_or(void* ptr, const _t& or)
+{
+	return ptr ? *(_t*)ptr : or ;
+}
+
+template<typename _t>
+_t value_or(void* ptr, size_t index, const _t& or)
+{
+	return ptr ? *(_t*)ptr + index : or ;
+}
+
+/*
+
 	std helpers
 
 */
@@ -389,3 +407,11 @@ struct event_Controller
 	float value;
 };
 
+/*
+
+	Tools
+
+*/
+
+std::string GetPremake5Command();
+std::string GetBuildCommand(const std::string& solutionFilename);

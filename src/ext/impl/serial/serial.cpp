@@ -171,9 +171,12 @@ namespace meta
 
         serial->class_delim();
 
-        value = get_registered_type(id)->construct();
+		if (has_registered_type(id)) // I think this screws the bin reader, not the json through. Could put size of type. It doesn better to crash here then later, real fix is to store size in bin
+		{
+			value = get_registered_type(id)->construct();
+			serial->read_member(value.type(), value.data(), "data");
+		}
 
-        serial->read_member(value.type(), value.data(), "data");
         serial->class_end();
     }
 
@@ -182,6 +185,7 @@ namespace meta
 	//
 
 	serial_context* ctx;
+	int whoAreWe;
 
 	void create_context()
 	{

@@ -48,24 +48,27 @@ namespace File
 		}
 	}
 
-	void PopCurrentPath()
+	void PopCurrentPath(int number)
 	{
-		if (ctx->currentPathStack.size() == 1) // ext on no previous paths
+		for (int i = 0; i < number; i++)
 		{
-			return;
-		}
+			if (ctx->currentPathStack.size() == 1) // ext on no previous paths
+			{
+				break;
+			}
 
-		try 
-		{
-			ctx->currentPathStack.pop();
+			try 
+			{
+				ctx->currentPathStack.pop();
 
-			std::filesystem::path next = ctx->currentPathStack.top();
-			std::filesystem::current_path(next);
-		}
+				std::filesystem::path next = ctx->currentPathStack.top();
+				std::filesystem::current_path(next);
+			}
 
-		catch (std::exception e)
-		{
-			// soft error
+			catch (std::exception e) // soft error
+			{
+				break;
+			}
 		}
 	}
 

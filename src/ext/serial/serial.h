@@ -7,6 +7,9 @@
 #include <assert.h>
 #include <stack>
 
+//#include "util/comparable_str.h"
+#include <string>
+
 //#include "util/graph.h"
 
 #define SERIAL_ENTT_TIE_IN
@@ -195,6 +198,7 @@ namespace meta
 
 		const type_info* info() const { return m_info; }
 		const char* name() const { return m_info->m_name; }
+		id_type id() const { return m_info->m_id; }
 		bool has_custom_write() const { return m_info->m_has_custom_write; }
 		bool has_custom_read()  const { return m_info->m_has_custom_read; }
 
@@ -226,13 +230,13 @@ namespace meta
 		virtual any construct() const = 0;
 
 		// if the type is a member, returns an any with the value of a named property
-		virtual const any& prop(const char* name) const = 0;
+		virtual const any& prop(const std::string& name) const = 0;
 		
 		// if the type is a member, return if this member has a property
-		virtual bool has_prop(const char* name) const = 0;
+		virtual bool has_prop(const std::string& name) const = 0;
 
 		// if the type is a member, set the named a property
-		virtual void set_prop(const char* name, const any& value) = 0;
+		virtual void set_prop(const std::string& name, const any& value) = 0;
 
 		// this calls the function meta::ping specialized with the underlying type
 		virtual void ping(void* userdata = nullptr, int message = 0) const = 0;
@@ -920,7 +924,11 @@ namespace meta
 		_class_type<_mtype>* m_class;
 		const char* m_name;
 
-		std::unordered_map<const char*, any> m_props;
+		// std::string for hashing between dll fense
+		//		
+		//
+		// properties of this specific member
+		std::unordered_map<std::string/*comparable_const_char*/, any> m_props;
 
 	public:
 		_class_member(_class_type<_mtype>* member_class_type, const char* member_name)
@@ -971,17 +979,17 @@ namespace meta
 			return m_class->construct();
 		}
 
-		const any& prop(const char* name) const override
+		const any& prop(const std::string& name) const override
 		{
 			return m_props.at(name);
 		}
 
-		bool has_prop(const char* name) const override
+		bool has_prop(const std::string& name) const override
 		{
-			return m_props.count(name) > 0;
+			return m_props.find(name) != m_props.end();
 		}
 
-		void set_prop(const char* name, const any& value) override
+		void set_prop(const std::string& name, const any& value) override
 		{
 			m_props[name].copy_own(value);
 		}
@@ -1016,6 +1024,8 @@ namespace meta
 
 		std::function<void(serial_writer*, const _t&)> m_write;
 		std::function<void(serial_reader*,       _t&)> m_read;
+
+		std::unordered_map<std::string/*comparable_const_char*/, any> m_props;
 
 	public:
 		_class_type(type_info* info)
@@ -1107,22 +1117,19 @@ namespace meta
 			return any(t, true);
 		}
 
-		const any& prop(const char* name) const override
+		const any& prop(const std::string& name) const override
 		{
-			assert(false && "type was not a member");
-			throw nullptr;
+			return m_props.at(name);
 		}
 
-		bool has_prop(const char* name) const override
+		bool has_prop(const std::string& name) const override
 		{
-			assert(false && "type was not a member");
-			throw nullptr;
+			return m_props.find(name) != m_props.end();
 		}
 
-		void set_prop(const char* name, const any& value) override
+		void set_prop(const std::string& name, const any& value) override
 		{
-			assert(false && "type was not a member");
-			throw nullptr;
+			m_props[name].copy_own(value);
 		}
 
 		void ping(void* userdata = nullptr, int message = 0) const override
@@ -1159,24 +1166,28 @@ namespace meta
 		void                      _serial_write(serial_writer* serial, const void* instance) const override { assert(false && "type was void"); throw nullptr; }
 		void                      _serial_read(serial_reader* serial, void* instance)        const override { assert(false && "type was void"); throw nullptr; }
 		any                       construct()                                                const override { return any((type*)this, nullptr); }
-		const any&                prop(const char* name)                                     const override { assert(false && "type was not a member"); throw nullptr; }
-		bool                      has_prop(const char* name)                                 const override { assert(false && "type was not a member"); throw nullptr; }
-		void                      set_prop(const char* name, const any& value)                     override { assert(false && "type was not a member"); throw nullptr; }
+		const any&                prop(const std::string& name)                              const override { assert(false && "type was not a member"); throw nullptr; }
+		bool                      has_prop(const std::string& name)                          const override { assert(false && "type was not a member"); throw nullptr; }
+		void                      set_prop(const std::string& name, const any& value)              override { assert(false && "type was not a member"); throw nullptr; }
 		void                      ping(void* userdata = nullptr, int message = 0)            const override { assert(false && "type was void"); throw nullptr; }
 		void                      copy_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
 		void                      move_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
 	};
 
 	template<typename _t>
+	id_type _get_id()
+	{
+#ifdef SERIAL_ENTT_TIE_IN
+		return entt::type_id<_t>().hash();
+#else
+		return typeid(_t).hash_code();
+#endif
+	}
+
+	template<typename _t>
 	_class_type<_t>* _get_class()
 	{
-		id_type id = 0;
-
-#ifdef SERIAL_ENTT_TIE_IN
-		id = entt::type_id<_t>().hash();
-#else
-		id = typeid(_t).hash_code();
-#endif
+		id_type id = _get_id<_t>();
 
 		if (!has_registered_type(id))
 		{
@@ -1197,13 +1208,21 @@ namespace meta
 	class describe
 	{
 	private:
-		_class_type<_t>* m_current = _get_class<_t>();
+		_class_type<_t>* m_current = nullptr;
 
 	public:
+		describe()
+		{
+			if (!has_registered_type(_get_id<_t>()))
+			{
+				m_current = _get_class<_t>();
+			}
+		}
+
 		// set the name of the class
 		describe<_t>& name(const char* name)
 		{
-			m_current->info()->m_name = name;
+			if (m_current) m_current->info()->m_name = name;
 			return *this;
 		}
 
@@ -1211,15 +1230,23 @@ namespace meta
 		template<auto _m>
 		describe<_t>& member(const char* name)
 		{
-			m_current->template add_member<_m>(name);
+			if (m_current) m_current->template add_member<_m>(name);
 			return *this;
 		}
 
 		// for the last member added, set a property
 		template<typename _v>
-		describe<_t>& prop(const char* name, _v value)
+		describe<_t>& prop(const std::string& name, _v value)
 		{
-			m_current->get_members().back()->set_prop(name, any(value, false));
+			if (m_current) m_current->set_prop(name, any(value, false));
+			return *this;
+		}
+
+		// for the last member added, set a property
+		template<typename _v>
+		describe<_t>& member_prop(const std::string& name, _v value)
+		{
+			if (m_current) m_current->get_members().back()->set_prop(name, any(value, false));
 			return *this;
 		}
 
@@ -1228,7 +1255,7 @@ namespace meta
 		// but doesnt want default serialization behaviour
 		describe<_t>& custom_write(const std::function<void(serial_writer*, const _t&)>& func)
 		{
-			m_current->set_custom_writer(func);
+			if (m_current) m_current->set_custom_writer(func);
 			return *this;
 		}
 
@@ -1237,7 +1264,7 @@ namespace meta
 		// but doesnt want default deserialization behaviour
 		describe<_t>& custom_read(const std::function<void(serial_reader*, _t&)>& func)
 		{
-			m_current->set_custom_reader(func);
+			if (m_current) m_current->set_custom_reader(func);
 			return *this;
 		}
 

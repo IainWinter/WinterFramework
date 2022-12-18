@@ -17,7 +17,7 @@ namespace File
 	FileContext* GetContext();
 
 	void PushCurrentPath(const std::string& path);
-	void  PopCurrentPath();
+	void  PopCurrentPath(int number = 1);
 
 	void SetAssetPath(const std::string& path);
 	std::string GetAssetPath();
