@@ -18,6 +18,7 @@
     {                                                           \
         world->CreateSystem<system_name>()                      \
              ->SetName(#system_name);                           \
+                                                                \
     }                                                           \
                                                                 \
     wAPI void w_remove_from_world_##system_name(r<World> world) \
@@ -38,3 +39,27 @@ struct ScriptingContext
     Input::InputContext* ctx_input;
     meta::serial_context* ctx_meta;
 };
+
+//
+//  This is so module can pass string arrays using a C struct, ie not a vector
+//
+
+struct StringArray
+{
+    char const** strings;
+    size_t length;
+};
+
+inline StringArray NewStringArray(size_t size)
+{
+    StringArray arr;
+    arr.strings = new const char*[size];
+    arr.length = size;
+
+    return arr;
+}
+
+inline void DeleteStringArray(StringArray& arr)
+{
+    delete[] arr.strings;
+}

@@ -155,8 +155,10 @@ namespace meta
 
     void write_any(serial_writer* serial, const any& value)
     {
+		std::string name = value.type()->info()->m_name; // could write just the bytes with a custom read/write
+
         serial->class_begin(get_class<any>());
-        serial->write_member(get_class<id_type>(), &value.type()->info()->m_id, "type");
+        serial->write_member(get_class<std::string>(), &name, "name");
         serial->class_delim();
         serial->write_member(value.type(), value.data(), "data");
         serial->class_end();
@@ -164,16 +166,16 @@ namespace meta
 
     void read_any(serial_reader* serial, any& value)
     {
-        id_type id;
+        std::string name;
 
         serial->class_begin(get_class<any>());
-        serial->read_member(get_class<id_type>(), &id, "type");
+        serial->read_member(get_class<std::string>(), &name, "name");
 
         serial->class_delim();
 
-		if (has_registered_type(id)) // I think this screws the bin reader, not the json through. Could put size of type. It doesn better to crash here then later, real fix is to store size in bin
+		if (has_registered_type(name.c_str())) // I think this screws the bin reader, not the json through. todo: put size of type to fix this
 		{
-			value = get_registered_type(id)->construct();
+			value = get_registered_type(name.c_str())->construct();
 			serial->read_member(value.type(), value.data(), "data");
 		}
 
@@ -216,11 +218,6 @@ namespace meta
 		ctx = context;
 	}
 
-	bool has_registered_type(id_type id)
-	{
-		return ctx->known_info.find(id) != ctx->known_info.end();
-	}
-
 	void register_type(id_type type_id, type* type)
 	{
 		if (has_registered_type(type_id))
@@ -233,6 +230,11 @@ namespace meta
 		ctx->known_info[type_id] = type;
 	}
 
+	bool has_registered_type(id_type id)
+	{
+		return ctx->known_info.find(id) != ctx->known_info.end();
+	}
+
 	type* get_registered_type(id_type type_id)
 	{
 		if (!has_registered_type(type_id))
@@ -241,5 +243,23 @@ namespace meta
 		}
 
 		return ctx->known_info.at(type_id);
+	}
+
+	bool has_registered_type(const char* name)
+	{
+		return get_registered_type(name) != nullptr;
+	}
+
+	type* get_registered_type(const char* name)
+	{
+		for (const auto& [id, type] : ctx->known_info)
+		{
+			if (strcmp(type->name(), name) == 0)
+			{
+				return type;
+			}
+		}
+
+		return nullptr;
 	}
 }

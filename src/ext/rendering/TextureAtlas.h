@@ -2,6 +2,7 @@
 
 #include "Rendering.h"
 #include "ext/AssetStore.h"
+#include "ext/rendering/Sprite.h"
 
 struct TextureAtlas
 {
@@ -22,6 +23,7 @@ struct TextureAtlas
 	TextureAtlas& SetAutoTile(int numberOfTilesX, int numberOfTilesY);
 
 	const Bounds& GetUVForFrame(int frame) const;
+	Sprite GetSpriteForFrame(int frame) const;
 
 	int GetFrameCount() const;
 };

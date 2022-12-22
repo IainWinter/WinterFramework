@@ -572,9 +572,14 @@ namespace meta
 	serial_context* get_context();
 	void set_current_context(serial_context* context);
 
-	bool has_registered_type(id_type type_id);
 	void register_type(id_type type_id, type* type);
+
+	bool has_registered_type(id_type type_id);
 	type* get_registered_type(id_type type_id);
+
+	bool has_registered_type(const char* name);
+	type* get_registered_type(const char* name);
+
 
 	//
 	// serialization
@@ -1324,7 +1329,9 @@ namespace meta
 //		default custom writers
 //
 
-#include <string>
+// should move these to a file: serial_std.h 
+
+#include <unordered_set>
 
 namespace meta
 {
@@ -1339,5 +1346,50 @@ namespace meta
 	{
 		instance.resize(reader->read_length());
 		reader->read_array(meta::get_class<_t>(), instance.data(), instance.size());
+	}
+
+	template<typename _t>
+	void serial_write(serial_writer* writer, const std::unordered_set<_t>& instance)
+	{
+		size_t length = instance.size();
+
+		writer->array_begin(meta::get_class<_t>(), length);
+
+		size_t i = 0;
+		for (const _t& item : instance)
+		{
+			writer->write(item);
+
+			if (i != length - 1)
+			{
+				writer->array_delim();
+			}
+
+			i += 1;
+		}
+
+		writer->array_end();
+	}
+
+	template<typename _t>
+	void serial_read(serial_reader* reader, std::unordered_set<_t>& instance)
+	{
+		size_t length = reader->read_length();
+
+		reader->array_begin(meta::get_class<_t>(), length);
+
+		for (int i =  0; i < length; i++)
+		{
+			_t item;
+			reader->read(item);
+			instance.insert(item);
+
+			if (i != length - 1)
+			{
+				reader->array_delim();
+			}
+		}
+
+		reader->array_end();
 	}
 }

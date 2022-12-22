@@ -289,13 +289,15 @@ namespace Asset
 			return Get<_t>(filename);
 		}
 
-		if (!std::filesystem::exists(std::filesystem::path(filename)))
+		std::string assetPath = ::_a(filename);
+
+		if (!std::filesystem::exists(std::filesystem::path(assetPath)))
 		{
 			log_io("w~Failed to load asset from file: '%s'", filename.c_str());
 			return a<_t>();
 		}
 
-		return Make<_t>(::_ar(filename), ::_a(filename), args...);
+		return Make<_t>(::_ar(filename), assetPath, args...);
 	}
 
 	template<typename _t>

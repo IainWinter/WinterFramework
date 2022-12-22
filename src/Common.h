@@ -237,6 +237,12 @@ std::vector<_t> list(const _t& first, const _i&... others)
 	return std::vector<_t>{ first, others... };
 }
 
+template<typename _t, typename _f>
+bool contains(const _t& list, const _f& value)
+{
+	return std::find(list.begin(), list.end(), value) != list.end();
+}
+
 template<typename _t> 
 using r = std::shared_ptr<_t>;
 

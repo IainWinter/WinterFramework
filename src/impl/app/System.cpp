@@ -268,6 +268,19 @@ const std::vector<SystemBase*>& World::GetSystems() const
     return m_systems;
 }
 
+SystemBase* World::GetSystem(const char* name) const
+{
+	for (SystemBase* system : GetSystems())
+	{
+		if (strcmp(system->GetName(), name) == 0)
+		{
+			return system;
+		}
+	}
+
+	return nullptr;
+}
+
 void World::AttachSystem(SystemBase* system)
 {
 	if (HasSystem(system))
@@ -499,6 +512,27 @@ void World::ReallocWorlds()
 	AttachDefaultEntityEvents();
 }
 
+bool WorldPackage::HasSystemNamed(const char* name) const
+{
+	return FindSystemNamed(name) != nullptr;
+}
+
+SystemBase* WorldPackage::FindSystemNamed(const char* name) const
+{
+	for (const r<World>& world : Worlds)
+	{
+		for (SystemBase* system : world->GetSystems())
+		{
+			if (strcmp(system->GetName(), name) == 0)
+			{
+				return system;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 //void World::on_add_rigidbody(entt::registry& reg, entt::entity e)
 //{
 //	Entity entity = m_entities.Wrap((u32)e);
@@ -592,7 +626,7 @@ bool Application::HasWorld(const r<World>& world) const
 
 void Application::AttachPackage(const WorldPackage& package)
 {
-	for (auto world : package.worlds)
+	for (auto world : package.Worlds)
 	{
 		AttachWorld(world);
 	}
@@ -600,7 +634,7 @@ void Application::AttachPackage(const WorldPackage& package)
 
 void Application::DetachPackage(const WorldPackage& package)
 {
-	for (auto world : package.worlds)
+	for (auto world : package.Worlds)
 	{
 		DetachWorld(world);
 	}

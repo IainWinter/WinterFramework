@@ -1,9 +1,17 @@
 #pragma once
 
-#include <assert.h>
-
-struct allocator 
+class allocator 
 {
+private:
+	// allows for setting a block size to allocate fixed size byte arrays
+	// if not larger than 1, a block is just a normal byte
+	// can only set block size once
+	size_t m_block_size = 1;
+
+public:
+	void set_block_size(size_t block_size);
+	size_t get_block_size() const;
+
 	virtual char* alloc_bytes(size_t size) = 0;
 	virtual void free_bytes(void* address, size_t size) = 0;
 	
@@ -21,14 +29,10 @@ struct allocator
 
 	virtual bool is_empty() const = 0;
 
-	size_t block_capacity() const
-	{
-		assert(m_block_size > 0 && "Block size needs to be set to use this");
-		return capacity() / m_block_size;
-	}
+	size_t block_capacity() const;
 
-	// allows for setting a block size to allocate fixed size byte arrays
-	size_t m_block_size = 1;
+	char* alloc_block();
+	void free_block(void* address);
 
 	template<typename _t>
 	_t* alloc(size_t count = 1)
@@ -52,22 +56,11 @@ struct allocator
 
 		free_bytes(address, sizeof(_t) * count);
 	}
-
-	char* alloc_block()
-	{
-		assert(m_block_size > 0 && "Tried to alloc block without setting size");
-		return alloc_bytes(m_block_size);
-	}
-
-	void free_block(void* address)
-	{
-		assert(m_block_size > 0 && "Tried to free block without setting size");
-		free_bytes(address, m_block_size);
-	}
 };
 
-struct allocator_iterator
+class allocator_iterator
 {
+public:
 	virtual char* get_bytes() const = 0;
 	virtual bool more() const = 0;
 	virtual void next() = 0;

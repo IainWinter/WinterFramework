@@ -43,12 +43,19 @@ TextureAtlas& TextureAtlas::SetAutoTile(int numberOfTilesX, int numberOfTilesY)
 	return *this;
 }
 
-// add a constructor for loading a json file that contains the bounds...
-
 const TextureAtlas::Bounds& TextureAtlas::GetUVForFrame(int frame) const
 {
 	assert(frame >= 0 && frame < bounds.size() && "Frame out of bounds");
 	return bounds.at(frame);
+}
+
+Sprite TextureAtlas::GetSpriteForFrame(int frame) const
+{
+	Bounds bounds = GetUVForFrame(frame);
+
+	return Sprite(source)
+		.SetUvOffset(bounds.uvOffset)
+		.SetUvScale(bounds.uvScale);
 }
 
 int TextureAtlas::GetFrameCount() const

@@ -1,10 +1,22 @@
 #pragma once
 
+//
+//
+//  Only include this file in a single cpp file, 
+//      almost always module.cpp
+//
+//
+
 #include "engine/script.h"
 
-void ModuleMain();
+//
+// Module state
+//
 
-#define RegisterComponent(component) meta::describe<component>().name(#component).prop("is_component", true)
+std::unordered_set<const char*> systems;
+
+// fwd so PassContexts can call this
+void ModuleMain();
 
 wAPI void PassContexts(ScriptingContext ctx)
 {
@@ -24,3 +36,23 @@ wAPI void PassContexts(ScriptingContext ctx)
 
     ModuleMain();
 }
+
+// you own this memory
+// delete with 'delete[]'
+
+wAPI StringArray GetAvalibleSystemNames()
+{
+    StringArray arr = NewStringArray(systems.size());
+
+    size_t i = 0;
+    for (const char* n : systems)
+    {
+        arr.strings[i++] = n;
+    }
+
+    return arr;
+}
+
+// todo: remove this
+
+#define RegisterComponent(component) meta::describe<component>().name(#component).prop("is_component", true)

@@ -238,6 +238,8 @@ public:
 
     const std::vector<SystemBase*>& GetSystems() const;
     
+	SystemBase* GetSystem(const char* name) const;
+
 	template<typename _t> SystemBase*  CreateSystem();
 	template<typename _t> void        DestroySystem();
 	template<typename _t> SystemBase*     GetSystem();
@@ -299,7 +301,10 @@ public:
 
 struct WorldPackage
 {
-	std::vector<r<World>> worlds;
+	std::vector<r<World>> Worlds;
+
+	bool HasSystemNamed(const char* name) const;
+	SystemBase* FindSystemNamed(const char* name) const;
 };
 
 //
