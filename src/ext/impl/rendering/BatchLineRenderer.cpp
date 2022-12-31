@@ -7,7 +7,6 @@ BatchLineRenderer::BatchLineRenderer()
 
 void BatchLineRenderer::Begin()
 {
-	z = 0;
 	m_mesh.Clear();
 }
 
@@ -15,27 +14,29 @@ void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& co
 {
     Transform2D t;
     t.z = z;
-	SubmitLine(t, a, b, color, color);
+	SubmitLine(a, b, color, color, t);
 }
 
 void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, float z)
 {
     Transform2D t;
     t.z = z;
-	SubmitLine(t, a, b, colorA, colorB);
+	SubmitLine(a, b, colorA, colorB, t);
 }
 
-void BatchLineRenderer::SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& color)
+void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& color, const Transform2D& transform)
 {
-	SubmitLine(transform, a, b, color, color);
+	SubmitLine(a, b, color, color, transform);
 }
 
-void BatchLineRenderer::SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& colorA, const Color& colorB)
+void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, const Transform2D& transform)
+{
+	SubmitLine(vec3(a, 0.f), vec3(b, 0.f), colorA, colorB, transform);
+}
+
+void BatchLineRenderer::SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform2D& transform)
 {
 	glm::mat4 world = transform.World();
-	world[3][2] += z;
-	z += .001f;
-
 	vec4 ca = colorA.as_v4();
 	vec4 cb = colorB.as_v4();
 
@@ -50,7 +51,8 @@ void BatchLineRenderer::SubmitLine(const Transform2D& transform, const vec2& a, 
 void BatchLineRenderer::Draw(const Camera& camera)
 {
 	m_program.Use();
-	m_program.Set("projection", camera.Projection());
+	m_program.Set("view", camera.View());
+	m_program.Set("proj", camera.Projection());
 	m_mesh.Draw(Mesh::tLines);
 }
 
@@ -59,18 +61,19 @@ void BatchLineRenderer::InitProgram()
 	const char* source_vert = 
 		"#version 330 core\n"
 
-		"layout (location = 0) in vec2 pos;"
+		"layout (location = 0) in vec3 pos;"
 		"layout (location = 5) in vec4 color;"
 		"layout (location = 6) in mat4 model;"
 
 		"out vec4 Color;"
 
-		"uniform mat4 projection;"
+		"uniform mat4 view;"
+		"uniform mat4 proj;"
 
 		"void main()"
 		"{"
 			"Color = color;"
-			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
+			"gl_Position = proj * view * model * vec4(pos, 1.0);"
 		"}";
 
 	const char* source_frag = 

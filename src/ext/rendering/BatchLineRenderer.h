@@ -13,17 +13,18 @@ struct BatchLineRenderer
 private:
 	ShaderProgram m_program;
 	Mesh m_mesh;
-	float z = 0;
 
 public:
 	BatchLineRenderer();
 
 	void Begin();
 
-	void SubmitLine(                              const vec2& a, const vec2& b, const Color& color,                       float z = 0.f);
-	void SubmitLine(                              const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, float z = 0.f);
-	void SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& color);
-	void SubmitLine(const Transform2D& transform, const vec2& a, const vec2& b, const Color& colorA, const Color& colorB);
+	void SubmitLine(const vec2& a, const vec2& b, const Color& color,  float z = 0.f);
+	void SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, float z = 0.f);
+	void SubmitLine(const vec2& a, const vec2& b, const Color& color,  const Transform2D& transform);
+	void SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, const Transform2D& transform);
+
+	void SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform2D& transform);
 
 	void Draw(const Camera& camera);
 

@@ -1,36 +1,15 @@
 #include "app/Time.h"
-#include <chrono>
+#include "Log.h"
 #include <vector>
 
 namespace Time
 {
-    TimeContext* ctx;
-
-    void CreateContext()
-    {
-        DestroyContext();
-        ctx = new TimeContext();
-    }
-
-    void DestroyContext()
-    {
-        delete ctx;
-    }
-
-    void SetCurrentContext(TimeContext* context)
-    {
-        ctx = context;
-    }
-
-    TimeContext* GetContext()
-    {
-        return ctx;
-    }
+	wContextImpl(TimeContext);
 
 	void UpdateTime()
 	{
         // could put this in the context to not deref so much...
-        
+
 		ctx->ticks++;
 
         ctx->current_delta        = ctx->chrono_delta.count() / 1000000000.0f;

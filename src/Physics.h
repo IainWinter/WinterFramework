@@ -174,7 +174,7 @@ struct HullCollider : Collider
 		std::vector<b2Vec2> converted;
 		for (_itr b = begin; b != end; ++b) converted.push_back(_tb(*b));
 
-		GetShape().Set(converted.data(), converted.size());
+		GetShape().Set(converted.data(), (int32)converted.size());
 		return *this;
 	}
 
@@ -241,9 +241,8 @@ private:
     
 public:
 	Rigidbody2D();
-	
-	void SetTransform(Transform2D& transform);
 
+	Rigidbody2D& SetTransform(Transform2D& transform);
 	const Transform2D& GetLastTransform() const;
 	void UpdateLastTransform();
 
@@ -276,7 +275,7 @@ public:
 
 	// colliders
 
-	Collider& AddCollider(const Collider& collider);
+	Rigidbody2D& AddCollider(const Collider& collider);
 
 	void ClearColliders();
 

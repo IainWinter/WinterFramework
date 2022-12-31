@@ -9,12 +9,9 @@
 
 #include "util/tsque.h"
 
-#include <mutex>
 #include <vector>
-#include <stdint.h>
 #include <functional>
 #include <unordered_map>
-#include <assert.h>
 
 using hash_t = uint64_t;
 

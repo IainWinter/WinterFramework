@@ -614,6 +614,11 @@ r<World> Application::GetWorld(const std::string& name) const
 	return nullptr;
 }
 
+void Application::DestroyWorld(const r<World>& world)
+{
+	m_worlds.erase(std::find(m_worlds.begin(), m_worlds.end(), world));
+}
+
 bool Application::HasWorld(const std::string& name) const
 {
 	return GetWorld(name) != nullptr;

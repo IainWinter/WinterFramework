@@ -2,11 +2,10 @@
 
 #include "Defines.h"
 #include "Log.h"
-#include "entt/entity/registry.hpp"
-#include "entt/meta/meta.hpp"
-#include "entt/meta/resolve.hpp"
 
-#include "ext/serial/serial.h" // serial should be a util
+#include "entt/entity/registry.hpp"
+
+#include "ext/serial/serial.h"
 #include "util/nonce.h"
 
 #include <unordered_set>

@@ -25,14 +25,14 @@ struct Particle
 		a<TextureAtlas> atlas, int fixedFrame = -1
 	)
 		: atlas           (atlas)
-		, frameCurrent    (fixedFrame == -1 ? 0    : fixedFrame)
+		, frameCurrent    (fixedFrame == -1 ? 0.f  : (float)fixedFrame)
 		, framesPerSecond (fixedFrame == -1 ? 30.f : 0.f)
 	{}
 
 	Particle(
 		const std::string& path, int tilesX = 1, int tilesY = 1, int fixedFrame = -1
 	)
-		: frameCurrent    (fixedFrame == -1 ? 0    : fixedFrame)
+		: frameCurrent    (fixedFrame == -1 ? 0.f : (float)fixedFrame)
 		, framesPerSecond (fixedFrame == -1 ? 30.f : 0.f)
 	{
 		atlas = Asset::Make<TextureAtlas>(path, path);
@@ -58,7 +58,7 @@ struct Particle
 
 	Particle& SetFixedFrame(int frame)
 	{
-		SetFrameCurrent(frame);
+		SetFrameCurrent((float)frame);
 		SetFramesPerSecond(0.f);
 		return *this;
 	}

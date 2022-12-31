@@ -1,5 +1,10 @@
 #include "util/nonce.h"
 
+#include "Common.h" // for get_rand
+
+#include <unordered_map>
+#include <sstream>
+
 std::unordered_map<void*, std::string> nonce_cache;
 
 std::string nonce(int length, const char* prefix)

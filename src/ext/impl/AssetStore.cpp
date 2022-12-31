@@ -52,7 +52,7 @@ namespace Asset
     void write_AssetContext(meta::serial_writer* serial, const AssetContext& instance)
     {
         std::vector<DiskAsset> assets;
-        serial_dependency dep(meta::get_context());
+        serial_dependency dep(meta::GetContext());
 
         for (const auto& [name, loaded] : instance.loaded)
         {
@@ -88,12 +88,8 @@ namespace Asset
 
 namespace Asset
 {
-	AssetContext* ctx;
-
-    // this is an id that counts up everytime we set the curernt context
-    // gets used to identify the current dll fense
-    int whoAreWe = 0;
-
+    wContextImpl(AssetContext);
+	
     std::string GetAssetName(const std::string& name)
     {
         std::string n = name;
@@ -101,38 +97,6 @@ namespace Asset
 
         return n;
     }
-
-    void CreateContext()
-	{
-        DestroyContext();
-        SetCurrentContext(new AssetContext());
-
-        meta::describe<AssetContext>()
-            .custom_write(write_AssetContext)
-            .custom_read ( read_AssetContext);
-
-        meta::describe<DiskAsset>()
-            .custom_write(write_DiskAsset)
-            .custom_read ( read_DiskAsset);
-	}
-
-	void DestroyContext()
-	{
-		delete ctx;
-	}
-
-	void SetCurrentContext(AssetContext* context)
-	{
-		ctx = context;
-
-        whoAreWe = ctx->nextWhoAreWe;
-        ctx->nextWhoAreWe += 1;
-	}
-
-	AssetContext* GetContext()
-	{
-		return ctx;
-	}
 
     void WriteAssetPack(const std::string& filepath)
     {
@@ -150,49 +114,13 @@ namespace Asset
         if (in.is_open()) bin_reader(in).read(*GetContext());
     }
 
-    void ReallocAssets()
-    {
-        // Not sure if this truly works
-        // it seems like it should, but I wonder if the values in ctx->loaded are still
-        // invalid
-        
-        // need a way to test this better, it seems like it may link the dll
-        // to the same place everytime which may hide some bugs
-
-        for (auto& [name, loaded] : ctx->loaded)
-        {
-            if (whoAreWe == loaded.whoLoaded) // dont worry about memory allocated by us
-            {
-                continue;
-            }
-
-            // reallocation will change ownership
-            loaded.whoLoaded = whoAreWe;
-            
-            // create new memory in this module & call copy constructor
-            meta::any replacement = loaded.type->construct();
-            replacement.copy_in(loaded.control->instance.get());
-
-            // replace instance with new memory
-            loaded.control->instance = replacement.make_ref();
-        }
-    }
-
-    int WhoAreWe()
-    {
-        return whoAreWe;
-    }
-
     bool Has(const std::string& name)
     {
-        AssetContext* ctx = GetContext();
         return ctx->loaded.find(GetAssetName(name)) != ctx->loaded.end();
     }
 
     void Free(const std::string& name)
     {
-        AssetContext* ctx = GetContext();
-
         auto itr = ctx->loaded.find(GetAssetName(name));
 
         if (itr != ctx->loaded.end())
@@ -204,6 +132,45 @@ namespace Asset
 
 namespace Asset
 {
+    AssetContext::AssetContext()
+    {
+        meta::describe<AssetContext>()
+            .custom_write(write_AssetContext)
+            .custom_read ( read_AssetContext);
+
+        meta::describe<DiskAsset>()
+            .custom_write(write_DiskAsset)
+            .custom_read ( read_DiskAsset);
+    }
+
+    void AssetContext::Realloc(int location)
+    {
+        // Not sure if this truly works
+        // it seems like it should, but I wonder if the values in ctx->loaded are still
+        // invalid
+        
+        // need a way to test this better, it seems like it may link the dll
+        // to the same place everytime which may hide some bugs
+
+        for (auto& [name, loaded] : ctx->loaded)
+        {
+            if (location == loaded.whoLoaded) // dont worry about memory allocated by us
+            {
+                continue;
+            }
+
+            // reallocation will change ownership
+            loaded.whoLoaded = location;
+            
+            // create new memory in this module & call copy constructor
+            meta::any replacement = loaded.type->construct();
+            replacement.copy_in(loaded.control->instance.get());
+
+            // replace instance with new memory
+            loaded.control->instance = replacement.make_ref();
+        }
+    }
+
     Loaded::Loaded(meta::type* type_, const std::string& name, r<void> instance)
     {
         type = type_;
@@ -212,7 +179,7 @@ namespace Asset
         control->name = name;
         control->instance = instance;
 
-        whoLoaded = WhoAreWe();
+        whoLoaded = GetContextLocation();
     }
 
     meta::any Loaded::any() const

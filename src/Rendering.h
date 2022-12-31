@@ -1,15 +1,13 @@
 #pragma once
 
-#include "Event.h"
 #include "Common.h"
-#include "Log.h"
+#include "util/context.h"
 #include <string>
-#include <cmath>
-#include <tuple>
-#include <array>
 
-#include "util/error_check.h" // gives gl
-#include "SDL2/SDL_surface.h"
+// fwd
+typedef unsigned int GLenum;
+typedef unsigned int GLuint;
+typedef int GLint;
 
 // I want to create the simplest graphics api that hides as much as possible away
 // I only need simple Texture/Mesh/Shader, I dont even need materials
@@ -760,7 +758,7 @@ void gl_SetClearColor(const Color& color);
 
 namespace Render
 {
-	struct RenderContext
+	struct RenderContext : wContext
 	{
 		r<Target> default_target; // if we set the target to nullptr, actually set it to this
 		int window_width = 0;
@@ -771,10 +769,7 @@ namespace Render
 		float TargetAspect() const;
 	};
 
-	void CreateContext();
-	void DestroyContext();
-	RenderContext* GetContext();
-	void SetCurrentContext(RenderContext* context);
+	wContextDecl(RenderContext);
 
 	// Set a target to bind when SetRenderTarget is called with nullptr
 	// can be nullptr for the screen

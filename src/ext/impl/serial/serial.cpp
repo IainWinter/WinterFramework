@@ -1,5 +1,7 @@
 #include "ext/serial/serial.h"
 
+#include "Log.h"
+
 namespace meta
 {
 	//
@@ -186,14 +188,36 @@ namespace meta
 	//	context
 	//
 
-	serial_context* ctx;
-	int whoAreWe;
+	wContextImpl(serial_context);
 
-	void create_context()
+	void serial_context::Realloc(int location)
 	{
-		destroy_context();
-		ctx = new serial_context();
+		std::vector<id_type> removeThese;
 
+		for (auto& [id, reg] : ctx->known_info)
+		{
+			if (location == reg.location)
+			{
+				continue;
+			}
+
+			// for now just delete and assume that they will be re-registered
+			// this doesnt work because when calling a virtual function we get passed into the dll
+			// stack
+
+			// to get around this, use a custom allocator or alloc memory here
+
+			removeThese.push_back(id);
+		}
+
+		for (const id_type& id : removeThese)
+		{
+			free_registered_type(id);
+		}
+	}
+
+	void register_meta_types()
+	{
 		describe<any>()
 			.custom_write(&write_any)
 			.custom_read(&read_any);
@@ -203,31 +227,19 @@ namespace meta
             .custom_read(&read_string);
 	}
 
-	void destroy_context()
-	{
-		delete ctx;
-	}
-
-	serial_context* get_context()
-	{
-		return ctx;
-	}
-
-	void set_current_context(serial_context* context)
-	{
-		ctx = context;
-	}
-
 	void register_type(id_type type_id, type* type)
 	{
+		auto& reg = ctx->known_info[type_id];
+
 		if (has_registered_type(type_id))
 		{
 			//	delete types made in _get_class. This seems like an odd place for delete
 			//
-			delete ctx->known_info[type_id];
+			delete reg.type;
 		}
 
-		ctx->known_info[type_id] = type;
+		reg.type = type;
+		reg.location = GetContextLocation();
 	}
 
 	bool has_registered_type(id_type id)
@@ -242,7 +254,7 @@ namespace meta
 			return nullptr;
 		}
 
-		return ctx->known_info.at(type_id);
+		return ctx->known_info.at(type_id).type;
 	}
 
 	bool has_registered_type(const char* name)
@@ -252,14 +264,23 @@ namespace meta
 
 	type* get_registered_type(const char* name)
 	{
-		for (const auto& [id, type] : ctx->known_info)
+		for (const auto& [id, reg] : ctx->known_info)
 		{
-			if (strcmp(type->name(), name) == 0)
+			if (strcmp(reg.type->name(), name) == 0)
 			{
-				return type;
+				return reg.type;
 			}
 		}
 
 		return nullptr;
+	}
+
+	void free_registered_type(id_type type_id)
+	{
+		if (has_registered_type(type_id))
+		{
+			delete ctx->known_info[type_id].type;
+			ctx->known_info.erase(type_id);
+		}
 	}
 }

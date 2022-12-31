@@ -1,4 +1,5 @@
 #include "Event.h"
+#include <assert.h>
 
 void event_pipe::send(void* event)
 {

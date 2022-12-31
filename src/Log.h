@@ -1,16 +1,6 @@
 #pragma once
 
-#include "Defines.h"
-#include "util/pool_allocator.h"
-
-#include <deque>
-#include <unordered_map>
-#include <string>
-#include <sstream>
-#include <stdarg.h>
-#include <string.h>
-
-enum log_mask : u32
+enum log_mask : size_t
 {
 	LOG_AUDIO     =    1,
 	LOG_ENTITY    =    2,
@@ -29,11 +19,11 @@ enum log_mask : u32
 
 // return the list of the last `max_log_count` of logs
 //
-const std::deque<const char*>& get_all_logs();
+//const std::deque<const char*>& get_all_logs();
 
 // create a string that contains all logs (allocates and copies every time)
 //
-std::string combine_all_logs();
+//std::string combine_all_logs();
 
 // set the number of logs to keep before erasing the first
 //
@@ -41,7 +31,7 @@ void set_max_log_count(size_t count);
 
 // enables logging for the flipped bits in the mask, see @log_mask for options
 //
-void set_log_mask(u32 mask);
+void set_log_mask(size_t mask);
 
 // you can write a~ to write the contents of the string 'effect' at flag
 

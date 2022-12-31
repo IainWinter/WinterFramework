@@ -1,4 +1,5 @@
 #include "ext/rendering/SimpleRender.h"
+#include "util/error_check.h"
 
 // mesh
 r<ShaderProgram> meshProgram;
@@ -161,7 +162,7 @@ void RenderLines(BatchLineRenderer& render, const Camera& camera, EntityWorld& w
 
 	for (auto [transform, line] : world.Query<Transform2D, LineParticle>())
 	{
-		render.SubmitLine(transform, line.back, line.front, line.colorBack, line.colorFront);
+		render.SubmitLine(line.back, line.front, line.colorBack, line.colorFront, transform);
 	}
 
 	render.Draw(camera);

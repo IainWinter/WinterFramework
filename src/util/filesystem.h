@@ -1,20 +1,19 @@
 #pragma once
 
+#include "util/context.h"
+
 #include <stack>
 #include <filesystem>
 
 namespace File
 {
-	struct FileContext
+	struct FileContext : wContext
 	{
 		std::stack<std::filesystem::path> currentPathStack;
 		std::filesystem::path assetRootPath;
 	};
 
-	void CreateContext();
-	void DestroyContext();
-	void SetCurrentContext(FileContext* context);
-	FileContext* GetContext();
+	wContextDecl(FileContext);
 
 	void PushCurrentPath(const std::string& path);
 	void  PopCurrentPath(int number = 1);

@@ -8,6 +8,8 @@
 #include <stack>
 
 //#include "util/comparable_str.h"
+#include "util/pool_allocator.h"
+#include "util/context.h"
 #include <string>
 
 //#include "util/graph.h"
@@ -132,7 +134,8 @@ namespace meta
 
 	struct type_info
 	{
-		const char* m_name;
+		// store this in a string as types need to be realloced sometimes
+		std::string m_name;
 		id_type m_id;
 
 		size_t m_size;
@@ -197,10 +200,13 @@ namespace meta
 		// getters
 
 		const type_info* info() const { return m_info; }
-		const char* name() const { return m_info->m_name; }
+		const char* name() const { return m_info->m_name.c_str(); }
 		id_type id() const { return m_info->m_id; }
 		bool has_custom_write() const { return m_info->m_has_custom_write; }
 		bool has_custom_read()  const { return m_info->m_has_custom_read; }
+
+		// return a copy of the type, this is for internal use, resets this
+		virtual type* _realloc() = 0;
 
 		// return the underlying type
 		virtual type* get_type() const = 0;
@@ -561,16 +567,22 @@ namespace meta
 	//	context for saving types. the main purpose of this is to pass it across dll bounds
 	//
 
-	struct serial_context
+	struct serial_context : wContext
 	{
-		std::unordered_map<id_type, type*> known_info;
-		//graph<type*> known_dependencies;
+		struct registered_type
+		{
+			type* type;
+			int location;
+		};
+
+		std::unordered_map<id_type, registered_type> known_info;
+
+		void Realloc(int location) override;
 	};
 
-	void create_context();
-	void destroy_context();
-	serial_context* get_context();
-	void set_current_context(serial_context* context);
+	wContextDecl(serial_context);
+
+	void register_meta_types();
 
 	void register_type(id_type type_id, type* type);
 
@@ -580,6 +592,7 @@ namespace meta
 	bool has_registered_type(const char* name);
 	type* get_registered_type(const char* name);
 
+	void free_registered_type(id_type type_id);
 
 	//
 	// serialization
@@ -927,13 +940,8 @@ namespace meta
 
 	private:
 		_class_type<_mtype>* m_class;
-		const char* m_name;
-
-		// std::string for hashing between dll fense
-		//		
-		//
-		// properties of this specific member
-		std::unordered_map<std::string/*comparable_const_char*/, any> m_props;
+		std::string m_name;
+		std::unordered_map<std::string, any> m_props;
 
 	public:
 		_class_member(_class_type<_mtype>* member_class_type, const char* member_name)
@@ -943,6 +951,12 @@ namespace meta
 		{}
         
         virtual ~_class_member() {}
+
+		type* _realloc() override
+		{
+			assert(false && "type was member");
+			return nullptr;
+		}
 
 		meta::type* get_type() const override
 		{
@@ -961,7 +975,7 @@ namespace meta
 
 		const char* member_name() const override
 		{
-			return m_name;
+			return m_name.c_str();
 		}
 
 		void* walk_ptr(const void* instance) const override
@@ -1030,7 +1044,7 @@ namespace meta
 		std::function<void(serial_writer*, const _t&)> m_write;
 		std::function<void(serial_reader*,       _t&)> m_read;
 
-		std::unordered_map<std::string/*comparable_const_char*/, any> m_props;
+		std::unordered_map<std::string, any> m_props;
 
 	public:
 		_class_type(type_info* info)
@@ -1078,6 +1092,33 @@ namespace meta
 
 		// interface
 		
+		// this doesnt work because the vtable causes this function to be called in the dlls
+		// stack >:(
+		type* _realloc() override
+		{
+			// make copy of info & this type
+			type_info* info = new type_info(*m_info);
+			_class_type* type = new _class_type(info);
+
+			type->m_members = m_members;
+			type->m_write = m_write;
+			type->m_read = m_read;
+			type->m_props = m_props;
+
+			// reset this, mainly for ~type that deletes members
+
+			m_members = {};
+			m_write = {};
+			m_read = {};
+			m_props = {};
+
+			// register type, this deletes the old one
+
+			register_type(info->m_id, type);
+
+			return type;
+		}
+
 		type* get_type() const override
 		{
 			return (type*)this;
@@ -1144,12 +1185,12 @@ namespace meta
 
 		void copy_to(void* to, const void* from) const override
 		{
-			*(_t*)to = *(_t*)from;
+			//*(_t*)to = *(_t*)from;
 		}
 
 		void move_to(void* to, const void* from) const override
 		{
-			*(_t*)to = std::forward<_t>(*(_t*)from);
+			//*(_t*)to = std::forward<_t>(*(_t*)from);
 		}
 	};
 
@@ -1163,6 +1204,7 @@ namespace meta
 		{}
 
 		type_info*                info()                                                                    { return m_info; }
+		type*                     _realloc()                                                       override { assert(false && "type was void"); throw nullptr; }
 		type*                     get_type()                                                 const override { return (type*)this; }
 		bool                      is_member()                                                const override { return false; }
 		const std::vector<type*>& get_members()                                              const override { assert(false && "type was void"); throw nullptr; }
@@ -1335,61 +1377,180 @@ namespace meta
 
 namespace meta
 {
-	template<typename _t>
-	void serial_write(serial_writer* writer, const std::vector<_t>& instance)
+	template<typename _s>
+	void write_lienar(serial_writer* serial, const _s& lienar_container)
 	{
-		writer->write_array(meta::get_class<_t>(), (void*)instance.data(), instance.size());
-	}
+		auto itr = lienar_container.begin();
+		auto end = lienar_container.end();
 
-	template<typename _t>
-	void serial_read(serial_reader* reader, std::vector<_t>& instance)
-	{
-		instance.resize(reader->read_length());
-		reader->read_array(meta::get_class<_t>(), instance.data(), instance.size());
-	}
+		size_t length = std::distance(itr, end);
 
-	template<typename _t>
-	void serial_write(serial_writer* writer, const std::unordered_set<_t>& instance)
-	{
-		size_t length = instance.size();
-
-		writer->array_begin(meta::get_class<_t>(), length);
-
-		size_t i = 0;
-		for (const _t& item : instance)
+		serial->array_begin(meta::get_class<std::remove_const<_s::value_type >::type >(), length);
+		
+		for (size_t i = 0; i < length; i++)
 		{
-			writer->write(item);
+			serial->write(*itr++);
 
 			if (i != length - 1)
 			{
-				writer->array_delim();
+				serial->array_delim();
 			}
-
-			i += 1;
 		}
 
-		writer->array_end();
+		serial->array_end();
 	}
 
-	template<typename _t>
-	void serial_read(serial_reader* reader, std::unordered_set<_t>& instance)
+	template<typename _s>
+	void read_linear(serial_reader* serial, _s& lienar_container)
 	{
-		size_t length = reader->read_length();
+		size_t length = serial->read_length();
+		serial->array_begin(meta::get_class<std::remove_const<_s::value_type>::type>(), length);
 
-		reader->array_begin(meta::get_class<_t>(), length);
+		lienar_container.clear();
+		lienar_container.reserve(length);
 
-		for (int i =  0; i < length; i++)
+		for (size_t i = 0; i < length; i++)
 		{
-			_t item;
-			reader->read(item);
-			instance.insert(item);
+			typename _s::value_type temp;
+			serial->read(temp);
+
+			lienar_container.insert(lienar_container.end(), std::move(temp));
 
 			if (i != length - 1)
 			{
-				reader->array_delim();
+				serial->array_delim();
 			}
 		}
 
-		reader->array_end();
+		serial->array_end();
+	}
+
+	
+	template<typename _s>
+	void write_pairs(serial_writer* serial, const _s& pair_container)
+	{
+		auto itr = pair_container.begin();
+		auto end = pair_container.end();
+
+		size_t length = std::distance(itr, end);
+
+		// this assumes a map...
+		// could use pair_element<0, _s::value_type>
+		// to remove const of map key type, create a temp copy
+
+		using pair_t = std::pair<
+			typename std::remove_const<typename _s::key_type>::type,
+			typename std::remove_const<typename _s::mapped_type>::type
+		>;
+
+		serial->array_begin(meta::get_class<pair_t>(), length);
+		
+		for (size_t i = 0; i < length; i++)
+		{
+			pair_t temp = *itr;
+			serial->write(temp);
+
+			if (i != length - 1)
+			{
+				serial->array_delim();
+			}
+
+			itr++;
+		}
+
+		serial->array_end();
+	}
+
+	template<typename _s>
+	void read_pairs(serial_reader* serial, _s& pair_container)
+	{
+		size_t length = serial->read_length();
+		serial->array_begin(meta::get_class<std::remove_const<_s::value_type>::type>(), length);
+
+		pair_container.clear();
+		pair_container.reserve(length);
+
+		// see above
+		using pair_t = std::pair<
+			typename std::remove_const<typename _s::key_type>::type,
+			typename std::remove_const<typename _s::mapped_type>::type
+		>;
+
+		for (size_t i = 0; i < length; i++)
+		{
+			pair_t temp;
+			serial->read(temp);
+
+			pair_container.emplace(temp.first, temp.second);
+
+			if (i != length - 1)
+			{
+				serial->array_delim();
+			}
+		}
+
+		serial->array_end();
+	}
+
+	template<typename _t>
+	void serial_write(serial_writer* serial, const std::vector<_t>& instance)
+	{
+		write_lienar(serial, instance);
+	}
+
+	template<typename _t>
+	void serial_read(serial_reader* serial, std::vector<_t>& instance)
+	{
+		read_linear(serial, instance);
+	}
+
+	template<typename _t>
+	void serial_write(serial_writer* serial, const std::unordered_set<_t>& instance)
+	{
+		write_lienar(serial, instance);
+	}
+
+	template<typename _t>
+	void serial_read(serial_reader* serial, std::unordered_set<_t>& instance)
+	{
+		read_linear(serial, instance);
+	}
+
+	template<typename _k, typename _v>
+	void serial_write(serial_writer* serial, const std::unordered_map<_k, _v>& instance)
+	{
+		write_pairs(serial, instance);
+	}
+
+	template<typename _k, typename _v>
+	void serial_read(serial_reader* serial, std::unordered_map<_k, _v>& instance)
+	{
+		read_pairs(serial, instance);
+	}
+
+	template<typename _a, typename _b>
+	void serial_write(serial_writer* serial, const std::pair<_a, _b>& instance)
+	{
+		if constexpr (!std::is_const<_a>::value && !std::is_const<_b>::value)
+		{
+			serial->class_begin(meta::get_class<std::pair<_a, _b>>());
+			serial->write_member(meta::get_class<_a>(), &instance.first, "first");
+			serial->class_delim();
+			serial->write_member(meta::get_class<_b>(), &instance.second, "second");
+			serial->class_end();
+		}
+	}
+
+	template<typename _a, typename _b>
+	void serial_read(serial_reader* serial, std::pair<_a, _b>& instance)
+	{
+		if constexpr (!std::is_const<_a>::value && !std::is_const<_b>::value)
+		{
+			serial->class_begin(meta::get_class<std::pair<_a, _b>>());
+			serial->read_member(meta::get_class<_a>(), &instance.first, "first");
+			serial->class_delim();
+			serial->read_member(meta::get_class<_b>(), &instance.second, "second");
+			serial->class_end();
+		}
 	}
 }

@@ -434,12 +434,14 @@ Rigidbody2D::Rigidbody2D()
 	, m_collisionEnabled (true)
 {}
 	
-void Rigidbody2D::SetTransform(Transform2D& transform)
+Rigidbody2D& Rigidbody2D::SetTransform(Transform2D& transform)
 {
 	SetPosition(transform.position);
 	SetAngle   (transform.rotation);
 
 	m_lastTransform = transform;
+
+	return *this;
 }
 
 const Transform2D& Rigidbody2D::GetLastTransform() const
@@ -492,7 +494,7 @@ Rigidbody2D& Rigidbody2D::SetDensity(float density)
 	return *this; 
 }
 
-Collider& Rigidbody2D::AddCollider(const Collider& collider)
+Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 {
 	r<Collider> c = collider.MakeCopy();
 	
@@ -503,7 +505,7 @@ Collider& Rigidbody2D::AddCollider(const Collider& collider)
 
 	m_colliders.push_back(c);
 
-	return *c;
+	return *this;
 }
 
 void Rigidbody2D::ClearColliders()

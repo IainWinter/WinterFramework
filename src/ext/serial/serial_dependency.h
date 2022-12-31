@@ -18,18 +18,18 @@ private:
 public:
 	serial_dependency(meta::serial_context* ctx)
 	{
-		for (const auto& [id, type] : ctx->known_info)
+		for (const auto& [id, reg] : ctx->known_info)
 		{
-			m_types.add_node(type);
+			m_types.add_node(reg.type);
 		}
 
 		// connect all members to their classes
 
-		for (const auto& [id, type] : ctx->known_info)
+		for (const auto& [id, reg] : ctx->known_info)
 		{
-			for (meta::type* member : type->get_members())
+			for (meta::type* member : reg.type->get_members())
 			{
-				m_types.add_edge(type, member->get_type());
+				m_types.add_edge(reg.type, member->get_type());
 			}
 		}
 	}

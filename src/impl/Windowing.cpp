@@ -111,14 +111,39 @@ void Window::PumpEvents()
 			{
 				bool pressed = event.button.state == SDL_PRESSED;
 
+				MouseInput mouseInput;
+
+				switch (event.button.button)
+				{
+					case SDL_BUTTON_LEFT:
+						mouseInput = MOUSE_LEFT;
+						break;
+					case SDL_BUTTON_MIDDLE:
+						mouseInput = MOUSE_MIDDLE;
+						break;
+					case SDL_BUTTON_RIGHT:
+						mouseInput = MOUSE_RIGHT;
+						break;
+					case SDL_BUTTON_X1:
+						mouseInput = MOUSE_X1;
+						break;
+					case SDL_BUTTON_X2:
+						mouseInput = MOUSE_X2;
+						break;
+					default: 
+						assert(false && "sdl set two mouse states at once");
+						break;
+				}
+
 				m_events->Send(event_Mouse
 				{
 					event.button.x,                                                           // position as (0, width/height)
 					event.button.y,
-					(                    event.button.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
-					((m_config.Height -  event.button.y) / (float)m_config.Height) * 2 - 1,
+					event.motion.x / (float)m_config.Width,									  // position as (0, 1)
+					event.button.y / (float)m_config.Height,
 					0.f,                                                                      // velocity
 					0.f,
+					mouseInput,
 					bool( pressed * (event.button.button == SDL_BUTTON_LEFT) ),
 					bool( pressed * (event.button.button == SDL_BUTTON_MIDDLE) ),
 					bool( pressed * (event.button.button == SDL_BUTTON_RIGHT) ),
@@ -131,14 +156,15 @@ void Window::PumpEvents()
 			}
 			case SDL_MOUSEMOTION:
 			{
-				m_events->Send(event_Mouse 
+				m_events->Send(event_Mouse
 				{ 
 					event.motion.x,                                                          // position as (0, width/height)
 					event.motion.y,
-					(                   event.motion.x  / (float)m_config.Width)  * 2 - 1,   // position as (-1, +1)
-					((m_config.Height - event.button.y) / (float)m_config.Height) * 2 - 1,
+					event.motion.x / (float)m_config.Width,									 // position as (0, 1)
+					event.button.y / (float)m_config.Height,
 					float(event.motion.xrel), /// (float)m_config.Width),                    // velocity
 					float(event.motion.yrel), /// (float)m_config.Height),
+					MOUSE_VEL_POS,
 					bool(event.motion.state & SDL_BUTTON_LMASK),
 					bool(event.motion.state & SDL_BUTTON_MMASK),
 					bool(event.motion.state & SDL_BUTTON_RMASK),
@@ -161,6 +187,7 @@ void Window::PumpEvents()
 					0.f,
 					event.wheel.preciseX * flip,
 					event.wheel.preciseY * flip,
+					MOUSE_VEL_WHEEL,
 					false,
 					false,
 					false,
@@ -192,7 +219,7 @@ void Window::PumpEvents()
 			case SDL_KEYUP:
 			{
 				m_events->Send(event_Key {
-					event.key.keysym.scancode,
+					(KeyboardInput)event.key.keysym.scancode, // renamed enum
 					(char)event.key.keysym.sym,
 					(bool)event.key.state,
 					(int)event.key.repeat,

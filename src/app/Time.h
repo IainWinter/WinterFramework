@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Log.h"
-#include <utility>
+#include "util/context.h"
 #include <stddef.h>
 #include <chrono>
 
@@ -11,7 +10,7 @@ namespace Time
     using timepoint = std::chrono::time_point<clock>;
     using duration  = clock::duration;
 
-    struct TimeContext
+    struct TimeContext : wContext
     {
         timepoint chrono_start = clock::now();
         timepoint chrono_now   = clock::now();
@@ -32,10 +31,7 @@ namespace Time
         float current_fixed_scaled = 0.f;
     };
 
-    void CreateContext();
-    void DestroyContext();
-    void SetCurrentContext(TimeContext* context);
-    TimeContext* GetContext();
+    wContextDecl(TimeContext);
 
 	void UpdateTime();
 

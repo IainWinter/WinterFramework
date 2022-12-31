@@ -1,4 +1,7 @@
 #include "Rendering.h"
+#include "Log.h"
+
+#include "util/error_check.h" // gives gl
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/load_image.h"
@@ -1302,7 +1305,7 @@ void gl_SetClearColor(const Color& color)
 
 namespace Render
 {
-	RenderContext* ctx;
+	wContextImpl(RenderContext);
 
 	float RenderContext::WindowAspect() const
 	{
@@ -1317,27 +1320,6 @@ namespace Render
 		}
 
 		return WindowAspect();
-	}
-
-	void CreateContext()
-	{
-		DestroyContext();
-		ctx = new RenderContext();
-	}
-
-	void DestroyContext()
-	{
-		delete ctx;
-	}
-
-	RenderContext* GetContext()
-	{
-		return ctx;
-	}
-
-	void SetCurrentContext(RenderContext* context)
-	{
-		ctx = context;
 	}
 
 	void SetDefaultRenderTarget(r<Target> target)

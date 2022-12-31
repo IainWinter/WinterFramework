@@ -2,28 +2,7 @@
 
 namespace File
 {
-	FileContext* ctx;
-
-	void CreateContext()
-	{
-		DestroyContext();
-		ctx = new FileContext();
-	}
-
-	void DestroyContext()
-	{
-		delete ctx;
-	}
-
-	void SetCurrentContext(FileContext* context)
-	{
-		ctx = context;
-	}
-
-	FileContext* GetContext()
-	{
-		return ctx;
-	}
+	wContextImpl(FileContext);
 
 	void PushCurrentPath(const std::string& path)
 	{

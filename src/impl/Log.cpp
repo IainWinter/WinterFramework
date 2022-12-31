@@ -1,12 +1,23 @@
 #include "Log.h"
 
+#include "util/pool_allocator.h"
+
+#include <deque>
+#include <unordered_map>
+
+#include <stdarg.h>
+#include <string.h>
+
+// this is for returning a single string for all logs
+//#include <sstream>
+
 #define LOG_SIZE 1024
 
 pool_allocator m_pool = pool_allocator(LOG_SIZE, 2);
 std::deque<const char*> m_record;
 size_t m_max_size = 1000;
 
-u32 m_mask = LOG_ALL;
+size_t m_mask = LOG_ALL;
 
 std::unordered_map<char, const char*> m_styles =
 {
@@ -26,31 +37,31 @@ std::unordered_map<char, bool> m_enabled =
 
 bool m_enable_style = true;
 
-const std::deque<const char*>& get_all_logs()
-{
-	return m_record;
-}
-
-std::string combine_all_logs()
-{
-	std::stringstream ss;
-	for (const char* str : get_all_logs())
-	{
-		ss << str;
-	}
-
-	std::string str = ss.str();
-	str.pop_back();
-
-	return str;
-}
+//const std::deque<const char*>& get_all_logs()
+//{
+//	return m_record;
+//}
+//
+//std::string combine_all_logs()
+//{
+//	std::stringstream ss;
+//	for (const char* str : get_all_logs())
+//	{
+//		ss << str;
+//	}
+//
+//	std::string str = ss.str();
+//	str.pop_back();
+//
+//	return str;
+//}
 
 void set_max_log_count(size_t count)
 {
 	m_max_size = count;
 }
 
-void set_log_mask(u32 mask)
+void set_log_mask(size_t mask)
 {
 	m_mask = mask;
 }

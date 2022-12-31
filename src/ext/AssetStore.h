@@ -4,6 +4,7 @@
 #include "Log.h"
 #include "ext/serial/serial.h"
 #include "util/filesystem.h"
+#include "util/context.h"
 
 #include <unordered_map>
 #include <vector>
@@ -38,7 +39,7 @@ public:
 	AssetItem() = default;
 
 	AssetItem(r<_t> asset)
-		: pass      (asset) 
+		: pass      (asset)
 	{}
 
 	AssetItem(r<Asset::AssetControlBlock<_t>> control)
@@ -126,60 +127,34 @@ namespace Asset
 
 		meta::type* type;
 
-		//meta::type* type;
-		//r<void>     instance;
-
 		// this should equal whoAreWe for assets
 		// that are loaded in the context's heap
 		int whoLoaded = 0;
 
-		// master list of all references to this asset
-		// this has to be kept to force an unload if requested
-		// and to update the memory on a reallocation
-		// 
-		// this doesnt ork cus a<> are stack structs
-		// 
-		//std::vector<a<void>> references;
-
-		// the ordering to load, unused
-
-		// | Type         | Order |
-		// ------------------------
-		// | Texture      |   0   |
-		// | TextureAtlas |   1   |
-
-		//int dependancy = 0;
-
 		Loaded(meta::type* type, const std::string& name, r<void> instance);
 		meta::any any() const;
-
-		//template<typename _t>
-		//a<_t> NewReference();
-
-		//template<typename _t>
-		//a<_t> DeleteReference();
 	};
 
-	struct AssetContext
+	struct AssetContext : wContext
 	{
 		std::unordered_map<std::string, Loaded> loaded;
-		int nextWhoAreWe = 0;
+
+		AssetContext();
 
 		template<typename _t>
 		void RegisterAsset(const std::string& name, r<_t> instance);
 
 		template<typename _t>
 		a<_t> GetAsset(const std::string& name);
+
+		void Realloc(int location) override;
 	};
 
 	//
 	//	Context
 	//
 
-	void CreateContext();
-	void DestroyContext();
-	void SetCurrentContext(AssetContext* context);
-	AssetContext* GetContext();
+	wContextDecl(AssetContext);
 
 	//
 	//  Asset name
@@ -207,13 +182,6 @@ namespace Asset
 
 	template<typename _t>
 	std::vector<a<_t>> GetAssetsOfType();
-
-	//
-	//	Dll fencing
-	//
-
-	void ReallocAssets();
-	int WhoAreWe();
 
 	//
 	// Asset packing

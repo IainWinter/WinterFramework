@@ -84,4 +84,10 @@ struct Camera
 		this->far = depth;
 		this->is_ortho = true;
 	}
+
+	// assumes 2d editor mode, should just put in real rotation math
+	vec2 ScreenToWorld2D(vec2 screen)
+	{
+		return vec2(position) + screen * dimension;
+	}
 };

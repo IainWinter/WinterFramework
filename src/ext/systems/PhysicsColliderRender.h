@@ -30,6 +30,12 @@ struct System_PhysicsColliderRender : SystemBase
             }
         }
 
+        for (auto [entity, camera] : QueryWithEntity<Camera>())
+        {
+            Transform2D transform = entity.Has<Transform2D>() ? entity.Get<Transform2D>() : Transform2D();
+            DrawCameraFrustum(camera, transform);
+        }
+
         Debug::End(First<Camera>());
 	}
     
@@ -64,6 +70,14 @@ private:
             vec2 v2 = hull.GetWorldCenter() + rotate(view.at(j), a);
 
             Debug::Line(v1, v2, color, z + zAbove);
+        }
+    }
+
+    void DrawCameraFrustum(const Camera& camera, const Transform2D& transform)
+    {
+        if (camera.is_ortho)
+        {
+            Debug::Line(transform.position, transform.position + vec2(10, 10), Color());
         }
     }
 };

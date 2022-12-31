@@ -341,6 +341,8 @@ public:
 
 	// construct a new world and attach it
 	r<World> CreateWorld();
+	
+	void DestroyWorld(const r<World>& world);
 
 	void     AttachWorld(r<World> world);
 	void     DetachWorld(r<World> world);

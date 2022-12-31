@@ -32,7 +32,7 @@ wAPI void PassContexts(ScriptingContext ctx)
     Asset::SetCurrentContext(ctx.ctx_asset);
     File::SetCurrentContext(ctx.ctx_file);
     Input::SetCurrentContext(ctx.ctx_input);
-    meta::set_current_context(ctx.ctx_meta);
+    meta::SetCurrentContext(ctx.ctx_meta);
 
     ModuleMain();
 }

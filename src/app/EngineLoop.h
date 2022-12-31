@@ -35,6 +35,7 @@ private:
 public:
 	void on(event_Shutdown& e);
 	void on(event_Key& e);
+	void on(event_Mouse& e);
 	void on(event_Controller& e);
 	void on(event_ConsoleCommand& e);
 	void on(event_CreateEntity& e);
