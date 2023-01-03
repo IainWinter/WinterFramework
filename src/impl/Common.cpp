@@ -102,6 +102,61 @@ Transform2D Transform2D::LastTransform() const
 	return Transform2D(positionLast, scaleLast, rotationLast, zLast);
 }
 
+Transform::Transform()
+	: position (0, 0, 0)
+	, scale    (1, 1, 1)
+	, rotation (1, 0, 0, 0)
+{}
+
+Transform::Transform(vec3 position, vec3 scale, quat rotation)
+	: position (position)
+	, scale    (scale)
+	, rotation (rotation)
+{}
+
+Transform::Transform(const Transform2D& transform2D)
+	: position (transform2D.position, transform2D.z)
+	, scale    (transform2D.scale, 1.f)
+	, rotation (vec3(0, 0, transform2D.rotation)) // from euler around z axis
+{}
+
+Transform& Transform::SetPosition(vec3 position) { this->position = position; return *this; }
+Transform& Transform::SetScale   (vec3 scale)    { this->scale    = scale;    return *this; }
+Transform& Transform::SetRotation(quat rotation) { this->rotation = rotation; return *this; }
+Transform& Transform::SetRotation(vec3 rotation) { this->rotation = rotation; return *this; }
+
+Transform Transform::operator*(const Transform& other) const
+{
+	return Transform(
+		position + other.position,
+		scale * other.scale,
+		rotation * other.rotation
+	);
+}
+
+Transform& Transform::operator*=(const Transform& other)
+{
+	return *this = *this * other;
+}
+
+mat4 Transform::World() const
+{
+	mat4 world = mat4(1.f);
+
+	world = glm::translate(world, position);
+	world = glm::scale    (world, scale);
+	world = glm::rotate   (world, angle(rotation), axis(rotation));
+
+	return world;
+}
+
+//vec3 Transform::Forward() const
+//{
+//}
+//vec3 Transform::Right() const
+//{
+//}
+
 Color::Color() : r(255), g(255), b(255), a(255) {}
 Color::Color(u8 r, u8 g, u8 b, u8 a) : r(r), g(g), b(b), a(a) {}
 Color::Color(u32 rgba) : as_u32(rgba) {}

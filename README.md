@@ -112,28 +112,31 @@ struct Example : EngineLoop<Example>
 		World* world = app.CreateWorld();
 		world->CreateSystem<ExampleSystem>();
 
-		// Binding axes to keyboard and controller inputs from SDL
+		// Binding axes to keyboard and controller inputs
 
 		// Create an axis for the left joystick 
+
+		Input::InputAxisSettings settings;
+		settings.deadzone = 0.1f;
 
 		Input::CreateAxis("Left Stick");
 		Input::SetAxisComponent("Left Stick", cAXIS_LEFTX, vec2(1.f, 0.f));
 		Input::SetAxisComponent("Left Stick", cAXIS_LEFTY, vec2(0.f, 1.f));
-		Input::SetDeadzone("Left Stick", 0.1f);
+		Input::SetAxisSettings("Left Stick", settings);
 
 		// Create an axis for the WASD keys
 
 		Input::CreateAxis("WASD");
-		Input::SetAxisComponent("WASD", SDL_SCANCODE_W, vec2( 0.f,  1.f));
-		Input::SetAxisComponent("WASD", SDL_SCANCODE_A, vec2(-1.f,  0.f));
-		Input::SetAxisComponent("WASD", SDL_SCANCODE_S, vec2( 0.f, -1.f));
-		Input::SetAxisComponent("WASD", SDL_SCANCODE_D, vec2( 1.f,  0.f));
+		Input::SetAxisComponent("WASD", KEY_W, vec2( 0.f,  1.f));
+		Input::SetAxisComponent("WASD", KEY_A, vec2(-1.f,  0.f));
+		Input::SetAxisComponent("WASD", KEY_S, vec2( 0.f, -1.f));
+		Input::SetAxisComponent("WASD", KEY_D, vec2( 1.f,  0.f));
 
-		// Combine these axes into a single virtual axis
+		// Combine these axes into a single group axis
 
-		Input::CreateVirtualAxis("Move");
-		Input::SetVirtualAxisComponent("Move", "Left Stick");
-		Input::SetVirtualAxisComponent("Move", "WASD");
+		Input::CreateGroupAxis("Move");
+		Input::SetGroupAxisComponent("Move", "Left Stick");
+		Input::SetGroupAxisComponent("Move", "WASD");
 
 		// Attaching events to the main bus
 

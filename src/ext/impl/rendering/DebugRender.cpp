@@ -47,5 +47,10 @@ namespace Debug
         
         debugSprites.SubmitSprite(transform, color);
     }
+
+    void Line(const vec3& a, const vec3& b, const Color& color, const Transform& transform)
+    {
+        debugLines.SubmitLine(a, b, color, color, transform);
+    }
 }
 #endif

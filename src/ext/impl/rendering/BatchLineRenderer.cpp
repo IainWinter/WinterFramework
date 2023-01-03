@@ -31,10 +31,10 @@ void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& co
 
 void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, const Transform2D& transform)
 {
-	SubmitLine(vec3(a, 0.f), vec3(b, 0.f), colorA, colorB, transform);
+	SubmitLine(vec3(a, 0.f), vec3(b, 0.f), colorA, colorB, Transform(transform));
 }
 
-void BatchLineRenderer::SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform2D& transform)
+void BatchLineRenderer::SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform& transform)
 {
 	glm::mat4 world = transform.World();
 	vec4 ca = colorA.as_v4();
@@ -96,7 +96,7 @@ void BatchLineRenderer::InitProgram()
 	m_program.Add(ShaderProgram::sFragment, source_frag);
 
 	m_mesh = Mesh(DYNAMIC_HOST)
-		.Add<vec2>(Mesh::aPosition)
+		.Add<vec3>(Mesh::aPosition)
 		.Add<vec4>(Mesh::aColor)
 		.Add<mat4>(Mesh::aCustom_a1);
 }

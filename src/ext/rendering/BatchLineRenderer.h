@@ -24,7 +24,7 @@ public:
 	void SubmitLine(const vec2& a, const vec2& b, const Color& color,  const Transform2D& transform);
 	void SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, const Transform2D& transform);
 
-	void SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform2D& transform);
+	void SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform& transform);
 
 	void Draw(const Camera& camera);
 

@@ -33,6 +33,55 @@ void Gizmo_RenderPhysicsColliders(const Camera& camera, EntityWorld& world)
 
 void Gizmo_RenderCamearFrustum(const Camera& camera, EntityWorld& world)
 {
+    Debug::Begin();
+
+    // draw a box or a pyramid
+
+    for (auto [camera] : world.Query<Camera>())
+    {
+        if (camera.is_ortho) // draw a box
+        {
+            //     b--c
+            //    /| /|
+            //   a--d z
+            //   | y|/
+            //   x--w
+
+            // abcd is near plane
+            // xyzw is far plane
+
+            // direction is from abcd -> xyzw
+
+            vec3 a = camera.position + camera.rotation * vec3( camera.width,  camera.height, camera.near);
+            vec3 b = camera.position + camera.rotation * vec3(-camera.width,  camera.height, camera.near);
+            vec3 c = camera.position + camera.rotation * vec3(-camera.width, -camera.height, camera.near);
+            vec3 d = camera.position + camera.rotation * vec3( camera.width, -camera.height, camera.near);
+
+            vec3 x = camera.position + camera.rotation * vec3( camera.width,  camera.height, camera.far);
+            vec3 y = camera.position + camera.rotation * vec3(-camera.width,  camera.height, camera.far);
+            vec3 z = camera.position + camera.rotation * vec3(-camera.width, -camera.height, camera.far);
+            vec3 w = camera.position + camera.rotation * vec3( camera.width, -camera.height, camera.far);
+
+            Color color = Color(200, 200, 200, 255);
+
+            Debug::Line(a, b, color); // near plane
+            Debug::Line(b, c, color);
+            Debug::Line(c, d, color);
+            Debug::Line(d, a, color);
+
+            Debug::Line(x, y, color); // far plane
+            Debug::Line(y, z, color);
+            Debug::Line(z, w, color);
+            Debug::Line(w, x, color);
+
+            Debug::Line(a, x, color); // connecting lines
+            Debug::Line(b, y, color);
+            Debug::Line(c, z, color);
+            Debug::Line(d, w, color);
+        }
+    }
+
+    Debug::End(camera);
 }
 
 //

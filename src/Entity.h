@@ -41,6 +41,21 @@ namespace tuple_helpers
 	}
 }
 
+// Question is should functions assert or soft error and just print to log
+// if using the engine, then you really dont want a crash because they you need to restart the editor if a script
+// fails
+// but when working with the framework, its nice to ensure functionality
+
+// asserts turn off in release anyway so a soft error is prob better
+
+template<typename _t>
+_t& _GetDefault()
+{
+	static _t def;
+	log_entity("w~Tried to get a component that doesn't exist.");
+	return def;
+}
+
 struct Entity;
 struct EntityWorld;
 
@@ -156,8 +171,7 @@ public:
 
 		if (query.begin() == query.end())
 		{
-			log_world("e~First failed, no entity exists with component");
-			throw nullptr;
+			return _GetDefault<_t>();
 		}
 
 		return std::get<0>(*query.begin());

@@ -5,6 +5,13 @@
 #include <unordered_map>
 #include <array>
 
+//
+// some oddities
+//		Mapping can be overwritten if the two Group axes use the same buttons
+//		
+//		Should rename 'Virtual Axis' to just Axis, and 'Input Axis' to 'Input Group' or something along those lines
+
+
 using InputName = std::string;
 
 struct event_Input
@@ -21,42 +28,62 @@ struct event_Input
 
 namespace Input
 {
-	struct InputAxis
+	struct InputCode
 	{
-		std::unordered_map<int, vec2> components; // sum of State[code] * component is axis state
-		float deadzone = 0.f;
-		bool limitToUnit = true;
+		int code;
 
-		bool operator==(const InputAxis& other) const {
-			return deadzone == other.deadzone 
-				&& std::equal(components.begin(), components.end(), other.components.begin());
+		operator int() const {
+			return code;
 		}
 
-		bool operator!=(const InputAxis& other) const {
-			return !operator==(other);
-		}
+		InputCode(int code)              : code(code)                {}
+		InputCode(KeyboardInput input)   : code(GetInputCode(input)) {}
+		InputCode(MouseInput input)      : code(GetInputCode(input)) {}
+		InputCode(ControllerInput input) : code(GetInputCode(input)) {}
 	};
 
-	struct VirtualAxis
+	struct InputAxisSettings
+	{
+		// round to 0 if below this length
+		float deadzone = 0.f;
+
+		// limit to a unit vector
+		bool limitToUnit = false;
+
+		// normalize to a unit vector
+		bool normalized = false;
+
+		// if this is empty, it will be accepted by any active mask
+		std::string mask;
+
+		bool operator==(const InputAxisSettings& other) const;
+		bool operator!=(const InputAxisSettings& other) const;
+	};
+
+	struct InputAxis
+	{
+		std::unordered_map<int, vec2> components; // (code, component) -> sum of State[code] * component is axis state
+		InputAxisSettings settings;
+
+		bool operator==(const InputAxis& other) const;
+		bool operator!=(const InputAxis& other) const;
+	};
+
+	struct AxisGroup
 	{
 		std::vector<InputName> axes;
-		bool limitToUnit = true;
+		InputAxisSettings settings;
 
-		bool operator==(const VirtualAxis& other) const {
-			return std::equal(axes.begin(), axes.end(), other.axes.begin());
-		}
-
-		bool operator!=(const VirtualAxis& other) const {
-			return !operator==(other);
-		}
+		bool operator==(const AxisGroup& other) const;
+		bool operator!=(const AxisGroup& other) const;
 	};
 
 	struct InputContext : wContext
 	{
-		// mapping of name to virtual axis
+		// mapping of name to Group axis
 		// these are groups of other axes so each can have its own processing
 		// then be combined
-		std::unordered_map<InputName, VirtualAxis> VirtualAxes;
+		std::unordered_map<InputName, AxisGroup> GroupAxes;
 
 		// mapping of name to axis
 		// all buttons can be represented as axies with a deadzone
@@ -74,6 +101,9 @@ namespace Input
 		vec2 ViewportMin;
 		vec2 ViewportSize;
 
+		// active mask
+		std::string activeMask;
+
 		InputContext();
 	};
 
@@ -83,29 +113,40 @@ namespace Input
 	vec2 GetAxis(const InputName& axis);
 
 	void CreateAxis(const InputName& name);
-	void CreateVirtualAxis(const InputName& name);
+	void CreateGroupAxis(const InputName& name);
 
 	bool AxisExists(const InputName& axis);
-	bool VirtualAxisExists(const InputName& axis);
+	bool GroupAxisExists(const InputName& axis);
 
-	// Set the deadzone of an axis. Not a virtual aixs, use this for the components
-	void SetDeadzone(const InputName& axis, float deadzone);
+	//
+	//	Settings
+	//
 
-	// set an inputs weight on an axis from its code, see GetInputCode
-	void SetAxisComponent(const InputName& axis, int code, vec2 weight = vec2(1.f, 0.f));
-	
-	// Set a key's weight on an axis
-	void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight = vec2(1.f, 0.f));
-	
-	// Set a controller input's weight on an axis
-	void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight = vec2(1.f, 0.f));
+	void SetAxisSettings(const InputName& axis, const InputAxisSettings& settings);
+	void SetGroupAxisSettings(const InputName& axis, const InputAxisSettings& settings);
 
-	// Combine multiple axes into a single virtual axis
-	void SetVirtualAxisComponent(const InputName& axis, const InputName& component);
+	//
+	//	Components
+	//
+
+	void SetAxisComponent(const InputName& axis, InputCode code, vec2 weight = vec2(1, 0));
+
+	//void SetAxisComponent(const InputName& axis, int code, vec2 weight = vec2(1.f, 0.f));
+	//void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight = vec2(1.f, 0.f));
+	//void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight = vec2(1.f, 0.f));
+
+	// Combine multiple axes into a single Group axis
+	void SetGroupAxisComponent(const InputName& axis, const InputName& component);
 	
-	const InputName& GetMapping(int code);
-	const InputName& GetMapping(KeyboardInput scancode);
-	const InputName& GetMapping(ControllerInput input);
+	//
+	//	Mappings
+	//
+
+	const InputName& GetMapping(InputCode code);
+
+	//const InputName& GetMapping(int code);
+	//const InputName& GetMapping(KeyboardInput scancode);
+	//const InputName& GetMapping(ControllerInput input);
 
 	// Internal, for framework to set state
 	void SetState(int code, float state);
@@ -123,4 +164,10 @@ namespace Input
 
 	void SetViewportBounds(vec2 screenMin, vec2 screenSize);
 	vec2 MapToViewport(float screenX, float screenY);
+
+	//
+	//	Mask
+	//
+
+	void SetActiveMask(const std::string& mask);
 }

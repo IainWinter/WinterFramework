@@ -18,6 +18,8 @@ namespace Debug
     void Box (const vec2& a, const vec2& b,     const Color& color, float z = 0.f);
     void Box (const vec2& center, float radius, const Color& color, float z = 0.f);
 
+    void Line(const vec3& a, const vec3& b, const Color& color, const Transform& transform = {});
+
 #else
 
     // these get optimized to nothing
@@ -29,6 +31,8 @@ namespace Debug
     inline void Ray (const vec2& a, const vec2& dist,  const Color& color, float scale = 1.f, float z = 0.f) {}
     inline void Box (const vec2& a, const vec2& b,     const Color& color, float z = 0.f) {}
     inline void Box (const vec2& center, float radius, const Color& color, float z = 0.f) {}
+
+    inline void Line(const vec3& a, const vec3& b, const Color& color, const Transform& transform = {}) {}
 
 #endif
 }

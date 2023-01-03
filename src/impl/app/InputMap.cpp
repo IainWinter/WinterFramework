@@ -15,20 +15,26 @@ namespace Input
 
 		// Describe types
 
-		meta::describe<VirtualAxis>()
-			.name("VirtualAxis")
-			.member<&VirtualAxis::limitToUnit>("limitToUnit")
-			.member<&VirtualAxis::axes>("axes");
+		meta::describe<InputAxisSettings>()
+			.name("InputAxisSettings")
+			.member<&InputAxisSettings::deadzone>("deadzone")
+			.member<&InputAxisSettings::limitToUnit>("limitToUnit")
+			.member<&InputAxisSettings::normalized>("normalized")
+			.member<&InputAxisSettings::mask>("mask");
 
 		meta::describe<InputAxis>()
 			.name("InputAxis")
-			.member<&InputAxis::deadzone>("deadzone")
-			.member<&InputAxis::limitToUnit>("limitToUnit")
+			.member<&InputAxis::settings>("settings")
 			.member<&InputAxis::components>("components");
+
+		meta::describe<AxisGroup>()
+			.name("AxisGroup")
+			.member<&AxisGroup::settings>("settings")
+			.member<&AxisGroup::axes>("axes");
 
 		meta::describe<InputContext>()
 			.name("InputContext")
-			.member<&InputContext::VirtualAxes>("VirtualAxes")
+			.member<&InputContext::GroupAxes>("GroupAxes")
 			.member<&InputContext::Axes>("Axes")
 			.member<&InputContext::Mapping>("Mapping");
 
@@ -200,45 +206,88 @@ namespace Input
 		return GetAxis(button).x;
 	}
 
-	vec2 GetAxisNoRecurse(const InputName& axis)
+	bool _FailsMask(const std::string& mask)
 	{
-		vec2 out = vec2(0.f);
+		return mask.size() != 0
+			&& mask != ctx->activeMask;
+	}
 
-		auto itr = ctx->Axes.find(axis);
-		if (itr != ctx->Axes.end())
+	vec2 _GetAxisNoRecurse(const InputName& axisName)
+	{
+		if (ctx->Axes.count(axisName) == 0)
 		{
-			for (const auto& component : itr->second.components)
-			{
-				out += ctx->State[component.first] * component.second;
-			}
-
-			if (length(out) < itr->second.deadzone)
-			{
-				out = vec2(0.f);
-			}
-
-			out = itr->second.limitToUnit ? limit(out, 1.f) : out;
+			return vec2(0.f);
 		}
 
-		return out;
+		const InputAxis& axis = ctx->Axes.at(axisName);
+
+		if (_FailsMask(axis.settings.mask))
+		{
+			return vec2(0.f);
+		}
+
+		vec2 sum = vec2(0.f);
+
+		for (const auto& [code, component] : axis.components)
+		{
+			sum += ctx->State[code] * component;
+		}
+
+		if (length(sum) < axis.settings.deadzone)
+		{
+			return vec2(0.f);
+		}
+
+		if (axis.settings.normalized)
+		{
+			sum = safe_normalize(sum);
+		}
+
+		if (axis.settings.limitToUnit)
+		{
+			sum = limit(sum, 1.f);
+		}
+
+		return sum;
 	}
 
 	vec2 GetAxis(const InputName& axis)
 	{
-		vec2 out = GetAxisNoRecurse(axis);
-
-		auto vitr = ctx->VirtualAxes.find(axis);
-		if (vitr != ctx->VirtualAxes.end())
+		if (ctx->GroupAxes.count(axis) == 0)
 		{
-			for (const auto& child : vitr->second.axes)
-			{
-				out += GetAxisNoRecurse(child);
-			}
-
-			out = vitr->second.limitToUnit ? limit(out, 1.f) : out;
+			return _GetAxisNoRecurse(axis);
 		}
 
-		return out;
+		const AxisGroup& group = ctx->GroupAxes.at(axis);
+
+		if (_FailsMask(group.settings.mask))
+		{
+			return vec2(0.f);
+		}
+
+		vec2 sum = vec2(0.f);
+
+		for (const InputName& name : group.axes)
+		{
+			sum += _GetAxisNoRecurse(name);
+		}
+
+		if (length(sum) < group.settings.deadzone)
+		{
+			return vec2(0.f);
+		}
+
+		if (group.settings.normalized)
+		{
+			sum = safe_normalize(sum);
+		}
+
+		if (group.settings.limitToUnit)
+		{
+			sum = limit(sum, 1.f);
+		}
+
+		return sum;
 	}
 
 	void CreateAxis(const InputName& name)
@@ -252,15 +301,15 @@ namespace Input
 		ctx->Axes.emplace(name, InputAxis{});
 	}
 
-	void CreateVirtualAxis(const InputName& name)
+	void CreateGroupAxis(const InputName& name)
 	{
-		if (VirtualAxisExists(name))
+		if (GroupAxisExists(name))
 		{
-			log_app("w~Virtual axis already exists. %s", name);
+			log_app("w~Group axis already exists. %s", name);
 			return;
 		}
 
-		ctx->VirtualAxes.emplace(name, VirtualAxis{});
+		ctx->GroupAxes.emplace(name, AxisGroup{});
 	}
 
 	bool AxisExists(const InputName& axis)
@@ -268,12 +317,12 @@ namespace Input
 		return ctx->Axes.find(axis) != ctx->Axes.end();
 	}
 
-	bool VirtualAxisExists(const InputName& axis)
+	bool GroupAxisExists(const InputName& axis)
 	{
-		return ctx->VirtualAxes.find(axis) != ctx->VirtualAxes.end();
+		return ctx->GroupAxes.find(axis) != ctx->GroupAxes.end();
 	}
 
-	void SetDeadzone(const InputName& axis, float deadzone)
+	void SetAxisSettings(const InputName& axis, const InputAxisSettings& settings)
 	{
 		if (!AxisExists(axis))
 		{
@@ -281,10 +330,21 @@ namespace Input
 			return;
 		}
 
-		ctx->Axes[axis].deadzone = deadzone;
+		ctx->Axes.at(axis).settings = settings;
 	}
 
-	void SetAxisComponent(const InputName& axis, int code, vec2 weight)
+	void SetGroupAxisSettings(const InputName& axis, const InputAxisSettings& settings)
+	{
+		if (!GroupAxisExists(axis))
+		{
+			log_app("w~Group axis doesn't exist. %s", axis);
+			return;
+		}
+
+		ctx->GroupAxes.at(axis).settings = settings;
+	}
+
+	void SetAxisComponent(const InputName& axis, InputCode code, vec2 weight)
 	{
 		if (!AxisExists(axis))
 		{
@@ -296,21 +356,33 @@ namespace Input
 		ctx->Mapping.emplace(code, axis);
 	}
 
-	void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight)
-	{
-		SetAxisComponent(axis, GetInputCode(scancode), weight);
-	}
+	//void SetAxisComponent(const InputName& axis, int code, vec2 weight)
+	//{
+	//	if (!AxisExists(axis))
+	//	{
+	//		log_app("w~Axis doesn't exist. %s", axis);
+	//		return;
+	//	}
 
-	void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight)
-	{
-		SetAxisComponent(axis, GetInputCode(input), weight);
-	}
+	//	ctx->Axes[axis].components.emplace(code, weight);
+	//	ctx->Mapping.emplace(code, axis);
+	//}
 
-	void SetVirtualAxisComponent(const InputName& axis, const InputName& component)
+	//void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight)
+	//{
+	//	SetAxisComponent(axis, GetInputCode(scancode), weight);
+	//}
+
+	//void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight)
+	//{
+	//	SetAxisComponent(axis, GetInputCode(input), weight);
+	//}
+
+	void SetGroupAxisComponent(const InputName& axis, const InputName& component)
 	{
-		if (!VirtualAxisExists(axis))
+		if (!GroupAxisExists(axis))
 		{
-			log_app("w~Virtual axis doesn't exist. %s", axis);
+			log_app("w~Group axis doesn't exist. %s", axis);
 			return;
 		}
 
@@ -320,7 +392,7 @@ namespace Input
 			return;
 		}
 
-		ctx->VirtualAxes[axis].axes.push_back(component);
+		ctx->GroupAxes[axis].axes.push_back(component);
 
 		for (const auto& c : ctx->Axes[component].components) // we need to update mapping 
 		{
@@ -330,21 +402,27 @@ namespace Input
 
 	InputName empty;
 
-	const InputName& GetMapping(int code)
+	const InputName& GetMapping(InputCode code)
 	{
 		auto itr = ctx->Mapping.find(code);
 		return itr != ctx->Mapping.end() ? itr->second : empty;
 	}
 
-	const InputName& GetMapping(KeyboardInput scancode)
-	{
-		return GetMapping(GetInputCode(scancode));
-	}
+	//const InputName& GetMapping(int code)
+	//{
+	//	auto itr = ctx->Mapping.find(code);
+	//	return itr != ctx->Mapping.end() ? itr->second : empty;
+	//}
 
-	const InputName& GetMapping(ControllerInput scancode)
-	{
-		return GetMapping(GetInputCode(scancode));
-	}
+	//const InputName& GetMapping(KeyboardInput scancode)
+	//{
+	//	return GetMapping(GetInputCode(scancode));
+	//}
+
+	//const InputName& GetMapping(ControllerInput scancode)
+	//{
+	//	return GetMapping(GetInputCode(scancode));
+	//}
 
 	// internal
 
@@ -386,5 +464,47 @@ namespace Input
 	vec2 MapToViewport(float screenX, float screenY)
 	{
 		return clamp((vec2(screenX, screenY) - ctx->ViewportMin) / ctx->ViewportSize, vec2(-1.f), vec2(1.f));
+	}
+
+	void SetActiveMask(const std::string& mask)
+	{
+		ctx->activeMask = mask;
+	}
+
+	// comparisons
+
+	bool InputAxisSettings::operator==(const InputAxisSettings& other) const
+	{
+		return deadzone    == other.deadzone
+			&& limitToUnit == other.limitToUnit
+			&& normalized  == other.normalized
+			&& mask        == other.mask;
+	}
+
+	bool InputAxisSettings::operator!=(const InputAxisSettings& other) const
+	{
+		return !operator==(other);
+	}
+
+	bool InputAxis::operator==(const InputAxis& other) const
+	{
+		return std::equal(components.begin(), components.end(), other.components.begin())
+			&& settings == other.settings;
+	}
+
+	bool InputAxis::operator!=(const InputAxis& other) const
+	{
+		return !operator==(other);
+	}
+
+	bool AxisGroup::operator==(const AxisGroup& other) const
+	{
+		return std::equal(axes.begin(), axes.end(), other.axes.begin())
+			&& settings == other.settings;
+	}
+
+	bool AxisGroup::operator!=(const AxisGroup& other) const
+	{
+		return !operator==(other);
 	}
 }
