@@ -356,28 +356,6 @@ namespace Input
 		ctx->Mapping.emplace(code, axis);
 	}
 
-	//void SetAxisComponent(const InputName& axis, int code, vec2 weight)
-	//{
-	//	if (!AxisExists(axis))
-	//	{
-	//		log_app("w~Axis doesn't exist. %s", axis);
-	//		return;
-	//	}
-
-	//	ctx->Axes[axis].components.emplace(code, weight);
-	//	ctx->Mapping.emplace(code, axis);
-	//}
-
-	//void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight)
-	//{
-	//	SetAxisComponent(axis, GetInputCode(scancode), weight);
-	//}
-
-	//void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight)
-	//{
-	//	SetAxisComponent(axis, GetInputCode(input), weight);
-	//}
-
 	void SetGroupAxisComponent(const InputName& axis, const InputName& component)
 	{
 		if (!GroupAxisExists(axis))
@@ -408,33 +386,17 @@ namespace Input
 		return itr != ctx->Mapping.end() ? itr->second : empty;
 	}
 
-	//const InputName& GetMapping(int code)
-	//{
-	//	auto itr = ctx->Mapping.find(code);
-	//	return itr != ctx->Mapping.end() ? itr->second : empty;
-	//}
-
-	//const InputName& GetMapping(KeyboardInput scancode)
-	//{
-	//	return GetMapping(GetInputCode(scancode));
-	//}
-
-	//const InputName& GetMapping(ControllerInput scancode)
-	//{
-	//	return GetMapping(GetInputCode(scancode));
-	//}
-
 	// internal
 
 	void SetState(int code, float state)
 	{
-		//if (code < 0 || code >= NUMBER_OF_STATES)
-		//{
-		//	log_app("e~Tried to set state of code that is invalid. %d -> %f", code, state);
-		//	return;
-		//}
-
-		// grows forever if new codes are put in
+		// all valid states get registered when the context is created,
+		// so check here to stop map from growing
+		if (ctx->State.count(code) == 0)
+		{
+			log_app("w~Tried to set state of invalid input code. %d -> %f", code, state);
+			return;
+		}
 
 		ctx->State[code] = state;
 	}

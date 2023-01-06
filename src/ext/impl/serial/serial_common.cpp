@@ -214,6 +214,20 @@ void register_common_types()
 		.member<&Particle::tints>("tints")
 		.member<&Particle::tint>("tint");
 
+	describe<ParticleSpawner>()
+		.name("ParticleSpawner")
+		.prop("is_component", true)
+		.member<&ParticleSpawner::particle>("particle")
+		.member<&ParticleSpawner::weight>("weight");
+
+	describe<ParticleEmitter>()
+		.name("ParticleEmitter")
+		.prop("is_component", true)
+		.member<&ParticleEmitter::timeBetweenSpawn>("timeBetweenSpawn")
+		.member<&ParticleEmitter::currentTime>("currentTime")
+		.member<&ParticleEmitter::enableAutoEmit>("enableAutoEmit")
+		.member<&ParticleEmitter::spawners>("spawners");
+
 	describe<Camera>()
 		.name("Camera")
 		.prop("is_component", true)

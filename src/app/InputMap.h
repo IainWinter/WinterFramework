@@ -131,10 +131,6 @@ namespace Input
 
 	void SetAxisComponent(const InputName& axis, InputCode code, vec2 weight = vec2(1, 0));
 
-	//void SetAxisComponent(const InputName& axis, int code, vec2 weight = vec2(1.f, 0.f));
-	//void SetAxisComponent(const InputName& axis, KeyboardInput scancode, vec2 weight = vec2(1.f, 0.f));
-	//void SetAxisComponent(const InputName& axis, ControllerInput input, vec2 weight = vec2(1.f, 0.f));
-
 	// Combine multiple axes into a single Group axis
 	void SetGroupAxisComponent(const InputName& axis, const InputName& component);
 	
@@ -143,10 +139,6 @@ namespace Input
 	//
 
 	const InputName& GetMapping(InputCode code);
-
-	//const InputName& GetMapping(int code);
-	//const InputName& GetMapping(KeyboardInput scancode);
-	//const InputName& GetMapping(ControllerInput input);
 
 	// Internal, for framework to set state
 	void SetState(int code, float state);

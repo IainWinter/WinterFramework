@@ -72,5 +72,8 @@
 	vec2 Camera::ScreenToWorld2D(vec2 screen) const
 	{
 		vec2 realDim = ScreenSize();
-		return vec2(position) + screen * realDim * 2.f - realDim;
+		vec2 pos = vec2(position) + screen * realDim * 2.f - realDim;
+
+		return vec2(pos.x, -pos.y);
+		//return vec2(position) + screen * realDim * 2.f - realDim;
 	}

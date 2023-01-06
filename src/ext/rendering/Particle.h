@@ -212,17 +212,16 @@ struct ParticleScaleWithAge
 	ParticleScaleWithAge(vec2 x)  : scale(x) {}
 };
 
+struct ParticleSpawner
+{
+	Particle particle;
+	float weight;
+	std::function<void(Entity)> onCreate;
+};
+
 struct ParticleEmitter
 {
-	struct Spawner
-	{
-		Particle particle;
-		float weight;
-		std::function<void(Entity)> onCreate;
-	};
-
-	std::vector<Spawner> spawners;
-	float totalWeight = 0.f;
+	std::vector<ParticleSpawner> spawners;
 
 	float timeBetweenSpawn = .0f;
 	float currentTime = 0.f;
@@ -232,20 +231,18 @@ struct ParticleEmitter
 	void AddSpawner(Particle particle, float weight, std::function<void(Entity)> onCreate = {})
 	{
 		spawners.push_back({ particle, weight, onCreate });
-		totalWeight += weight;
 	}
 
 	void RemoveSpawner(int index)
 	{
 		auto itr = spawners.begin() + index;
-		totalWeight -= itr->weight;
 		spawners.erase(itr);
 	}
 
 	// returns a particle at the index
 	Particle Emit(int index, vec2 position) const
 	{
-		const Spawner& spawner = spawners.at(index);
+		const ParticleSpawner& spawner = spawners.at(index);
 		
 		Particle p = spawner.particle;
 		p.original.position += position; // *= emitterTransform;            // todo: should parent when that is a feature
@@ -257,6 +254,13 @@ struct ParticleEmitter
 	// returns a random particle with their weighted probability
 	Particle Emit(vec2 position) const
 	{
+		float totalWeight = 0.f;
+
+		for (int i = 0; i < spawners.size(); i++) // this sucks
+		{
+			totalWeight += spawners.at(i).weight;
+		}
+
 		float pick = get_rand(totalWeight);
 
 		int i = 0;

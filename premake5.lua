@@ -19,6 +19,8 @@ project "Framework"
 	location "lib/build"
 	targetdir "lib/%{cfgdir}"
 
+	flags { "MultiProcessorCompile" }
+
 	files (src_all_vendor)
 	includedirs (include_all_vendor)
 	defines (all_defines)
