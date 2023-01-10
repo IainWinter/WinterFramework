@@ -92,14 +92,14 @@ struct ExampleSystem : System<ExampleSystem>
 
 		// use of an extension that provides a simple batch quad renderer
 
-		render.Begin(Camera(0, 0, 10, 10));
+		render.Begin();
 
 		for (auto [transform] : Query<Transform2D>()) // querying of components from ECS
 		{
 			render.SubmitSprite(transform, Color(255, 0, 0));
 		}
 
-		render.Draw();
+		render.Draw(Camera(10, 10, 10));
 	}
 };
 
@@ -109,20 +109,20 @@ struct Example : EngineLoop<Example>
 	{
 		// Worlds hold all entity data & systems for updating state
 
-		World* world = app.CreateWorld();
+		r<World> world = app.CreateWorld();
 		world->CreateSystem<ExampleSystem>();
 
 		// Binding axes to keyboard and controller inputs
 
 		// Create an axis for the left joystick 
 
-		Input::InputAxisSettings settings;
-		settings.deadzone = 0.1f;
+		Input::InputAxisSettings leftStickSettings;
+		leftStickSettings.deadzone = 0.1f;
 
 		Input::CreateAxis("Left Stick");
 		Input::SetAxisComponent("Left Stick", cAXIS_LEFTX, vec2(1.f, 0.f));
 		Input::SetAxisComponent("Left Stick", cAXIS_LEFTY, vec2(0.f, 1.f));
-		Input::SetAxisSettings("Left Stick", settings);
+		Input::SetAxisSettings("Left Stick", leftStickSettings);
 
 		// Create an axis for the WASD keys
 
