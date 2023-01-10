@@ -16,6 +16,7 @@
 #include <vector>
 #include <functional>
 #include <tuple>
+#include <string>
 
 // make glm the deafult math library
 // no need to think about if something is glm or not because it should

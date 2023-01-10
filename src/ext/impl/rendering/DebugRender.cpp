@@ -4,29 +4,41 @@
 
 namespace Debug
 {
-	BatchLineRenderer debugLines;
-    BatchSpriteRenderer debugSprites;
+	r<BatchLineRenderer> debugLines;
+    r<BatchSpriteRenderer> debugSprites;
+
+    void Init()
+    {
+        debugLines = mkr<BatchLineRenderer>();
+        debugSprites = mkr<BatchSpriteRenderer>();
+    }
+
+    void Dnit()
+    {
+        debugLines = nullptr;
+        debugSprites = nullptr;
+    }
 
     void Begin()
     {
-	    debugLines.Begin();
-        debugSprites.Begin();
+	    debugLines->Begin();
+        debugSprites->Begin();
     }
 
     void End(const Camera& camera)
     {
-	    debugLines.Draw(camera);
-        debugSprites.Draw(camera);
+        debugLines->Draw(camera);
+        debugSprites->Draw(camera);
     }
 
     void Line(const vec2& a, const vec2& b, const Color& color, float z)
     {
-	    debugLines.SubmitLine(a, b, color, z);
+        debugLines->SubmitLine(a, b, color, z);
     }
 
     void Ray(const vec2& a, const vec2& dist, const Color& color, float scale, float z)
     {
-	    debugLines.SubmitLine(a, a + dist * scale, color, z);
+        debugLines->SubmitLine(a, a + dist * scale, color, z);
     }
 
     void Box(const vec2& a, const vec2& b, const Color& color, float z)
@@ -45,12 +57,12 @@ namespace Debug
         transform.rotation = 0.f;
         transform.z = z;
         
-        debugSprites.SubmitSprite(transform, color);
+        debugSprites->SubmitSprite(transform, color);
     }
 
     void Line(const vec3& a, const vec3& b, const Color& color, const Transform& transform)
     {
-        debugLines.SubmitLine(a, b, color, color, transform);
+        debugLines->SubmitLine(a, b, color, color, transform);
     }
 }
 #endif

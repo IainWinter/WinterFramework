@@ -10,6 +10,9 @@ namespace Debug
 {
 #ifdef ENABLE_DEBUG_RENDER
 
+    void Init();
+    void Dnit();
+
 	void Begin();
 	void End(const Camera& camera); // add mix tint
 
@@ -23,6 +26,9 @@ namespace Debug
 #else
 
     // these get optimized to nothing
+
+    inline void Init() {}
+    inline void Dnit() {}
 
     inline void Begin() {}
     inline void End(const Camera& camera) {}

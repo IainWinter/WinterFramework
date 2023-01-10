@@ -15,7 +15,7 @@ struct Sprite
 	Sprite() {}
 	Sprite(a<Texture> source) : source(source) {}
 	Sprite(const Texture& sourceToCopy) : source(mkr<Texture>(sourceToCopy)) {}
-	Texture& Get() { return *source; }
+	Texture& Get() { return *source.ptr(); }
 
 	Sprite& SetSource  (const a<Texture>& source) { this->source   = source; return *this; }
 	Sprite& SetTint    (const Color&      tint)   { this->tint     = tint;   return *this; }

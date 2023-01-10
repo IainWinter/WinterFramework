@@ -39,11 +39,11 @@ public:
 	AssetItem() = default;
 
 	AssetItem(r<_t> asset)
-		: pass      (asset)
+		: pass (asset)
 	{}
 
 	AssetItem(r<Asset::AssetControlBlock<_t>> control)
-		: control   (control)
+		: control (control)
 	{
 		inc_use_count(1);
 	}
@@ -82,7 +82,13 @@ public:
 	{
 		inc_use_count(-1);
 	}
-	
+
+	AssetItem<void>& AsGeneric()
+	{
+		// unsafe cast, but this works for these classes in particular
+		return *(AssetItem<void>*)this;
+	}
+
 	bool IsLoaded() const
 	{
 		return has_pass() || has_control();
@@ -98,16 +104,20 @@ public:
 		return has_pass() ? "Wrapped Asset" : "Unloaded Asset";
 	}
 
-	operator r<_t>() const { return has_control() ? control.lock()->instance : pass; }
-	operator  bool() const { return IsLoaded(); }
+	      r<_t> ref()       { return has_control() ? control.lock()->instance : pass; }
+	const r<_t> ref() const { return has_control() ? control.lock()->instance : pass; }
 
-	bool      operator!()  const { return !IsLoaded(); }
+	      _t* ptr()       { return ref().get(); }
+	const _t* ptr() const { return ref().get(); }
 
-	      _t* operator->()       { return has_pass() ? pass.get() : control.lock()->instance.get(); }
-	const _t* operator->() const { return has_pass() ? pass.get() : control.lock()->instance.get(); }
+	operator const r<_t>() const { return ref(); }
+	operator r<_t>()             { return ref(); }
 	
-	      _t& operator* ()       { return *this->operator->(); }
-	const _t& operator* () const { return *this->operator->(); }
+	      _t* operator->()       { return ptr(); }
+	const _t* operator->() const { return ptr(); }
+
+	operator bool() const { return IsLoaded(); }
+	bool operator!() const { return !IsLoaded(); }
 
 private:
 	bool has_pass()    const { return !!pass; }
@@ -182,6 +192,8 @@ namespace Asset
 
 	template<typename _t>
 	std::vector<a<_t>> GetAssetsOfType();
+
+	std::vector<a<void>> GetAssetsOfType(meta::id_type id);
 
 	//
 	// Asset packing
@@ -302,6 +314,15 @@ namespace Asset
 
 namespace meta
 {
+	template<typename _t>
+	void describer(type* type, tag<a<_t>>)
+	{
+		type->set_prop("generic_write", true);
+		type->set_prop("generic_read", true);
+		type->set_prop("is_asset", true);
+		type->set_prop("inner_type", id<_t>());
+	}
+
 	template<typename _t>
 	void serial_write(serial_writer* serial, const a<_t>& instance)
 	{

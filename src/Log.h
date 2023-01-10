@@ -1,5 +1,10 @@
 #pragma once
 
+#include "util/pool_allocator.h"
+#include "util/context.h"
+#include <deque>
+#include <unordered_map>
+
 enum log_mask : size_t
 {
 	LOG_AUDIO     =    1,
@@ -90,3 +95,37 @@ void log_console(const char* fmt, ...);
 void log_io     (const char* fmt, ...);
 void log_game   (const char* fmt, ...);
 void log_app    (const char* fmt, ...);
+
+namespace wlog
+{
+	#define wLOG_SIZE 1024
+
+	struct log_context : wContext
+	{
+		pool_allocator m_pool = pool_allocator(wLOG_SIZE, 2);
+		std::deque<const char*> m_record;
+
+		size_t m_max_size = 1000;
+		size_t m_mask = LOG_ALL;
+
+		std::unordered_map<char, const char*> m_styles =
+		{
+			{'e', "\033[91m"},
+			{'w', "\033[93m"},
+			{'i', "\033[90m"},
+			{'d', "\033[96m"}
+		};
+
+		std::unordered_map<char, bool> m_enabled =
+		{
+			{'e', true},
+			{'w', true},
+			{'i', true},
+			{'d', true}
+		};
+
+		bool m_enable_style = true;
+	};
+
+	wContextDecl(log_context);
+}

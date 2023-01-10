@@ -98,6 +98,21 @@ namespace Asset
         return n;
     }
 
+    std::vector<a<void>> GetAssetsOfType(meta::id_type id)
+    {
+        std::vector<a<void>> assets;
+
+        for (const auto& [name, asset] : GetContext()->loaded)
+        {
+            if (asset.type->info()->m_id == id)
+            {
+                assets.push_back(a<void>((r<AssetControlBlock<void>>&)asset.control));
+            }
+        }
+
+        return assets;
+    }
+
     void WriteAssetPack(const std::string& filepath)
     {
         log_io("Saving asset pack %s", filepath.c_str());

@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "util/context.h"
 #include <string>
+#include <unordered_set>
 
 // fwd
 typedef unsigned int GLenum;
@@ -45,9 +46,18 @@ typedef int GLint;
 
 #define TEXTURE_DEFAULT_FILTER Texture::fPixelated
 
+enum DeviceObjectType
+{
+	OBJECT_TEXTURE,
+	OBJECT_TARGET,
+	OBJECT_BUFFER,
+	OBJECT_MESH,
+	OBJECT_SHADERPROGRAM
+};
+
 struct IDeviceObject
 {
-	IDeviceObject(bool isStatic);
+	IDeviceObject(bool isStatic, DeviceObjectType type);
 
 	void FreeHost();
 	void FreeDevice();
@@ -60,10 +70,12 @@ struct IDeviceObject
 
 	void MarkForUpdate();
 
+	DeviceObjectType Type() const;
+
 // interface
 
 public:
-	virtual ~IDeviceObject() = default;
+	virtual ~IDeviceObject();
 
 	virtual bool OnHost()       const = 0; 
 	virtual bool OnDevice()     const = 0;
@@ -76,10 +88,6 @@ protected:
 	virtual void _UpdateOnDevice()   = 0;       // update device memory
 	virtual void _UpdateFromDevice() = 0;       // update host memory
 
-private:
-	bool m_static;
-	bool m_outdated;
-
 public:
 	void assert_on_host()    const;
 	void assert_on_device()  const;
@@ -90,6 +98,11 @@ public:
 
 protected:
 	void copy_base(const IDeviceObject* move);
+
+private:
+	bool m_static;
+	bool m_outdated;
+	DeviceObjectType m_type;
 };
 
 // textures are very simple
@@ -764,6 +777,9 @@ namespace Render
 		int window_width = 0;
 		int window_height = 0;
 		Color clear_color = Color(20, 38, 66);
+
+		// keep a log of all created objects
+		std::unordered_set<IDeviceObject*> objects;
 
 		float WindowAspect() const;
 		float TargetAspect() const;

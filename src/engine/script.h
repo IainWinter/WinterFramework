@@ -38,6 +38,7 @@ struct ScriptingContext
     File::FileContext* ctx_file;
     Input::InputContext* ctx_input;
     meta::serial_context* ctx_meta;
+    wlog::log_context* ctx_log;
 };
 
 //

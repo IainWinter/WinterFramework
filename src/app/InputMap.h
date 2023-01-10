@@ -48,7 +48,7 @@ namespace Input
 		float deadzone = 0.f;
 
 		// limit to a unit vector
-		bool limitToUnit = false;
+		bool limitToUnit = true;
 
 		// normalize to a unit vector
 		bool normalized = false;

@@ -550,6 +550,11 @@ b2BodyDef Rigidbody2D::GetBodyDef() const
 {
 	b2BodyDef def;
 
+	if (!m_instance)
+	{
+		return m_preinit;
+	}
+
 	def.type            = m_instance->GetType();
 	def.position        = m_instance->GetPosition();
 	def.angle           = m_instance->GetAngle();

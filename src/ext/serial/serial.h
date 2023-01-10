@@ -143,7 +143,7 @@ namespace meta
 		bool m_is_floating;
 		bool m_is_integral;
 		
-		bool m_is_structure;
+		bool m_is_complex;
 
 		bool m_has_custom_write;
 		bool m_has_custom_read;
@@ -158,10 +158,7 @@ namespace meta
 		info->m_size = sizeof(_t);
 		info->m_is_floating  = std::is_floating_point<_t>::value;
 		info->m_is_integral  = std::is_integral<_t>::value;
-		info->m_is_structure = !info->m_is_floating && !info->m_is_integral;
-
-		info->m_has_custom_write = false;
-		info->m_has_custom_read = false;
+		info->m_is_complex = std::is_class<_t>::value;
 
 		return info;
 	}
@@ -175,9 +172,7 @@ namespace meta
 		info->m_size = 0;
 		info->m_is_floating = false;
 		info->m_is_integral = false;
-		info->m_is_structure = false;
-		info->m_has_custom_write = false;
-		info->m_has_custom_read = false;
+		info->m_is_complex = false;
 
 		return info;
 	}
@@ -202,8 +197,12 @@ namespace meta
 		const type_info* info() const { return m_info; }
 		const char* name() const { return m_info->m_name.c_str(); }
 		id_type id() const { return m_info->m_id; }
-		bool has_custom_write() const { return m_info->m_has_custom_write; }
-		bool has_custom_read()  const { return m_info->m_has_custom_read; }
+		bool is_complex() const { return m_info->m_is_complex; }
+		bool has_custom_write() const { return has_prop("custom_write") || has_generic_write(); }
+		bool has_custom_read()  const { return has_prop("custom_read") || has_generic_read(); }
+		bool has_generic_write() const { return has_prop("generic_write"); }
+		bool has_generic_read()  const { return has_prop("generic_read"); }
+
 
 		// return a copy of the type, this is for internal use, resets this
 		virtual type* _realloc() = 0;
@@ -235,6 +234,9 @@ namespace meta
 		// create a new instance of a class
 		virtual any construct() const = 0;
 
+		// construct in place
+		virtual void construct(void* instance) const = 0;
+
 		// if the type is a member, returns an any with the value of a named property
 		virtual const any& prop(const std::string& name) const = 0;
 		
@@ -251,7 +253,7 @@ namespace meta
 		virtual void copy_to(void* to, const void* from) const = 0;
 
 		// move the data into instance, type must be the same as instance. This is unsafe
-		virtual void move_to(void* to, const void* from) const = 0;
+		virtual void move_to(void* to, void* from) const = 0;
 
 		// helpers
 
@@ -259,6 +261,12 @@ namespace meta
 		{
 			return get_members().size() > 0;
 		}
+
+		//template<typename _t>
+		//void set_prop(const std::string& name, const _t& value)
+		//{
+		//	set_prop(name, any(value));
+		//}
 	};
 
 	// return the type of the template arg _t
@@ -277,6 +285,11 @@ namespace meta
 		bool m_owns;
 
 	public:
+		any_storage()
+			: m_type (nullptr)
+			, m_owns (false)
+		{}
+
 		any_storage(type* type, bool owns)
 			: m_type (type)
 			, m_owns (owns)
@@ -291,8 +304,8 @@ namespace meta
 		virtual any_storage* new_copy() const = 0;
 		virtual void copy_to(void* instance) const = 0;
 		virtual void move_to(void* instance) const = 0;
-		virtual void copy_in(void* instance) const = 0;
-		virtual void move_in(void* instance) const = 0;
+		virtual void copy_in(const void* instance) = 0;
+		virtual void move_in(void* instance) = 0;
 		virtual bool is_type(type* type) const = 0;
 
 		type* type() const
@@ -306,24 +319,40 @@ namespace meta
 		}
 	};
 
-	template<typename _t>
+	template<typename _t, bool _owns>
 	struct any_storage_t : any_storage
 	{
+	private:
 		_t* m_instance;
 
-		any_storage_t(meta::type* type, bool owns, _t* instance)
-			: any_storage (type, owns)
+	public:
+		any_storage_t()
+			: m_instance (nullptr)
+		{}
+
+		any_storage_t(meta::type* type, _t* instance)
+			: any_storage (type, _owns)
 			, m_instance  (instance)
 		{
-			if (m_owns)
+			if constexpr (_owns)
 			{
 				m_instance = new _t(*instance);
 			}
 		}
+		
+		//any_storage_t(meta::type* type, const _t* instance)
+		//	: any_storage (type, _owns)
+		//	, m_instance  (instance)
+		//{
+		//	if constexpr (_owns)
+		//	{
+		//		m_instance = new _t(*instance);
+		//	}
+		//}
 
 		~any_storage_t()
 		{
-			if (m_owns)
+			if constexpr (_owns)
 			{
 				delete m_instance;
 			}
@@ -348,12 +377,12 @@ namespace meta
 
 		any_storage* copy() const override
 		{
-			return new any_storage_t<_t>(m_type, m_owns, m_instance);
+			return new any_storage_t<_t, _owns>(m_type, m_instance);
 		}
 
 		any_storage* new_copy() const override
 		{
-			return new any_storage_t<_t>(m_type, true, m_instance);
+			return new any_storage_t<_t, true>(m_type, m_instance);
 		}
 
 		void copy_to(void* instance) const override
@@ -366,12 +395,12 @@ namespace meta
 			m_type->move_to(instance, m_instance);
 		}
 
-		void copy_in(void* instance) const override
+		void copy_in(const void* instance) override
 		{
 			m_type->copy_to(m_instance, instance);
 		}
 
-		void move_in(void* instance) const override
+		void move_in(void* instance) override
 		{
 			m_type->move_to(m_instance, instance);
 		}
@@ -383,9 +412,16 @@ namespace meta
 	};
 
 	template<>
-	struct any_storage_t<void> : any_storage
+	struct any_storage_t<void, false> : any_storage
 	{
+	private:
 		void* m_instance;
+
+	public:
+		any_storage_t()
+			: any_storage (nullptr, false)
+			, m_instance  (nullptr)
+		{}
 
 		any_storage_t(meta::type* type, void* instance)
 			: any_storage (type, false)
@@ -409,7 +445,7 @@ namespace meta
 
 		any_storage* copy() const override
 		{
-			return new any_storage_t<void>(m_type, m_instance);
+			return new any_storage_t<void, false>(m_type, m_instance);
 		}
 
 		any_storage* new_copy() const override
@@ -427,12 +463,12 @@ namespace meta
 			throw nullptr;
 		}
 
-		void copy_in(void* instance) const override
+		void copy_in(const void* instance) override
 		{
 			throw nullptr;
 		}
 
-		void move_in(void* instance) const override
+		void move_in(void* instance) override
 		{
 			throw nullptr;
 		}
@@ -445,8 +481,10 @@ namespace meta
 
 	struct any
 	{
+	private:
 		any_storage* m_storage;
 
+	public:
 		any()
 			: m_storage (nullptr)
 		{}
@@ -457,7 +495,7 @@ namespace meta
 		// 
 		any(type* type, void* instance)
 		{
-			m_storage = new any_storage_t<void>(type, instance);
+			m_storage = new any_storage_t<void, false>(type, instance);
 		}
 
 		//	makes a reference to instance
@@ -465,20 +503,21 @@ namespace meta
 		template<typename _t>
 		any(_t* instance)
 		{
-			m_storage = new any_storage_t<_t>(get_class<_t>(), false, instance);
+			m_storage = new any_storage_t<_t, false>(get_class<_t>(), instance);
 		}
 
-		// makes a reference or a copy of instance based on 'owns'
+		// makes a copy of an instance
 		//
 		template<typename _t>
-		any(_t& instance, bool owns)
+		any(const _t& instance)
 		{
-			m_storage = new any_storage_t<_t>(get_class<_t>(), owns, &instance);
+			m_storage = new any_storage_t<_t, true>(get_class<_t>(), const_cast<_t*>(&instance));
 		}
 
 		~any()
 		{
 			delete m_storage;
+			m_storage = nullptr;
 		}
 
 		// copy and move
@@ -516,6 +555,7 @@ namespace meta
 
 		void copy_own(const any& other)
 		{
+			delete m_storage;
 			m_storage = other.m_storage->new_copy();
 		}
 
@@ -524,17 +564,17 @@ namespace meta
 			m_storage->copy_to(instance);
 		}
 
-		void move_to(void* instance) const
+		void move_to(void* instance)
 		{
 			m_storage->move_to(instance);
 		}
 
-		void copy_in(void* instance) const
+		void copy_in(const void* instance)
 		{
 			m_storage->copy_in(instance);
 		}
 
-		void move_in(void* instance) const
+		void move_in(void* instance)
 		{
 			m_storage->move_in(instance);
 		}
@@ -998,6 +1038,11 @@ namespace meta
 			return m_class->construct();
 		}
 
+		void construct(void* instance) const override
+		{
+			m_class->construct(instance);
+		}
+
 		const any& prop(const std::string& name) const override
 		{
 			return m_props.at(name);
@@ -1023,7 +1068,7 @@ namespace meta
 			m_class->copy_to(to, from);
 		}
 
-		void move_to(void* to, const void* from) const override
+		void move_to(void* to, void* from) const override
 		{
 			m_class->move_to(to, from);
 		}
@@ -1070,13 +1115,13 @@ namespace meta
 
 		void set_custom_writer(const std::function<void(serial_writer*, const _t&)>& func)
 		{
-			m_info->m_has_custom_write = true;
+			set_prop("custom_write", true);
 			m_write = func;
 		}
 
 		void set_custom_reader(const std::function<void(serial_reader*, _t&)>& func)
 		{
-			m_info->m_has_custom_read = true;
+			set_prop("custom_read", true);
 			m_read = func;
 		}
 
@@ -1147,20 +1192,39 @@ namespace meta
 
 		void _serial_write(serial_writer* serial, const void* instance) const override
 		{
-			if (has_custom_write()) call_custom_write(serial, instance);
-			else serial_write(serial, *(const _t*)instance);
+			if (!has_custom_write() || has_generic_write())
+			{
+				serial_write(serial, *(const _t*)instance); // if write is generic, call through this template function
+			}
+
+			else
+			{
+				call_custom_write(serial, instance);
+			}
 		}
 
 		void _serial_read(serial_reader* serial, void* instance) const override
 		{
-			if (has_custom_read()) call_custom_read(serial, instance);
-			else serial_read(serial, *(_t*)instance);
+			if (!has_custom_read() || has_generic_read())
+			{
+				serial_read(serial, *(_t*)instance); // see above
+			}
+
+			else
+			{
+				call_custom_read(serial, instance);
+			}
 		}
 
 		any construct() const override
 		{
 			_t t = _t();
-			return any(t, true);
+			return any(t);
+		}
+
+		void construct(void* instance) const override
+		{
+			new (instance) _t();
 		}
 
 		const any& prop(const std::string& name) const override
@@ -1185,12 +1249,12 @@ namespace meta
 
 		void copy_to(void* to, const void* from) const override
 		{
-			//*(_t*)to = *(_t*)from;
+			*(_t*)to = *(const _t*)from;
 		}
 
-		void move_to(void* to, const void* from) const override
+		void move_to(void* to, void* from) const override
 		{
-			//*(_t*)to = std::forward<_t>(*(_t*)from);
+			*(_t*)to = std::forward<_t>(*(_t*)from);
 		}
 	};
 
@@ -1212,13 +1276,14 @@ namespace meta
 		void*                     walk_ptr(const void* instance)                             const override { assert(false && "type was void"); throw nullptr; }
 		void                      _serial_write(serial_writer* serial, const void* instance) const override { assert(false && "type was void"); throw nullptr; }
 		void                      _serial_read(serial_reader* serial, void* instance)        const override { assert(false && "type was void"); throw nullptr; }
-		any                       construct()                                                const override { return any((type*)this, nullptr); }
+		any                       construct()                                                const override { assert(false && "type was void"); throw nullptr; }
+		void                      construct(void* instance)                                  const override { assert(false && "type was void"); throw nullptr; }
 		const any&                prop(const std::string& name)                              const override { assert(false && "type was not a member"); throw nullptr; }
 		bool                      has_prop(const std::string& name)                          const override { assert(false && "type was not a member"); throw nullptr; }
 		void                      set_prop(const std::string& name, const any& value)              override { assert(false && "type was not a member"); throw nullptr; }
 		void                      ping(void* userdata = nullptr, int message = 0)            const override { assert(false && "type was void"); throw nullptr; }
 		void                      copy_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
-		void                      move_to(void* to, const void* from)                        const override { assert(false && "type was void"); throw nullptr; }
+		void                      move_to(void* to, void* from)                              const override { assert(false && "type was void"); throw nullptr; }
 	};
 
 	template<typename _t>
@@ -1231,6 +1296,16 @@ namespace meta
 #endif
 	}
 
+	// for function override
+	template<typename _t>
+	struct tag {};
+
+	template<typename _t>
+	void describer(type* type, tag<_t>)
+	{
+		// do nothing
+	}
+
 	template<typename _t>
 	_class_type<_t>* _get_class()
 	{
@@ -1240,6 +1315,8 @@ namespace meta
 		{
 			type* type = new _class_type<_t>(_make_type_info<_t>(id));
 			register_type(id, type);
+
+			describer(type, tag<_t>{});
 		}
 
 		return (_class_type<_t>*)get_registered_type(id);
@@ -1283,9 +1360,9 @@ namespace meta
 
 		// for the last member added, set a property
 		template<typename _v>
-		describe<_t>& prop(const std::string& name, _v value)
+		describe<_t>& prop(const std::string& name, const _v& value)
 		{
-			if (m_current) m_current->set_prop(name, any(value, false));
+			if (m_current) ((type*)m_current)->set_prop(name, value);
 			return *this;
 		}
 
@@ -1337,7 +1414,8 @@ namespace meta
 	template<typename _t>
 	id_type id()
 	{
-		return get_class<_t>()->info()->m_id;
+		return _get_id<_t>();
+		//return get_class<_t>()->info()->m_id;
 	}
 
 	template<typename _t>
@@ -1464,17 +1542,17 @@ namespace meta
 	template<typename _s>
 	void read_pairs(serial_reader* serial, _s& pair_container)
 	{
-		size_t length = serial->read_length();
-		serial->array_begin(meta::get_class<std::remove_const<_s::value_type>::type>(), length);
-
-		pair_container.clear();
-		pair_container.reserve(length);
-
 		// see above
 		using pair_t = std::pair<
 			typename std::remove_const<typename _s::key_type>::type,
 			typename std::remove_const<typename _s::mapped_type>::type
 		>;
+
+		size_t length = serial->read_length();
+		serial->array_begin(meta::get_class<pair_t>(), length);
+
+		pair_container.clear();
+		pair_container.reserve(length);
 
 		for (size_t i = 0; i < length; i++)
 		{
@@ -1552,5 +1630,42 @@ namespace meta
 			serial->read_member(meta::get_class<_b>(), &instance.second, "second");
 			serial->class_end();
 		}
+	}
+
+	template<typename _t>
+	void describer(type* type, tag<std::vector<_t>>)
+	{
+		type->set_prop("generic_write", true);
+		type->set_prop("generic_read", true);
+		type->set_prop("is_vector", true);
+		type->set_prop("inner_type", id<_t>());
+	}
+
+	template<typename _t>
+	void describer(type* type, tag<std::unordered_set<_t>>)
+	{
+		type->set_prop("generic_write", true);
+		type->set_prop("generic_read", true);
+		type->set_prop("is_unordered_set", true);
+		type->set_prop("inner_type", id<_t>());
+	}
+
+	template<typename _k, typename _v>
+	void describer(type* type, tag<std::unordered_map<_k, _v>>)
+	{
+		type->set_prop("generic_write", true);
+		type->set_prop("generic_read", true);
+		type->set_prop("is_unordered_map", true);
+		type->set_prop("inner_type", id<std::pair<_k, _v>>());
+	}
+
+	template<typename _a, typename _b>
+	void describer(type* type, tag<std::pair<_a, _b>>)
+	{
+		type->set_prop("generic_write", true);
+		type->set_prop("generic_read", true);
+		type->set_prop("is_pair", true);
+		type->set_prop("inner_type_a", id<_a>());
+		type->set_prop("inner_type_b", id<_b>());
 	}
 }

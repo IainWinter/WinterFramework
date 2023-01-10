@@ -33,6 +33,7 @@ wAPI void PassContexts(ScriptingContext ctx)
     File::SetCurrentContext(ctx.ctx_file);
     Input::SetCurrentContext(ctx.ctx_input);
     meta::SetCurrentContext(ctx.ctx_meta);
+    wlog::SetCurrentContext(ctx.ctx_log);
 
     ModuleMain();
 }

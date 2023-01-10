@@ -13,6 +13,7 @@
 
 #include "ext/rendering/DebugRender.h" // this should be switched on W_DEBUG
 #include "ext/Transform.h"
+#include "ext/EntityPrefab.h"
 
 #include "util/named.h"
 #include "util/filesystem.h"
@@ -134,6 +135,8 @@ protected:
 // creating entities
 
 	Entity CreateEntity();
+	Entity CreateEntity(const EntityPrefab& prefab);
+	Entity CreateEntity(const a<EntityPrefab>& prefab); // short hand for *asset.ptr()
 	Entity WrapEntity(u32 entityId);
 
 // entity queries

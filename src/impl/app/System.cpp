@@ -128,6 +128,24 @@ Entity SystemBase::CreateEntity()
 	return m_world->GetEntityWorld().Create();
 }
 
+
+Entity SystemBase::CreateEntity(const EntityPrefab& prefab)
+{
+	Entity entity = CreateEntity();
+
+	for (const meta::any& any : prefab.GetComponents())
+	{
+		entity.Add(any);
+	}
+
+	return entity;
+}
+
+Entity SystemBase::CreateEntity(const a<EntityPrefab>& prefab)
+{
+	return CreateEntity(*prefab.ptr());
+}
+
 Entity SystemBase::WrapEntity(u32 entityId)
 {
 	return m_world->GetEntityWorld().Wrap(entityId);

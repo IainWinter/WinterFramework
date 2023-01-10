@@ -7,11 +7,20 @@
 #include "stb/load_image.h"
 
 IDeviceObject::IDeviceObject(
-	bool isStatic
+	bool isStatic,
+	DeviceObjectType type
 )
 	: m_static   (false/*isStatic*/) // false for asset packing...
 	, m_outdated (true)
-{}
+	, m_type     (type)
+{
+	Render::GetContext()->objects.insert(this);
+}
+
+IDeviceObject::~IDeviceObject()
+{
+	Render::GetContext()->objects.erase(this);
+}
 
 void IDeviceObject::FreeHost()
 {
@@ -71,6 +80,11 @@ bool IDeviceObject::Outdated() const
 void IDeviceObject::MarkForUpdate()
 {
 	m_outdated = true;
+}
+
+DeviceObjectType IDeviceObject::Type() const
+{
+	return m_type;
 }
 
 void IDeviceObject::assert_on_host()    const { assert(OnHost()   && "Device object has no data on host"); }
@@ -264,14 +278,14 @@ void Texture::_SetDeviceFilter()
 }
 
 Texture::Texture()
-	: IDeviceObject (true)
+	: IDeviceObject (true, OBJECT_TEXTURE)
 {}
 
 Texture::Texture(
 	const std::string& path,
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_TEXTURE)
 {
 	auto [pixels, width, height, channels] = load_image(path);
 	assert(channels > 0 && channels <= 4 && "Invalid RGBA channel count created by stb");
@@ -282,7 +296,7 @@ Texture::Texture(
 	int width, int height, Usage usage,
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_TEXTURE)
 {
 	void* pixels = malloc(width * height * gl_num_channels(usage) * gl_bytes_per_channel(usage));
 	init_texture_host_memory(pixels, width, height, usage);
@@ -292,7 +306,7 @@ Texture::Texture(
 	int width, int height, Usage usage,
 	void* pixels
 )
-	: IDeviceObject (false)
+	: IDeviceObject (false, OBJECT_TEXTURE)
 {
 	init_texture_host_memory(pixels, width, height, usage);
 }
@@ -302,10 +316,10 @@ Texture::~Texture()
 	Cleanup();
 }
 
-Texture::Texture           (      Texture&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-Texture::Texture           (const Texture&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-Texture& Texture::operator=(      Texture&& move) noexcept                                  { return move_into(std::move(move)); }
-Texture& Texture::operator=(const Texture&  copy)                                           { return copy_into(copy); }
+Texture::Texture(Texture&& move) noexcept : IDeviceObject(move.IsStatic(), OBJECT_TEXTURE) { move_into(std::move(move)); }
+Texture::Texture(const Texture& copy) : IDeviceObject(copy.IsStatic(), OBJECT_TEXTURE) { copy_into(copy); }
+Texture& Texture::operator=(Texture&& move) noexcept { return move_into(std::move(move)); }
+Texture& Texture::operator=(const Texture& copy) { return copy_into(copy); }
 
 Texture& Texture::move_into(Texture&& move) noexcept
 {
@@ -495,7 +509,7 @@ void Target::_UpdateFromDevice()
 Target::Target(
 	bool isStatic
 )
-	: IDeviceObject(isStatic)
+	: IDeviceObject (isStatic, OBJECT_TARGET)
 {}
 
 Target::~Target() 
@@ -503,10 +517,10 @@ Target::~Target()
 	Cleanup();
 }
 
-Target::Target           (      Target&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-Target::Target           (const Target&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-Target& Target::operator=(      Target&& move) noexcept                                  { return move_into(std::move(move)); }
-Target& Target::operator=(const Target&  copy)                                           { return copy_into(copy); }
+Target::Target(Target&& move) noexcept : IDeviceObject(move.IsStatic(), OBJECT_TARGET) { move_into(std::move(move)); }
+Target::Target(const Target& copy) : IDeviceObject(copy.IsStatic(), OBJECT_TARGET) { copy_into(copy); }
+Target& Target::operator=(Target&& move) noexcept { return move_into(std::move(move)); }
+Target& Target::operator=(const Target& copy) { return copy_into(copy); }
 
 Target& Target::move_into(Target&& move) noexcept
 {
@@ -648,14 +662,14 @@ void Buffer::_UpdateFromDevice()
 Buffer::Buffer(
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_BUFFER)
 {}
 
 Buffer::Buffer(
 	int length, int repeat, ElementType type,
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_BUFFER)
 	, m_repeat      (repeat)
 	, m_type        (type)
 {
@@ -667,10 +681,10 @@ Buffer::~Buffer()
 	Cleanup();
 }
 
-Buffer::Buffer           (      Buffer&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-Buffer::Buffer           (const Buffer&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-Buffer& Buffer::operator=(      Buffer&& move) noexcept                                  { return move_into(std::move(move)); }
-Buffer& Buffer::operator=(const Buffer&  copy)                                           { return copy_into(copy); }
+Buffer::Buffer(Buffer&& move) noexcept : IDeviceObject(move.IsStatic(), OBJECT_BUFFER) { move_into(std::move(move)); }
+Buffer::Buffer(const Buffer& copy) : IDeviceObject(copy.IsStatic(), OBJECT_BUFFER) { copy_into(copy); }
+Buffer& Buffer::operator=(Buffer&& move) noexcept { return move_into(std::move(move)); }
+Buffer& Buffer::operator=(const Buffer& copy) { return copy_into(copy); }
 
 Buffer& Buffer::move_into(Buffer&& move) noexcept
 {
@@ -869,7 +883,7 @@ void Mesh::_UpdateFromDevice()
 Mesh::Mesh(
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_MESH)
 {}
 
 Mesh::~Mesh() 
@@ -877,10 +891,10 @@ Mesh::~Mesh()
 	Cleanup(); 
 }
 
-Mesh::Mesh           (      Mesh&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-Mesh::Mesh           (const Mesh&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-Mesh& Mesh::operator=(      Mesh&& move) noexcept                                  { return move_into(std::move(move)); }
-Mesh& Mesh::operator=(const Mesh&  copy)                                           { return copy_into(copy); }
+Mesh::Mesh(Mesh&& move) noexcept : IDeviceObject(move.IsStatic(), OBJECT_MESH) { move_into(std::move(move)); }
+Mesh::Mesh(const Mesh& copy) : IDeviceObject(copy.IsStatic(), OBJECT_MESH) { copy_into(copy); }
+Mesh& Mesh::operator=(Mesh&& move) noexcept { return move_into(std::move(move)); }
+Mesh& Mesh::operator=(const Mesh&  copy) { return copy_into(copy); }
 
 Mesh Mesh::Copy()
 {
@@ -1065,7 +1079,7 @@ void ShaderProgram::_UpdateFromDevice()
 ShaderProgram::ShaderProgram(
 	bool isStatic
 )
-	: IDeviceObject (isStatic)
+	: IDeviceObject (isStatic, OBJECT_SHADERPROGRAM)
 {}
 
 ShaderProgram::~ShaderProgram() 
@@ -1073,10 +1087,10 @@ ShaderProgram::~ShaderProgram()
 	Cleanup(); 
 }
 
-ShaderProgram::ShaderProgram           (      ShaderProgram&& move) noexcept : IDeviceObject(move.IsStatic()) { move_into(std::move(move)); }
-ShaderProgram::ShaderProgram           (const ShaderProgram&  copy)          : IDeviceObject(copy.IsStatic()) { copy_into(copy); }
-ShaderProgram& ShaderProgram::operator=(      ShaderProgram&& move) noexcept                                  { return move_into(std::move(move)); }
-ShaderProgram& ShaderProgram::operator=(const ShaderProgram&  copy)                                           { return copy_into(copy); }
+ShaderProgram::ShaderProgram(ShaderProgram&& move) noexcept : IDeviceObject(move.IsStatic(), OBJECT_SHADERPROGRAM) { move_into(std::move(move)); }
+ShaderProgram::ShaderProgram(const ShaderProgram& copy) : IDeviceObject(copy.IsStatic(), OBJECT_SHADERPROGRAM) { copy_into(copy); }
+ShaderProgram& ShaderProgram::operator=(ShaderProgram&& move) noexcept { return move_into(std::move(move)); }
+ShaderProgram& ShaderProgram::operator=(const ShaderProgram& copy) { return copy_into(copy); }
 
 ShaderProgram& ShaderProgram::move_into(ShaderProgram&& move)
 {

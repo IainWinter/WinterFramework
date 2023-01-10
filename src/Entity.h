@@ -287,6 +287,8 @@ public:
 	void Add(meta::id_type component);
 	void Remove(meta::id_type component);
 
+	void Add(const meta::any& any);
+
 	// components from a templated type
 
 	template<typename... _t>
@@ -408,7 +410,9 @@ struct EntityMeta
     std::string id = nonce(16);  // should use a uuid
 };
 
-// template impl
+//
+//	template impl
+//
 
 // only FirstEntity is here to define Entity, but all functions should be impled here, not in class
 

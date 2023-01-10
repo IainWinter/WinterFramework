@@ -3,6 +3,9 @@
 #include <string.h>
 #include <sstream>
 
+// for debug
+#include "Log.h"
+
 //
 //		Writer
 //
@@ -143,6 +146,8 @@ void json_reader::read_bytes(char* bytes, size_t length)
 		{
 			json_string_s* jstring = json_value_as_string(jvalue);
 			memcpy(bytes, jstring->string, length);
+
+			log_io("JSON: read string %s", jstring->string);
 			break;
 		}
 
@@ -169,20 +174,34 @@ void json_reader::read_bytes(char* bytes, size_t length)
 				memcpy(bytes, &largest, type->info()->m_size);
 			}
 
+			log_io("JSON: read number %s", jnumber->number);
 			break;
 		}
 
 		case json_type_e::json_type_false:
 		{
 			*bytes = (char)false;
+
+			log_io("JSON: read false");
 			break;
 		}
 
 		case json_type_e::json_type_true:
 		{
 			*bytes = (char)true;
+
+			log_io("JSON: read true");
 			break;
 		}
+
+		//case json_type_e::json_type_object: // why was this nessesary?
+		//{
+		//	meta::type* type = m_frames.top().type;
+		//	read_class(type, bytes);
+
+		//	log_io("JSON: read object");
+		//	break;
+		//}
 
 		default:
 		{

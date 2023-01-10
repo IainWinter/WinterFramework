@@ -84,6 +84,10 @@ void EngineLoopBase::_Init()
 	Asset::CreateContext();
 	File::CreateContext();
 	Input::CreateContext();
+	wlog::CreateContext();
+
+	// init debug renders
+	Debug::Init();
 
 	// attach system events
 	app.GetRootEventBus().Attach<event_Shutdown>(this);
@@ -123,12 +127,16 @@ void EngineLoopBase::_Dnit()
     // dnit user code
 	Dnit();
     
+	// dnit debug renders
+	Debug::Dnit();
+
     // destroy framework contexts
     Time::DestroyContext();
-	Render::DestroyContext();
 	Asset::DestroyContext();
 	File::DestroyContext();
 	Input::DestroyContext();
+	Render::DestroyContext();
+	wlog::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()

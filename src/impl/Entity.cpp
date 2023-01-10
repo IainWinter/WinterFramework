@@ -237,3 +237,15 @@ void Entity::Remove(meta::id_type component)
 		store->remove(m_handle);
 	}
 }
+
+void Entity::Add(const meta::any& any)
+{
+	entt::sparse_set* store = m_owning->entt().storage(any.type_id());
+
+	if (store && !store->contains(m_handle))
+	{
+		store->emplace(m_handle, any.data());
+		//void* ptr = store->get(m_handle);
+		//any.copy_to(ptr);
+	}
+}

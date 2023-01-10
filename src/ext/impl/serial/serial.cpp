@@ -10,7 +10,7 @@ namespace meta
 
 	void serial_writer::write_class(meta::type* type, const void* instance)
 	{
-		if (type->has_custom_write() || !type->has_members()) // custom write / no members
+		if (!type->get_type()->is_complex() || type->get_type()->has_custom_write()) // simple / custom
 		{
 			type->_serial_write(this, instance);
 		}
@@ -78,7 +78,9 @@ namespace meta
 
 	void serial_reader::read_class(type* type, void* instance)
 	{
-		if (type->has_custom_read() || !type->has_members()) // custom read / no members
+		log_io("reading class %s", type->name());
+
+		if (!type->get_type()->is_complex() || type->get_type()->has_custom_read()) // simple / custom
 		{
 			type->_serial_read(this, instance);
 		}
@@ -86,6 +88,9 @@ namespace meta
 		else // objects
 		{
 			class_begin(type);
+
+			// init instance
+			type->construct(instance);
 
 			auto& members = type->get_members();
 			for (int i = 0; i < members.size(); i++)
@@ -279,7 +284,9 @@ namespace meta
 	{
 		if (has_registered_type(type_id))
 		{
-			delete ctx->known_info[type_id].type;
+			meta::type* type = ctx->known_info[type_id].type;
+
+			delete type;
 			ctx->known_info.erase(type_id);
 		}
 	}

@@ -1,4 +1,5 @@
 #include "ext/serial/serial_common.h"
+#include "ext/serial/serial.h"
 
 #include "Common.h"
 #include "Physics.h"
@@ -6,6 +7,8 @@
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Particle.h"
+
+#include "ext/EntityPrefab.h"
 
 #include <string>
 #include <vector>
@@ -145,6 +148,24 @@ void read_TextureAtlas(meta::serial_reader* serial, TextureAtlas& atlas)
 		.end();
 
 	atlas.source = Asset::LoadFromFile<Texture>(sourceName);
+}
+
+void write_EntityPrefab(meta::serial_writer* serial, const EntityPrefab& entityPrefab)
+{
+	serial->write(entityPrefab.GetComponents());
+}
+
+void read_EntityPrefab(meta::serial_reader* serial, EntityPrefab& entityPrefab)
+{
+	std::vector<meta::any> components;
+	serial->read(components);
+
+	entityPrefab = {};
+
+	for (const meta::any& component : components)
+	{
+		entityPrefab.Add(component);
+	}
 }
 
 void register_common_types()
@@ -290,7 +311,12 @@ void register_common_types()
 		.member<&TextureAtlas::source>("source")
 		.member<&TextureAtlas::bounds>("bounds")
 		.custom_write(&write_TextureAtlas)
-		.custom_read (&read_TextureAtlas);
+		.custom_read(&read_TextureAtlas);
+
+	describe<EntityPrefab>()
+		.name("EntityPrefab")
+		.custom_write(&write_EntityPrefab)
+		.custom_read(&read_EntityPrefab);
 
 	//describe<b2BodyUserData>()
 	//	.name("b2BodyUserData")

@@ -1,103 +1,57 @@
 #include "Log.h"
 
-#include "util/pool_allocator.h"
-
-#include <deque>
-#include <unordered_map>
-
 #include <stdarg.h>
 #include <string.h>
 
-// this is for returning a single string for all logs
-//#include <sstream>
-
-#define LOG_SIZE 1024
-
-pool_allocator m_pool = pool_allocator(LOG_SIZE, 2);
-std::deque<const char*> m_record;
-size_t m_max_size = 1000;
-
-size_t m_mask = LOG_ALL;
-
-std::unordered_map<char, const char*> m_styles =
+namespace wlog
 {
-	{'e', "\033[91m"},
-	{'w', "\033[93m"},
-	{'i', "\033[90m"},
-	{'d', "\033[96m"}
-};
+	wContextImpl(log_context);
+}
 
-std::unordered_map<char, bool> m_enabled =
-{
-	{'e', true},
-	{'w', true},
-	{'i', true},
-	{'d', true}
-};
-
-bool m_enable_style = true;
-
-//const std::deque<const char*>& get_all_logs()
-//{
-//	return m_record;
-//}
-//
-//std::string combine_all_logs()
-//{
-//	std::stringstream ss;
-//	for (const char* str : get_all_logs())
-//	{
-//		ss << str;
-//	}
-//
-//	std::string str = ss.str();
-//	str.pop_back();
-//
-//	return str;
-//}
+#define ctx wlog::ctx
 
 void set_max_log_count(size_t count)
 {
-	m_max_size = count;
+	ctx->m_max_size = count;
 }
 
 void set_log_mask(size_t mask)
 {
-	m_mask = mask;
+	ctx->m_mask = mask;
 }
 
 void set_log_enabled(char flag, bool enabled)
 {
-	m_enabled[flag] = enabled;
+	ctx->m_enabled[flag] = enabled;
 }
 
 void set_log_style_flags_enabled(bool enable)
 {
-	m_enable_style = enable;
+	ctx->m_enable_style = enable;
 }
 
 void set_log_style_flag_effect(char flag, const char* effect)
 {
-	m_styles[flag] = effect;
+	ctx->m_styles[flag] = effect;
 }
 
 void submit_log(const char* str)
 {
-	if (m_record.size() > m_max_size)
+	if (ctx->m_record.size() > ctx->m_max_size)
 	{
-		m_pool.free_bytes((void*)m_record.front(), LOG_SIZE);
-		m_record.pop_front();
+		ctx->m_pool.free_bytes((void*)ctx->m_record.front(), wLOG_SIZE);
+		ctx->m_record.pop_front();
 	}
 
-	m_record.push_back(str);
+	ctx->m_record.push_back(str);
 
 	printf("%s", str);
 }
 
 char* get_log_mem()
 {
-	char* str = m_pool.alloc_bytes(LOG_SIZE);
-	memset(str, 0, LOG_SIZE);
+	char* str = ctx->m_pool.alloc_bytes(wLOG_SIZE);
+	memset(str, 0, wLOG_SIZE);
 	return str;
 }
 
@@ -116,18 +70,18 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 
 	if (strlen(text) > 1 && text[1] == '~') // set style or exit if disabled, default is enabled
 	{
-		if (m_enable_style)
+		if (ctx->m_enable_style)
 		{
 			char flag = text[0];
 		
-			auto enabled = m_enabled.find(flag);
-			if (enabled != m_enabled.end())
+			auto enabled = ctx->m_enabled.find(flag);
+			if (enabled != ctx->m_enabled.end())
 			{
 				if (!enabled->second) return; // exit
 			}
 
-			auto style = m_styles.find(flag);
-			if (style != m_styles.end())
+			auto style = ctx->m_styles.find(flag);
+			if (style != ctx->m_styles.end())
 			{
 				const char* itr_style = style->second;
 
@@ -191,15 +145,15 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 
 #define DO_LOG(header) { va_list args; va_start(args, fmt); log_with_header(header, fmt, args); va_end(args); }
 
-void log        (const char* fmt, ...) {                           DO_LOG("")        }
-void log_audio  (const char* fmt, ...) { if (m_mask & LOG_AUDIO)   DO_LOG("Audio  ") }
-void log_entity (const char* fmt, ...) { if (m_mask & LOG_ENTITY)  DO_LOG("Entity ") }
-void log_event  (const char* fmt, ...) { if (m_mask & LOG_EVENT)   DO_LOG("Event  ") }
-void log_physics(const char* fmt, ...) { if (m_mask & LOG_PHYSICS) DO_LOG("Physics") }
-void log_render (const char* fmt, ...) { if (m_mask & LOG_RENDER)  DO_LOG("Render ") }
-void log_window (const char* fmt, ...) { if (m_mask & LOG_WINDOW)  DO_LOG("Window ") }
-void log_world  (const char* fmt, ...) { if (m_mask & LOG_WORLD)   DO_LOG("World  ") }
-void log_console(const char* fmt, ...) { if (m_mask & LOG_CONSOLE) DO_LOG("Console") }
-void log_io     (const char* fmt, ...) { if (m_mask & LOG_IO)      DO_LOG("IO     ") }
-void log_game   (const char* fmt, ...) { if (m_mask & LOG_GAME)    DO_LOG("Game   ") }
-void log_app    (const char* fmt, ...) { if (m_mask & LOG_APP)     DO_LOG("App    ") }
+void log        (const char* fmt, ...) {                                DO_LOG("")        }
+void log_audio  (const char* fmt, ...) { if (ctx->m_mask & LOG_AUDIO)   DO_LOG("Audio  ") }
+void log_entity (const char* fmt, ...) { if (ctx->m_mask & LOG_ENTITY)  DO_LOG("Entity ") }
+void log_event  (const char* fmt, ...) { if (ctx->m_mask & LOG_EVENT)   DO_LOG("Event  ") }
+void log_physics(const char* fmt, ...) { if (ctx->m_mask & LOG_PHYSICS) DO_LOG("Physics") }
+void log_render (const char* fmt, ...) { if (ctx->m_mask & LOG_RENDER)  DO_LOG("Render ") }
+void log_window (const char* fmt, ...) { if (ctx->m_mask & LOG_WINDOW)  DO_LOG("Window ") }
+void log_world  (const char* fmt, ...) { if (ctx->m_mask & LOG_WORLD)   DO_LOG("World  ") }
+void log_console(const char* fmt, ...) { if (ctx->m_mask & LOG_CONSOLE) DO_LOG("Console") }
+void log_io     (const char* fmt, ...) { if (ctx->m_mask & LOG_IO)      DO_LOG("IO     ") }
+void log_game   (const char* fmt, ...) { if (ctx->m_mask & LOG_GAME)    DO_LOG("Game   ") }
+void log_app    (const char* fmt, ...) { if (ctx->m_mask & LOG_APP)     DO_LOG("App    ") }

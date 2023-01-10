@@ -82,7 +82,7 @@ struct Particle
 	int   GetCurrentFrame() const { return (int)floor(frameCurrent); }
 
 	const TextureAtlas::Bounds& GetCurrentFrameUV() const { return atlas->GetUVForFrame(GetCurrentFrame() % atlas->GetFrameCount()); }
-	      Texture&              GetTexture()              { return *atlas->source; }
+	      Texture&              GetTexture()              { return *atlas->source.ptr(); }
 
 	Color GetTint() const
 	{
