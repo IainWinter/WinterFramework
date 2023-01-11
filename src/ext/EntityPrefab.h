@@ -10,6 +10,7 @@ private:
 public:
 	EntityPrefab() = default;
 	EntityPrefab(const std::string& filename);
+	EntityPrefab(Entity entity);
 
 	void Add(const meta::any& component);
 	void Remove(const meta::id_type& type);

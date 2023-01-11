@@ -11,6 +11,11 @@ EntityPrefab::EntityPrefab(const std::string& filename)
 	}
 }
 
+EntityPrefab::EntityPrefab(Entity entity)
+{
+	
+}
+
 void EntityPrefab::Add(const meta::any& component)
 {
 	if (!component.type()->has_prop("is_component"))

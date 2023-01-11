@@ -194,6 +194,8 @@ public:
 	void ExecuteDeferdDeletions();
 	void Clear();
 
+	std::vector<Entity> GetAllEntities();
+
 	entt::registry& entt() { return m_registry; }
 
 	// event handlers
@@ -288,6 +290,7 @@ public:
 	void Remove(meta::id_type component);
 
 	void Add(const meta::any& any);
+	std::vector<meta::any> GetComponents();
 
 	// components from a templated type
 

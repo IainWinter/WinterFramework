@@ -39,6 +39,18 @@ void EntityWorld::Clear()
 	m_registry.clear();
 }
 
+std::vector<Entity> EntityWorld::GetAllEntities()
+{
+	std::vector<Entity> entities;
+
+	m_registry.each([&](entt::entity e)
+	{
+		entities.push_back(Wrap((u32)e));
+	});
+
+	return entities;
+};
+
 void EntityWorld::DeleteEntityNow(entt::entity id)
 {
 	m_registry.destroy(id);
@@ -248,4 +260,28 @@ void Entity::Add(const meta::any& any)
 		//void* ptr = store->get(m_handle);
 		//any.copy_to(ptr);
 	}
+}
+
+std::vector<meta::any> Entity::GetComponents()
+{
+	std::vector<meta::any> data;
+
+	for (auto&& [component, store] : m_owning->entt().storage())
+    {
+        if (store.contains(m_handle))
+        {
+            meta::type* type = meta::from_entt(component);
+            void* ptr = store.get(m_handle);
+
+            if (!type)
+            {
+                log_io("e~Failed to serialize type, no type information. %s", entt::type_id(component).name().data());
+                continue;
+            }
+
+            data.push_back(meta::any(type, ptr));
+        }
+    }
+
+	return data;
 }
