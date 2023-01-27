@@ -1,7 +1,11 @@
 #include "app/System.h"
 #include "InternalSystems.h"
 
-#define _break(on) if ((int)m_break & on) { (int&)m_break &= ~on; __debugbreak(); }
+#ifdef _WIN32
+#   define _break(on) if ((int)m_break & on) { (int&)m_break &= ~on; __debugbreak(); }
+#else
+#   define _break(on) ;
+#endif
 
 void SystemBase::_Init(r<World> world)
 {

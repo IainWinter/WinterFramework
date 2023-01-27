@@ -13,6 +13,7 @@
 #include "app/System.h"
 #include "app/FontMap.h"
 #include "app/InputMap.h"
+#include "app/InputEventHandler.h"
 #include "app/Time.h"
 
 #include "ext/AssetStore.h"
@@ -31,12 +32,10 @@ protected:
 private:
 	bool m_running = true;
 	float m_fixedStepAcc = 0.f;
-
+    InputEventHandler m_inputHandler;
+    
 public:
 	void on(event_Shutdown& e);
-	void on(event_Key& e);
-	void on(event_Mouse& e);
-	void on(event_Controller& e);
 	void on(event_ConsoleCommand& e);
 	void on(event_CreateEntity& e);
 
@@ -51,11 +50,6 @@ protected:
 	virtual void PreInitUI() {};
 	virtual void InitUI() {}; // for loading fonts n such after flags have been set
 	virtual void Dnit() {};
-
-// translating framework events to Input events
-
-private:
-	void HandleInputMapping(int code, float state);
 };
 
 template<typename _me>

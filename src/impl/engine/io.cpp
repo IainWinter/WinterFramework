@@ -27,9 +27,10 @@ std::string CreateTextureAtlasFileFromImageFile(const std::string& textureFilena
 	dummy.SetAutoTile(1, 1);
 
 	std::string atlasFilename = realFilepath + ".atlas";
-
+    std::ofstream file = std::ofstream(atlasFilename);
+    
 	// write the .atlas file
-	json_writer(std::ofstream(atlasFilename)).write(dummy);
+	json_writer(file).write(dummy);
 
 	return atlasFilename;
 }

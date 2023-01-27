@@ -74,10 +74,13 @@ void Window::InitUI()
 
 void Window::Dnit()
 {
-	Dnit_Imgui();
+    if (m_imgui)
+        Dnit_Imgui();
+    
 	SDL_GL_DeleteContext(m_opengl);
 	SDL_DestroyWindow(m_window);
 	m_window = nullptr;
+    m_opengl = nullptr;
 }
 
 void Window::PumpEvents()
@@ -87,7 +90,8 @@ void Window::PumpEvents()
 	{
 		//log_window("event: %d", event.type);
 
-		ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
+        if (m_imgui)
+            ImGui_ImplSDL2_ProcessEvent(&event); // does this need to be between frames?
 
 		if (!m_events)
 		{
@@ -520,6 +524,8 @@ void Window::Dnit_Imgui()
     ImGui_ImplSDL2_Shutdown();
  	ImGui::DestroyContext();
 	ImPlot::DestroyContext();
+    
+    m_imgui = nullptr;
 }
 
 WindowRef::WindowRef(Window* window)

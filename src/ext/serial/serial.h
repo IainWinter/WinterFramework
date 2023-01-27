@@ -1463,7 +1463,7 @@ namespace meta
 
 		size_t length = std::distance(itr, end);
 
-		serial->array_begin(meta::get_class<std::remove_const<_s::value_type >::type >(), length);
+		serial->array_begin(meta::get_class<typename std::remove_const<typename _s::value_type >::type >(), length);
 		
 		for (size_t i = 0; i < length; i++)
 		{
@@ -1482,7 +1482,7 @@ namespace meta
 	void read_linear(serial_reader* serial, _s& lienar_container)
 	{
 		size_t length = serial->read_length();
-		serial->array_begin(meta::get_class<std::remove_const<_s::value_type>::type>(), length);
+		serial->array_begin(meta::get_class<typename std::remove_const<typename _s::value_type>::type>(), length);
 
 		lienar_container.clear();
 		lienar_container.reserve(length);

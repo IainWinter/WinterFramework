@@ -53,6 +53,8 @@ json_value_s* json_reader::json_frame::get_value()
 		case 1: return item->value;
 		case 2: return member->value;
 	}
+    
+    return nullptr;
 }
 
 json_reader::json_reader(std::istream& in)

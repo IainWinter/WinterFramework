@@ -1,81 +1,95 @@
 #include "Event.h"
 #include <assert.h>
 
-void event_pipe::send(void* event)
+void EventSink::AttachPipe(std::shared_ptr<EventPipeBase> pipe)
 {
-	if (!m_only_if || m_only_if(event))
-	{
-		m_send(event);
-	}
+    DetachPipe(pipe);
+    m_pipes.push_back(pipe);
 }
 
-void event_sink::remove_pipe(void* handler)
+void EventSink::DetachPipe(std::shared_ptr<EventPipeBase> pipe)
 {
-	for (int i = 0; i < m_pipes.size(); i++)
-	{
-		if (m_pipes.at(i).m_destination == handler)
-		{
-			m_pipes.erase(m_pipes.begin() + i);
-			--i; // dont break could have multiple pipes to same instance
-		}
-	}
+    auto itr = std::find(m_pipes.begin(), m_pipes.end(), pipe);
+    if (itr != m_pipes.end())
+        m_pipes.erase(itr);
 }
 
-void event_sink::send(void* event)
+void EventSink::DetachPipe(const void* instanceOrFunctionPointer)
 {
-	for (event_pipe& pipe : m_pipes)
-	{
-		pipe.send(event);
-	}
+    for (const std::shared_ptr<EventPipeBase>& pipe : m_pipes)
+    {
+        if (pipe->GetInstance() == instanceOrFunctionPointer)
+        {
+            DetachPipe(pipe);
+            break;
+        }
+    }
 }
 
-void EventBus::Detach(void* handler)
+void EventSink::Send(void* event) const
 {
-	for (auto itr = m_sinks.begin(); itr != m_sinks.end();)
-	{
-		itr->second.remove_pipe(handler);
-
-		if (itr->second.m_pipes.size() == 0)
-		{
-			itr = m_sinks.erase(itr);
-		}
-		else
-		{
-			++itr;
-		}
-	}
+    for (const std::shared_ptr<EventPipeBase>& pipe : m_pipes)
+    {
+        pipe->Send(event);
+    }
 }
+
+int EventSink::GetNumberOfPipes() const
+{
+    return m_pipes.size();
+}
+
+Event::Event()
+    : pipe (nullptr)
+    , type ()
+{}
+
+Event::Event(std::shared_ptr<EventPipeBase> pipe, const EventType& type)
+    : pipe (pipe)
+    , type (type)
+{}
 
 EventBus::EventBus()
 	: m_parent (nullptr)
 {}
 
-void EventBus::Detach(event_type type, void* handler)
+void EventBus::Detach(const Event& event)
 {
-	event_sink& sink = m_sinks.at(type.m_hash);
-	sink.remove_pipe(handler);
+    auto sink = m_sinks.find(event.type);
 
-	if (sink.m_pipes.size() == 0)
-	{
-		m_sinks.erase(type.m_hash);
-	}
+    sink->second.DetachPipe(event.pipe);
+        
+    if (sink->second.GetNumberOfPipes() == 0)
+        m_sinks.erase(sink);
 }
 
-void EventBus::Send(event_type type, void* event)
+void EventBus::Detach(const void* instanceOrFunctionPointer)
 {
-	auto itr = m_sinks.find(type.m_hash); // might cause a problem on large throughput of events
+    for (auto itr = m_sinks.begin(); itr != m_sinks.end();)
+    {
+        itr->second.DetachPipe(instanceOrFunctionPointer);
+
+        if (itr->second.GetNumberOfPipes() == 0)
+            itr = m_sinks.erase(itr);
+        else
+            ++itr;
+    }
+}
+
+void EventBus::Send(EventType type, void* event)
+{
+	auto itr = m_sinks.find(type); // might cause a problem on large throughput of events
 	if (itr != m_sinks.end())
 	{
-		itr->second.send(event);
+		itr->second.Send(event);
 	}
 
-	// if we remove a child while sending, we need to loop on an iterator
-
-	//for (int i = 0; i < m_children.size(); i++)
-	for (EventBus* child : m_children)
+	// Loop on an index because a child could be removed from the bus in
+    // the event handler
+    
+	for (int i = 0; i < m_children.size(); i++)
 	{
-		//EventBus* child = m_children.at(i);
-		child->Send(type, event);
+        m_children.at(i)->Send(type, event);
 	}
 }
 
@@ -118,19 +132,27 @@ void EventBus::DetachFromParent()
 	}
 }
 
-EventQueue::EventQueue(
-	EventBus* manager
-)
-	: m_manager       (manager)
-	, m_where_current (nullptr)
+EventQueue::EventQueue()
+    : m_bus (nullptr)
 {}
+
+EventQueue::EventQueue(EventBus* bus)
+    : m_bus (bus)
+{}
+
+EventBus* EventQueue::GetBus() const
+{
+    return m_bus;
+}
 
 void EventQueue::Execute()
 {
-	while (m_queue.size() > 0)
-	{
-		queued_event_base* e = m_queue.pop_front();
-		e->send(m_manager);
-		delete e;
-	}
+    for (int i = 0; i < m_queue.size(); i++)
+    {
+        QueuedEvent* event = m_queue.at(i);
+        event->Send(m_bus);
+        delete event;
+    }
+    
+    m_queue.clear();
 }

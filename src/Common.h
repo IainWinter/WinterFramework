@@ -235,15 +235,15 @@ std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 */
 
 template<typename _t>
-_t value_or(void* ptr, const _t& or)
+_t value_or(void* ptr, const _t& defaultValue)
 {
-	return ptr ? *(_t*)ptr : or ;
+	return ptr ? *(_t*)ptr : defaultValue;
 }
 
 template<typename _t>
-_t value_or(void* ptr, size_t index, const _t& or)
+_t value_or(void* ptr, size_t index, const _t& defaultValue)
 {
-	return ptr ? *(_t*)ptr + index : or ;
+	return ptr ? *(_t*)ptr + index : defaultValue;
 }
 
 /*

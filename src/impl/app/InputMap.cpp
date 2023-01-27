@@ -294,7 +294,7 @@ namespace Input
 	{
 		if (AxisExists(name))
 		{
-			log_app("w~Axis already exists. %s", name);
+			log_app("w~Axis already exists. %s", name.c_str());
 			return;
 		}
 
@@ -305,7 +305,7 @@ namespace Input
 	{
 		if (GroupAxisExists(name))
 		{
-			log_app("w~Group axis already exists. %s", name);
+			log_app("w~Group axis already exists. %s", name.c_str());
 			return;
 		}
 
@@ -326,7 +326,7 @@ namespace Input
 	{
 		if (!AxisExists(axis))
 		{
-			log_app("w~Axis doesn't exist. %s", axis);
+			log_app("w~Axis doesn't exist. %s", axis.c_str());
 			return;
 		}
 
@@ -337,7 +337,7 @@ namespace Input
 	{
 		if (!GroupAxisExists(axis))
 		{
-			log_app("w~Group axis doesn't exist. %s", axis);
+			log_app("w~Group axis doesn't exist. %s", axis.c_str());
 			return;
 		}
 
@@ -348,7 +348,7 @@ namespace Input
 	{
 		if (!AxisExists(axis))
 		{
-			log_app("w~Axis doesn't exist. %s", axis);
+			log_app("w~Axis doesn't exist. %s", axis.c_str());
 			return;
 		}
 
@@ -360,13 +360,13 @@ namespace Input
 	{
 		if (!GroupAxisExists(axis))
 		{
-			log_app("w~Group axis doesn't exist. %s", axis);
+			log_app("w~Group axis doesn't exist. %s", axis.c_str());
 			return;
 		}
 
 		if (!AxisExists(component))
 		{
-			log_app("w~Axis doesn't exist. %s", axis);
+			log_app("w~Axis doesn't exist. %s", axis.c_str());
 			return;
 		}
 

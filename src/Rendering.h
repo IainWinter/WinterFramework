@@ -4,6 +4,7 @@
 #include "util/context.h"
 #include <string>
 #include <unordered_set>
+#include <unordered_map>
 
 // fwd
 typedef unsigned int GLenum;

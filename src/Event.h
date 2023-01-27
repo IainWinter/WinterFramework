@@ -7,179 +7,235 @@
 // should allow for handlers to classes without an interface for every type of function
 // and events arent an interface
 
-#include "util/tsque.h"
-
 #include <vector>
-#include <functional>
 #include <unordered_map>
 
-using hash_t = uint64_t;
+template<typename _event>
+using _event_ff = void (*)(_event&);
 
-struct event_type
+template<typename _event, typename _instance>
+using _event_mf = void (_instance::*)(_event&);
+
+class EventPipeBase
 {
-	hash_t m_hash = 0;
-	int m_size = 0;
-	const char* m_name = nullptr;
+public:
+    virtual ~EventPipeBase() = default;
+    
+    virtual void Send(void* event) const = 0;
+    virtual const void* GetInstance() const = 0;
 };
 
-template<typename _e>
-event_type make_event()
+template<typename _event>
+class EventPipe : public EventPipeBase
 {
-	static event_type e;
-	if (e.m_hash == 0)
-	{
-		e.m_hash = typeid(_e).hash_code();
-		e.m_size = sizeof(_e);
-		e.m_name = typeid(_e).name();
-	}
-
-	return e;
-}
-
-struct event_pipe
-{
-	void* m_destination = nullptr; // bound with type info in lambdas
-	std::function<void(void*)> m_send;
-	std::function<bool(void*)> m_only_if;
-
-	void send(void* event);
+public:
+    virtual ~EventPipe() = default;
+    
+    void Send(void* event) const override
+    {
+        _Send(*static_cast<_event*>(event));
+    }
+    
+protected:
+    virtual void _Send(_event& event) const = 0;
 };
 
-template<typename _e>
-struct event_pipe_wrapper
+template<typename _event>
+class EventPipeFreeFunction final : public EventPipe<_event>
 {
-	event_pipe& m_pipe;
-
-	event_pipe_wrapper(event_pipe& pipe) 
-		: m_pipe(pipe)
-	{}
-
-	void only_if(std::function<bool(const _e&)> func)
-	{
-		m_pipe.m_only_if = [func](void* event)
-		{
-			return func(*(_e*)event);
-		};
-	}
-};
-
-template<typename _e, typename _h>
-event_pipe make_pipe(_h* handler)
-{
-	//static_assert(decltype(_h::on(_t&)));
-
-	event_pipe pipe;
-	pipe.m_destination = handler;
-	pipe.m_send = [=](void* event)
-	{
-		handler->on(*(_e*)event);
-	};
-
-	return pipe;
-}
-
-struct event_sink
-{
-	event_type m_type;
-	std::vector<event_pipe> m_pipes;
-
-	template<typename _e, typename _h>
-	event_pipe& add_pipe(_h* handler)
-	{
-		return m_pipes.emplace_back(make_pipe<_e, _h>(handler));
-	}
-
-	void remove_pipe(void* handler);
-
-	void send(void* event);
-};
-
-struct EventBus
-{
+public:
+    EventPipeFreeFunction(_event_ff<_event> func)
+        : m_func (func)
+    {}
+    
+    const void* GetInstance() const override
+    {
+        return (void*)m_func;
+    }
+    
+protected:
+    void _Send(_event& event) const override
+    {
+        m_func(event);
+    }
+    
 private:
-	std::unordered_map<hash_t, event_sink> m_sinks;
-	std::vector<EventBus*> m_children; // doesnt own
-	EventBus* m_parent; // to be able to detach
+    _event_ff<_event> m_func;
+};
 
+template<typename _event, typename _instance>
+class EventPipeMemberFunction final : public EventPipe<_event>
+{
+public:
+    EventPipeMemberFunction(_instance* instance)
+        : m_instance (instance)
+        , m_func     (&_instance::on)
+    {}
+    
+    const void* GetInstance() const override
+    {
+        return (void*)m_instance;
+    }
+    
+protected:
+    void _Send(_event& event) const override
+    {
+        (m_instance ->* m_func) (event);
+    }
+    
+private:
+    _event_mf<_event, _instance> m_func;
+    _instance* m_instance;
+};
+
+class EventSink
+{
+public:
+    void AttachPipe(std::shared_ptr<EventPipeBase> pipe);
+    
+    // Remove a pipe by refernce, does not delete
+    void DetachPipe(std::shared_ptr<EventPipeBase> pipe);
+    
+    // Remove a pipe by searching for a bound instance or free function pointer
+    void DetachPipe(const void* instanceOrFunctionPointer);
+    
+    void Send(void* event) const;
+    
+    int GetNumberOfPipes() const;
+    
+private:
+    std::vector<std::shared_ptr<EventPipeBase>> m_pipes;
+};
+
+using EventType = size_t;
+
+template<typename _event>
+EventType GetEventType()
+{
+    return typeid(_event).hash_code();
+}
+
+// Hold a reference to a bound event. Used for detaching events
+class Event final
+{
+public:
+    Event();
+    Event(std::shared_ptr<EventPipeBase> pipe, const EventType& type);
+    
+private:
+    std::shared_ptr<EventPipeBase> pipe;
+    EventType type;
+    
+    friend class EventBus;
+};
+
+class EventBus
+{
 public:
 	EventBus();
 
-	template<typename _e, typename _h>
-	event_pipe_wrapper<_e> Attach(_h* handler_ptr)
+	template<typename _event, typename _instance>
+    Event Attach(_instance* instance)
 	{
-		event_sink& sink = m_sinks[make_event<_e>().m_hash];
-		event_pipe& pipe = sink.add_pipe<_e, _h>(handler_ptr);
-		return event_pipe_wrapper<_e>(pipe);
+        std::shared_ptr<EventPipeBase> pipe = std::make_shared<EventPipeMemberFunction<_event, _instance>>(instance);
+        EventType type = GetEventType<_event>();
+        
+        m_sinks[type].AttachPipe(pipe);
+        
+        return Event(pipe, type);
 	}
-
-	void Detach(void* handler);
-	void Detach(event_type type, void* handler);
-
-	void Send(event_type type, void* event);
-
+    
+    template<typename _event>
+    Event Attach(_event_ff<_event> function)
+    {
+        std::shared_ptr<EventPipeBase> pipe = std::make_shared<EventPipeFreeFunction<_event>>(function);
+        EventType type = GetEventType<_event>();
+        
+        m_sinks[type].AttachPipe(pipe);
+        
+        return Event(pipe, type);
+    }
+    
+    void Detach(const Event& event);
+    void Detach(const void* instanceOrFunctionPointer);
+    void Detach(EventType type, const void* instanceOrFunctionPointer);
+    
+    template<typename _event>
+    void Detach(const void* instanceOrFunctionPointer)
+    {
+        Detach(GetEventType<_event>(), instanceOrFunctionPointer);
+    }
+    
+    void Send(EventType type, void* event);
+    
+    template<typename _event>
+    void Send(_event& event)
+    {
+        Send(GetEventType<_event>(), &event);
+    }
+    
 	// adding / remove child event_managers
 
 	void ChildAttach(EventBus* child);
 	void ChildDetach(EventBus* child);
-
+    
 	void DetachFromParent();
+    
+private:
+    std::unordered_map<EventType, EventSink> m_sinks;
 
-	// template headers
-
-	template<typename _e>
-	void Detach(void* handler_ptr)
-	{
-		detach(make_event<_e>(), handler_ptr);
-	}
-
-	template<typename _e>
-	void Send(_e&& event)
-	{
-		Send(make_event<_e>(), (void*)&event);
-	}
+    // Parenting
+    
+    std::vector<EventBus*> m_children;
+    EventBus* m_parent;
 };
 
-struct EventQueue
+class EventQueue
 {
-	struct queued_event_base
-	{
-		virtual ~queued_event_base() = default;
-		virtual void send(EventBus* manager) = 0;
-	};
-
-	template<typename _e>
-	struct queued_event : queued_event_base
-	{
-		const char* m_where;
-		event_type m_type;
-		_e m_event;
-
-		queued_event(event_type type, const char* where, const _e& event)
-			: m_where (where)
-			, m_type  (type)
-			, m_event (event)
-		{}
-
-		void send(EventBus* manager)
-		{
-			manager->Send(m_type, &m_event);
-		}
-	};
-
-	EventBus* m_manager;
-	tsque<queued_event_base*> m_queue;
-	const char* m_where_current;
-
-	EventQueue(
-		EventBus* manager
-	);
-
-	void Execute();
-
-	template<typename _e>
-	void Send(const _e& event)
-	{
-		queued_event<_e>* qe = new queued_event<_e>(make_event<_e>(), m_where_current, event); // should use pool...
-		m_queue.push_back(qe);
-	}
+public:
+    EventQueue();
+    EventQueue(EventBus* bus);
+    
+    EventQueue(const EventQueue& )
+    {
+        printf("asd");
+    }
+    
+    EventBus* GetBus() const;
+    
+    void Execute();
+    
+    template<typename _event>
+    void Send(const _event& event, const char* where = "")
+    {
+        QueuedEventWrapped<_event>* queued = new QueuedEventWrapped<_event>(event, where);
+        m_queue.push_back(queued);
+    }
+    
+private:
+    struct QueuedEvent
+    {
+        virtual ~QueuedEvent() = default;
+        virtual void Send(EventBus* bus) = 0;
+    };
+    
+    template<typename _event>
+    struct QueuedEventWrapped : QueuedEvent
+    {
+        _event event;
+        const char* where;
+        
+        QueuedEventWrapped(const _event& event, const char* where)
+            : event (event)
+            , where (where)
+        {}
+        
+        void Send(EventBus* bus) override
+        {   
+            bus->Send(event);
+        }
+    };
+    
+    EventBus* m_bus;
+    std::vector<QueuedEvent*> m_queue;
 };

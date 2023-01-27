@@ -1,6 +1,7 @@
 #include "Common.h"
 #include <filesystem>
 #include <array>
+#include <unordered_map>
 
 Transform2D::Transform2D()
 	: position (0.f, 0.f)
