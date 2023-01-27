@@ -14,7 +14,7 @@ template<typename _event, typename _instance>
 using _event_mf = void (_instance::*)(_event&);
 
 //
-//  Top interface representing a event pipe. Event pipes hold the function pointer
+//  Top interface representing an event pipe. Event pipes hold the function pointer
 //      to the handler
 //
 class IEventPipe
@@ -27,7 +27,7 @@ public:
 };
 
 //
-//  Casts generic event data to the concrete event pipe types
+//  Casts generic event data to the concrete event type of this pipe
 //
 template<typename _event>
 class EventPipe : public IEventPipe
