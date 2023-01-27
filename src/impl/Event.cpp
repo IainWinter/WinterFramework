@@ -1,13 +1,13 @@
 #include "Event.h"
 #include <assert.h>
 
-void EventSink::AttachPipe(std::shared_ptr<EventPipeBase> pipe)
+void EventSink::AttachPipe(std::shared_ptr<IEventPipe> pipe)
 {
     DetachPipe(pipe);
     m_pipes.push_back(pipe);
 }
 
-void EventSink::DetachPipe(std::shared_ptr<EventPipeBase> pipe)
+void EventSink::DetachPipe(std::shared_ptr<IEventPipe> pipe)
 {
     auto itr = std::find(m_pipes.begin(), m_pipes.end(), pipe);
     if (itr != m_pipes.end())
@@ -16,7 +16,7 @@ void EventSink::DetachPipe(std::shared_ptr<EventPipeBase> pipe)
 
 void EventSink::DetachPipe(const void* instanceOrFunctionPointer)
 {
-    for (const std::shared_ptr<EventPipeBase>& pipe : m_pipes)
+    for (const std::shared_ptr<IEventPipe>& pipe : m_pipes)
     {
         if (pipe->GetInstance() == instanceOrFunctionPointer)
         {
@@ -28,7 +28,7 @@ void EventSink::DetachPipe(const void* instanceOrFunctionPointer)
 
 void EventSink::Send(void* event) const
 {
-    for (const std::shared_ptr<EventPipeBase>& pipe : m_pipes)
+    for (const std::shared_ptr<IEventPipe>& pipe : m_pipes)
     {
         pipe->Send(event);
     }
@@ -44,7 +44,7 @@ Event::Event()
     , type ()
 {}
 
-Event::Event(std::shared_ptr<EventPipeBase> pipe, const EventType& type)
+Event::Event(std::shared_ptr<IEventPipe> pipe, const EventType& type)
     : pipe (pipe)
     , type (type)
 {}
@@ -105,6 +105,8 @@ void EventBus::Send(EventType type, void* event)
 
 void EventBus::ChildAttach(EventBus* child)
 {
+    // todo: check for loops
+
 	for (EventBus* c : m_children)
 		if (child == c)
 			return;

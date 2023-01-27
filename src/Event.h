@@ -1,11 +1,7 @@
 #pragma once
 
-// new event system
-// should focus on the order of function execution
-
-// main goal:
-// should allow for handlers to classes without an interface for every type of function
-// and events arent an interface
+// An event bus & queue that allows binding to free functions and member functions
+// to specific instances
 
 #include <vector>
 #include <unordered_map>
@@ -17,17 +13,24 @@ using _event_ff = void (*)(_event&);
 template<typename _event, typename _instance>
 using _event_mf = void (_instance::*)(_event&);
 
-class EventPipeBase
+//
+//  Top interface representing a event pipe. Event pipes hold the function pointer
+//      to the handler
+//
+class IEventPipe
 {
 public:
-    virtual ~EventPipeBase() = default;
+    virtual ~IEventPipe() = default;
     
     virtual void Send(void* event) const = 0;
     virtual const void* GetInstance() const = 0;
 };
 
+//
+//  Casts generic event data to the concrete event pipe types
+//
 template<typename _event>
-class EventPipe : public EventPipeBase
+class EventPipe : public IEventPipe
 {
 public:
     virtual ~EventPipe() = default;
@@ -41,6 +44,10 @@ protected:
     virtual void _Send(_event& event) const = 0;
 };
 
+//
+//  Event pipe for free functions.
+//      Can bind to functions with the signature: void <name>(_event&);
+//
 template<typename _event>
 class EventPipeFreeFunction final : public EventPipe<_event>
 {
@@ -64,6 +71,10 @@ private:
     _event_ff<_event> m_func;
 };
 
+//
+//  Event pipe for member functions.
+//      Can bind to functions with the signature: void _instance::on(_event&);
+//
 template<typename _event, typename _instance>
 class EventPipeMemberFunction final : public EventPipe<_event>
 {
@@ -89,13 +100,16 @@ private:
     _instance* m_instance;
 };
 
+//
+//  Groups event pipes by event type
+//
 class EventSink
 {
 public:
-    void AttachPipe(std::shared_ptr<EventPipeBase> pipe);
+    void AttachPipe(std::shared_ptr<IEventPipe> pipe);
     
     // Remove a pipe by refernce, does not delete
-    void DetachPipe(std::shared_ptr<EventPipeBase> pipe);
+    void DetachPipe(std::shared_ptr<IEventPipe> pipe);
     
     // Remove a pipe by searching for a bound instance or free function pointer
     void DetachPipe(const void* instanceOrFunctionPointer);
@@ -105,9 +119,12 @@ public:
     int GetNumberOfPipes() const;
     
 private:
-    std::vector<std::shared_ptr<EventPipeBase>> m_pipes;
+    std::vector<std::shared_ptr<IEventPipe>> m_pipes;
 };
 
+//
+//  Runtime identifier for event types
+//
 using EventType = size_t;
 
 template<typename _event>
@@ -116,20 +133,27 @@ EventType GetEventType()
     return typeid(_event).hash_code();
 }
 
-// Hold a reference to a bound event. Used for detaching events
+//
+//  Hold a reference to a bound event. Used for detaching events
+//
 class Event final
 {
 public:
     Event();
-    Event(std::shared_ptr<EventPipeBase> pipe, const EventType& type);
+    Event(std::shared_ptr<IEventPipe> pipe, const EventType& type);
     
 private:
-    std::shared_ptr<EventPipeBase> pipe;
+    std::shared_ptr<IEventPipe> pipe;
     EventType type;
     
     friend class EventBus;
 };
 
+//
+//  A group of event sinks and links to child busses
+//      - Events are sent to all children, but not parent
+//      - To bubble up event, user needs a link to the parent bus
+//
 class EventBus
 {
 public:
@@ -138,7 +162,7 @@ public:
 	template<typename _event, typename _instance>
     Event Attach(_instance* instance)
 	{
-        std::shared_ptr<EventPipeBase> pipe = std::make_shared<EventPipeMemberFunction<_event, _instance>>(instance);
+        std::shared_ptr<IEventPipe> pipe = std::make_shared<EventPipeMemberFunction<_event, _instance>>(instance);
         EventType type = GetEventType<_event>();
         
         m_sinks[type].AttachPipe(pipe);
@@ -149,7 +173,7 @@ public:
     template<typename _event>
     Event Attach(_event_ff<_event> function)
     {
-        std::shared_ptr<EventPipeBase> pipe = std::make_shared<EventPipeFreeFunction<_event>>(function);
+        std::shared_ptr<IEventPipe> pipe = std::make_shared<EventPipeFreeFunction<_event>>(function);
         EventType type = GetEventType<_event>();
         
         m_sinks[type].AttachPipe(pipe);
@@ -191,6 +215,9 @@ private:
     EventBus* m_parent;
 };
 
+//
+//  A queue of events that are executed in a batch. todo: Add make threadsafe
+//
 class EventQueue
 {
 public:

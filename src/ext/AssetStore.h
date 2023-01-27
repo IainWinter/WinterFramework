@@ -273,7 +273,7 @@ namespace Asset
 
 		if (!std::filesystem::exists(std::filesystem::path(assetPath)))
 		{
-			log_io("w~Failed to load asset from file: '%s'", filename.c_str());
+			log_io("w~Failed to load asset from file: '%s'", assetPath.c_str());
 			return a<_t>();
 		}
 
