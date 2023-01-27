@@ -69,20 +69,30 @@ void EventBus::Detach(const void* instanceOrFunctionPointer)
     {
         itr->second.DetachPipe(instanceOrFunctionPointer);
 
-        if (itr->second.GetNumberOfPipes() == 0)
+        if (itr->second.GetNumberOfPipes() == 0) // remove empty sinks
             itr = m_sinks.erase(itr);
         else
             ++itr;
     }
 }
 
+void EventBus::Detach(EventType type, const void* instanceOrFunctionPointer)
+{
+    auto itr = m_sinks.find(type);
+
+    if (itr != m_sinks.end())
+        itr->second.DetachPipe(instanceOrFunctionPointer);
+
+    if (itr->second.GetNumberOfPipes() == 0)
+        m_sinks.erase(itr);
+}
+
 void EventBus::Send(EventType type, void* event)
 {
 	auto itr = m_sinks.find(type); // might cause a problem on large throughput of events
+
 	if (itr != m_sinks.end())
-	{
 		itr->second.Send(event);
-	}
 
 	// Loop on an index because a child could be removed from the bus in
     // the event handler
@@ -96,13 +106,8 @@ void EventBus::Send(EventType type, void* event)
 void EventBus::ChildAttach(EventBus* child)
 {
 	for (EventBus* c : m_children)
-	{
 		if (child == c)
-		{
-			assert(false && "Child already added");
 			return;
-		}
-	}
 
 	m_children.push_back(child);
 	child->m_parent = this;
@@ -117,19 +122,15 @@ void EventBus::ChildDetach(EventBus* child)
 			(*itr)->m_parent = nullptr;
 			m_children.erase(itr);
 
-			return;
+			break;
 		}
 	}
-
-	assert(false && "Child not in manager");
 }
 
 void EventBus::DetachFromParent()
 {
 	if (m_parent)
-	{
 		m_parent->ChildDetach(this);
-	}
 }
 
 EventQueue::EventQueue()

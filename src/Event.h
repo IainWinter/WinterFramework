@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <memory>
 
 template<typename _event>
 using _event_ff = void (*)(_event&);
@@ -195,11 +196,6 @@ class EventQueue
 public:
     EventQueue();
     EventQueue(EventBus* bus);
-    
-    EventQueue(const EventQueue& )
-    {
-        printf("asd");
-    }
     
     EventBus* GetBus() const;
     
