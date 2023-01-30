@@ -9,6 +9,7 @@ using namespace glm;
 #include <utility>
 #include <vector>
 #include <functional>
+#include <float.h>
 
 struct HitboxBounds
 {
