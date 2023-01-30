@@ -31,7 +31,21 @@ void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& co
 
 void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& colorA, const Color& colorB, const Transform2D& transform)
 {
-	SubmitLine(vec3(a, 0.f), vec3(b, 0.f), colorA, colorB, Transform(transform));
+	// this has to work like this because rotation in Transform2D -> 3D is broken
+
+	glm::mat4 world = transform.World();
+	vec4 ca = colorA.as_v4();
+	vec4 cb = colorB.as_v4();
+
+	vec3 _a = vec3(a, 0.f);
+	vec3 _b = vec3(b, 0.f);
+
+	m_mesh.Get(Mesh::aCustom_a1)->Push(1, &world); // need to copy for each point
+	m_mesh.Get(Mesh::aCustom_a1)->Push(1, &world);
+	m_mesh.Get(Mesh::aPosition)->Push(1, &_a);
+	m_mesh.Get(Mesh::aPosition)->Push(1, &_b);
+	m_mesh.Get(Mesh::aColor)->Push(1, &ca);
+	m_mesh.Get(Mesh::aColor)->Push(1, &cb);
 }
 
 void BatchLineRenderer::SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform& transform)

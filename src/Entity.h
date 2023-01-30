@@ -261,6 +261,8 @@ public:
 	bool operator==(const Entity& other) const;
 	bool operator!=(const Entity& other) const;
 
+	// shoddy, match this with transform
+
 	Entity& SetParent(const Entity& entity);
 	Entity GetParent();
 
@@ -314,6 +316,17 @@ public:
 		assert_is_valid();
 		assert_has_components<_t>();
 		return std::get<0>(GetAll<_t>());
+	}
+
+	template<typename _t>
+	_t* TryGet() const
+	{
+		assert_is_valid();
+
+		if (Has<_t>())
+			return &Get<_t>();
+
+		return nullptr;
 	}
 
 	template<typename... _t>
@@ -408,7 +421,7 @@ struct OnDestroyComponent
 // this is for looping over every entity with EntityQuery
 struct EntityMeta
 {
-	Entity parent;
+	Entity parent; // should split into EntityParent component
 	std::string name = "Unnamed Entity";
     std::string id = nonce(16);  // should use a uuid
 };

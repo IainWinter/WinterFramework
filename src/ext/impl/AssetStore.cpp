@@ -40,12 +40,7 @@ namespace Asset
 
         else
         {
-            // RegisterAsset basically
-
-            loaded.emplace(
-                instance.name, 
-                Loaded(instance.data.type(), instance.name, instance.data.make_ref())
-            );
+            RegisterLoaded(instance.name, instance.data.type(), instance.data.make_ref());
         }
     }
     
@@ -118,7 +113,7 @@ namespace Asset
         log_io("Saving asset pack %s", filepath.c_str());
 
         std::ofstream out(filepath, std::fstream::binary);
-        if (out.is_open()) bin_writer(out).write(*GetContext());
+        if (out.is_open()) bin_writer(out).write(*ctx.GetCurrent());
     }
 
     void ReadAssetPack(const std::string& filepath)
@@ -126,7 +121,12 @@ namespace Asset
         log_io("Loading asset pack %s", filepath.c_str());
 
         std::ifstream in(filepath, std::fstream::binary);
-        if (in.is_open()) bin_reader(in).read(*GetContext());
+        if (in.is_open()) bin_reader(in).read(*ctx.GetCurrent());
+    }
+
+    void RegisterLoaded(const std::string& name, meta::type* type, r<void> instance)
+    {
+        ctx->loaded.emplace(GetAssetName(name), Loaded(type, name, instance));
     }
 
     bool Has(const std::string& name)

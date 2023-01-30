@@ -7,9 +7,9 @@ ParticleUpdate::ParticleUpdate()                         { SetName("Particle Upd
 
 void TransformUpdate::Update()
 {
-	for (auto [transform] : Query<Transform2D>())
+	for (auto [transform, last] : Query<Transform2D, Last<Transform2D>>())
 	{
-		transform.UpdateLastFrameData();
+		last.UpdateLast(transform);
 	}
 }
 
@@ -70,7 +70,7 @@ void ParticleUpdate::Update()
 
 	// emitter update
 
-	for (auto [transform, emitter] : Query<Transform2D, ParticleEmitter>())
+	for (auto [transform, lastTransform, emitter] : Query<Transform2D, Last<Transform2D>, ParticleEmitter>())
 	{
 		if (!emitter.enableAutoEmit) continue;
 			
@@ -80,7 +80,7 @@ void ParticleUpdate::Update()
 			emitter.currentTime = 0;
 
 			std::vector<Particle> particles = emitter.EmitLine(
-				transform.LastTransform().position, 
+				lastTransform.Get().position,
 				transform.position,
 				.1f
 			);

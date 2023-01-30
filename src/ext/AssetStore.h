@@ -151,12 +151,6 @@ namespace Asset
 
 		AssetContext();
 
-		template<typename _t>
-		void RegisterAsset(const std::string& name, r<_t> instance);
-
-		template<typename _t>
-		a<_t> GetAsset(const std::string& name);
-
 		void Realloc(int location) override;
 	};
 
@@ -201,6 +195,8 @@ namespace Asset
 
 	void WriteAssetPack(const std::string& filepath);
 	void  ReadAssetPack(const std::string& filepath);
+
+	void RegisterLoaded(const std::string& name, meta::type* type, r<void> instance);
 }
 
 //
@@ -212,20 +208,19 @@ namespace Asset
 namespace Asset
 {
 	template<typename _t>
-	void AssetContext::RegisterAsset(const std::string& name, r<_t> instance)
+	void RegisterAsset(const std::string& name, r<_t> instance)
 	{
-		loaded.emplace(
-			GetAssetName(name), 
-			Loaded(meta::get_class<_t>(), name, instance)
-		);
+		RegisterLoaded(name, meta::get_class<_t>(), instance);
 	}
 
 	template<typename _t>
-	a<_t> AssetContext::GetAsset(const std::string& name)
+	a<_t> GetAsset(const std::string& name)
 	{
-		auto itr = loaded.find(GetAssetName(name));
+		const AssetContext* ctx = GetContext();
 
-		if (itr == loaded.end()) // return empty
+		auto itr = ctx->loaded.find(GetAssetName(name));
+
+		if (itr == ctx->loaded.end()) // return empty
 		{
 			return a<_t>();
 		}
@@ -238,7 +233,7 @@ namespace Asset
 	{
 		if (!Has(name))
 		{
-			GetContext()->RegisterAsset<_t>(name, nullptr);
+			RegisterAsset<_t>(name, nullptr);
 		}
 		
 		return Get<_t>(name);
@@ -247,7 +242,7 @@ namespace Asset
 	template<typename _t>
 	a<_t> Get(const std::string& name)
 	{
-		return GetContext()->GetAsset<_t>(name);
+		return GetAsset<_t>(name);
 	}
 
 	template<typename _t, typename... _a>
@@ -255,7 +250,7 @@ namespace Asset
 	{
 		if (!Has(name))
 		{
-			GetContext()->RegisterAsset<_t>(name, mkr<_t>(args...));
+			RegisterAsset<_t>(name, mkr<_t>(args...));
 		}
 
 		return Get<_t>(name);
@@ -283,9 +278,7 @@ namespace Asset
 	template<typename _t>
 	void Free(const r<_t>& asset)
 	{
-		AssetContext* ctx = GetContext();
-
-		for (auto [name, loaded] : ctx->loaded)
+		for (auto [name, loaded] : GetContext()->loaded)
 		{
 			if (asset == loaded) // compare pointers
 			{

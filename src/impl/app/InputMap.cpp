@@ -406,7 +406,7 @@ namespace Input
         log_io("Saving input pack %s", filepath.c_str());
 
         std::ofstream out(filepath);
-        if (out.is_open()) json_writer(out).write(*GetContext());
+        if (out.is_open()) json_writer(out).write(*ctx.GetCurrent());
     }
 
     void ReadInputPack(const std::string& filepath)
@@ -414,7 +414,7 @@ namespace Input
         log_io("Loading input pack %s", filepath.c_str());
 
         std::ifstream in(filepath);
-        if (in.is_open()) json_reader(in).read(*GetContext());
+        if (in.is_open()) json_reader(in).read(*ctx.GetCurrent());
     }
 
 	void SetViewportBounds(vec2 screenMin, vec2 screenSize)

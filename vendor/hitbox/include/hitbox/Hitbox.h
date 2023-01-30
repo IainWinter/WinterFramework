@@ -4,12 +4,11 @@
 #include "glm/common.hpp"
 #include "glm/geometric.hpp"
 
-using namespace glm; // going to start doing this as glm should just be the default math lib, no need to namespace everywhere
+using namespace glm;
 
 #include <utility>
-#include <array>
 #include <vector>
-#include <float.h>
+#include <functional>
 
 struct HitboxBounds
 {
@@ -28,6 +27,12 @@ struct HitboxBounds
     vec2 Dims() const { return vec2(Width(), Height()); }
 };
 
+struct Hitbox
+{
+	std::vector<std::vector<vec2>> polygons;
+	HitboxBounds bounds;
+};
+
 bool IsPolygonConvex(const std::vector<vec2>& polygon);
 float GetPolygonArea(const std::vector<vec2>& polygon);
 HitboxBounds MakeHitboxBounds(const std::vector<vec2>& points);
@@ -41,4 +46,4 @@ std::vector<vec2> FlattenTriangleList(const std::vector<std::vector<vec2>>& tria
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& polygon);
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles);
 
-std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(const bool* mask_grid, int width, int height, int accuracy);
+std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& solid);

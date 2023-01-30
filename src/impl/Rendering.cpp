@@ -10,17 +10,10 @@ IDeviceObject::IDeviceObject(
 	bool isStatic,
 	DeviceObjectType type
 )
-	: m_static   (false/*isStatic*/) // false for asset packing...
+	: m_static   (isStatic)
 	, m_outdated (true)
 	, m_type     (type)
-{
-	Render::GetContext()->objects.insert(this);
-}
-
-IDeviceObject::~IDeviceObject()
-{
-	Render::GetContext()->objects.erase(this);
-}
+{}
 
 void IDeviceObject::FreeHost()
 {
@@ -1334,6 +1327,12 @@ namespace Render
 		}
 
 		return WindowAspect();
+	}
+
+	void SetWindowSize(int width, int height)
+	{
+		ctx->window_width = width;
+		ctx->window_height = height;
 	}
 
 	void SetDefaultRenderTarget(r<Target> target)

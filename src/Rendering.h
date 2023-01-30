@@ -76,7 +76,7 @@ struct IDeviceObject
 // interface
 
 public:
-	virtual ~IDeviceObject();
+	virtual ~IDeviceObject() = default;
 
 	virtual bool OnHost()       const = 0; 
 	virtual bool OnDevice()     const = 0;
@@ -779,14 +779,15 @@ namespace Render
 		int window_height = 0;
 		Color clear_color = Color(20, 38, 66);
 
-		// keep a log of all created objects
-		std::unordered_set<IDeviceObject*> objects;
-
 		float WindowAspect() const;
 		float TargetAspect() const;
 	};
 
 	wContextDecl(RenderContext);
+
+	// Set the contexts window size
+	// This gets used when setting the default render target, so must be set
+	void SetWindowSize(int width, int height);
 
 	// Set a target to bind when SetRenderTarget is called with nullptr
 	// can be nullptr for the screen

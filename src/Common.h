@@ -31,6 +31,21 @@ using namespace glm;
 
 struct Entity;
 
+enum ParentFlags : int
+{
+	pNone = 0b0000,
+	pPosition = 0b0001,
+	pScale = 0b0010,
+	pRotation = 0b0100,
+	pZ = 0b1000,
+	pAll = 0b1111
+};
+
+inline ParentFlags operator|(ParentFlags a, ParentFlags b)
+{
+	return static_cast<ParentFlags>(static_cast<int>(a) | static_cast<int>(b));
+}
+
 struct Transform2D
 {
 	vec2 position;
@@ -38,11 +53,7 @@ struct Transform2D
 	float rotation;
 	float z;
 
-private:
-	vec2 positionLast;
-	vec2 scaleLast;
-	float rotationLast;
-	float zLast;
+	ParentFlags parent = pAll;
 
 public:
 	Transform2D();
@@ -54,6 +65,7 @@ public:
 	Transform2D& SetScale   (vec2 scale);
 	Transform2D& SetRotation(float rotation);
 	Transform2D& SetZIndex  (float z);
+	Transform2D& SetParent  (ParentFlags parent);
 
 	Transform2D  operator* (const Transform2D& other) const;
 	Transform2D& operator*=(const Transform2D& other);
@@ -61,9 +73,15 @@ public:
 	mat4 World()   const;
 	vec2 Forward() const;
 	vec2 Right()   const;
+};
 
-	void UpdateLastFrameData();
-	Transform2D LastTransform() const;
+template<typename _t>
+struct Last
+{
+	const _t& Get() const { return last; }
+	void UpdateLast(const _t& value) { last = value; }
+private:
+	_t last;
 };
 
 struct Transform

@@ -2,8 +2,10 @@
 
 #include "Common.h"
 #include "Entity.h"
-#include "box2d/box2d.h"
 #include "util/function.h"
+
+// may be able to fwd
+#include "box2d/box2d.h"
 
 b2Vec2 _tb(const   vec2& v);
 vec2   _fb(const b2Vec2& v);
@@ -164,15 +166,15 @@ struct HullCollider : Collider
 	HullCollider& SetPointsBox(float w = 1.f, float h = 1.f, float a = 0.f, vec2 center = vec2(0.f));
 
 	// set points from an array
-	HullCollider& SetPoints(const ArrayView<vec2>& list);
+	HullCollider& SetPoints(const ArrayView<vec2>& list, vec2 scale = vec2(1.f));
 
 	// set points from a range
 	template<typename _itr>
-	HullCollider& SetPoints(const _itr& begin, const _itr& end)
+	HullCollider& SetPoints(const _itr& begin, const _itr& end, vec2 scale = vec2(1.f))
 	{
 		// convert points to box2d
 		std::vector<b2Vec2> converted;
-		for (_itr b = begin; b != end; ++b) converted.push_back(_tb(*b));
+		for (_itr b = begin; b != end; ++b) converted.push_back(_tb(*b * scale));
 
 		GetShape().Set(converted.data(), (int32)converted.size());
 		return *this;

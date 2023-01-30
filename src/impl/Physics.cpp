@@ -325,9 +325,9 @@ HullCollider& HullCollider::SetPointsBox(float w, float h, float a, vec2 center)
 	return *this;
 }
 
-HullCollider& HullCollider::SetPoints(const ArrayView<vec2>& list)
+HullCollider& HullCollider::SetPoints(const ArrayView<vec2>& list, vec2 scale)
 {
-	return SetPoints(list.begin(), list.end());
+	return SetPoints(list.begin(), list.end(), scale);
 }
 
 b2PolygonShape& HullCollider::GetShape() const

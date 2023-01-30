@@ -79,7 +79,7 @@ public:
 #define wContextDecl(type)  void  CreateContext();                   \
 							void  DestroyContext();                  \
 							void  SetCurrentContext(type* context);  \
-							type* GetContext();                      \
+					  const type* GetContext();                      \
 							int   GetContextLocation();              \
 							void  ContextRealloc();                  \
 
@@ -87,6 +87,6 @@ public:
 							void  CreateContext() { ctx.Create(); }                             \
 							void  DestroyContext() { ctx.Destroy(); }                           \
 							void  SetCurrentContext(type* context) { ctx.SetCurrent(context); } \
-							type* GetContext() { return ctx.GetCurrent(); }                    \
+					  const type* GetContext() { return ctx.GetCurrent(); }                    \
 							int   GetContextLocation() { return ctx.GetLocation(); }             \
 							void  ContextRealloc() { ctx.Realloc(); }                           \

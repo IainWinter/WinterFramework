@@ -1,6 +1,7 @@
 #include "hitbox/Hitbox.h"
 #include <algorithm>
 #include <iterator>
+#include <array>
 
 bool is_angle_convex(const ivec2& a, const ivec2& b, const ivec2& c)
 {
@@ -119,26 +120,26 @@ const std::array<StepDirection, 16> g_directions =
 	StepDirection::None
 };
 
-std::vector<vec2> make_contour(const bool* mask_grid, int width, int height)
+bool IsSolid(int x, int y, int width, int height, const std::function<bool(int, int)>& isSolid)
 {
-	auto is_solid = [mask_grid, width, height](int x, int y)
-	{
-		return x >= 0 && y >= 0 && x < width && y < height && mask_grid[x + y * width];
-	};
+	return x >= 0 && y >= 0 && x < width && y < height && isSolid(x, y);
+}
 
+std::vector<vec2> MakeContour(int width, int height, const std::function<bool(int, int)>& isSolid)
+{
 	ivec2 start = ivec2(0, 0);
 
 	for (start.y = 0; start.y < height - 1; start.y++)
 	for (start.x = 0; start.x < width  - 1; start.x++)
 	{
-		if (   is_solid(start.x, start.y)
-			|| is_solid(start.x, start.y - 1))
+		if (   IsSolid(start.x, start.y,     width, height, isSolid)
+			|| IsSolid(start.x, start.y - 1, width, height, isSolid))
 		{
 			--start.y;
 			goto ok;
 		}
 
-		if (is_solid(start.x + 1, start.y))
+		if (IsSolid(start.x + 1, start.y, width, height, isSolid))
 		{
 			goto ok;
 		}
@@ -159,14 +160,14 @@ skiperror:
 
 	do {
 		StepDirection cuStep = nextStep;
-		bool upLeft    = is_solid(point.x, point.y);
-		bool upRight   = is_solid(point.x + 1, point.y);
-		bool downRight = is_solid(point.x + 1, point.y + 1);
-		bool downLeft  = is_solid(point.x, point.y + 1);
+		bool upLeft    = IsSolid(point.x,     point.y,     width, height, isSolid);
+		bool upRight   = IsSolid(point.x + 1, point.y,     width, height, isSolid);
+		bool downRight = IsSolid(point.x + 1, point.y + 1, width, height, isSolid);
+		bool downLeft  = IsSolid(point.x,     point.y + 1, width, height, isSolid);
 
 		const auto state = static_cast<size_t>(upLeft | upRight << 1 | downRight << 3 | downLeft << 2);
 
-		if (is_solid(point.x, point.y))
+		if (IsSolid(point.x, point.y, width, height, isSolid))
 		{
 			if (contour.empty() || (contour.back().x != point.x || contour.back().y != point.y))
 			{
@@ -177,7 +178,7 @@ skiperror:
 		else
 		{
 			vec2 pr { point.x + 1, point.y };
-			if (is_solid(pr.x, pr.y))
+			if (IsSolid(pr.x, pr.y, width, height, isSolid))
 			{
 				if (contour.empty() || (contour.back() != pr && contour.front() != pr))
 				{
@@ -186,7 +187,7 @@ skiperror:
 			}
 
 			vec2 pu{ point.x, point.y + 1 };
-			if (is_solid(pu.x, pu.y))
+			if (IsSolid(pu.x, pu.y, width, height, isSolid))
 			{
 				if (contour.empty() || (contour.back() != pu && contour.front() != pu))
 				{
@@ -316,7 +317,7 @@ struct Vertex
 	{}
 };
 
-void updateVertex(const std::vector<Vertex>& vertices, Vertex& vertex) 
+void UpdateVertex(const std::vector<Vertex>& vertices, Vertex& vertex) 
 {
 	const Vertex& prev = *vertex.prev;
 	const Vertex& next = *vertex.next;
@@ -340,7 +341,8 @@ void updateVertex(const std::vector<Vertex>& vertices, Vertex& vertex)
 	}
 }
 
-std::pair<bool, std::vector<vec2>> nextEar(std::vector<Vertex>& polygon, size_t vertexCount, size_t vertexIndex) {
+std::pair<bool, std::vector<vec2>> NextEar(std::vector<Vertex>& polygon, size_t vertexCount, size_t vertexIndex)
+{
 	std::vector<vec2> triangle;
 	Vertex* ear = nullptr;
 
@@ -364,9 +366,10 @@ std::pair<bool, std::vector<vec2>> nextEar(std::vector<Vertex>& polygon, size_t 
 		ear->prev->next = ear->next;
 		ear->next->prev = ear->prev;
 
-		if (vertexIndex < vertexCount - 4) {
-			updateVertex(polygon, *ear->prev);
-			updateVertex(polygon, *ear->next);
+		if (vertexIndex < vertexCount - 4)
+		{
+			UpdateVertex(polygon, *ear->prev);
+			UpdateVertex(polygon, *ear->next);
 		}
 	} 
 	
@@ -420,12 +423,12 @@ std::vector<std::vector<vec2>> MakeTriangles(const std::vector<vec2>& polygon)
 
 	for (auto& vertex : vertices)
 	{
-		updateVertex(vertices, vertex);
+		UpdateVertex(vertices, vertex);
 	}
 
 	size_t i = 0;
 	size_t vertexCount = vertices.size();
-	while ((std::tie(success, ear) = nextEar(vertices, vertexCount, i)), success)
+	while ((std::tie(success, ear) = NextEar(vertices, vertexCount, i)), success)
 	{
 		triangles.push_back(std::move(ear));
 		i++;
@@ -546,12 +549,12 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<ve
 	return polygons;
 }
 
-std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(const bool* mask_grid, int width, int height, int accuracy)
+std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& isSolid)
 {
 	// library has issues with small dim size
 	if (width < 2 || height < 2) return {};
 
-	auto contour  = make_contour(mask_grid, width, height);
+	auto contour  = MakeContour(width, height, isSolid);
 
 	// no start point found, just exit
 	if (contour.size() == 0) return {};

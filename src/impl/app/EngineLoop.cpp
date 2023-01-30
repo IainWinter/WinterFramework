@@ -86,11 +86,12 @@ void EngineLoopBase::_Dnit()
 bool EngineLoopBase::Tick()
 {
 	Time::UpdateTime();
+	Render::SetWindowSize(app.GetWindow().Width(), app.GetWindow().Height());
 
 	// update render state
 	// put this in a better spot
-	Render::GetContext()->window_width  = app.GetWindow().Width();
-	Render::GetContext()->window_height = app.GetWindow().Height();
+	//Render::GetContext()->window_width  = app.GetWindow().Width();
+	//Render::GetContext()->window_height = app.GetWindow().Height();
 
 	app.Tick();
 

@@ -16,7 +16,7 @@ private:
 	graph<meta::type*> m_types;
 
 public:
-	serial_dependency(meta::serial_context* ctx)
+	serial_dependency(const meta::serial_context* ctx)
 	{
 		for (const auto& [id, reg] : ctx->known_info)
 		{
