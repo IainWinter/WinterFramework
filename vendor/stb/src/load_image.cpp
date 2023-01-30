@@ -8,6 +8,8 @@ std::tuple<u8*, int, int, int> load_image(const std::string& filepath)
 	int width, height, channels, format;
 	stbi_info(filepath.c_str(), &width, &height, &channels);
 
+	stbi_set_flip_vertically_on_load(true);
+
 	switch (channels)
 	{
 		case 1: format = STBI_grey;       break;
