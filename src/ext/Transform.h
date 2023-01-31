@@ -21,14 +21,4 @@ inline Transform2D WorldTransform(const Entity& e, const Transform2D& transform)
 	{
 		return WorldTransform(parent, parent.Get<Transform2D>()) * transform;
 	}
-
-	//if (!e.IsAlive() || !e.Has<Transform2D>())
-	//{
-	//	return Transform2D();
-	//}
-
-	//Transform2D me = e.Get<Transform2D>();
-	//Entity parent = e.Get<EntityMeta>().parent;
-
-	//return WorldTransform(parent) * me;
 }

@@ -49,4 +49,5 @@ struct Camera
 
 	// assumes 2d editor mode, should just put in real rotation math
 	vec2 ScreenToWorld2D(vec2 screen) const;
+	vec2 World2DToScreen(vec2 world2D) const;
 };

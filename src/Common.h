@@ -143,6 +143,7 @@ struct Color
 
 	static Color rand();
 	static Color rand(u8 alpha);
+	static Color grey(u8 grey, u8 alpha = 255);
 	static Color from32(int bits32);
 	static Color fromv4(const vec4& v4);
 };

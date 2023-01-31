@@ -176,6 +176,11 @@ Color Color::rand(u8 alpha)
 	return Color(get_rand(255), get_rand(255), get_rand(255), alpha);
 }
 
+Color Color::grey(u8 grey, u8 alpha)
+{
+	return Color(grey, grey, grey, alpha);
+}
+
 Color Color::from32(int bits32)
 {
 	return Color(r8(bits32), g8(bits32), b8(bits32), a8(bits32));
