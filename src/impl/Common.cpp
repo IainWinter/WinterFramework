@@ -280,6 +280,11 @@ vec2  get_randc (float x, float y) { return vec2(get_randc(x), get_randc(y)); }
 vec2  get_randn (float scale)      { return get_rand(scale) * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
 vec2  get_randnc(float scale)      { return           scale * safe_normalize(vec2(get_randc(1.f), get_randc(1.f))); }
 
+vec2 get_rand_jitter(vec2 x, float jitter)
+{
+	return x + get_randc(2.f, 2.f) * length(x) * jitter;
+}
+
 float lerp(float        a, float        b, float w) { return a + w * (b - a); }
 vec2  lerp(const vec2&  a, const vec2&  b, float w) { return a + w * (b - a); }
 vec3  lerp(const vec3&  a, const vec3&  b, float w) { return a + w * (b - a); }

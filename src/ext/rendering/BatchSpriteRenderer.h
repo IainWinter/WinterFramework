@@ -61,7 +61,8 @@ private:
 		BatchData()
 		{
 			quad = Mesh(DYNAMIC_HOST)
-				.Add<vec2>(Mesh::aPosition,     { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) })
+				//.Add<vec2>(Mesh::aPosition,     { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) })
+				.Add<vec2>(Mesh::aPosition,     { vec2(-0.5f, -0.5f), vec2(0.5f, -0.5f), vec2(0.5f, 0.5f), vec2(-0.5f, 0.5f) })
 				.Add<vec2>(Mesh::aTextureCoord, { vec2( 0,  0), vec2(1,  0), vec2(1, 1), vec2( 0, 1) })
 				.Add<int> (Mesh::aIndexBuffer,  { 0, 1, 2, 0, 2, 3 })
 

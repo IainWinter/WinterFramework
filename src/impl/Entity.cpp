@@ -29,8 +29,12 @@ void EntityWorld::ExecuteDeferdDeletions()
 {
 	for (const entt::entity& handle : m_deferDelete)
 	{
-		Wrap((u32)handle).Destroy(); // this is needed for entity OnDelete
+		Entity e = Wrap((u32)handle);
+
+		if (e.IsAlive())
+			e.Destroy();
 	}
+
 	m_deferDelete.clear();
 }
 	

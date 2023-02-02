@@ -581,8 +581,8 @@ std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(int accuracy,
 
 		for (glm::vec2& vert : polygon)
 		{
-			vert.x = vert.x / width  * 2 - 1;  // scale from pixel to hitbox scale and center at 0, not hitbox center
-			vert.y = vert.y / height * 2 - 1;
+			vert.x = vert.x / width  - 0.5f;  // scale from pixel to hitbox scale and center at 0, not hitbox center
+			vert.y = vert.y / height - 0.5f;
 		}
 	}
 

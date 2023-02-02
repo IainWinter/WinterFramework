@@ -188,6 +188,8 @@ vec2  get_randc (float x, float y);
 vec2  get_randn (float scale);
 vec2  get_randnc(float scale);
 
+vec2 get_rand_jitter(vec2 x, float jitter);
+
 template<typename _t>
 _t get_rand(const std::vector<_t>& x)
 {
