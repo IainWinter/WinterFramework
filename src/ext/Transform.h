@@ -10,7 +10,7 @@ inline Transform2D WorldTransform(const Entity& e, const Transform2D& transform)
 	// the parenting for position breaks at the first without a
 	// transform component
 	
-	Entity parent = e.Get<EntityMeta>().parent;
+	const Entity& parent = e.Get<EntityMeta>().parent;
 	
 	if (!parent.IsAlive() || !parent.Has<Transform2D>())
 	{

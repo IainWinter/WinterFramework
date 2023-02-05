@@ -51,25 +51,31 @@ struct tsque
 		return out;
 	}
 
-	// 99% sure these should return copies for mt
-
-	_t& back()
+	_t peek_back()
 	{
 		std::scoped_lock lock(m_mutex);
+
+		if (m_queue.size() == 0)
+			return _t{};
+
 		return m_queue.back();
 	}
 
-	_t& front()
+	_t peek_front()
 	{
 		std::scoped_lock lock(m_mutex);
+
+		if (m_queue.size() == 0)
+			return _t{};
+
 		return m_queue.front();
 	}
 
-	_t& at(size_t index)
+	/*_t at(size_t index)
 	{
 		std::scoped_lock lock(m_mutex);
 		return m_queue.at(index);
-	}
+	}*/
 
 	void erase(size_t index)
 	{

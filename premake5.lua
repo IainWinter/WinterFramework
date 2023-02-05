@@ -15,7 +15,7 @@ include "premake5.vars.lua"
 project "Framework"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++20"
 	location "lib/build"
 	targetdir "lib/%{cfgdir}"
 
