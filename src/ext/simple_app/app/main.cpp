@@ -4,6 +4,7 @@
 EventQueue _event;
 EntityWorld _world;
 PhysicsWorld _physics;
+AudioWorld _audio;
 Window _window;
 
 Camera _camera;
@@ -32,11 +33,11 @@ int main()
 {
 	init();
 
-	global_init(_window, _event, _physics, _world);
+	global_init(_window, _event, _physics, _world, _audio);
 	render_init();
 
-	setup();
 	setup_inputs();
+	setup();
 
 	while (is_running())
 	{
@@ -45,11 +46,11 @@ int main()
 		loop();
 		render(_camera, _world);
 
-		tick_frame(_window, _event, _world, _physics);
+		tick_frame(_window, _event, _physics, _world, _audio);
 	}
 
 	render_dnit();
-	global_dnit(_window, _world);
+	global_dnit(_window, _world, _audio);
 
 	return 0;
 }

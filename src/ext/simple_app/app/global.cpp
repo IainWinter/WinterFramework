@@ -52,23 +52,27 @@ void attach_callbacks(EventBus& bus)
 	bus.Attach<event_Shutdown>(_shutdown);
 }
 
-void global_init(Window& window, EventQueue& queue, PhysicsWorld& physics, EntityWorld& world)
+void global_init(Window& window, EventQueue& queue, PhysicsWorld& physics, EntityWorld& world, AudioWorld& audio)
 {
 	context_init();
 	attach_callbacks(*queue.GetBus());
 
     _input = new InputEventHandler(&queue);
     
+	window.SetEventQueue(&queue);
 	window.Init();
 	window.InitUI();
 
 	world.OnAdd   <Rigidbody2D>([&physics](Entity entity) { physics.Add(entity); });
 	world.OnRemove<Rigidbody2D>([&physics](Entity entity) { physics.Remove(entity); });
+
+	audio.Init();
 }
 
-void global_dnit(Window& window, EntityWorld& world)
+void global_dnit(Window& window, EntityWorld& world, AudioWorld& audio)
 {
 	world.Clear();
+	audio.Dnit();
 
 	context_dnit();
 
@@ -84,9 +88,10 @@ void tick_pre(Window& window)
 	window.BeginImgui();
 }
 
-void tick_frame(Window& window, EventQueue& event, EntityWorld& world, PhysicsWorld& physics)
+void tick_frame(Window& window, EventQueue& event, PhysicsWorld& physics, EntityWorld& world, AudioWorld& audio)
 {
 	physics.Tick(Time::DeltaTime());
+	audio.Tick();
 
 	window.PumpEvents();
 	window.EndImgui();

@@ -8,7 +8,6 @@
 
 r<BatchSpriteRenderer> spriteDefault;
 r<BatchLineRenderer> lineDefault;
-r<Target> cellRender;
 
 void render_init()
 {
