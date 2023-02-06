@@ -9,21 +9,21 @@ using namespace glm;
 #include <utility>
 #include <vector>
 #include <functional>
-#include <float.h>
 
 struct HitboxBounds
 {
-	vec2 Min;
-	vec2 Max;
+	ivec2 Min;
+	ivec2 Max;
 
 	HitboxBounds()
 	{
-		Min = vec2(-FLT_MAX, -FLT_MAX);
-		Max = vec2( FLT_MAX,  FLT_MAX);
+		Min = vec2(-INT_MAX, -INT_MAX);
+		Max = vec2( INT_MAX,  INT_MAX);
 	}
 
-	float Width()  const { return Max.x - Min.x; }
-	float Height() const { return Max.y - Min.y; }
+	float Width()  const { return Max.x - Min.x + 1; }
+	float Height() const { return Max.y - Min.y + 1; }
+    float Area() const { return Width() * Height(); }
     
     vec2 Dims() const { return vec2(Width(), Height()); }
 };
@@ -47,4 +47,4 @@ std::vector<vec2> FlattenTriangleList(const std::vector<std::vector<vec2>>& tria
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& polygon);
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles);
 
-std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& solid);
+Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& solid);

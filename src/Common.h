@@ -327,6 +327,24 @@ struct pair_hash
 	}
 };
 
+namespace std
+{
+    template <class T1, class T2>
+    struct hash<pair<T1, T2>> {
+        std::size_t operator() (const std::pair<T1, T2>& pair) const {
+            return std::hash<T1>()(pair.first) ^ std::hash<T2>()(pair.second);
+        }
+    };
+
+    template <>
+    struct hash<ivec2> {
+        size_t operator()(const ivec2& x) const {
+            return (size_t(x.x) << 32) + size_t(x.y);
+        }
+    };
+}
+
+
 template <typename _map>
 bool map_compare(const _map& lhs, const _map& rhs)
 {

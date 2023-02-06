@@ -60,6 +60,21 @@ namespace Debug
         debugSprites->SubmitSprite(transform, color);
     }
 
+    void Circle(const vec2& center, float radius, const Color& color)
+    {
+        float step = 0.8f;
+        
+        for (float a = 0; a < w2PI; a += step)
+        {
+            float b = a + step;
+            
+            vec2 A = on_unit(a) * radius + center;
+            vec2 B = on_unit(b) * radius + center;
+            
+            Line(A, B, color);
+        }
+    }
+
     void Line(const vec3& a, const vec3& b, const Color& color, const Transform& transform)
     {
         debugLines->SubmitLine(a, b, color, color, transform);
