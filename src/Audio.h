@@ -21,10 +21,23 @@ namespace Studio
 	class EventInstance;
 }}
 
+struct FMOD_3D_ATTRIBUTES;
+
 struct AudioVCA;
 struct AudioSource;
 struct Audio;
 struct AudioWorld;
+
+struct AudioProps3D
+{
+	vec3 position = vec3(0, 0, 0);
+	vec3 velocity = vec3(0, 0, 0);
+	vec3 forward  = vec3(0, 0, 1);
+	vec3 up       = vec3(0, 1, 0);
+	
+	FMOD_3D_ATTRIBUTES ToFMOD() const;
+	void FromFMOD(const FMOD_3D_ATTRIBUTES& fmod);
+};
 
 struct AudioWorld
 {
@@ -50,6 +63,9 @@ public:
 
 	// create a paused audio instance
 	Audio CreateAudio(const std::string& eventName);
+
+	void SetListenerProps3D(const AudioProps3D& props);
+	AudioProps3D GetListenerProps3D() const;
 
 private:
 	std::vector<FMOD::Studio::VCA*>              GetVCAs             (FMOD::Studio::Bank* bank);
@@ -138,10 +154,13 @@ public:
 	Audio& TogglePause();
 
 	Audio& SetVolume(float volume);
-	float  GetVolume()  const;
+	float  GetVolume() const;
 
 	Audio& SetParam(const std::string& paramName, float volume);
 	float  GetParam(const std::string& paramName) const;
+
+	Audio&       SetProps3D(const AudioProps3D& props);
+	AudioProps3D GetProps3D() const;
 
 	Audio& SetTimeline(float milliseconds);
 	float  GetTimeline();

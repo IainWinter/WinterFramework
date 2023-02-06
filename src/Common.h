@@ -243,6 +243,8 @@ vec2 right(vec2 v);
 float pow4(float x);
 float angle(vec2 v);
 
+float aspect(const vec2& v);
+
 template<typename _t>
 std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 {
@@ -380,6 +382,8 @@ public:
 
 	_t* data() { return m_begin; }
 	const _t* data() const { return m_begin; }
+
+	std::vector<_t> AsList() const { return std::vector<_t>(m_begin, m_end); }
 };
 
 /*

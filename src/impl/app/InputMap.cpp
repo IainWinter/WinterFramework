@@ -290,28 +290,6 @@ namespace Input
 		return sum;
 	}
 
-	void CreateAxis(const InputName& name)
-	{
-		if (AxisExists(name))
-		{
-			log_app("w~Axis already exists. %s", name.c_str());
-			return;
-		}
-
-		ctx->Axes.emplace(name, InputAxis{});
-	}
-
-	void CreateGroupAxis(const InputName& name)
-	{
-		if (GroupAxisExists(name))
-		{
-			log_app("w~Group axis already exists. %s", name.c_str());
-			return;
-		}
-
-		ctx->GroupAxes.emplace(name, AxisGroup{});
-	}
-
 	bool AxisExists(const InputName& axis)
 	{
 		return ctx->Axes.find(axis) != ctx->Axes.end();
@@ -320,6 +298,32 @@ namespace Input
 	bool GroupAxisExists(const InputName& axis)
 	{
 		return ctx->GroupAxes.find(axis) != ctx->GroupAxes.end();
+	}
+
+	InputAxis& CreateAxis(const InputName& name)
+	{
+		if (AxisExists(name))
+		{
+			log_app("w~Axis already exists. %s", name.c_str());
+
+			static InputAxis _default;
+			return _default;
+		}
+
+		return ctx->Axes.emplace(name, InputAxis{}).first->second;
+	}
+
+	AxisGroup& CreateGroupAxis(const InputName& name)
+	{
+		if (GroupAxisExists(name))
+		{
+			log_app("w~Group axis already exists. %s", name.c_str());
+
+			static AxisGroup _default;
+			return _default;
+		}
+
+		return ctx->GroupAxes.emplace(name, AxisGroup{}).first->second;
 	}
 
 	void SetAxisSettings(const InputName& axis, const InputAxisSettings& settings)

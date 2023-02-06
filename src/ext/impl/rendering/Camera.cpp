@@ -72,7 +72,7 @@ void Camera::SetOrthographoc(float width, float height, float depth)
 vec2 Camera::ScreenToWorld2D(vec2 screen) const
 {
 	vec2 realDim = ScreenSize();
-	vec2 pos = vec2(position) + screen * realDim * 2.f - realDim;
+	vec2 pos = vec2(position.x, -position.y) + screen * realDim * 2.f - realDim;
 
 	return vec2(pos.x, -pos.y);
 }

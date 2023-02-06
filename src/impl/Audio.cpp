@@ -208,8 +208,53 @@ Audio AudioWorld::CreateAudio(const std::string& eventName)
 		log_audio("e~Failed to create audio. Audio engine has failed to init");
 		return Audio();
 	}
-
+	
 	return GetAudioSource(eventName).Spawn();
+}
+
+void AudioWorld::SetListenerProps3D(const AudioProps3D& props)
+{
+	if (!m_system)
+	{
+		log_audio("e~Failed to set listener position. Audio engine has failed to init");
+		return;
+	}
+
+	FMOD_3D_ATTRIBUTES attrs = props.ToFMOD();
+
+	if (fa(m_system->setListenerAttributes(0, &attrs)))
+	{
+		log_audio("e~Failed to set listener 3d properties");
+		return;
+	}
+
+	log_audio("i~Set audio listener 3D properties:\n\tposition: %f %f %f\n\tvelocity: %f %f %f\n\tforward %f %f %f\n\tup %f %f %f",
+		props.position.x, props.position.y, props.position.z, 
+		props.velocity.x, props.velocity.y, props.velocity.z,
+		props.forward.x, props.forward.y, props.forward.z,
+		props.up.x, props.up.y, props.up.z);
+}
+
+AudioProps3D AudioWorld::GetListenerProps3D() const
+{
+	if (!m_system)
+	{
+		log_audio("e~Failed to get listener position. Audio engine has failed to init");
+		return {};
+	}
+
+	FMOD_3D_ATTRIBUTES attrs;
+
+	if (fa(m_system->getListenerAttributes(0, &attrs)))
+	{
+		log_audio("e~Failed to get listener 3d properties");
+		return {};
+	}
+
+	AudioProps3D props;
+	props.FromFMOD(attrs);
+
+	return props;
 }
 
 std::vector<VCA*> AudioWorld::GetVCAs(Bank* bank)
@@ -525,7 +570,7 @@ Audio& Audio::SetParam(const std::string& paramName, float volume)
 {
 	if (!IsAlive())
 	{
-		log_audio("e~Failed to set audio instance param '%s'. nullptr");
+		log_audio("e~Failed to set audio instance param '%s'. nullptr", paramName.c_str());
 		return *this;
 	}
 
@@ -558,6 +603,54 @@ float Audio::GetParam(const std::string& paramName) const
 	return param;
 }
 
+
+Audio& Audio::SetProps3D(const AudioProps3D& props)
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to set audio instance 3D properties. nullptr");
+		return *this;
+	}
+
+	FMOD_3D_ATTRIBUTES attrs = props.ToFMOD();
+
+	if (fa(m_inst->set3DAttributes(&attrs)))
+	{
+		log_audio("e~Failed to set audio instance 3D properties");
+		return *this;
+	}
+
+	log_audio("i~Set audio instance 3D properties:\n\tposition: %f %f %f\n\tvelocity: %f %f %f\n\tforward %f %f %f\n\tup %f %f %f",
+		props.position.x, props.position.y, props.position.z, 
+		props.velocity.x, props.velocity.y, props.velocity.z,
+		props.forward.x, props.forward.y, props.forward.z,
+		props.up.x, props.up.y, props.up.z);
+
+	return *this;
+}
+
+AudioProps3D Audio::GetProps3D() const
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to get audio instance 3D properties. nullptr");
+		return {};
+	}
+
+	FMOD_3D_ATTRIBUTES attrs;
+
+	if (fa(m_inst->get3DAttributes(&attrs)))
+	{
+		log_audio("e~Failed to get audio instance 3D properties");
+		return {};
+	}
+
+	AudioProps3D props;
+	props.FromFMOD(attrs);
+
+	return props;
+}
+
 Audio& Audio::SetTimeline(float milliseconds)
 {
 	if (!IsAlive())
@@ -571,6 +664,7 @@ Audio& Audio::SetTimeline(float milliseconds)
 	if (fa(m_inst->setTimelinePosition(millis)))
 	{
 		log_audio("e~Failed to set audio instance timeline position");
+		return *this;
 	}
 
 	EventDescription* desc;
@@ -695,4 +789,40 @@ void AudioSource::_RemoveInstance(EventInstance* inst)
 	}
 
 	m_insts->erase(itr);
+}
+
+FMOD_3D_ATTRIBUTES AudioProps3D::ToFMOD() const
+{
+	FMOD_3D_ATTRIBUTES fmod;
+
+	fmod.position.x = position.x;
+	fmod.position.y = position.y;
+	fmod.position.z = position.z;
+	fmod.velocity.x = velocity.x;
+	fmod.velocity.y = velocity.y;
+	fmod.velocity.z = velocity.z;
+	fmod.forward.x = forward.x;
+	fmod.forward.y = forward.y;
+	fmod.forward.z = forward.z;
+	fmod.up.x = up.x;
+	fmod.up.y = up.y;
+	fmod.up.z = up.z;
+
+	return fmod;
+}
+
+void AudioProps3D::FromFMOD(const FMOD_3D_ATTRIBUTES& fmod)
+{
+	position.x = fmod.position.x;
+	position.y = fmod.position.y;
+	position.z = fmod.position.z;
+	velocity.x = fmod.velocity.x;
+	velocity.y = fmod.velocity.y;
+	velocity.z = fmod.velocity.z;
+	forward.x = fmod.forward.x;
+	forward.y = fmod.forward.y;
+	forward.z = fmod.forward.z;
+	up.x = fmod.up.x;
+	up.y = fmod.up.y;
+	up.z = fmod.up.z;
 }

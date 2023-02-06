@@ -27,6 +27,7 @@ struct WorldCollsionInfo
 
 // fwd
 struct Rigidbody2D;
+struct PhysicsWorld;
 
 ///// colliders
 
@@ -91,9 +92,7 @@ public:
 
 	virtual r<Collider> MakeCopy() const = 0;
 
-	virtual void AddToBody     (Rigidbody2D& body) = 0;
-	virtual void RemoveFromBody(Rigidbody2D& body) = 0;
-
+public:
 	virtual vec2 GetWorldCenter() const = 0;
 	virtual vec2 GetCenter() const = 0;
 
@@ -115,6 +114,13 @@ public:
 
 	Collider& SetDensity(float density, int attachment = -1);
 	float GetDensity(int attachment = -1) const;
+
+private:
+	friend struct Rigidbody2D;
+	friend struct PhysicsWorld;
+
+	virtual void AddToBody(Rigidbody2D& body) = 0;
+	virtual void RemoveFromBody(Rigidbody2D& body) = 0;
 };
 
 //	A circle with a radius and origin
@@ -127,9 +133,6 @@ struct CircleCollider : Collider
 
 	r<Collider> MakeCopy() const override;
 
-	void AddToBody(Rigidbody2D& body) override;
-	void RemoveFromBody(Rigidbody2D& body) override;
-
 	vec2 GetWorldCenter() const override;
 
 	float GetRadius() const;
@@ -140,6 +143,9 @@ struct CircleCollider : Collider
 
 private:
 	b2CircleShape& GetShape() const;
+
+	void AddToBody(Rigidbody2D& body) override;
+	void RemoveFromBody(Rigidbody2D& body) override;
 };
 
 //	A convex polygon. There is a hard limit on the number of points equal to MaxPoints 
@@ -152,9 +158,6 @@ struct HullCollider : Collider
 	HullCollider();
 
 	r<Collider> MakeCopy() const override;
-
-	void AddToBody(Rigidbody2D& body) override;
-	void RemoveFromBody(Rigidbody2D& body) override;
 
 	vec2 GetWorldCenter() const override;
 	vec2 GetCenter() const override;
@@ -182,6 +185,9 @@ struct HullCollider : Collider
 
 private:
 	b2PolygonShape& GetShape() const;
+
+	void AddToBody(Rigidbody2D& body) override;
+	void RemoveFromBody(Rigidbody2D& body) override;
 };
 
 //struct PolygonCollider : Collider
@@ -219,6 +225,13 @@ struct Rigidbody2D
 {
 public:
 	func<void(CollisionInfo)> OnCollision;
+
+	enum Type
+	{
+		Static,
+		Kinematic,
+		Dynamic
+	};
 
 private:
 	// If null, not in physics world. This pointer is not owned
@@ -264,6 +277,7 @@ public:
 	float GetMass()            const;
 	float GetSpeed()           const;
 	float GetAngularSpeed()    const;
+	Type  GetType()            const;
 
 	Rigidbody2D& SetPosition       (vec2  pos);
 	Rigidbody2D& SetVelocity       (vec2  vel);
@@ -274,10 +288,12 @@ public:
 	Rigidbody2D& SetEnableCollision(bool  isEnabled);
 	Rigidbody2D& SetRotationFixed  (bool  isFixed);
 	Rigidbody2D& SetDensity        (float density);
+	Rigidbody2D& SetType           (Type type);
 
 	// colliders
 
 	Rigidbody2D& AddCollider(const Collider& collider);
+	Rigidbody2D& RemoveCollider(r<Collider> collider);
 
 	void ClearColliders();
 

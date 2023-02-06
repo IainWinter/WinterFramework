@@ -374,6 +374,11 @@ float angle(vec2 v)
 	return atan2(v.y, v.x);
 }
 
+float aspect(const vec2& v)
+{
+	return v.x / v.y;
+}
+
 ControllerInput MapSDLGameControllerButton(SDL_GameControllerButton button)
 {
 	if (button == SDL_CONTROLLER_BUTTON_INVALID)

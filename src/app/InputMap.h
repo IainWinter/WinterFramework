@@ -36,12 +36,28 @@ namespace Input
 			return code;
 		}
 
+		InputCode()                      : code(-1)                  {}
 		InputCode(int code)              : code(code)                {}
 		InputCode(KeyboardInput input)   : code(GetInputCode(input)) {}
 		InputCode(MouseInput input)      : code(GetInputCode(input)) {}
 		InputCode(ControllerInput input) : code(GetInputCode(input)) {}
 	};
+}
 
+namespace std
+{
+	template <>
+	struct hash<Input::InputCode>
+	{
+		size_t operator()(const Input::InputCode& code) const
+		{
+			return (int)code;
+		}
+	};
+}
+
+namespace Input
+{
 	struct InputAxisSettings
 	{
 		// round to 0 if below this length
@@ -92,7 +108,7 @@ namespace Input
 
 		// mapping of code to inputname
 		// allows us to skip a search through all components of each axis to find a mapping
-		std::unordered_map<int, InputName> Mapping;
+		std::unordered_map<InputCode, InputName> Mapping;
 
 		// raw states
 		std::unordered_map<int, float> State;
@@ -112,11 +128,15 @@ namespace Input
 	float GetButton(const InputName& button);
 	vec2 GetAxis(const InputName& axis);
 
-	void CreateAxis(const InputName& name);
-	void CreateGroupAxis(const InputName& name);
-
 	bool AxisExists(const InputName& axis);
 	bool GroupAxisExists(const InputName& axis);
+
+	//
+	//	Creating axes
+	//
+
+	InputAxis& CreateAxis(const InputName& name);
+	AxisGroup& CreateGroupAxis(const InputName& name);
 
 	//
 	//	Settings

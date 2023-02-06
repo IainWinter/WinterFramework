@@ -392,6 +392,12 @@ Window& Window::SetVSync(bool vsync)
 	return *this;
 }
 
+Window& Window::SetEventQueue(EventQueue* queue)
+{
+	m_events = queue;
+	return *this;
+}
+
 void Window::EndFrame()
 {
 	SDL_GL_SwapWindow(m_window);

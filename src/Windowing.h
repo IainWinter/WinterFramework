@@ -87,6 +87,8 @@ public:
 	Window& SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
 	Window& SetVSync(bool vsync);
 
+	Window& SetEventQueue(EventQueue* queue);
+
 	// yes moves
 	Window(Window&& move) noexcept;
 	Window& operator=(Window&& move) noexcept;

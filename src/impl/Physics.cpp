@@ -472,6 +472,11 @@ float Rigidbody2D::GetMass()            const { return m_instance->GetMass(); }
 float Rigidbody2D::GetSpeed()           const { return length(GetVelocity()); }
 float Rigidbody2D::GetAngularSpeed()    const { return abs(GetAngularVelocity()); }
 
+Rigidbody2D::Type Rigidbody2D::GetType() const
+{
+	return (Rigidbody2D::Type)m_instance->GetType();
+}
+
 Rigidbody2D& Rigidbody2D::SetPosition       (vec2  pos)      { m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); return *this; }
 Rigidbody2D& Rigidbody2D::SetVelocity       (vec2  vel)      { m_instance->SetLinearVelocity (_tb(vel));                         return *this; }
 Rigidbody2D& Rigidbody2D::SetAngle          (float angle)    { m_instance->SetTransform      (m_instance->GetPosition(), angle); return *this; }
@@ -494,16 +499,34 @@ Rigidbody2D& Rigidbody2D::SetDensity(float density)
 	return *this; 
 }
 
+Rigidbody2D& Rigidbody2D::SetType(Type type)
+{
+	m_instance->SetType((b2BodyType)type);
+	return *this;
+}
+
 Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 {
 	r<Collider> c = collider.MakeCopy();
-	
+
 	if (m_instance)
 	{
 		c->AddToBody(*this);
 	}
 
 	m_colliders.push_back(c);
+
+	return *this;
+}
+
+Rigidbody2D& Rigidbody2D::RemoveCollider(r<Collider> collider)
+{
+	if (m_instance)
+	{
+		collider->RemoveFromBody(*this);
+	}
+
+	m_colliders.erase(std::find(m_colliders.begin(), m_colliders.end(), collider));
 
 	return *this;
 }
