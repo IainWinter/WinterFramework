@@ -17,8 +17,8 @@ struct HitboxBounds
 
 	HitboxBounds()
 	{
-		Min = vec2(-INT_MAX, -INT_MAX);
-		Max = vec2( INT_MAX,  INT_MAX);
+		Min = ivec2(-INT_MAX, -INT_MAX);
+		Max = ivec2( INT_MAX,  INT_MAX);
 	}
 
 	float Width()  const { return Max.x - Min.x + 1; }
