@@ -1,5 +1,3 @@
-#pragma once
-
 #include "util/linear_allocator.h"
 #include <assert.h>
 

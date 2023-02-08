@@ -1,7 +1,4 @@
-#pragma once
-
 #include "util/pool_allocator.h"
-
 
 pool_allocator::pool_allocator()
 	: m_page_size_hint (0)

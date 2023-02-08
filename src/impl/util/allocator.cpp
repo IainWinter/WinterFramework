@@ -1,5 +1,3 @@
-#pragma once
-
 #include "util/allocator.h"
 #include <assert.h>
 
