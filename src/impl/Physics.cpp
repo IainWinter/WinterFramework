@@ -696,11 +696,41 @@ RayQueryResult PhysicsWorld::QueryRay(vec2 point, vec2 target) const
 
 	RayQueryCallback query(distance(target, point));
 	m_world->RayCast(&query, a, b);
+	
+	// sorting all hits by distance
+	//	it seems like I only ever want either the closest hit, or all hits
+	//  so I am going to change this to a simpler sort where only the closest is guaranteed to be
+	//  the first result
+	
+	// upon a perf test, I saw almost no differnce between a sort and a linear loop
+	// prolly cus there are only a few elements per result
+
 	std::sort(
 		query.result.results.begin(),
 		query.result.results.end(),
 		[](const auto& a, const auto& b) { return a.distance < b.distance; }
 	);
+
+	//float minDistannce = FLT_MAX;
+	//int minIndex = 0;
+
+	//int index = 0;
+	//for (const RayQueryResult::Result& hit : query.result.results)
+	//{
+	//	if (minDistannce > hit.distance)
+	//	{
+	//		minDistannce = hit.distance;
+	//		minIndex = index;
+	//	}
+
+	//	++index;
+	//}
+
+	//if (query.result.results.size() >= 2)
+	//{
+	//	// swap the min distance and the first element
+	//	std::swap(query.result.results.at(minIndex), query.result.results.front());
+	//}
 
 	return query.result;
 }
