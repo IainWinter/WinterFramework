@@ -14,7 +14,10 @@ include_all_vendor = {
 	path.getabsolute("vendor/tinyglft/include"),
 	path.getabsolute("vendor/sqlite/include"),
 	path.getabsolute("vendor/cr/include"),
-	path.getabsolute("vendor/tinyfiledialogs/include")
+	path.getabsolute("vendor/tinyfiledialogs/include"),
+	path.getabsolute("vendor/fmod_steamaudio/include"),
+	path.getabsolute("vendor/delaunator/include"),
+	path.getabsolute("vendor/cgltf/include")
 }
 
 src_all_vendor = {
@@ -30,7 +33,8 @@ libdir_all_vendor = {
 	path.getabsolute("vendor/box2d/lib/%{cfgdir}"),
 	path.getabsolute("vendor/imgui/lib/%{cfgdir}"),
 	path.getabsolute("vendor/hitbox/lib/%{cfgdir}"),
-	path.getabsolute("vendor/fmod/lib")
+	path.getabsolute("vendor/fmod/lib"),
+	path.getabsolute("vendor/fmod_steamaudio/lib"),
 }
 
 libdir_sdl_win32 = {
@@ -55,7 +59,9 @@ links_all_vendor = {
 	"ImGui", 
 	"hitbox",
 	"fmod",
-	"fmodstudio"
+	"fmodstudio",
+	"phonon",
+	"phonon_fmod"
 }
 
 links_windows = {
@@ -68,6 +74,5 @@ links_windows = {
 }
 
 all_defines = {
-	"SDL_MAIN_HANDLED",
-	"IW_NOLOOP"
+	"SDL_MAIN_HANDLED"
 }

@@ -22,6 +22,8 @@ namespace File
 	std::string GetAssetPath();
 }
 
+#define _A(path) ASSET_ROOT_PATH "/" path
+
 // If assetPath is an absolute path, don’t touch it
 // but if it's a relative path, return an absolute path rooted at File::GetAssetPath()
 //

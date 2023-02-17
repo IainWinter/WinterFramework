@@ -16,3 +16,11 @@ std::pair<bool, std::string> IsPathRelative(const std::string& path);
 //	returns the new filename
 //
 std::string CreateTextureAtlasFileFromImageFile(const std::string& textureFilename);
+
+// take a unqualified name of a dll, and pre/append the underlying OS's
+// preferred naming scheme
+
+std::string GetQualifiedLibraryName(const std::string& unqualified);
+
+std::string GetPremake5Command();
+std::string GetBuildCommand(const std::string& solutionFilename);

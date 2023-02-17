@@ -40,7 +40,8 @@ project "Framework"
 	}
 
 	defines {
-		"wTOOLS=\"" .. path.getabsolute("tools/") .. "\""
+		"wTOOLS=\"" .. path.getabsolute("tools/") .. "\"",
+		"wVENDOR=\"" .. path.getabsolute("vendor/") .. "\""
 	}
 
 	filter "system:Windows"

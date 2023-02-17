@@ -7,6 +7,11 @@
 #include <array>
 #include <time.h> // for seed
 
+#define IPL_OS_WINDOWS
+
+#include "fmod_steamaudio/phonon.h"
+#include "fmod_steamaudio/steamaudio_fmod.h"
+
 using namespace FMOD::Studio;
 
 bool fa(int result)
@@ -36,6 +41,11 @@ std::string get_name(_t* fmod_thing)
 	return name;
 }
 
+void steam_audio_log(IPLLogLevel level, const char* log)
+{
+	log_audio("[STEAMM %d] %s", (int)level, log);
+}
+
 void AudioWorld::Init()
 {
 	if (fa(System::create(&m_system)))
@@ -58,6 +68,82 @@ void AudioWorld::Init()
 	}
 
 	log_audio("d~Successfully created audio engine");
+
+	
+
+	// Steam audio, could make optional
+
+	const char* path = "phonon_fmod.dll";
+
+	unsigned int handle;
+	if (fa(core->loadPlugin(path, &handle)))
+	{
+		log_audio("e~Failed to load fmod steam audio plugin");
+		return;
+	}
+
+	IPLerror err = IPL_STATUS_SUCCESS;
+
+	IPLContextSettings vsettings = { };
+	vsettings.version = STEAMAUDIO_VERSION;
+	vsettings.logCallback = steam_audio_log;
+
+	IPLContext context = nullptr;
+	err = iplContextCreate(&vsettings, &context);
+
+	IPLHRTFSettings hrtfSettings{};
+	hrtfSettings.type = IPL_HRTFTYPE_DEFAULT;
+
+	IPLAudioSettings audioSettings{};
+	audioSettings.samplingRate = 44100;
+	audioSettings.frameSize = 1024;
+
+	IPLHRTF hrtf = nullptr;
+	err = iplHRTFCreate(context, &audioSettings, &hrtfSettings, &hrtf);
+
+	iplFMODInitialize(context);
+	iplFMODSetHRTF(hrtf);
+
+	IPLSimulationSettings simulationSettings = {};
+    simulationSettings.flags = IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT;
+    simulationSettings.sceneType = IPLSceneType::IPL_SCENETYPE_DEFAULT;
+	simulationSettings.reflectionType = IPLReflectionEffectType::IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
+    simulationSettings.maxNumOcclusionSamples = 16;
+    simulationSettings.maxNumRays = 4096;
+    simulationSettings.numDiffuseSamples = 32;
+    simulationSettings.maxDuration = 10.0;
+    simulationSettings.maxOrder = 5;
+    simulationSettings.maxNumSources = 10;
+    simulationSettings.numThreads = 6;
+    simulationSettings.rayBatchSize = 512;
+    simulationSettings.numVisSamples = 128;
+    simulationSettings.samplingRate = audioSettings.samplingRate;
+    simulationSettings.frameSize = audioSettings.frameSize;
+    simulationSettings.openCLDevice = nullptr;
+    simulationSettings.radeonRaysDevice = nullptr;
+	simulationSettings.tanDevice = nullptr;
+
+	iplFMODSetSimulationSettings(simulationSettings);
+
+	IPLSceneSettings sceneSettings = {};
+	sceneSettings.type = simulationSettings.sceneType;
+
+	IPLScene scene;
+
+	iplSceneCreate(context, &sceneSettings, &scene);
+
+	IPLStaticMeshSettings meshSettings;
+
+	IPLStaticMesh mesh;
+
+	iplStaticMeshCreate(scene, &meshSettings, &mesh);
+
+	IPLSimulator sim;
+	iplSimulatorCreate(context, &simulationSettings, &sim);
+
+	iplSimulatorSetScene(sim, scene);
+
+	iplSimulatorRunReflections(sim);
 }
 
 void AudioWorld::Dnit()

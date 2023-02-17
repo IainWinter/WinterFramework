@@ -666,12 +666,3 @@ struct event_Controller
 	ControllerInput input;
 	float value;
 };
-
-/*
-
-	Tools
-
-*/
-
-std::string GetPremake5Command();
-std::string GetBuildCommand(const std::string& solutionFilename);

@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 // simple wrapper around fmod. missing many features, but I am exposing only as I need
-
 // forward declare
 
 namespace FMOD {

@@ -472,7 +472,7 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& contour
 
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles)
 {
-    std::vector<std::vector<vec2>> polygons = triangles;//MakeTriangles(polygon);
+	std::vector<std::vector<vec2>> polygons = triangles;
 
 	for (auto polygonA = polygons.begin(); polygonA != polygons.end(); ++polygonA)
 	{
@@ -549,7 +549,7 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<ve
 	return polygons;
 }
 
-Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& isSolid)
+Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& isSolid, bool combineTriangles)
 {
 	// library has issues with small dim size
 	if (width < 2 || height < 2) return {};
@@ -565,7 +565,14 @@ Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(
 	if (bounds.Width() == 0 || bounds.Height() == 0)
 		return {};
     
-	auto polygons = CombineTriangles(MakePolygon(contour, bounds, accuracy));
+	auto polygon = MakePolygon(contour, bounds, accuracy);
+
+	std::vector<std::vector<vec2>> polygons;
+
+	if (combineTriangles)
+		polygons = CombineTriangles(polygon);
+	else
+		polygons = MakeTriangles(polygon);
 	
 	for (int i = 0; i < polygons.size(); i++)
 	{

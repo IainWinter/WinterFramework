@@ -47,4 +47,4 @@ std::vector<vec2> FlattenTriangleList(const std::vector<std::vector<vec2>>& tria
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& polygon);
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles);
 
-Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& solid);
+Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& solid, bool combineTriangles = true);
