@@ -16,8 +16,7 @@ include_all_vendor = {
 	path.getabsolute("vendor/cr/include"),
 	path.getabsolute("vendor/tinyfiledialogs/include"),
 	path.getabsolute("vendor/fmod_steamaudio/include"),
-	path.getabsolute("vendor/delaunator/include"),
-	path.getabsolute("vendor/cgltf/include")
+	path.getabsolute("vendor/assimp/include")
 }
 
 src_all_vendor = {
@@ -35,6 +34,7 @@ libdir_all_vendor = {
 	path.getabsolute("vendor/hitbox/lib/%{cfgdir}"),
 	path.getabsolute("vendor/fmod/lib"),
 	path.getabsolute("vendor/fmod_steamaudio/lib"),
+	path.getabsolute("vendor/assimp/lib")
 }
 
 libdir_sdl_win32 = {
@@ -61,7 +61,8 @@ links_all_vendor = {
 	"fmod",
 	"fmodstudio",
 	"phonon",
-	"phonon_fmod"
+	"phonon_fmod",
+	"assimp"
 }
 
 links_windows = {

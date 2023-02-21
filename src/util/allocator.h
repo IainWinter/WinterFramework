@@ -40,12 +40,22 @@ public:
 	_t* alloc(size_t count = 1)
 	{
 		char* address = alloc_bytes(sizeof(_t) * count);
-		for (size_t i = 0; i < count; i++)
-		{
-			new (address + sizeof(_t) * i) _t();
-		}
+		
+		// dont construct
+		//for (size_t i = 0; i < count; i++)
+		//{
+		//	new (address + sizeof(_t) * i) _t();
+		//}
 
 		return (_t*)address;
+	}
+
+	template<typename _t, typename... _args>
+	_t* construct(_args&&... args)
+	{
+		_t* data = alloc<_t>();
+		new (data) _t(args...);
+		return data;
 	}
 
 	template<typename _t>

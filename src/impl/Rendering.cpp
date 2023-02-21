@@ -549,7 +549,7 @@ Target& Target::copy_into(const Target& copy)
 
 	  void*         Buffer::Data()                   { return m_host.data(); }
 const void*         Buffer::Data()             const { return m_host.data(); }
-int                 Buffer::Length()           const { return m_length;  }
+int                 Buffer::ElementCount()     const { return m_length;  }
 int                 Buffer::Repeat()           const { return m_repeat; }
 Buffer::ElementType Buffer::Type()             const { return m_type; }
 int                 Buffer::BytesPerElement()  const { return Repeat() * gl_element_type_size(Type()); }
@@ -804,8 +804,8 @@ void Mesh::Draw(Topology drawType)
 	assert(!HasInstancedBuffers() && "mesh has instanced buffers, need to call DrawInstanced");
 
 	bool hasIndex = SendBindAndReturnHasIndex();
-	if (hasIndex) { /*gl(*/glDrawElements(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr)/*)*/; }
-	else          { /*gl(*/glDrawArrays  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length())/*)*/; }
+	if (hasIndex) { /*gl(*/glDrawElements(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->ElementCount(), GL_UNSIGNED_INT, nullptr)/*)*/; }
+	else          { /*gl(*/glDrawArrays  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->ElementCount())/*)*/; }
 }
 
 void Mesh::DrawInstanced(int numberOfInstances, Topology drawType)
@@ -815,8 +815,8 @@ void Mesh::DrawInstanced(int numberOfInstances, Topology drawType)
 	assert(HasInstancedBuffers() && "mesh has no instanced buffers, need to call Draw");
 
 	bool hasIndex = SendBindAndReturnHasIndex();
-	if (hasIndex) { /*gl(*/glDrawElementsInstanced(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->Length(), GL_UNSIGNED_INT, nullptr, numberOfInstances)/*)*/; }
-	else          { /*gl(*/glDrawArraysInstanced  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->Length(),                           numberOfInstances)/*)*/; }
+	if (hasIndex) { /*gl(*/glDrawElementsInstanced(gl_drawtype(drawType),    m_buffers.at(aIndexBuffer)->ElementCount(), GL_UNSIGNED_INT, nullptr, numberOfInstances)/*)*/; }
+	else          { /*gl(*/glDrawArraysInstanced  (gl_drawtype(drawType), 0, m_buffers.at(aPosition)   ->ElementCount(),                           numberOfInstances)/*)*/; }
 }
 
 bool Mesh::OnHost()       const { return m_buffers.size() != 0; }

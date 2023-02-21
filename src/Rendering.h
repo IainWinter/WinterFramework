@@ -379,7 +379,7 @@ private:
 public:
 	      void* Data();
 	const void* Data()             const;
-	int         Length()           const;
+	int         ElementCount()     const;
 	int         Repeat()           const;
 	ElementType Type()             const;
 	int         BytesPerElement()  const;
@@ -548,6 +548,28 @@ public:
 		  BufferInfo& GetInfo(AttribName name);
 	const r<Buffer>&  Get    (AttribName name) const;
 	const BufferInfo& GetInfo(AttribName name) const;
+
+	template<typename _t>
+	ArrayView<_t> View(AttribName name)
+	{
+		r<Buffer> buffer = Get(name);
+
+		_t* begin = (_t*)buffer->Data();
+		_t* end   = begin + buffer->ElementCount();
+
+		return ArrayView<_t>(begin, end);
+	}
+
+	template<typename _t>
+	ArrayView<const _t> View(AttribName name) const
+	{
+		r<Buffer> buffer = Get(name);
+
+		const _t* begin = (_t*)buffer->Data();
+		const _t* end = begin + buffer->ElementCount();
+
+		return ArrayView<const _t>(begin, end);
+	}
 
 	void Clear();
 

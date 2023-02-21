@@ -177,7 +177,12 @@ struct HullCollider : Collider
 	{
 		// convert points to box2d
 		std::vector<b2Vec2> converted;
-		for (_itr b = begin; b != end; ++b) converted.push_back(_tb(*b * scale));
+
+		for (_itr b = begin; b != end; ++b)
+		{
+			b2Vec2 b2 = _tb(*b * scale);
+			converted.push_back(b2);
+		}
 
 		GetShape().Set(converted.data(), (int32)converted.size());
 		return *this;

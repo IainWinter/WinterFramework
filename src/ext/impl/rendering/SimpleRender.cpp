@@ -71,11 +71,16 @@ void SetMeshProgramValues(const Transform2D& transform, Sprite& sprite)
     meshProgram->Set("tint", sprite.tint);
 }
 
+void SetMeshProgramCameraValues(const Camera& camera)
+{
+	meshProgram->Set("projection", camera.Projection());
+	meshProgram->Set("view", camera.View());
+}
+
 void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh)
 {
 	meshProgram->Use();
-	meshProgram->Set("projection", camera.Projection());
-
+	SetMeshProgramCameraValues(camera);
 	SetMeshProgramDefaults(transform);
 	mesh.Draw();
 }
@@ -83,8 +88,7 @@ void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh)
 void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh, Sprite& sprite)
 {
 	meshProgram->Use();
-	meshProgram->Set("projection", camera.Projection());
-
+	SetMeshProgramCameraValues(camera);
 	SetMeshProgramValues(transform, sprite);
 	mesh.Draw();
 }
@@ -92,7 +96,7 @@ void RenderMesh(const Camera& camera, const Transform2D& transform, Mesh& mesh, 
 void RenderMeshes(const Camera& camera, EntityWorld& world)
 {
 	meshProgram->Use();
-	meshProgram->Set("projection", camera.Projection());
+	SetMeshProgramCameraValues(camera);
 
 	for (auto [transform, mesh] : world.Query<Transform2D, Mesh>())
 	{
@@ -211,13 +215,14 @@ void InitSpriteProgram()
 
 		"uniform mat4 model;"
 		"uniform mat4 projection;"
+		"uniform mat4 view;"
 		"uniform vec2 uvOffset;"
 		"uniform vec2 uvScale;"
 
 		"void main()"
 		"{"
 			"TexCoords = uv * uvScale + uvOffset;"
-			"gl_Position = projection * model * vec4(pos, 0.0, 1.0);"
+			"gl_Position = projection * view * model * vec4(pos, 0.0, 1.0);"
 		"}";
 
 	const char* source_frag = 

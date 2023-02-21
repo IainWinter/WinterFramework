@@ -22,10 +22,10 @@ namespace Studio
 
 struct FMOD_3D_ATTRIBUTES;
 
-struct AudioVCA;
-struct AudioSource;
-struct Audio;
-struct AudioWorld;
+class AudioVCA;
+class AudioSource;
+class Audio;
+class AudioWorld;
 
 struct AudioProps3D
 {
@@ -38,16 +38,11 @@ struct AudioProps3D
 	void FromFMOD(const FMOD_3D_ATTRIBUTES& fmod);
 };
 
-struct AudioWorld
+class AudioWorld
 {
-private:
-	FMOD::Studio::System* m_system;
-	std::unordered_map<std::string, FMOD::Studio::Bank*> m_bank;
-	
-	std::unordered_map<std::string, AudioVCA>    m_vca;
-	std::unordered_map<std::string, AudioSource> m_desc;
-
 public:
+	AudioWorld();
+
 	void Init();
 	void Dnit();
 	void Tick();
@@ -55,6 +50,8 @@ public:
 	void LoadBank     (const std::string& bankFilePath);
 	void FreeBank     (const std::string& bankName);
 	bool IsBankLoaded (const std::string& bankName);
+
+	bool LoadPlugin(const std::string& filepath, unsigned int* handle = nullptr);
 
 	AudioVCA GetVCA(const std::string& vcaName);
 
@@ -69,14 +66,18 @@ public:
 private:
 	std::vector<FMOD::Studio::VCA*>              GetVCAs             (FMOD::Studio::Bank* bank);
 	std::vector<FMOD::Studio::EventDescription*> GetEventDescriptions(FMOD::Studio::Bank* bank);
+
+private:
+	FMOD::Studio::System* m_system;
+	std::unordered_map<std::string, FMOD::Studio::Bank*> m_bank;
+
+	std::unordered_map<std::string, AudioVCA>    m_vca;
+	std::unordered_map<std::string, AudioSource> m_desc;
 };
 
 // the most basic amp
-struct AudioVCA
+class AudioVCA
 {
-private:
-	FMOD::Studio::VCA* m_vca;
-
 public:
 	AudioVCA();
 	AudioVCA(FMOD::Studio::VCA* vca);
@@ -85,15 +86,14 @@ public:
 
 	AudioVCA& SetVolume(float volume);
 	float     GetVolume() const;
+
+private:
+	FMOD::Studio::VCA* m_vca;
 };
 
 // an event description used to spawn new instances
-struct AudioSource
+class AudioSource
 {
-private:
-	FMOD::Studio::EventDescription* m_desc;
-	r<std::vector<FMOD::Studio::EventInstance*>> m_insts;
-
 public:
 	AudioSource();
 	AudioSource(FMOD::Studio::EventDescription* desc);
@@ -113,15 +113,15 @@ public:
 
 	// internal
 	void _RemoveInstance(FMOD::Studio::EventInstance* inst);
+
+private:
+	FMOD::Studio::EventDescription* m_desc;
+	r<std::vector<FMOD::Studio::EventInstance*>> m_insts;
 };
 
 // a single instance of audio playing in the world
-struct Audio
+class Audio
 {
-private:
-	FMOD::Studio::EventInstance* m_inst;
-	AudioSource m_parent;
-
 public:
 	Audio();
 	Audio(AudioSource& parent);
@@ -158,6 +158,9 @@ public:
 	Audio& SetParam(const std::string& paramName, float volume);
 	float  GetParam(const std::string& paramName) const;
 
+	Audio& SetParamDSP(int dspIndex, int paramIndex, int value);
+	Audio& SetParamDSP(int dspIndex, int paramIndex, void* data, int size);
+
 	Audio&       SetProps3D(const AudioProps3D& props);
 	AudioProps3D GetProps3D() const;
 
@@ -166,4 +169,8 @@ public:
 
 	bool operator==(const Audio& other) const;
 	bool operator!=(const Audio& other) const;
+
+private:
+	FMOD::Studio::EventInstance* m_inst;
+	AudioSource m_parent;
 };

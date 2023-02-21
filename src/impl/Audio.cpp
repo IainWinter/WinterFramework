@@ -7,11 +7,6 @@
 #include <array>
 #include <time.h> // for seed
 
-#define IPL_OS_WINDOWS
-
-#include "fmod_steamaudio/phonon.h"
-#include "fmod_steamaudio/steamaudio_fmod.h"
-
 using namespace FMOD::Studio;
 
 bool fa(int result)
@@ -41,10 +36,9 @@ std::string get_name(_t* fmod_thing)
 	return name;
 }
 
-void steam_audio_log(IPLLogLevel level, const char* log)
-{
-	log_audio("[STEAMM %d] %s", (int)level, log);
-}
+AudioWorld::AudioWorld()
+	: m_system (nullptr)
+{}
 
 void AudioWorld::Init()
 {
@@ -68,82 +62,6 @@ void AudioWorld::Init()
 	}
 
 	log_audio("d~Successfully created audio engine");
-
-	
-
-	// Steam audio, could make optional
-
-	const char* path = "phonon_fmod.dll";
-
-	unsigned int handle;
-	if (fa(core->loadPlugin(path, &handle)))
-	{
-		log_audio("e~Failed to load fmod steam audio plugin");
-		return;
-	}
-
-	IPLerror err = IPL_STATUS_SUCCESS;
-
-	IPLContextSettings vsettings = { };
-	vsettings.version = STEAMAUDIO_VERSION;
-	vsettings.logCallback = steam_audio_log;
-
-	IPLContext context = nullptr;
-	err = iplContextCreate(&vsettings, &context);
-
-	IPLHRTFSettings hrtfSettings{};
-	hrtfSettings.type = IPL_HRTFTYPE_DEFAULT;
-
-	IPLAudioSettings audioSettings{};
-	audioSettings.samplingRate = 44100;
-	audioSettings.frameSize = 1024;
-
-	IPLHRTF hrtf = nullptr;
-	err = iplHRTFCreate(context, &audioSettings, &hrtfSettings, &hrtf);
-
-	iplFMODInitialize(context);
-	iplFMODSetHRTF(hrtf);
-
-	IPLSimulationSettings simulationSettings = {};
-    simulationSettings.flags = IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT;
-    simulationSettings.sceneType = IPLSceneType::IPL_SCENETYPE_DEFAULT;
-	simulationSettings.reflectionType = IPLReflectionEffectType::IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
-    simulationSettings.maxNumOcclusionSamples = 16;
-    simulationSettings.maxNumRays = 4096;
-    simulationSettings.numDiffuseSamples = 32;
-    simulationSettings.maxDuration = 10.0;
-    simulationSettings.maxOrder = 5;
-    simulationSettings.maxNumSources = 10;
-    simulationSettings.numThreads = 6;
-    simulationSettings.rayBatchSize = 512;
-    simulationSettings.numVisSamples = 128;
-    simulationSettings.samplingRate = audioSettings.samplingRate;
-    simulationSettings.frameSize = audioSettings.frameSize;
-    simulationSettings.openCLDevice = nullptr;
-    simulationSettings.radeonRaysDevice = nullptr;
-	simulationSettings.tanDevice = nullptr;
-
-	iplFMODSetSimulationSettings(simulationSettings);
-
-	IPLSceneSettings sceneSettings = {};
-	sceneSettings.type = simulationSettings.sceneType;
-
-	IPLScene scene;
-
-	iplSceneCreate(context, &sceneSettings, &scene);
-
-	IPLStaticMeshSettings meshSettings;
-
-	IPLStaticMesh mesh;
-
-	iplStaticMeshCreate(scene, &meshSettings, &mesh);
-
-	IPLSimulator sim;
-	iplSimulatorCreate(context, &simulationSettings, &sim);
-
-	iplSimulatorSetScene(sim, scene);
-
-	iplSimulatorRunReflections(sim);
 }
 
 void AudioWorld::Dnit()
@@ -255,6 +173,34 @@ void AudioWorld::FreeBank(const std::string& bankName)
 bool AudioWorld::IsBankLoaded(const std::string& bankName)
 {
 	return m_bank.find(bankName) != m_bank.end();
+}
+
+bool AudioWorld::LoadPlugin(const std::string& filepath, unsigned int* handle)
+{
+	if (!m_system)
+	{
+		log_audio("e~Failed to load plugin. Audio engine has failed to init");
+		return false;
+	}
+
+	FMOD::System* core;
+	if (fa(m_system->getCoreSystem(&core)))
+	{
+		log_audio("e~Failed to get core system");
+		return false;
+	}
+
+	unsigned int h = 0;
+	if (fa(core->loadPlugin(filepath.c_str(), &h)))
+	{
+		log_audio("e~Failed to load plugin %s", filepath.c_str());
+		return false;
+	}
+
+	if (handle)
+		*handle = h;
+	
+	return true;
 }
 
 AudioVCA AudioWorld::GetVCA(const std::string& vcaName)
@@ -689,6 +635,40 @@ float Audio::GetParam(const std::string& paramName) const
 	return param;
 }
 
+FMOD::DSP* GetDSP(EventInstance* inst, int dspIndex)
+{
+	FMOD::ChannelGroup* group;
+	if (fa(inst->getChannelGroup(&group)))
+	{
+		log_audio("e~Failed to get channel group from instance");
+		return nullptr;
+	}
+
+	FMOD::DSP* dsp;
+	if (fa(group->getDSP(dspIndex, &dsp)))
+	{
+		log_audio("e~Failed to get dsp %d from channel group", dspIndex);
+		return nullptr;
+	}
+
+	return dsp;
+}
+
+Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, int value)
+{
+	if (FMOD::DSP* dsp = GetDSP(m_inst, dspIndex))
+		dsp->setParameterInt(paramIndex, value);
+
+	return *this;
+}
+
+Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, void* data, int size)
+{
+	if (FMOD::DSP* dsp = GetDSP(m_inst, dspIndex))
+		dsp->setParameterData(paramIndex, data, size);
+
+	return *this;
+}
 
 Audio& Audio::SetProps3D(const AudioProps3D& props)
 {

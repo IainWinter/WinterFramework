@@ -379,6 +379,11 @@ float aspect(const vec2& v)
 	return v.x / v.y;
 }
 
+bool fe(float a, float b, float e)
+{
+	return abs(a - b) < e;
+}
+
 ControllerInput MapSDLGameControllerButton(SDL_GameControllerButton button)
 {
 	if (button == SDL_CONTROLLER_BUTTON_INVALID)

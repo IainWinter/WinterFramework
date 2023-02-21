@@ -245,6 +245,8 @@ float angle(vec2 v);
 
 float aspect(const vec2& v);
 
+bool fe(float a, float b, float e = 0.0001f);
+
 template<typename _t>
 std::pair<_t, _t> get_xy(const _t& index, const _t& width)
 {
@@ -387,18 +389,21 @@ public:
 		, m_end   ((_t*)arr.data() + arr.size())
 	{}
 
-	_t& at(size_t i) { return m_begin[i]; }
+	      _t& at(size_t i)       { return m_begin[i]; }
 	const _t& at(size_t i) const { return m_begin[i]; }
+
+	      _t& operator[](size_t i)       { return at(i); }
+	const _t& operator[](size_t i) const { return at(i); }
 
 	size_t size() const { return std::distance(m_begin, m_end); }
 
 	_t* begin() { return m_begin; }
-	_t* end() { return m_end; }
+	_t* end()   { return m_end; }
 
 	const _t* begin() const { return m_begin; }
-	const _t* end() const { return m_end; }
+	const _t* end()   const { return m_end; }
 
-	_t* data() { return m_begin; }
+	      _t* data()       { return m_begin; }
 	const _t* data() const { return m_begin; }
 
 	std::vector<_t> AsList() const { return std::vector<_t>(m_begin, m_end); }
