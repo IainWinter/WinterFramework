@@ -16,6 +16,7 @@ namespace Studio
 	class System;
 	class Bank;
 	class VCA;
+	class Bus;
 	class EventDescription;
 	class EventInstance;
 }}
@@ -64,8 +65,9 @@ public:
 	AudioProps3D GetListenerProps3D() const;
 
 private:
-	std::vector<FMOD::Studio::VCA*>              GetVCAs             (FMOD::Studio::Bank* bank);
-	std::vector<FMOD::Studio::EventDescription*> GetEventDescriptions(FMOD::Studio::Bank* bank);
+	std::vector<FMOD::Studio::VCA*>              GetVCAs             (const FMOD::Studio::Bank* bank) const;
+	std::vector<FMOD::Studio::EventDescription*> GetEventDescriptions(const FMOD::Studio::Bank* bank) const;
+	std::vector<FMOD::Studio::Bus*>              GetBuses            (const FMOD::Studio::Bank* bank) const;
 
 private:
 	FMOD::Studio::System* m_system;
@@ -161,11 +163,16 @@ public:
 	Audio& SetParamDSP(int dspIndex, int paramIndex, int value);
 	Audio& SetParamDSP(int dspIndex, int paramIndex, void* data, int size);
 
+	Audio& GetParamDSP(int dspIndex, int paramIndex, void** ptr);
+	Audio& GetParamDSP(int dspIndex, int paramIndex, int* ptr);
+
 	Audio&       SetProps3D(const AudioProps3D& props);
 	AudioProps3D GetProps3D() const;
 
 	Audio& SetTimeline(float milliseconds);
 	float  GetTimeline();
+
+	void ListAllDspParamNames();
 
 	bool operator==(const Audio& other) const;
 	bool operator!=(const Audio& other) const;

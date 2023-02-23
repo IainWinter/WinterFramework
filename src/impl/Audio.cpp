@@ -1,6 +1,7 @@
 #include "Audio.h"
 #include "fmod/fmod.hpp"
 #include "fmod/fmod_studio.hpp"
+#include "fmod/fmod_errors.h"
 
 #include "util/filesystem.h"
 
@@ -12,7 +13,7 @@ using namespace FMOD::Studio;
 bool fa(int result)
 {
 	bool err = result != FMOD_OK;
-	if (err) log_audio("e~FMOD error: %d", result);
+	if (err) log_audio("e~FMOD error %d: %s", result, FMOD_ErrorString((FMOD_RESULT)result));
 	return err;
 }
 
@@ -136,6 +137,16 @@ void AudioWorld::LoadBank(const std::string& bankFilePath)
 		m_vca[vcaName] = AudioVCA(vca);
 
 		log_audio("i~  > %s", vcaName.c_str());
+	}
+
+	log_audio("i~- Buses");
+
+	for (Bus* bus : GetBuses(bank))
+	{
+		std::string busName = get_name(bus);
+		//m_bus[busName] = AudioVCA(vca);
+
+		log_audio("i~  > %s", busName.c_str());
 	}
 }
 
@@ -289,7 +300,7 @@ AudioProps3D AudioWorld::GetListenerProps3D() const
 	return props;
 }
 
-std::vector<VCA*> AudioWorld::GetVCAs(Bank* bank)
+std::vector<VCA*> AudioWorld::GetVCAs(const Bank* bank) const
 {
 	std::array<VCA*, 1024> tmp;
 	int count;
@@ -303,7 +314,7 @@ std::vector<VCA*> AudioWorld::GetVCAs(Bank* bank)
 	return std::vector<VCA*>(tmp.begin(), tmp.begin() + count);
 }
 
-std::vector<EventDescription*> AudioWorld::GetEventDescriptions(Bank* bank)
+std::vector<EventDescription*> AudioWorld::GetEventDescriptions(const Bank* bank) const
 {
 	std::array<EventDescription*, 1024> tmp;
 	int count;
@@ -315,6 +326,20 @@ std::vector<EventDescription*> AudioWorld::GetEventDescriptions(Bank* bank)
 	}
 
 	return std::vector<EventDescription*>(tmp.begin(), tmp.begin() + count);
+}
+
+std::vector<Bus*> AudioWorld::GetBuses(const Bank* bank) const
+{
+	std::array<Bus*, 1024> tmp;
+	int count;
+
+	if (fa(bank->getBusList(tmp.data(), 1024, &count)))
+	{
+		log_audio("e~Failed to load event descriptions from bank");
+		return {};
+	}
+
+	return std::vector<Bus*>(tmp.begin(), tmp.begin() + count);
 }
 
 AudioVCA::AudioVCA()
@@ -504,8 +529,8 @@ bool Audio::IsPlaying() const
 	FMOD_STUDIO_PLAYBACK_STATE state;
 	m_inst->getPlaybackState(&state);
 
-	return state == FMOD_STUDIO_PLAYBACK_PLAYING
-		|| state == FMOD_STUDIO_PLAYBACK_STARTING;
+	return state == FMOD_STUDIO_PLAYBACK_PLAYING;
+		//|| state == FMOD_STUDIO_PLAYBACK_STARTING;
 }
 
 bool Audio::HasParent() const
@@ -656,16 +681,140 @@ FMOD::DSP* GetDSP(EventInstance* inst, int dspIndex)
 
 Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, int value)
 {
-	if (FMOD::DSP* dsp = GetDSP(m_inst, dspIndex))
-		dsp->setParameterInt(paramIndex, value);
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->setParameterInt(paramIndex, value)))
+	{
+		log_audio("w~Failed to set dsp integer parameter %d", paramIndex);
+		return *this;
+	}
+
+	log_audio("i~Set dsp %d integer parameter %d to %d", dspIndex, paramIndex, value);
 
 	return *this;
 }
 
 Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, void* data, int size)
 {
-	if (FMOD::DSP* dsp = GetDSP(m_inst, dspIndex))
-		dsp->setParameterData(paramIndex, data, size);
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->setParameterData(paramIndex, data, size)))
+	{
+		log_audio("w~Failed to set dsp data parameter %d", paramIndex);
+		return *this;
+	}
+
+	log_audio("i~Set dsp %d data parameter %d to %d bytes at address %p", dspIndex, paramIndex, size, data);
+
+	return *this;
+}
+
+void Audio::ListAllDspParamNames()
+{
+	FMOD::ChannelGroup* group;
+	m_inst->getChannelGroup(&group);
+
+	int dspCount = 0;
+	group->getNumDSPs(&dspCount);
+
+	log_audio("Listing all DSPs for audio event");
+
+	for (int d = 0; d < dspCount; d++)
+	{
+		FMOD::DSP* dsp;
+		group->getDSP(d, &dsp);
+
+		char dspName[256];
+		dsp->getInfo(dspName, 0, 0, 0, 0);
+
+		log_audio("  DSP: %s", dspName);
+
+		int count;
+		dsp->getNumParameters(&count);
+		for (int i = 0; i < count; i++)
+		{
+			FMOD_DSP_PARAMETER_DESC* desc;
+			dsp->getParameterInfo(i, &desc);
+
+			const char* typeName;
+
+			switch (desc->type)
+			{
+				case FMOD_DSP_PARAMETER_TYPE_FLOAT:
+					typeName = "FLOAT";
+					float f;
+					if (!fa(dsp->getParameterFloat(i, &f, 0, 0)))
+						log_audio("    %2d -> (%s) %s = %f", i, typeName, desc->name, f);
+					else
+						log_audio("    %2d -> (%s) %s = failed to get", i, typeName, desc->name);
+					break;
+
+				case FMOD_DSP_PARAMETER_TYPE_INT:
+					typeName = "INT";
+					int in;
+					if (!fa(dsp->getParameterInt(i, &in, 0, 0)))
+						log_audio("    %2d -> (%s) %s = %d", i, typeName, desc->name, i);
+					else
+						log_audio("    %2d -> (%s) %s = failed to get", i, typeName, desc->name);
+					break;
+
+				case FMOD_DSP_PARAMETER_TYPE_BOOL:
+					typeName = "BOOL";
+					bool b;
+					if (!fa(dsp->getParameterBool(i, &b, 0, 0)))
+						log_audio("    %2d -> (%s) %s = %s", i, typeName, desc->name, b ? "true" : "false");
+					else
+						log_audio("    %2d -> (%s) %s = failed to get", i, typeName, desc->name);
+					break;
+
+				case FMOD_DSP_PARAMETER_TYPE_DATA:
+					typeName = "DATA";
+					void* ptr = nullptr;
+					unsigned int size = 0;
+					if (!fa(dsp->getParameterData(i, &ptr, &size, 0, 0)))
+						log_audio("    %2d -> (%s, %d) %s = %p, %d bytes", i, typeName, desc->datadesc.datatype, desc->name, ptr, size);
+					else
+						log_audio("    %2d -> (%s, %d) %s = failed to get", i, typeName, desc->datadesc.datatype, desc->name);
+					break;
+			}
+		}
+	}
+}
+
+Audio& Audio::GetParamDSP(int dspIndex, int paramIndex, void** ptr)
+{
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->getParameterData(paramIndex, ptr, 0, 0, 0)))
+	{
+		log_audio("w~Failed to get dsp data parameter %d", paramIndex);
+		return *this;
+	}
+
+	return *this;
+}
+
+Audio& Audio::GetParamDSP(int dspIndex, int paramIndex, int* ptr)
+{
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->getParameterInt(paramIndex, ptr, 0, 0)))
+	{
+		log_audio("w~Failed to get dsp int parameter %d", paramIndex);
+		return *this;
+	}
 
 	return *this;
 }

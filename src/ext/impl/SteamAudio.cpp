@@ -3,31 +3,37 @@
 // shouldnt need this put this in premake5.lua
 #define IPL_OS_WINDOWS
 
+#include <assert.h>
+#include <string.h>
+
+#include <algorithm>
+#include <atomic>
+
 #include "fmod_steamaudio/phonon.h"
 #include "fmod_steamaudio/steamaudio_fmod.h"
 #include "fmod_steamaudio/steamaudio_spatialize_effect.h"
 
 bool sa(IPLerror result);
 void steam_audio_log(IPLLogLevel level, const char* log);
+IPLVector3 tov3(vec3 v);
+IPLCoordinateSpace3 tocs(vec3 v);
 
 SteamAudio::SteamAudio(AudioWorld& audio)
 	: m_audio     (audio)
 	, m_steam     (nullptr)
 	, m_simulator (nullptr)
 	, m_scene     (nullptr)
-{}
+{
+	m_listenerPosition = vec3(0.f);
+}
 
 void SteamAudio::Init()
 {
-	// Steam audio, could make optional
-
 	m_audio.LoadPlugin("phonon_fmod.dll");
 
 	IPLContextSettings vsettings = { };
 	vsettings.version = STEAMAUDIO_VERSION;
 	vsettings.logCallback = steam_audio_log;
-
-	m_steam = nullptr;
 
 	if (sa(iplContextCreate(&vsettings, &m_steam)))
 	{
@@ -51,16 +57,16 @@ void SteamAudio::Init()
 	iplFMODSetHRTF(hrtf);
 
 	IPLSimulationSettings simulationSettings = {};
-    simulationSettings.flags = IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT;
-    simulationSettings.sceneType = IPLSceneType::IPL_SCENETYPE_DEFAULT;
-	simulationSettings.reflectionType = IPLReflectionEffectType::IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
+    simulationSettings.flags = (IPLSimulationFlags)(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS);
+    simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
+	simulationSettings.reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
     simulationSettings.maxNumOcclusionSamples = 16;
     simulationSettings.maxNumRays = 4096;
     simulationSettings.numDiffuseSamples = 32;
     simulationSettings.maxDuration = 10.0;
     simulationSettings.maxOrder = 5;
     simulationSettings.maxNumSources = 10;
-    simulationSettings.numThreads = 6;
+    simulationSettings.numThreads = 8;
     simulationSettings.rayBatchSize = 512;
     simulationSettings.numVisSamples = 128;
     simulationSettings.samplingRate = audioSettings.samplingRate;
@@ -86,18 +92,18 @@ void SteamAudio::Init()
 
 	iplSimulatorSetScene(m_simulator, m_scene);
 
-	IPLSource source;
-	IPLSourceSettings sourceSettings = {};
-	sourceSettings.flags = IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT;
+	// create reverb source
 
-	if (sa(iplSourceCreate(m_simulator, &sourceSettings, &source)))
+	IPLSourceSettings sourceSettings = {};
+	sourceSettings.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+
+	if (sa(iplSourceCreate(m_simulator, &sourceSettings, &m_listenerSource)))
 	{
 		return;
 	}
 
-	iplSourceAdd(source, m_simulator);
-
-	iplSimulatorCommit(m_simulator);
+	iplSourceAdd(m_listenerSource, m_simulator);
+	iplFMODSetReverbSource(m_listenerSource);
 }
 
 void SteamAudio::SetSimulationScene(const Mesh& _mesh)
@@ -144,15 +150,39 @@ void SteamAudio::SetSimulationScene(const Mesh& _mesh)
 	}
 
 	iplStaticMeshAdd(mesh, m_scene);
-	iplSceneCommit(m_scene);
+}
+
+void SteamAudio::Tick_temp()
+{
+	m_audio.Tick();
 }
 
 void SteamAudio::RunSimulation()
 {
+	IPLCoordinateSpace3 pos = tocs(m_listenerPosition);
+
+	IPLSimulationInputs listenerInputs = {};
+	listenerInputs.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+	listenerInputs.source = pos;
+
+	iplSourceSetInputs(m_listenerSource, IPL_SIMULATIONFLAGS_REFLECTIONS, &listenerInputs);
+
+	//IPLSimulationSharedInputs sharedInputs{};
+	//sharedInputs.listener = pos;
+
+	//iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
+
 	iplSceneCommit(m_scene);
 	iplSimulatorCommit(m_simulator);
 
+	for (SteamAudioSource& source : m_sources)
+		source.UpdateAudioPre();
+
 	iplSimulatorRunDirect(m_simulator);
+	iplSimulatorRunReflections(m_simulator);
+
+	for (SteamAudioSource& source : m_sources)
+		source.UpdateAudio();
 }
 
 SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
@@ -174,13 +204,15 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 
 	iplSourceAdd(source, m_simulator);
 
+	SteamAudioSource sas = SteamAudioSource(audio, source);
+	m_sources.push_back(sas);
 
-	return SteamAudioSource(audio, source);
+	return sas;
 }
 
-void steam_audio_log(IPLLogLevel level, const char* log)
+void SteamAudio::SetListenerPosition(vec3 position)
 {
-	log_audio("[STEAMM %d] %s", (int)level, log);
+	m_listenerPosition = position;
 }
 
 bool sa(IPLerror result)
@@ -190,16 +222,69 @@ bool sa(IPLerror result)
 	return err;
 }
 
+void steam_audio_log(IPLLogLevel level, const char* log)
+{
+	log_audio("[Steam %d] %s", (int)level, log);
+}
+
+IPLVector3 tov3(vec3 v)
+{
+	return IPLVector3 {
+		v.x, v.y, v.z
+	};
+}
+
+IPLCoordinateSpace3 tocs(vec3 v)
+{
+	IPLCoordinateSpace3 space;
+	space.origin = tov3(v);
+	space.right = IPLVector3(1, 0, 0);
+	space.up = IPLVector3(0, 1, 0);
+	space.ahead = IPLVector3(0, 0, 1);
+
+	return space;
+}
+
+SteamAudioSource::SteamAudioSource()
+	: Audio    ()
+	, m_source (nullptr)
+{}
+
 SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
-	: m_audio  (audio)
+	: Audio    (audio)
 	, m_source (source)
 {}
 
+void SteamAudioSource::UpdateAudioPre()
+{
+	vec3 position = GetProps3D().position;
+
+	IPLSimulationInputs inputs = {};
+	inputs.flags = IPL_SIMULATIONFLAGS_DIRECT;
+	inputs.occlusionRadius = 0.1f;
+
+	inputs.directFlags = (IPLDirectSimulationFlags)(
+		  IPL_DIRECTSIMULATIONFLAGS_OCCLUSION
+		| IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION 
+		| IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION 
+		| IPL_DIRECTSIMULATIONFLAGS_DIRECTIVITY
+		| IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION);
+
+	inputs.source = tocs(position);
+
+	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
+}
+
 void SteamAudioSource::UpdateAudio()
 {
-	IPLSimulationOutputs output;
+	IPLSimulationOutputs output = {};
+	output.direct.flags = IPL_DIRECTEFFECTFLAGS_APPLYOCCLUSION;
+
 	iplSourceGetOutputs(m_source, IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT, &output);
 
-	m_audio.SetParamDSP(1, APPLY_OCCLUSION, 1);
-	m_audio.SetParamDSP(1, SIMULATION_OUTPUTS, &output, sizeof(IPLSimulationOutputs*));
+	SetParamDSP(0, APPLY_OCCLUSION, 1);
+	SetParamDSP(0, APPLY_AIRABSORPTION, 1);
+	SetParamDSP(0, APPLY_DIRECTIVITY, 1);
+	SetParamDSP(0, APPLY_TRANSMISSION, 1);
+	SetParamDSP(0, SIMULATION_OUTPUTS, &m_source, sizeof(IPLSource*));
 }
