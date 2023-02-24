@@ -19,11 +19,7 @@ public:
 	SteamAudioSource();
 	SteamAudioSource(Audio audio, _IPLSource_t* source);
 
-	// Update steam sim
-	void UpdateAudioPre();
-
-	// Pass the simulation results to FMOD
-	void UpdateAudio();
+	_IPLSource_t* GetSource();
 
 private:
 	_IPLSource_t* m_source;
@@ -35,17 +31,19 @@ public:
 	SteamAudio(AudioWorld& audio);
 
 	void Init();
-	void SetSimulationScene(const Mesh& mesh);
 
 	void Tick_temp();
 
 	void RunSimulation();
 
 	SteamAudioSource CreateSource(const std::string& eventName);
+	
+	void CreateStaticMesh(const Mesh& mesh);
 
 	void SetListenerPosition(vec3 position);
 
 private:
+
 	AudioWorld& m_audio;
 
 	_IPLContext_t* m_steam;
@@ -53,7 +51,7 @@ private:
 	_IPLScene_t* m_scene;
 
 	std::vector<_IPLStaticMesh_t*> m_meshes;
-	std::vector<SteamAudioSource> m_sources;
+	std::vector<SteamAudioSource> m_simulateDirect;
 
 	vec3 m_listenerPosition;
 	_IPLSource_t* m_listenerSource;

@@ -29,109 +29,191 @@ SteamAudio::SteamAudio(AudioWorld& audio)
 
 void SteamAudio::Init()
 {
+	// Load the phonon dll
+
 	m_audio.LoadPlugin("phonon_fmod.dll");
+
+	// Create context
 
 	IPLContextSettings vsettings = { };
 	vsettings.version = STEAMAUDIO_VERSION;
 	vsettings.logCallback = steam_audio_log;
 
-	if (sa(iplContextCreate(&vsettings, &m_steam)))
-	{
-		return;
-	}
+	iplContextCreate(&vsettings, &m_steam);
 
-	IPLHRTFSettings hrtfSettings{};
-	hrtfSettings.type = IPL_HRTFTYPE_DEFAULT;
-
-	IPLAudioSettings audioSettings{};
+	// Create hrtf
+	
+	IPLAudioSettings audioSettings = {};
 	audioSettings.samplingRate = 44100;
 	audioSettings.frameSize = 1024;
 
-	IPLHRTF hrtf = nullptr;
-	if (sa(iplHRTFCreate(m_steam, &audioSettings, &hrtfSettings, &hrtf)))
-	{
-		return;
-	}
+	IPLHRTFSettings hrtfSettings = {};
+	hrtfSettings.type = IPL_HRTFTYPE_DEFAULT;
 
-	iplFMODInitialize(m_steam);
-	iplFMODSetHRTF(hrtf);
+	IPLHRTF hrtf = nullptr;
+	iplHRTFCreate(m_steam, &audioSettings, &hrtfSettings, &hrtf);
+
+	// Create a simulator for direct and reflection simulations
 
 	IPLSimulationSettings simulationSettings = {};
-    simulationSettings.flags = (IPLSimulationFlags)(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS);
-    simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
+	simulationSettings.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+	simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
 	simulationSettings.reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
-    simulationSettings.maxNumOcclusionSamples = 16;
-    simulationSettings.maxNumRays = 4096;
-    simulationSettings.numDiffuseSamples = 32;
-    simulationSettings.maxDuration = 10.0;
-    simulationSettings.maxOrder = 5;
-    simulationSettings.maxNumSources = 10;
-    simulationSettings.numThreads = 8;
-    simulationSettings.rayBatchSize = 512;
-    simulationSettings.numVisSamples = 128;
-    simulationSettings.samplingRate = audioSettings.samplingRate;
-    simulationSettings.frameSize = audioSettings.frameSize;
-    simulationSettings.openCLDevice = nullptr;
-    simulationSettings.radeonRaysDevice = nullptr;
-	simulationSettings.tanDevice = nullptr;
+	simulationSettings.maxNumRays = 4096;
+	simulationSettings.numDiffuseSamples = 32;
+	simulationSettings.maxDuration = 2.0f;
+	simulationSettings.maxOrder = 1;
+	simulationSettings.maxNumSources = 8;
+	simulationSettings.numThreads = 2;
+	simulationSettings.samplingRate = audioSettings.samplingRate;
+	simulationSettings.frameSize = audioSettings.frameSize;
 
-	iplFMODSetSimulationSettings(simulationSettings);
+	iplSimulatorCreate(m_steam, &simulationSettings, &m_simulator);
+
+	// Create scene
 
 	IPLSceneSettings sceneSettings = {};
 	sceneSettings.type = simulationSettings.sceneType;
 
-	if (sa(iplSceneCreate(m_steam, &sceneSettings, &m_scene)))
-	{
-		return;
-	}
-
-	if (sa(iplSimulatorCreate(m_steam, &simulationSettings, &m_simulator)))
-	{
-		return;
-	}
-
+	iplSceneCreate(m_steam, &sceneSettings, &m_scene);
 	iplSimulatorSetScene(m_simulator, m_scene);
 
-	// create reverb source
+	// Create a source for listening for reflections
 
 	IPLSourceSettings sourceSettings = {};
 	sourceSettings.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
 
-	if (sa(iplSourceCreate(m_simulator, &sourceSettings, &m_listenerSource)))
-	{
-		return;
-	}
-
+	iplSourceCreate(m_simulator, &sourceSettings, &m_listenerSource);
 	iplSourceAdd(m_listenerSource, m_simulator);
+
+	// Tell fmod about the state of phonon
+
+	iplFMODInitialize(m_steam);
+	iplFMODSetHRTF(hrtf);
+	iplFMODSetSimulationSettings(simulationSettings);
 	iplFMODSetReverbSource(m_listenerSource);
 }
 
-void SteamAudio::SetSimulationScene(const Mesh& _mesh)
+void SteamAudio::Tick_temp()
 {
-	// For now just reset all meshes
-	for (IPLStaticMesh mesh : m_meshes)
-		iplStaticMeshRemove(mesh, m_scene);
-	m_meshes.clear();
+	m_audio.Tick();
+}
 
-	// get views into new mesh
+void SteamAudio::RunSimulation()
+{
+	// Apply any changes to the scene / simulator
+
+	iplSceneCommit(m_scene);
+	iplSimulatorCommit(m_simulator);
+
+	IPLCoordinateSpace3 listenerPos = tocs(m_listenerPosition);
+	IPLCoordinateSpace3 testPos = tocs(m_listenerPosition + vec3(0, 0, 0));
+
+	// Set source for reflections
+	// the docs say to put this at the listener position and enable reflection sim
+
+	IPLSimulationInputs listenerInputs = {};
+    listenerInputs.source = listenerPos;
+    listenerInputs.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+
+    iplSourceSetInputs(m_listenerSource, IPL_SIMULATIONFLAGS_REFLECTIONS, &listenerInputs);
+
+	// Set listener position for direct sources
+	// Set listener position and ray tracing settings for reflection sources
+
+	IPLSimulationSharedInputs sharedDirect = {};
+	sharedDirect.listener = listenerPos;
+
+    IPLSimulationSharedInputs sharedReflection = {};
+    sharedReflection.listener = testPos;
+    sharedReflection.duration = 1.05;
+    sharedReflection.numRays = 3000;
+    sharedReflection.numBounces = 5;
+    sharedReflection.irradianceMinDistance = .1f;
+    sharedReflection.order = 1;
+
+    iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedDirect);
+    iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_REFLECTIONS, &sharedReflection);
+
+	// Set direct audio settings
+
+	for (SteamAudioSource& source : m_simulateDirect)
+	{
+		IPLSource ptr = source.GetSource();
+
+		IPLCoordinateSpace3 sourcePos = tocs(source.GetProps3D().position);
+		
+		IPLSimulationInputs inputsDirect = {};
+		inputsDirect.flags = IPL_SIMULATIONFLAGS_DIRECT;
+		inputsDirect.directFlags = IPL_DIRECTSIMULATIONFLAGS_OCCLUSION;
+		inputsDirect.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
+		inputsDirect.source = sourcePos;
+
+		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect);
+
+		IPLSimulationInputs inputsReflection = {};
+		inputsReflection.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+		inputsReflection.source = sourcePos;
+
+		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_REFLECTIONS, &inputsReflection);
+	}
+
+	// Run simulations
+
+	iplSimulatorRunDirect(m_simulator);
+	//iplSimulatorRunReflections(m_simulator);
+
+	// Set the dsp parameters for the phonon fmod plugins
+
+	for (SteamAudioSource& source : m_simulateDirect)
+	{
+		IPLSource ptr = source.GetSource();
+
+		source.SetParamDSP(0, APPLY_OCCLUSION, 1);
+		source.SetParamDSP(0, SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
+	}
+}
+
+SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
+{
+	Audio audio = m_audio.CreateAudio(eventName);
+	
+	IPLSourceSettings sourceSettings = {};
+	sourceSettings.flags = (IPLSimulationFlags)(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS);
+
+	IPLSource source;
+	iplSourceCreate(m_simulator, &sourceSettings, &source);
+	iplSourceAdd(source, m_simulator);
+
+	SteamAudioSource sas = SteamAudioSource(audio, source);
+	m_simulateDirect.push_back(sas);
+
+	return sas;
+}
+
+void SteamAudio::CreateStaticMesh(const Mesh& _mesh)
+{
+	// Copy the mesh into the phonon format
 
 	auto verts = _mesh.View<vec3>(Mesh::aPosition);
 	auto index = _mesh.View<int>(Mesh::aIndexBuffer);
 
+	int triCount = index.size() / 3;
+
 	IPLMaterial material = { 0.13f, 0.20f, 0.24f, 0.05f, 0.015f, 0.002f, 0.001f };
-	
+
 	IPLStaticMeshSettings meshSettings = {};
+
+	meshSettings.numTriangles = triCount;
+	meshSettings.numMaterials = 1;
+
 	meshSettings.vertices = (IPLVector3*)verts.data();
 	meshSettings.numVertices = verts.size();
 
 	meshSettings.materials = new IPLMaterial[1]{ material };
-	meshSettings.numMaterials = 1;
-
-	int triCount = index.size() / 3;
 
 	meshSettings.triangles = new IPLTriangle[triCount];
 	meshSettings.materialIndices = new IPLint32[triCount];
-	meshSettings.numTriangles = triCount;
 
 	for (int i = 0; i < triCount; i++)
 	{
@@ -142,72 +224,12 @@ void SteamAudio::SetSimulationScene(const Mesh& _mesh)
 		meshSettings.materialIndices[i] = 0;
 	}
 
+	// Create mesh
+
 	IPLStaticMesh mesh;
 
-	if (sa(iplStaticMeshCreate(m_scene, &meshSettings, &mesh)))
-	{
-		return;
-	}
-
+	iplStaticMeshCreate(m_scene, &meshSettings, &mesh);
 	iplStaticMeshAdd(mesh, m_scene);
-}
-
-void SteamAudio::Tick_temp()
-{
-	m_audio.Tick();
-}
-
-void SteamAudio::RunSimulation()
-{
-	IPLCoordinateSpace3 pos = tocs(m_listenerPosition);
-
-	IPLSimulationInputs listenerInputs = {};
-	listenerInputs.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
-	listenerInputs.source = pos;
-
-	iplSourceSetInputs(m_listenerSource, IPL_SIMULATIONFLAGS_REFLECTIONS, &listenerInputs);
-
-	//IPLSimulationSharedInputs sharedInputs{};
-	//sharedInputs.listener = pos;
-
-	//iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedInputs);
-
-	iplSceneCommit(m_scene);
-	iplSimulatorCommit(m_simulator);
-
-	for (SteamAudioSource& source : m_sources)
-		source.UpdateAudioPre();
-
-	iplSimulatorRunDirect(m_simulator);
-	iplSimulatorRunReflections(m_simulator);
-
-	for (SteamAudioSource& source : m_sources)
-		source.UpdateAudio();
-}
-
-SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
-{
-	Audio audio = m_audio.CreateAudio(eventName);
-
-	if (!audio.IsAlive())
-		return SteamAudioSource(audio, nullptr);
-
-	IPLSource source;
-	IPLSourceSettings sourceSettings = {};
-	sourceSettings.flags = IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT;
-
-	if (sa(iplSourceCreate(m_simulator, &sourceSettings, &source)))
-	{
-		audio.Destroy();
-		return SteamAudioSource({}, nullptr);
-	}
-
-	iplSourceAdd(source, m_simulator);
-
-	SteamAudioSource sas = SteamAudioSource(audio, source);
-	m_sources.push_back(sas);
-
-	return sas;
 }
 
 void SteamAudio::SetListenerPosition(vec3 position)
@@ -255,36 +277,7 @@ SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
 	, m_source (source)
 {}
 
-void SteamAudioSource::UpdateAudioPre()
+_IPLSource_t* SteamAudioSource::GetSource()
 {
-	vec3 position = GetProps3D().position;
-
-	IPLSimulationInputs inputs = {};
-	inputs.flags = IPL_SIMULATIONFLAGS_DIRECT;
-	inputs.occlusionRadius = 0.1f;
-
-	inputs.directFlags = (IPLDirectSimulationFlags)(
-		  IPL_DIRECTSIMULATIONFLAGS_OCCLUSION
-		| IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION 
-		| IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION 
-		| IPL_DIRECTSIMULATIONFLAGS_DIRECTIVITY
-		| IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION);
-
-	inputs.source = tocs(position);
-
-	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_DIRECT, &inputs);
-}
-
-void SteamAudioSource::UpdateAudio()
-{
-	IPLSimulationOutputs output = {};
-	output.direct.flags = IPL_DIRECTEFFECTFLAGS_APPLYOCCLUSION;
-
-	iplSourceGetOutputs(m_source, IPLSimulationFlags::IPL_SIMULATIONFLAGS_DIRECT, &output);
-
-	SetParamDSP(0, APPLY_OCCLUSION, 1);
-	SetParamDSP(0, APPLY_AIRABSORPTION, 1);
-	SetParamDSP(0, APPLY_DIRECTIVITY, 1);
-	SetParamDSP(0, APPLY_TRANSMISSION, 1);
-	SetParamDSP(0, SIMULATION_OUTPUTS, &m_source, sizeof(IPLSource*));
+	return m_source;
 }
