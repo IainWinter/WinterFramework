@@ -15,8 +15,7 @@ include_all_vendor = {
 	path.getabsolute("vendor/sqlite/include"),
 	path.getabsolute("vendor/cr/include"),
 	path.getabsolute("vendor/tinyfiledialogs/include"),
-	path.getabsolute("vendor/fmod_steamaudio/include"),
-	path.getabsolute("vendor/assimp/include")
+	path.getabsolute("vendor/fmod_steamaudio/include")
 }
 
 src_all_vendor = {
@@ -33,16 +32,17 @@ libdir_all_vendor = {
 	path.getabsolute("vendor/imgui/lib/%{cfgdir}"),
 	path.getabsolute("vendor/hitbox/lib/%{cfgdir}"),
 	path.getabsolute("vendor/fmod/lib"),
-	path.getabsolute("vendor/fmod_steamaudio/lib"),
-	path.getabsolute("vendor/assimp/lib")
+	path.getabsolute("vendor/fmod_steamaudio/lib")
 }
 
 libdir_sdl_win32 = {
-	path.getabsolute("vendor/sdl/lib")
+	path.getabsolute("vendor/sdl/lib"),
+	path.getabsolute("vendor/assimp/lib")
 }
 
 include_sdl_win32 = {
-	path.getabsolute("vendor/sdl/include")
+	path.getabsolute("vendor/sdl/include"),
+	path.getabsolute("vendor/assimp/include")
 }
 
 src_framework = {

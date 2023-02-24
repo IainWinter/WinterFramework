@@ -63,11 +63,13 @@ project "Framework"
 
 	filter "system:macosx"
 		libdirs {
-			"/opt/homebrew/Cellar/sdl2/2.0.22/lib"
+			"/opt/homebrew/Cellar/sdl2/2.0.22/lib",
+			"/opt/homebrew/Cellar/assimp/5.2.5/lib/"
 		}
 
 		includedirs {
-			"/opt/homebrew/Cellar/sdl2/2.0.22/include"
+			"/opt/homebrew/Cellar/sdl2/2.0.22/include",
+			"/opt/homebrew/Cellar/assimp/5.2.5/include/"
 		}
 
 		defines {

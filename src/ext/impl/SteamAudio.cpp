@@ -1,7 +1,7 @@
 #include "ext/SteamAudio.h"
 
 // shouldnt need this put this in premake5.lua
-#define IPL_OS_WINDOWS
+//#define IPL_OS_WINDOWS
 
 #include <assert.h>
 #include <string.h>
@@ -260,9 +260,9 @@ IPLCoordinateSpace3 tocs(vec3 v)
 {
 	IPLCoordinateSpace3 space;
 	space.origin = tov3(v);
-	space.right = IPLVector3(1, 0, 0);
-	space.up = IPLVector3(0, 1, 0);
-	space.ahead = IPLVector3(0, 0, 1);
+    space.right = IPLVector3{1, 0, 0};
+    space.up = IPLVector3{0, 1, 0};
+    space.ahead = IPLVector3{0, 0, 1};
 
 	return space;
 }
