@@ -56,7 +56,8 @@ project "Framework"
 		defines {
 			"wPREMAKE=\"premake5.exe\"",
 			"wPREMAKE_BUILD=\"vs2022\"",
-			"wBUILD_CLI=\"msbuild\""
+			"wBUILD_CLI=\"msbuild\"",
+			"IPL_OS_WINDOWS"
 		}
 
 		buildoptions ("/bigobj /FS")
@@ -75,7 +76,8 @@ project "Framework"
 		defines {
 			"wPREMAKE=\"mac_premake5\"",
 			"wPREMAKE_BUILD=\"xcode4\"",
-			"wBUILD_CLI=\"needs link\""
+			"wBUILD_CLI=\"needs link\"",
+			"IPL_OS_MACOSX"
 		}
 
 	filter "system:linux"

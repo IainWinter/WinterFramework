@@ -1,17 +1,10 @@
 #include "ext/SteamAudio.h"
 
-// shouldnt need this put this in premake5.lua
-//#define IPL_OS_WINDOWS
-
-#include <assert.h>
-#include <string.h>
-
-#include <algorithm>
-#include <atomic>
-
 #include "fmod_steamaudio/phonon.h"
 #include "fmod_steamaudio/steamaudio_fmod.h"
 #include "fmod_steamaudio/steamaudio_spatialize_effect.h"
+
+// Some logging and conversion functions
 
 bool sa(IPLerror result);
 void steam_audio_log(IPLLogLevel level, const char* log);
@@ -23,9 +16,30 @@ SteamAudio::SteamAudio(AudioWorld& audio)
 	, m_steam     (nullptr)
 	, m_simulator (nullptr)
 	, m_scene     (nullptr)
+	, m_listener  (nullptr)
 {
 	m_listenerPosition = vec3(0.f);
 }
+
+IPLSimulationFlags IPL_DIRECT_AND_REFLECT = (IPLSimulationFlags)(
+	  IPL_SIMULATIONFLAGS_DIRECT
+	| IPL_SIMULATIONFLAGS_REFLECTIONS
+);
+
+IPLDirectSimulationFlags IPL_ALL_DIRECT = (IPLDirectSimulationFlags)(
+	  IPL_DIRECTSIMULATIONFLAGS_DISTANCEATTENUATION
+	| IPL_DIRECTSIMULATIONFLAGS_AIRABSORPTION
+	| IPL_DIRECTSIMULATIONFLAGS_DIRECTIVITY
+	| IPL_DIRECTSIMULATIONFLAGS_OCCLUSION 
+	| IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION
+);
+
+//	Occlusion seems to need transmission to be enabled as well to work?
+//
+IPLDirectSimulationFlags IPL_OCCL_TRAN_DIRECT = (IPLDirectSimulationFlags)(
+	  IPL_DIRECTSIMULATIONFLAGS_OCCLUSION
+	| IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION
+);
 
 void SteamAudio::Init()
 {
@@ -56,7 +70,7 @@ void SteamAudio::Init()
 	// Create a simulator for direct and reflection simulations
 
 	IPLSimulationSettings simulationSettings = {};
-	simulationSettings.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+	simulationSettings.flags = IPL_DIRECT_AND_REFLECT;
 	simulationSettings.sceneType = IPL_SCENETYPE_DEFAULT;
 	simulationSettings.reflectionType = IPL_REFLECTIONEFFECTTYPE_CONVOLUTION;
 	simulationSettings.maxNumRays = 4096;
@@ -83,20 +97,15 @@ void SteamAudio::Init()
 	IPLSourceSettings sourceSettings = {};
 	sourceSettings.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
 
-	iplSourceCreate(m_simulator, &sourceSettings, &m_listenerSource);
-	iplSourceAdd(m_listenerSource, m_simulator);
+	iplSourceCreate(m_simulator, &sourceSettings, &m_listener);
+	iplSourceAdd(m_listener, m_simulator);
 
 	// Tell fmod about the state of phonon
 
 	iplFMODInitialize(m_steam);
 	iplFMODSetHRTF(hrtf);
 	iplFMODSetSimulationSettings(simulationSettings);
-	iplFMODSetReverbSource(m_listenerSource);
-}
-
-void SteamAudio::Tick_temp()
-{
-	m_audio.Tick();
+	iplFMODSetReverbSource(m_listener);
 }
 
 void SteamAudio::RunSimulation()
@@ -107,7 +116,6 @@ void SteamAudio::RunSimulation()
 	iplSimulatorCommit(m_simulator);
 
 	IPLCoordinateSpace3 listenerPos = tocs(m_listenerPosition);
-	IPLCoordinateSpace3 testPos = tocs(m_listenerPosition + vec3(0, 0, 0));
 
 	// Set source for reflections
 	// the docs say to put this at the listener position and enable reflection sim
@@ -116,7 +124,7 @@ void SteamAudio::RunSimulation()
     listenerInputs.source = listenerPos;
     listenerInputs.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
 
-    iplSourceSetInputs(m_listenerSource, IPL_SIMULATIONFLAGS_REFLECTIONS, &listenerInputs);
+    iplSourceSetInputs(m_listener, IPL_SIMULATIONFLAGS_REFLECTIONS, &listenerInputs);
 
 	// Set listener position for direct sources
 	// Set listener position and ray tracing settings for reflection sources
@@ -125,7 +133,7 @@ void SteamAudio::RunSimulation()
 	sharedDirect.listener = listenerPos;
 
     IPLSimulationSharedInputs sharedReflection = {};
-    sharedReflection.listener = testPos;
+    sharedReflection.listener = listenerPos;
     sharedReflection.duration = 1.05;
     sharedReflection.numRays = 3000;
     sharedReflection.numBounces = 5;
@@ -145,11 +153,11 @@ void SteamAudio::RunSimulation()
 		
 		IPLSimulationInputs inputsDirect = {};
 		inputsDirect.flags = IPL_SIMULATIONFLAGS_DIRECT;
-		inputsDirect.directFlags = IPL_DIRECTSIMULATIONFLAGS_OCCLUSION;
+		inputsDirect.directFlags = IPL_OCCL_TRAN_DIRECT;
 		inputsDirect.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
 		inputsDirect.source = sourcePos;
 
-		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect);
+		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect); 
 
 		IPLSimulationInputs inputsReflection = {};
 		inputsReflection.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
@@ -161,13 +169,15 @@ void SteamAudio::RunSimulation()
 	// Run simulations
 
 	iplSimulatorRunDirect(m_simulator);
-	//iplSimulatorRunReflections(m_simulator);
+	iplSimulatorRunReflections(m_simulator);
 
 	// Set the dsp parameters for the phonon fmod plugins
 
 	for (SteamAudioSource& source : m_simulateDirect)
 	{
 		IPLSource ptr = source.GetSource();
+
+		// flags for 'simulated-defined' are set in FMOD Studio
 
 		source.SetParamDSP(0, APPLY_OCCLUSION, 1);
 		source.SetParamDSP(0, SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
@@ -179,7 +189,7 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 	Audio audio = m_audio.CreateAudio(eventName);
 	
 	IPLSourceSettings sourceSettings = {};
-	sourceSettings.flags = (IPLSimulationFlags)(IPL_SIMULATIONFLAGS_DIRECT | IPL_SIMULATIONFLAGS_REFLECTIONS);
+	sourceSettings.flags = IPL_DIRECT_AND_REFLECT;
 
 	IPLSource source;
 	iplSourceCreate(m_simulator, &sourceSettings, &source);
@@ -237,6 +247,21 @@ void SteamAudio::SetListenerPosition(vec3 position)
 	m_listenerPosition = position;
 }
 
+SteamAudioSource::SteamAudioSource()
+	: Audio    ()
+	, m_source (nullptr)
+{}
+
+SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
+	: Audio    (audio)
+	, m_source (source)
+{}
+
+_IPLSource_t* SteamAudioSource::GetSource()
+{
+	return m_source;
+}
+
 bool sa(IPLerror result)
 {
 	bool err = result != IPLerror::IPL_STATUS_SUCCESS;
@@ -251,7 +276,7 @@ void steam_audio_log(IPLLogLevel level, const char* log)
 
 IPLVector3 tov3(vec3 v)
 {
-	return IPLVector3 {
+	return IPLVector3{
 		v.x, v.y, v.z
 	};
 }
@@ -260,24 +285,9 @@ IPLCoordinateSpace3 tocs(vec3 v)
 {
 	IPLCoordinateSpace3 space;
 	space.origin = tov3(v);
-    space.right = IPLVector3{1, 0, 0};
-    space.up = IPLVector3{0, 1, 0};
-    space.ahead = IPLVector3{0, 0, 1};
+	space.right = IPLVector3{ 1, 0, 0 };
+	space.up = IPLVector3{ 0, 1, 0 };
+	space.ahead = IPLVector3{ 0, 0, 1 };
 
 	return space;
-}
-
-SteamAudioSource::SteamAudioSource()
-	: Audio    ()
-	, m_source (nullptr)
-{}
-
-SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
-	: Audio    (audio)
-	, m_source (source)
-{}
-
-_IPLSource_t* SteamAudioSource::GetSource()
-{
-	return m_source;
 }

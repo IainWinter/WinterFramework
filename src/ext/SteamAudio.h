@@ -32,8 +32,6 @@ public:
 
 	void Init();
 
-	void Tick_temp();
-
 	void RunSimulation();
 
 	SteamAudioSource CreateSource(const std::string& eventName);
@@ -53,6 +51,7 @@ private:
 	std::vector<_IPLStaticMesh_t*> m_meshes;
 	std::vector<SteamAudioSource> m_simulateDirect;
 
+	// This is for reverb calculations
 	vec3 m_listenerPosition;
-	_IPLSource_t* m_listenerSource;
+	_IPLSource_t* m_listener;
 };
