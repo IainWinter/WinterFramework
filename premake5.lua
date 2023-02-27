@@ -13,7 +13,7 @@ group ""
 
 include "premake5.vars.lua"
 
-project "Framework"
+project "WinterFramework"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
@@ -33,7 +33,7 @@ project "Framework"
 		"src/**.h",
 		"src/impl/**.cpp",
 
-		-- choose which extensions you need, right now it's all of them
+		-- choose extensions, right now it's all of them
 
 		"src/ext/impl/**.h",
 		"src/ext/impl/**.cpp"

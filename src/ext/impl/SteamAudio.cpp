@@ -179,7 +179,7 @@ void SteamAudio::RunSimulation()
 
 		// flags for 'simulated-defined' are set in FMOD Studio
 
-		source.SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);
+		source.SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);		
 		source.SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
 	}
 }

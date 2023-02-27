@@ -679,6 +679,42 @@ FMOD::DSP* GetDSP(EventInstance* inst, int dspIndex)
 	return dsp;
 }
 
+Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, float value)
+{
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->setParameterFloat(paramIndex, value)))
+	{
+		log_audio("w~Failed to set dsp float parameter %d", paramIndex);
+		return *this;
+	}
+
+	log_audio("i~Set dsp %d float parameter %d to %f", dspIndex, paramIndex, value);
+
+	return *this;
+}
+
+Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, bool value)
+{
+	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);
+
+	if (!dsp)
+		return *this;
+
+	if (fa(dsp->setParameterBool(paramIndex, value)))
+	{
+		log_audio("w~Failed to set dsp boolean parameter %d", paramIndex);
+		return *this;
+	}
+
+	log_audio("i~Set dsp %d integer boolean %d to %s", dspIndex, paramIndex, value ? "true" : false);
+
+	return *this;
+}
+
 Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, int value)
 {
 	FMOD::DSP* dsp = GetDSP(m_inst, dspIndex);

@@ -80,7 +80,7 @@ include_vendor_linux =
 	-- fill this in
 }
 
-links_all_vendor =
+links_vendor =
 {
 	"SDL2",
 	"box2d",

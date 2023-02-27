@@ -160,6 +160,8 @@ public:
 	Audio& SetParam(const std::string& paramName, float volume);
 	float  GetParam(const std::string& paramName) const;
 
+	Audio& SetParamDSP(int dspIndex, int paramIndex, float value);
+	Audio& SetParamDSP(int dspIndex, int paramIndex, bool value);
 	Audio& SetParamDSP(int dspIndex, int paramIndex, int value);
 	Audio& SetParamDSP(int dspIndex, int paramIndex, void* data, int size);
 
