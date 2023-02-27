@@ -1,8 +1,8 @@
 #include "ext/SteamAudio.h"
 
-#include "fmod_steamaudio/phonon.h"
-#include "fmod_steamaudio/steamaudio_fmod.h"
-#include "fmod_steamaudio/steamaudio_spatialize_effect.h"
+#include "phonon/phonon.h"
+#include "phonon_fmod/steamaudio_fmod.h"
+#include "phonon_fmod/dsp_names.h"
 
 // Some logging and conversion functions
 
@@ -179,8 +179,8 @@ void SteamAudio::RunSimulation()
 
 		// flags for 'simulated-defined' are set in FMOD Studio
 
-		source.SetParamDSP(0, APPLY_OCCLUSION, 1);
-		source.SetParamDSP(0, SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
+		source.SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);
+		source.SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
 	}
 }
 

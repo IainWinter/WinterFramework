@@ -12,8 +12,9 @@ project "ImGui"
 	includedirs {
 		"include/imgui",
 		"src",
-		"../sdl/include/SDL2",
-		"../glm/include/"
+
+		"../_shared/include", -- this is for glm conversion to ImVec2
+		"../_shared/include/_win/SDL2" -- imgui expects SDL2 to be not in a folder
     	}
 
 	filter "configurations:Debug"
