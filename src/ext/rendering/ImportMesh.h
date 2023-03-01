@@ -1,6 +1,6 @@
 #pragma once
 
 #include "Rendering.h"
+#include "ext/rendering/Model.h"
 
-// use model
-std::vector<Mesh> LoadMeshFromFile(const std::string& filename);
+Model LoadModelFromFile(const std::string& filename);

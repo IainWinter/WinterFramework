@@ -1,8 +1,8 @@
 #include "ext/SteamAudio.h"
 
-#include "fmod_steamaudio/phonon.h"
-#include "fmod_steamaudio/steamaudio_fmod.h"
-#include "fmod_steamaudio/steamaudio_spatialize_effect.h"
+#include "phonon/phonon.h"
+#include "phonon_fmod/steamaudio_fmod.h"
+#include "phonon_fmod/dsp_names.h"
 
 // Some logging and conversion functions
 
@@ -58,7 +58,7 @@ void SteamAudio::Init()
 	// Create hrtf
 	
 	IPLAudioSettings audioSettings = {};
-	audioSettings.samplingRate = 44100;
+	audioSettings.samplingRate = 48000;
 	audioSettings.frameSize = 1024;
 
 	IPLHRTFSettings hrtfSettings = {};
@@ -179,8 +179,8 @@ void SteamAudio::RunSimulation()
 
 		// flags for 'simulated-defined' are set in FMOD Studio
 
-		source.SetParamDSP(0, APPLY_OCCLUSION, 1);
-		source.SetParamDSP(0, SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
+		source.SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);		
+		source.SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
 	}
 }
 
@@ -199,6 +199,20 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 	m_simulateDirect.push_back(sas);
 
 	return sas;
+}
+
+void SteamAudio::DestroySource(SteamAudioSource& source)
+{
+	// impl this
+
+	//m_simulateDirect.erase(source);
+
+	//IPLSource s = source.GetSource();
+
+	//iplSourceRemove(s, m_simulator);
+	//iplSourceRelease(&s);
+	//source.Destroy();
+	//source.ResetSource();
 }
 
 void SteamAudio::CreateStaticMesh(const Mesh& _mesh)
@@ -260,6 +274,11 @@ SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
 _IPLSource_t* SteamAudioSource::GetSource()
 {
 	return m_source;
+}
+
+void SteamAudioSource::ResetSource()
+{
+	m_source = nullptr;
 }
 
 bool sa(IPLerror result)

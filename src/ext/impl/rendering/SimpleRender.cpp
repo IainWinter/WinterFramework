@@ -107,11 +107,7 @@ void RenderMeshes(const Camera& camera, EntityWorld& world)
 	for (auto [transform, model] : world.Query<Transform2D, Model>())
 	{
         SetMeshProgramDefaults(transform);
-        
-        for (r<Mesh>& mesh : model.meshes)
-        {
-            mesh->Draw();
-        }
+		model.Draw();
     }
     
     for (auto [transform, mesh] : world.Query<Transform2D, SpriteMesh>())

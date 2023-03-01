@@ -8,28 +8,32 @@ group "vendor"
 	include "vendor/box2d"
 	include "vendor/hitbox"
 	include "vendor/imgui"
+	include "vendor/phonon_fmod"
 group ""
 
 include "premake5.vars.lua"
 
-project "Framework"
+project "WinterFramework"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
 	location "lib/build"
 	targetdir "lib/%{cfgdir}"
 
-	flags { "MultiProcessorCompile" }
-
-	files (src_all_vendor)
-	includedirs (include_all_vendor)
-	defines (all_defines)
+	flags {
+		"MultiProcessorCompile" 
+	}
+	
+	files (src_vendor)
+	includedirs (include_vendor)
+	defines (defines_all)
+	libdirs (libdir_vendor_self)
 
 	files { 
 		"src/**.h",
 		"src/impl/**.cpp",
 
-		-- choose which extensions you need, right now it's all of them
+		-- choose extensions, right now it's all of them
 
 		"src/ext/impl/**.h",
 		"src/ext/impl/**.cpp"
@@ -39,54 +43,20 @@ project "Framework"
 		"src"
 	}
 
-	defines {
-		"wTOOLS=\"" .. path.getabsolute("tools/") .. "\"",
-		"wVENDOR=\"" .. path.getabsolute("vendor/") .. "\""
-	}
-
 	filter "system:Windows"
-		libdirs {
-			libdir_sdl_win32
-		}
-
-		includedirs {
-			include_sdl_win32
-		}
-
-		defines {
-			"wPREMAKE=\"premake5.exe\"",
-			"wPREMAKE_BUILD=\"vs2022\"",
-			"wBUILD_CLI=\"msbuild\"",
-			"IPL_OS_WINDOWS"
-		}
-
+		--libdirs (libdir_vendor_win_x64)
+		includedirs (include_vendor_win)
+		defines (defines_win)
 		buildoptions ("/bigobj /FS")
 
 	filter "system:macosx"
-		libdirs {
-			"/opt/homebrew/Cellar/sdl2/2.0.22/lib",
-			"/opt/homebrew/Cellar/assimp/5.2.5/lib/"
-		}
-
-		includedirs {
-			"/opt/homebrew/Cellar/sdl2/2.0.22/include",
-			"/opt/homebrew/Cellar/assimp/5.2.5/include/"
-		}
-
-		defines {
-			"wPREMAKE=\"mac_premake5\"",
-			"wPREMAKE_BUILD=\"xcode4\"",
-			"wBUILD_CLI=\"needs link\"",
-			"IPL_OS_MACOSX"
-		}
+		libdirs (libdir_vendor_mac_arm64)
+		includedirs (include_vendor_mac)
+		defines (defines_mac)
 
 	filter "system:linux"
-		defines {
-			"wPREMAKE=\"premake5\"",
-			"wPREMAKE_BUILD=\"gmake2\"",
-			"wBUILD_CLI=\"make\""
-		}
-
+		defines (defines_linux)
+		
 	filter "configurations:Debug"
 		defines { "IW_DEBUG", "DEBUG" }
 		symbols "On"

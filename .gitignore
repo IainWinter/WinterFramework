@@ -6,3 +6,4 @@
 /vendor/box2d/lib
 /vendor/imgui/lib
 /vendor/hitbox/lib
+/vendor/phonon_fmod/lib

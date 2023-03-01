@@ -11,7 +11,7 @@ project "Hitbox"
 
 	includedirs {
 		"include",
-		"../glm/include"
+		"../_shared/include"
 	}
 
 	filter "configurations:Debug"
