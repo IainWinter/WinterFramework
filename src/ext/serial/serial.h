@@ -308,7 +308,7 @@ namespace meta
 		virtual void move_in(void* instance) = 0;
 		virtual bool is_type(type* type) const = 0;
 
-		type* type() const
+		type* get_type() const
 		{
 			return m_type;
 		}
@@ -579,9 +579,9 @@ namespace meta
 			m_storage->move_in(instance);
 		}
 
-		type* type() const { return m_storage->type(); }
+		type* get_type() const { return m_storage->get_type(); }
 		void* data() const { return m_storage->data(); }
-		id_type type_id() const { return type()->info()->m_id; }
+		id_type type_id() const { return get_type()->info()->m_id; }
 		bool has_data() const { return !!m_storage; }
 
 		template<typename _t>
@@ -611,7 +611,7 @@ namespace meta
 	{
 		struct registered_type
 		{
-			type* type;
+			type* rtype;
 			int location;
 		};
 

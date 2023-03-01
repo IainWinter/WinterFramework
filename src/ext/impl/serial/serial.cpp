@@ -1,6 +1,6 @@
 #include "ext/serial/serial.h"
-
 #include "Log.h"
+#include <cstring>
 
 namespace meta
 {
@@ -162,12 +162,12 @@ namespace meta
 
     void write_any(serial_writer* serial, const any& value)
     {
-		std::string name = value.type()->info()->m_name; // could write just the bytes with a custom read/write
+		std::string name = value.get_type()->info()->m_name; // could write just the bytes with a custom read/write
 
         serial->class_begin(get_class<any>());
         serial->write_member(get_class<std::string>(), &name, "name");
         serial->class_delim();
-        serial->write_member(value.type(), value.data(), "data");
+        serial->write_member(value.get_type(), value.data(), "data");
         serial->class_end();
     }
 
@@ -183,7 +183,7 @@ namespace meta
 		if (has_registered_type(name.c_str())) // I think this screws the bin reader, not the json through. todo: put size of type to fix this
 		{
 			value = get_registered_type(name.c_str())->construct();
-			serial->read_member(value.type(), value.data(), "data");
+			serial->read_member(value.get_type(), value.data(), "data");
 		}
 
         serial->class_end();
@@ -240,10 +240,10 @@ namespace meta
 		{
 			//	delete types made in _get_class. This seems like an odd place for delete
 			//
-			delete reg.type;
+			delete reg.rtype;
 		}
 
-		reg.type = type;
+		reg.rtype = type;
 		reg.location = GetContextLocation();
 	}
 
@@ -259,7 +259,7 @@ namespace meta
 			return nullptr;
 		}
 
-		return ctx->known_info.at(type_id).type;
+		return ctx->known_info.at(type_id).rtype;
 	}
 
 	bool has_registered_type(const char* name)
@@ -271,9 +271,9 @@ namespace meta
 	{
 		for (const auto& [id, reg] : ctx->known_info)
 		{
-			if (strcmp(reg.type->name(), name) == 0)
+			if (strcmp(reg.rtype->name(), name) == 0)
 			{
-				return reg.type;
+				return reg.rtype;
 			}
 		}
 
@@ -284,7 +284,7 @@ namespace meta
 	{
 		if (has_registered_type(type_id))
 		{
-			meta::type* type = ctx->known_info[type_id].type;
+			meta::type* type = ctx->known_info[type_id].rtype;
 
 			delete type;
 			ctx->known_info.erase(type_id);

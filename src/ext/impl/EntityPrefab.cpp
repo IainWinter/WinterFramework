@@ -18,9 +18,9 @@ EntityPrefab::EntityPrefab(Entity entity)
 
 void EntityPrefab::Add(const meta::any& component)
 {
-	if (!component.type()->has_prop("is_component"))
+	if (!component.get_type()->has_prop("is_component"))
 	{
-		log_entity("Tried to add non-component to prefab. Type: %s", component.type()->name());
+		log_entity("Tried to add non-component to prefab. Type: %s", component.get_type()->name());
 		return;
 	}
 

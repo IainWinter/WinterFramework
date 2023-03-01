@@ -40,7 +40,7 @@ namespace Asset
 
         else
         {
-            RegisterLoaded(instance.name, instance.data.type(), instance.data.make_ref());
+            RegisterLoaded(instance.name, instance.data.get_type(), instance.data.make_ref());
         }
     }
     
