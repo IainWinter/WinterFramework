@@ -20,6 +20,7 @@ public:
 	SteamAudioSource(Audio audio, _IPLSource_t* source);
 
 	_IPLSource_t* GetSource();
+	void ResetSource();
 
 private:
 	_IPLSource_t* m_source;
@@ -35,6 +36,7 @@ public:
 	void RunSimulation();
 
 	SteamAudioSource CreateSource(const std::string& eventName);
+	void DestroySource(SteamAudioSource& source);
 	
 	void CreateStaticMesh(const Mesh& mesh);
 

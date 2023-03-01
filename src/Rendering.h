@@ -680,7 +680,34 @@ private:
 	bool SendBindAndReturnHasIndex();
 };
 
-struct ShaderProgram : IDeviceObject
+//
+//	Defines what types can be passed to a shader program / material
+//
+struct IHasMaterialProperties
+{
+	virtual void Set(const std::string& name, const   int& x) = 0;
+	virtual void Set(const std::string& name, const   u32& x) = 0;
+	virtual void Set(const std::string& name, const   f32& x) = 0;
+	virtual void Set(const std::string& name, const fvec1& x) = 0;
+	virtual void Set(const std::string& name, const fvec2& x) = 0;
+	virtual void Set(const std::string& name, const fvec3& x) = 0;
+	virtual void Set(const std::string& name, const fvec4& x) = 0;
+	virtual void Set(const std::string& name, const ivec1& x) = 0;
+	virtual void Set(const std::string& name, const ivec2& x) = 0;
+	virtual void Set(const std::string& name, const ivec3& x) = 0;
+	virtual void Set(const std::string& name, const ivec4& x) = 0;
+	virtual void Set(const std::string& name, const fmat2& x) = 0;
+	virtual void Set(const std::string& name, const fmat3& x) = 0;
+	virtual void Set(const std::string& name, const fmat4& x) = 0;
+    
+    // convert from Color to vec4
+	virtual void Set(const std::string& name, const Color& color) = 0;
+
+	// auto sends texture to device
+	virtual void Set(const std::string& name, r<Texture> texture) = 0;
+};
+
+struct ShaderProgram : IDeviceObject, IHasMaterialProperties
 {
 public:
 	enum ShaderName
@@ -709,27 +736,27 @@ public:
 
 	ShaderProgram& Use();
 
-	ShaderProgram& Set(const std::string& name, const   int& x);
-	ShaderProgram& Set(const std::string& name, const   u32& x);
-	ShaderProgram& Set(const std::string& name, const   f32& x);
-	ShaderProgram& Set(const std::string& name, const fvec1& x);
-	ShaderProgram& Set(const std::string& name, const fvec2& x);
-	ShaderProgram& Set(const std::string& name, const fvec3& x);
-	ShaderProgram& Set(const std::string& name, const fvec4& x);
-	ShaderProgram& Set(const std::string& name, const ivec1& x);
-	ShaderProgram& Set(const std::string& name, const ivec2& x);
-	ShaderProgram& Set(const std::string& name, const ivec3& x);
-	ShaderProgram& Set(const std::string& name, const ivec4& x);
-	ShaderProgram& Set(const std::string& name, const fmat2& x);
-	ShaderProgram& Set(const std::string& name, const fmat3& x);
-	ShaderProgram& Set(const std::string& name, const fmat4& x);
+	void Set(const std::string& name, const   int& x);
+	void Set(const std::string& name, const   u32& x);
+	void Set(const std::string& name, const   f32& x);
+	void Set(const std::string& name, const fvec1& x);
+	void Set(const std::string& name, const fvec2& x);
+	void Set(const std::string& name, const fvec3& x);
+	void Set(const std::string& name, const fvec4& x);
+	void Set(const std::string& name, const ivec1& x);
+	void Set(const std::string& name, const ivec2& x);
+	void Set(const std::string& name, const ivec3& x);
+	void Set(const std::string& name, const ivec4& x);
+	void Set(const std::string& name, const fmat2& x);
+	void Set(const std::string& name, const fmat3& x);
+	void Set(const std::string& name, const fmat4& x);
     
     // convert from Color to vec4
-	ShaderProgram& Set(const std::string& name, const Color& color);
+	void Set(const std::string& name, const Color& color);
 
 	// auto sends texture to device
-    ShaderProgram& Set(const std::string& name, r<Texture> texture);
-	ShaderProgram& Set(const std::string& name, Texture& texture);
+    void Set(const std::string& name, r<Texture> texture);
+	void Set(const std::string& name, Texture& texture);
 
 // interface
 

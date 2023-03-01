@@ -971,34 +971,32 @@ ShaderProgram& ShaderProgram::Use()
 	return *this;
 }
 
-ShaderProgram& ShaderProgram::Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fvec4& x) { gl(glUniform4fv       (gl_location(name), 1,            (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec1& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec2& x) { gl(glUniform2iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec3& x) { gl(glUniform3iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const ivec4& x) { gl(glUniform4iv       (gl_location(name), 1,            (  int*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat2& x) { gl(glUniformMatrix2fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat3& x) { gl(glUniformMatrix3fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
-ShaderProgram& ShaderProgram::Set(const std::string& name, const fmat4& x) { gl(glUniformMatrix4fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); return *this; }
+void ShaderProgram::Set(const std::string& name, const   int& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const   u32& x) { gl(glUniform1uiv      (gl_location(name), 1,            (  u32*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const   f32& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fvec1& x) { gl(glUniform1fv       (gl_location(name), 1,            (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fvec2& x) { gl(glUniform2fv       (gl_location(name), 1,            (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fvec3& x) { gl(glUniform3fv       (gl_location(name), 1,            (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fvec4& x) { gl(glUniform4fv       (gl_location(name), 1,            (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const ivec1& x) { gl(glUniform1iv       (gl_location(name), 1,            (  int*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const ivec2& x) { gl(glUniform2iv       (gl_location(name), 1,            (  int*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const ivec3& x) { gl(glUniform3iv       (gl_location(name), 1,            (  int*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const ivec4& x) { gl(glUniform4iv       (gl_location(name), 1,            (  int*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fmat2& x) { gl(glUniformMatrix2fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fmat3& x) { gl(glUniformMatrix3fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
+void ShaderProgram::Set(const std::string& name, const fmat4& x) { gl(glUniformMatrix4fv (gl_location(name), 1,  GL_FALSE, (float*)  &x)); }
 
-ShaderProgram& ShaderProgram::Set(const std::string& name, const Color& color)
+void ShaderProgram::Set(const std::string& name, const Color& color)
 {
     Set(name, color.as_v4());
-	return *this;
 }
 
-ShaderProgram& ShaderProgram::Set(const std::string& name, r<Texture> texture)
+void ShaderProgram::Set(const std::string& name, r<Texture> texture)
 {
     Set(name, *texture);
-	return *this;
 }
 
-ShaderProgram& ShaderProgram::Set(const std::string& name, Texture& texture)
+void ShaderProgram::Set(const std::string& name, Texture& texture)
 {
 	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
 	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
@@ -1006,8 +1004,6 @@ ShaderProgram& ShaderProgram::Set(const std::string& name, Texture& texture)
 	gl(glUniform1i(gl_location(name), m_slot));
 
 	//m_slot += 1;
-
-	return *this;
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }
@@ -1048,7 +1044,7 @@ void ShaderProgram::_InitOnDevice()
 			glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
 			glDeleteShader(shader); // if soft error this can be removed
 			log_render("Failed to compile shader: %s", (char*)infoLog.data());
-			assert(false && "Failed to compile shader"); // maybe soft error
+			//assert(false && "Failed to compile shader"); // maybe soft error
 		}
 
 		gl(glAttachShader(m_device, shader));

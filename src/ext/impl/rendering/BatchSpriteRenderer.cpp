@@ -111,10 +111,10 @@ void BatchSpriteRenderer::InitProgram()
 
 void BatchSpriteRenderer::SetProgram(const mat4& proj, const mat4& view, bool mixTint)
 {
-	m_program.Use()
-		.Set("proj", proj)
-		.Set("view", view)
-		.Set("mixTint", (float)mixTint);
+	m_program.Use();
+	m_program.Set("proj", proj);
+	m_program.Set("view", view);
+	m_program.Set("mixTint", (float)mixTint);
 }
 
 void BatchSpriteRenderer::DrawBatch(r<Texture> texture, BatchData& batch)

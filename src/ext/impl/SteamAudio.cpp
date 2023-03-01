@@ -58,7 +58,7 @@ void SteamAudio::Init()
 	// Create hrtf
 	
 	IPLAudioSettings audioSettings = {};
-	audioSettings.samplingRate = 44100;
+	audioSettings.samplingRate = 48000;
 	audioSettings.frameSize = 1024;
 
 	IPLHRTFSettings hrtfSettings = {};
@@ -201,6 +201,20 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 	return sas;
 }
 
+void SteamAudio::DestroySource(SteamAudioSource& source)
+{
+	// impl this
+
+	//m_simulateDirect.erase(source);
+
+	//IPLSource s = source.GetSource();
+
+	//iplSourceRemove(s, m_simulator);
+	//iplSourceRelease(&s);
+	//source.Destroy();
+	//source.ResetSource();
+}
+
 void SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 {
 	// Copy the mesh into the phonon format
@@ -260,6 +274,11 @@ SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
 _IPLSource_t* SteamAudioSource::GetSource()
 {
 	return m_source;
+}
+
+void SteamAudioSource::ResetSource()
+{
+	m_source = nullptr;
 }
 
 bool sa(IPLerror result)
