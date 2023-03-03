@@ -20,16 +20,16 @@ public:
 	{
 		for (const auto& [id, reg] : ctx->known_info)
 		{
-			m_types.add_node(reg.type);
+			m_types.add_node(reg.rtype);
 		}
 
 		// connect all members to their classes
 
 		for (const auto& [id, reg] : ctx->known_info)
 		{
-			for (meta::type* member : reg.type->get_members())
+			for (meta::type* member : reg.rtype->get_members())
 			{
-				m_types.add_edge(reg.type, member->get_type());
+				m_types.add_edge(reg.rtype, member->get_type());
 			}
 		}
 	}

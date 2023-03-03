@@ -39,44 +39,6 @@ struct AudioProps3D
 	void FromFMOD(const FMOD_3D_ATTRIBUTES& fmod);
 };
 
-class AudioWorld
-{
-public:
-	AudioWorld();
-
-	void Init();
-	void Dnit();
-	void Tick();
-
-	void LoadBank     (const std::string& bankFilePath);
-	void FreeBank     (const std::string& bankName);
-	bool IsBankLoaded (const std::string& bankName);
-
-	bool LoadPlugin(const std::string& filepath, unsigned int* handle = nullptr);
-
-	AudioVCA GetVCA(const std::string& vcaName);
-
-	AudioSource GetAudioSource(const std::string& eventName);
-
-	// create a paused audio instance
-	Audio CreateAudio(const std::string& eventName);
-
-	void SetListenerProps3D(const AudioProps3D& props);
-	AudioProps3D GetListenerProps3D() const;
-
-private:
-	std::vector<FMOD::Studio::VCA*>              GetVCAs             (const FMOD::Studio::Bank* bank) const;
-	std::vector<FMOD::Studio::EventDescription*> GetEventDescriptions(const FMOD::Studio::Bank* bank) const;
-	std::vector<FMOD::Studio::Bus*>              GetBuses            (const FMOD::Studio::Bank* bank) const;
-
-private:
-	FMOD::Studio::System* m_system;
-	std::unordered_map<std::string, FMOD::Studio::Bank*> m_bank;
-
-	std::unordered_map<std::string, AudioVCA>    m_vca;
-	std::unordered_map<std::string, AudioSource> m_desc;
-};
-
 // the most basic amp
 class AudioVCA
 {
@@ -182,4 +144,42 @@ public:
 private:
 	FMOD::Studio::EventInstance* m_inst;
 	AudioSource m_parent;
+};
+
+class AudioWorld
+{
+public:
+	AudioWorld();
+
+	void Init();
+	void Dnit();
+	void Tick();
+
+	void LoadBank     (const std::string& bankFilePath);
+	void FreeBank     (const std::string& bankName);
+	bool IsBankLoaded (const std::string& bankName);
+
+	bool LoadPlugin(const std::string& filepath, unsigned int* handle = nullptr);
+
+	AudioVCA GetVCA(const std::string& vcaName);
+
+	AudioSource GetAudioSource(const std::string& eventName);
+
+	// create a paused audio instance
+	Audio CreateAudio(const std::string& eventName);
+
+	void SetListenerProps3D(const AudioProps3D& props);
+	AudioProps3D GetListenerProps3D() const;
+
+private:
+	std::vector<FMOD::Studio::VCA*>              GetVCAs             (const FMOD::Studio::Bank* bank) const;
+	std::vector<FMOD::Studio::EventDescription*> GetEventDescriptions(const FMOD::Studio::Bank* bank) const;
+	std::vector<FMOD::Studio::Bus*>              GetBuses            (const FMOD::Studio::Bank* bank) const;
+
+private:
+	FMOD::Studio::System* m_system;
+	std::unordered_map<std::string, FMOD::Studio::Bank*> m_bank;
+
+	std::unordered_map<std::string, AudioVCA>    m_vca;
+	std::unordered_map<std::string, AudioSource> m_desc;
 };
