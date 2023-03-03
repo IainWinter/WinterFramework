@@ -21,6 +21,9 @@ public:
 	void Set(const std::string& name, const glm::fmat4& x) override;
 	void Set(const std::string& name, const Color& color) override;
 	void Set(const std::string& name, r<Texture> texture) override;
+	void SetArray(const std::string& name, const int* x, int count) override;
+	void SetArray(const std::string& name, const u32* x, int count) override;
+	void SetArray(const std::string& name, const f32* x, int count) override;
 
 	void SetShader(r<ShaderProgram> program);
 
@@ -34,10 +37,13 @@ private:
 	template<typename _t>
 	void _Set(const std::string& name, const _t& value)
 	{
-		r<Param<_t>> param = mkr<Param<_t>>();
-		param->value = value;
+		m_params[name] = mkr<Param<_t>>(value);
+	}
 
-		m_params[name] = param;
+	template<typename _t>
+	void _SetArray(const std::string& name, const _t* value, int count)
+	{
+		m_params[name] = mkr<ParamArray<_t>>(value, count);
 	}
 
 private:
@@ -63,12 +69,35 @@ private:
 	template<typename _t>
 	struct Param : IParam
 	{
-		_t value = {};
+		Param(const _t& value)
+		{
+			this->value = value;
+		}
 
 		void Apply(const std::string& name, r<IHasMaterialProperties> other) const override
 		{
 			other->Set(name, value);
 		}
+
+	private:
+		_t value = {};
+	};
+
+	template<typename _t>
+	struct ParamArray : IParam
+	{
+		ParamArray(const _t* values, int count)
+		{
+			this->values = std::vector<_t>(values, values + count);
+		}
+
+		void Apply(const std::string& name, r<IHasMaterialProperties> other) const override
+		{
+			other->SetArray(name, values.data(), (int)values.size());
+		}
+
+	private:
+		std::vector<_t> values;
 	};
 
 	std::unordered_map<std::string, r<IParam>> m_params;

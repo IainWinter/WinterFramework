@@ -130,8 +130,8 @@ mat4 Transform::World() const
 	mat4 world = mat4(1.f);
 
 	world = glm::translate(world, position);
-	world = glm::scale    (world, scale);
 	world = glm::rotate   (world, angle(rotation), axis(rotation));
+	world = glm::scale    (world, scale);
 
 	return world;
 }

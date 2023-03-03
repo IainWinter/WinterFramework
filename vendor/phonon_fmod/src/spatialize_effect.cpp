@@ -1017,11 +1017,6 @@ FMOD_RESULT F_CALL process(FMOD_DSP_STATE* state,
                     gNewReflectionMixerWritten = false;
                 }
 
-                if (reflectionParams.irSize == 96000)
-                {
-                    printf("From FMOD\n");
-                }
-
                 iplReflectionEffectApply(effect->reflectionEffect, &reflectionParams, &effect->monoBuffer, &effect->reflectionsBuffer, gReflectionMixer[0]);
 
                 if (gSimulationSettings.reflectionType != IPL_REFLECTIONEFFECTTYPE_TAN && !gReflectionMixer[0])

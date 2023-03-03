@@ -17,6 +17,10 @@ void Material::Set(const std::string& name, const glm::fmat4& x) { _Set(name, x)
 void Material::Set(const std::string& name, const Color& color)  { _Set(name, color);   };
 void Material::Set(const std::string& name, r<Texture> texture)  { _Set(name, texture); }
 
+void Material::SetArray(const std::string& name, const int* x, int count) { _SetArray(name, x, count); }
+void Material::SetArray(const std::string& name, const u32* x, int count) { _SetArray(name, x, count); }
+void Material::SetArray(const std::string& name, const f32* x, int count) { _SetArray(name, x, count); }
+
 void Material::SetShader(r<ShaderProgram> program)
 {
 	m_program = program;

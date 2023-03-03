@@ -76,7 +76,7 @@ void SteamAudio::Init()
 	simulationSettings.maxNumRays = 4096;
 	simulationSettings.numDiffuseSamples = 32;
 	simulationSettings.maxDuration = 2.0f;
-	simulationSettings.maxOrder = 1;
+	simulationSettings.maxOrder = 2;
 	simulationSettings.maxNumSources = 8;
 	simulationSettings.numThreads = 2;
 	simulationSettings.samplingRate = audioSettings.samplingRate;
@@ -137,7 +137,7 @@ void SteamAudio::RunSimulation()
     sharedReflection.duration = 1.05;
     sharedReflection.numRays = 3000;
     sharedReflection.numBounces = 5;
-    sharedReflection.irradianceMinDistance = .1f;
+    sharedReflection.irradianceMinDistance = .5f;
     sharedReflection.order = 1;
 
     iplSimulatorSetSharedInputs(m_simulator, IPL_SIMULATIONFLAGS_DIRECT, &sharedDirect);

@@ -705,6 +705,10 @@ struct IHasMaterialProperties
 
 	// auto sends texture to device
 	virtual void Set(const std::string& name, r<Texture> texture) = 0;
+
+	virtual void SetArray(const std::string& name, const int* x, int count) = 0;
+	virtual void SetArray(const std::string& name, const u32* x, int count) = 0;
+	virtual void SetArray(const std::string& name, const f32* x, int count) = 0;
 };
 
 struct ShaderProgram : IDeviceObject, IHasMaterialProperties
@@ -757,6 +761,10 @@ public:
 	// auto sends texture to device
     void Set(const std::string& name, r<Texture> texture);
 	void Set(const std::string& name, Texture& texture);
+
+	void SetArray(const std::string& name, const int* x, int count);
+	void SetArray(const std::string& name, const u32* x, int count);
+	void SetArray(const std::string& name, const f32* x, int count);
 
 // interface
 

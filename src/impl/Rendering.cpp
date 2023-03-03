@@ -996,6 +996,21 @@ void ShaderProgram::Set(const std::string& name, r<Texture> texture)
     Set(name, *texture);
 }
 
+void ShaderProgram::SetArray(const std::string& name, const int* x, int count)
+{
+	gl(glUniform1iv(gl_location(name), count, (int*)&x));
+}
+
+void ShaderProgram::SetArray(const std::string& name, const u32* x, int count)
+{
+	gl(glUniform1uiv(gl_location(name), count, (u32*)&x));
+}
+
+void ShaderProgram::SetArray(const std::string& name, const f32* x, int count)
+{
+	gl(glUniform1fv(gl_location(name), count, (f32*)&x));
+}
+
 void ShaderProgram::Set(const std::string& name, Texture& texture)
 {
 	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
