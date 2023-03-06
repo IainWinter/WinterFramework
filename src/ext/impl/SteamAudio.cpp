@@ -4,22 +4,7 @@
 #include "phonon_fmod/steamaudio_fmod.h"
 #include "phonon_fmod/dsp_names.h"
 
-// Some logging and conversion functions
-
-bool sa(IPLerror result);
-void steam_audio_log(IPLLogLevel level, const char* log);
-IPLVector3 tov3(vec3 v);
-IPLCoordinateSpace3 tocs(vec3 v);
-
-SteamAudio::SteamAudio(AudioWorld& audio)
-	: m_audio     (audio)
-	, m_steam     (nullptr)
-	, m_simulator (nullptr)
-	, m_scene     (nullptr)
-	, m_listener  (nullptr)
-{
-	m_listenerPosition = vec3(0.f);
-}
+// commonly used flags 
 
 IPLSimulationFlags IPL_DIRECT_AND_REFLECT = (IPLSimulationFlags)(
 	  IPL_SIMULATIONFLAGS_DIRECT
@@ -40,6 +25,23 @@ IPLDirectSimulationFlags IPL_OCCL_TRAN_DIRECT = (IPLDirectSimulationFlags)(
 	  IPL_DIRECTSIMULATIONFLAGS_OCCLUSION
 	| IPL_DIRECTSIMULATIONFLAGS_TRANSMISSION
 );
+
+// Some logging and conversion functions
+
+bool sa(IPLerror result);
+void steam_audio_log(IPLLogLevel level, const char* log);
+IPLVector3 tov3(vec3 v);
+IPLCoordinateSpace3 tocs(vec3 v);
+
+SteamAudio::SteamAudio(AudioWorld& audio)
+	: m_audio     (audio)
+	, m_steam     (nullptr)
+	, m_simulator (nullptr)
+	, m_scene     (nullptr)
+	, m_listener  (nullptr)
+{
+	m_listenerPosition = vec3(0.f);
+}
 
 void SteamAudio::Init()
 {
@@ -147,23 +149,7 @@ void SteamAudio::RunSimulation()
 
 	for (SteamAudioSource& source : m_simulateDirect)
 	{
-		IPLSource ptr = source.GetSource();
-
-		IPLCoordinateSpace3 sourcePos = tocs(source.GetProps3D().position);
-		
-		IPLSimulationInputs inputsDirect = {};
-		inputsDirect.flags = IPL_SIMULATIONFLAGS_DIRECT;
-		inputsDirect.directFlags = IPL_OCCL_TRAN_DIRECT;
-		inputsDirect.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
-		inputsDirect.source = sourcePos;
-
-		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect); 
-
-		IPLSimulationInputs inputsReflection = {};
-		inputsReflection.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
-		inputsReflection.source = sourcePos;
-
-		iplSourceSetInputs(ptr, IPL_SIMULATIONFLAGS_REFLECTIONS, &inputsReflection);
+		source._UpdateSourceInputs();
 	}
 
 	// Run simulations
@@ -175,12 +161,7 @@ void SteamAudio::RunSimulation()
 
 	for (SteamAudioSource& source : m_simulateDirect)
 	{
-		IPLSource ptr = source.GetSource();
-
-		// flags for 'simulated-defined' are set in FMOD Studio
-
-		source.SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);		
-		source.SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &ptr, sizeof(IPLSource*));
+		source._UpdateDSPParams();
 	}
 }
 
@@ -195,27 +176,13 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 	iplSourceCreate(m_simulator, &sourceSettings, &source);
 	iplSourceAdd(source, m_simulator);
 
-	SteamAudioSource sas = SteamAudioSource(audio, source);
+	SteamAudioSource sas = SteamAudioSource(audio, source, this);
 	m_simulateDirect.push_back(sas);
 
 	return sas;
 }
 
-void SteamAudio::DestroySource(SteamAudioSource& source)
-{
-	// impl this
-
-	//m_simulateDirect.erase(source);
-
-	//IPLSource s = source.GetSource();
-
-	//iplSourceRemove(s, m_simulator);
-	//iplSourceRelease(&s);
-	//source.Destroy();
-	//source.ResetSource();
-}
-
-void SteamAudio::CreateStaticMesh(const Mesh& _mesh)
+SteamAudioGeometry SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 {
 	// Copy the mesh into the phonon format
 
@@ -254,6 +221,8 @@ void SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 
 	iplStaticMeshCreate(m_scene, &meshSettings, &mesh);
 	iplStaticMeshAdd(mesh, m_scene);
+
+	return SteamAudioGeometry(mesh, this);
 }
 
 void SteamAudio::SetListenerPosition(vec3 position)
@@ -261,24 +230,120 @@ void SteamAudio::SetListenerPosition(vec3 position)
 	m_listenerPosition = position;
 }
 
+void SteamAudio::_RemoveSource(_IPLSource_t* source)
+{
+	auto itr = std::find_if(
+		m_simulateDirect.begin(),
+		m_simulateDirect.end(),
+		[source](const SteamAudioSource& x) { return x._IsSource(source); }
+	);
+
+	if (itr == m_simulateDirect.end())
+	{
+		log_audio("w~Tried to remove a source that does not exist %p", source);
+		return;
+	}
+
+	iplSourceRemove(source, m_simulator);
+	iplSourceRelease(&source);
+
+	m_simulateDirect.erase(itr);
+}
+
+void SteamAudio::_RemoveGeometry(_IPLStaticMesh_t* geometry)
+{
+	iplStaticMeshRemove(geometry, m_scene);
+	iplStaticMeshRelease(&geometry);
+}
+
 SteamAudioSource::SteamAudioSource()
 	: Audio    ()
 	, m_source (nullptr)
+	, m_world  (nullptr)
 {}
 
-SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source)
+SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source, SteamAudio* world)
 	: Audio    (audio)
 	, m_source (source)
+	, m_world  (world)
 {}
 
-_IPLSource_t* SteamAudioSource::GetSource()
+void SteamAudioSource::_UpdateSourceInputs()
 {
-	return m_source;
+	// May only need to do this once, and only override the set 3d props functions in audio
+	// to set the position?
+
+	// same with dsp params, might be a 1 time thing at the start, but has to be after the
+	// audio is started, so its async
+
+	IPLCoordinateSpace3 sourcePos = tocs(GetProps3D().position);
+		
+	IPLSimulationInputs inputsDirect = {};
+	inputsDirect.flags = IPL_SIMULATIONFLAGS_DIRECT;
+	inputsDirect.directFlags = IPL_OCCL_TRAN_DIRECT;
+	inputsDirect.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
+	inputsDirect.source = sourcePos;
+
+	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect); 
+
+	IPLSimulationInputs inputsReflection = {};
+	inputsReflection.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;
+	inputsReflection.source = sourcePos;
+
+	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_REFLECTIONS, &inputsReflection);
 }
 
-void SteamAudioSource::ResetSource()
+void SteamAudioSource::_UpdateDSPParams()
 {
+	// flags for 'simulated-defined' are set in FMOD Studio
+
+	SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);
+	SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &m_source, sizeof(IPLSource*));
+}
+
+bool SteamAudioSource::_IsSource(_IPLSource_t* source) const
+{
+	return m_source == source;
+}
+
+void SteamAudioSource::Destroy()
+{
+	if (!m_source || !m_world)
+	{
+		log_audio("e~Tried to destroy null SteamAudioSource");
+		return;
+	}
+
+	m_world->_RemoveSource(m_source);
+
 	m_source = nullptr;
+	m_world = nullptr;
+
+	Audio::Destroy();
+}
+
+SteamAudioGeometry::SteamAudioGeometry()
+	: m_mesh  (nullptr)
+	, m_world (nullptr)
+{}
+
+SteamAudioGeometry::SteamAudioGeometry(_IPLStaticMesh_t* mesh, SteamAudio* world)
+	: m_mesh  (mesh)
+	, m_world (world)
+{}
+
+void SteamAudioGeometry::Destroy()
+{
+	if (!m_mesh || !m_world)
+	{
+		log_audio("e~Tried to destroy null SteamAudioGeometry");
+		return;
+	}
+
+	m_world->_RemoveGeometry(m_mesh);
+
+	m_mesh = nullptr;
+	m_world = nullptr;
 }
 
 bool sa(IPLerror result)

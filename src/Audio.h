@@ -101,7 +101,7 @@ public:
 	Audio& Stop();
 
 	// stops, then frees the audio instance
-	void Destroy();
+	virtual void Destroy();
 
 	bool IsAlive() const;
 	bool IsPlaying() const;
