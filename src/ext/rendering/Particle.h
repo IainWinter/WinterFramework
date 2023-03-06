@@ -228,7 +228,7 @@ struct ParticleEmitter
 
 	bool enableAutoEmit = true;
 
-	void AddSpawner(Particle particle, float weight, std::function<void(Entity)> onCreate = {})
+	void AddSpawner(Particle particle, float weight = 1.f, std::function<void(Entity)> onCreate = {})
 	{
 		spawners.push_back({ particle, weight, onCreate });
 	}

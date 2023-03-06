@@ -194,6 +194,8 @@ public:
 	void ExecuteDeferdDeletions();
 	void Clear();
 
+	int NumberOfEntities() const;
+
 	std::vector<Entity> GetAllEntities();
 
 	entt::registry& entt() { return m_registry; }

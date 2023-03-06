@@ -43,6 +43,11 @@ void EntityWorld::Clear()
 	m_registry.clear();
 }
 
+int EntityWorld::NumberOfEntities() const
+{
+	return (int)m_registry.size();
+}
+
 std::vector<Entity> EntityWorld::GetAllEntities()
 {
 	std::vector<Entity> entities;

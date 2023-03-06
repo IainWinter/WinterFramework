@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "util/context.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <array>
 
 //
@@ -113,6 +114,9 @@ namespace Input
 		// raw states
 		std::unordered_map<int, float> State;
 
+		// once states
+		std::unordered_set<InputName> OnceButtonIsDown;
+
 		// for mapping mouse into viewport
 		vec2 ViewportMin;
 		vec2 ViewportSize;
@@ -128,12 +132,16 @@ namespace Input
 	float GetButton(const InputName& button);
 	vec2 GetAxis(const InputName& axis);
 
-	bool AxisExists(const InputName& axis);
-	bool GroupAxisExists(const InputName& axis);
+	// returns true the first time a button is true
+	// and false until it is released and pressed again
+	bool Once(const InputName& button);
 
 	//
 	//	Creating axes
 	//
+
+	bool AxisExists(const InputName& axis);
+	bool GroupAxisExists(const InputName& axis);
 
 	InputAxis& CreateAxis(const InputName& name);
 	AxisGroup& CreateGroupAxis(const InputName& name);

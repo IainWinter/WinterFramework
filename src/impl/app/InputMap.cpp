@@ -290,6 +290,28 @@ namespace Input
 		return sum;
 	}
 
+	bool Once(const InputName& button)
+	{
+		bool down = GetButton(button) > 0.f;
+
+		if (!down) // If button isn't down, clear state
+		{
+			ctx->OnceButtonIsDown.erase(button);
+			return false;
+		}
+
+		// Button is down
+
+		if (ctx->OnceButtonIsDown.count(button) != 0) // If was already down
+		{
+			return false;
+		}
+
+		ctx->OnceButtonIsDown.insert(button);
+
+		return true;
+	}
+
 	bool AxisExists(const InputName& axis)
 	{
 		return ctx->Axes.find(axis) != ctx->Axes.end();

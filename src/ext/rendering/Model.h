@@ -104,13 +104,16 @@ private:
 	r<ShaderProgram> m_program;
 };
 
+
+// keep materials, but should prob just use ecs to store the models cus its already recursive with transforms
+// need to define a system of how they would be linked and maybe do a transform cache type thing (functional style state update would do this for free)
+
 struct MeshReference
 {
 	r<Mesh> mesh;
 	r<Material> material;
 
-	// Gets applied ontop of the overall model, unused rn
-	//Transform localTransform;
+	Transform localTransform;
 };
 
 // A collection of meshes with material properties
