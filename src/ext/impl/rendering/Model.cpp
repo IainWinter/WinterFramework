@@ -3,11 +3,9 @@
 void Material::Set(const std::string& name, const int& x)        { _Set(name, x);       };
 void Material::Set(const std::string& name, const u32& x)        { _Set(name, x);       };
 void Material::Set(const std::string& name, const f32& x)        { _Set(name, x);       };
-void Material::Set(const std::string& name, const glm::fvec1& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::fvec2& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::fvec3& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::fvec4& x) { _Set(name, x);       };
-void Material::Set(const std::string& name, const glm::ivec1& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::ivec2& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::ivec3& x) { _Set(name, x);       };
 void Material::Set(const std::string& name, const glm::ivec4& x) { _Set(name, x);       };

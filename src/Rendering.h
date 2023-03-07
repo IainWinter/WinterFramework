@@ -1,8 +1,11 @@
 #pragma once
 
-#include "Common.h"
+#include "util/ref.h"
+#include "util/Color.h"
 #include "util/context.h"
+#include "util/ArrayView.h"
 #include <string>
+#include <vector>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -688,11 +691,9 @@ struct IHasMaterialProperties
 	virtual void Set(const std::string& name, const   int& x) = 0;
 	virtual void Set(const std::string& name, const   u32& x) = 0;
 	virtual void Set(const std::string& name, const   f32& x) = 0;
-	virtual void Set(const std::string& name, const fvec1& x) = 0;
 	virtual void Set(const std::string& name, const fvec2& x) = 0;
 	virtual void Set(const std::string& name, const fvec3& x) = 0;
 	virtual void Set(const std::string& name, const fvec4& x) = 0;
-	virtual void Set(const std::string& name, const ivec1& x) = 0;
 	virtual void Set(const std::string& name, const ivec2& x) = 0;
 	virtual void Set(const std::string& name, const ivec3& x) = 0;
 	virtual void Set(const std::string& name, const ivec4& x) = 0;
@@ -743,11 +744,9 @@ public:
 	void Set(const std::string& name, const   int& x) override;
 	void Set(const std::string& name, const   u32& x) override;
 	void Set(const std::string& name, const   f32& x) override;
-	void Set(const std::string& name, const fvec1& x) override;
 	void Set(const std::string& name, const fvec2& x) override;
 	void Set(const std::string& name, const fvec3& x) override;
 	void Set(const std::string& name, const fvec4& x) override;
-	void Set(const std::string& name, const ivec1& x) override;
 	void Set(const std::string& name, const ivec2& x) override;
 	void Set(const std::string& name, const ivec3& x) override;
 	void Set(const std::string& name, const ivec4& x) override;

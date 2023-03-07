@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.h"
+#include "util/Transform.h"
 #include "ext/rendering/TextureAtlas.h"
 
 struct Particle

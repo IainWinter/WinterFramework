@@ -68,8 +68,10 @@ struct graph
 			if (adj.count(i))
 			for (int next : adj.at(i))
 			{
-				above.push({ next, d + 1 });
-				depth = max(depth, d + 1);
+                int d1 = d + 1;
+                
+				above.push({ next, d1 });
+                depth = d1 > depth ? d1 : depth;
 			}
 		}
 

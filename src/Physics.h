@@ -1,8 +1,13 @@
 #pragma once
 
-#include "Common.h"
 #include "Entity.h"
+
 #include "util/function.h"
+#include "util/ArrayView.h"
+#include "util/math.h"
+#include "util/ref.h"
+#include "util/stl.h"
+#include "util/Transform.h"
 
 // may be able to fwd
 #include "box2d/box2d.h"

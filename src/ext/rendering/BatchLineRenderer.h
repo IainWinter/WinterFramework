@@ -2,6 +2,8 @@
 
 #include "Rendering.h"
 #include "ext/rendering/Camera.h"
+#include "util/Transform.h"
+#include "util/Transform3D.h"
 #include <unordered_map>
 
 // could use major improvments !!!

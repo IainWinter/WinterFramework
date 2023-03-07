@@ -386,7 +386,7 @@ FMOD_RESULT F_CALL release(FMOD_DSP_STATE* state)
     iplSourceRelease(&effect->simulationSource[0]);
     iplSourceRelease(&effect->simulationSource[1]);
 
-    delete state->plugindata;
+    delete (State*)state->plugindata;
 
     return FMOD_OK;
 }

@@ -33,7 +33,7 @@ void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& co
 {
 	// this has to work like this because rotation in Transform2D -> 3D is broken
 
-	glm::mat4 world = transform.World();
+	mat4 world = transform.World();
 	vec4 ca = colorA.as_v4();
 	vec4 cb = colorB.as_v4();
 
@@ -50,7 +50,7 @@ void BatchLineRenderer::SubmitLine(const vec2& a, const vec2& b, const Color& co
 
 void BatchLineRenderer::SubmitLine(const vec3& a, const vec3& b, const Color& colorA, const Color& colorB, const Transform& transform)
 {
-	glm::mat4 world = transform.World();
+	mat4 world = transform.World();
 	vec4 ca = colorA.as_v4();
 	vec4 cb = colorB.as_v4();
 

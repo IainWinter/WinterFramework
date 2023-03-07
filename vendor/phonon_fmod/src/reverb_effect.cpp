@@ -161,7 +161,7 @@ FMOD_RESULT F_CALL release(FMOD_DSP_STATE* state)
     iplSourceRelease(&gReverbSource[0]);
     iplSourceRelease(&gReverbSource[1]);
 
-    delete state->plugindata;
+    delete (State*)state->plugindata;
 
     return FMOD_OK;
 }

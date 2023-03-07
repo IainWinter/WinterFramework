@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include "glm/gtx/quaternion.hpp"
 
 struct Camera
 {

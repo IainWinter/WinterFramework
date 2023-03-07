@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rendering.h"
+#include "util/Transform.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Sprite.h"
 #include <unordered_map>

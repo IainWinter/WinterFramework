@@ -159,7 +159,7 @@ FMOD_RESULT F_CALL release(FMOD_DSP_STATE* state)
     iplReflectionMixerRelease(&effect->reflectionMixer);
     iplAmbisonicsDecodeEffectRelease(&effect->ambisonicsEffect);
 
-    delete state->plugindata;
+    delete (State*)state->plugindata;
 
     return FMOD_OK;
 }

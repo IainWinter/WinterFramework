@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rendering.h"
+#include "util/Transform3D.h"
 
 class Material : public IHasMaterialProperties
 {
@@ -8,11 +9,9 @@ public:
 	void Set(const std::string& name, const int& x) override;
 	void Set(const std::string& name, const u32& x) override;
 	void Set(const std::string& name, const f32& x) override;
-	void Set(const std::string& name, const glm::fvec1& x) override;
 	void Set(const std::string& name, const glm::fvec2& x) override;
 	void Set(const std::string& name, const glm::fvec3& x) override;
 	void Set(const std::string& name, const glm::fvec4& x) override;
-	void Set(const std::string& name, const glm::ivec1& x) override;
 	void Set(const std::string& name, const glm::ivec2& x) override;
 	void Set(const std::string& name, const glm::ivec3& x) override;
 	void Set(const std::string& name, const glm::ivec4& x) override;

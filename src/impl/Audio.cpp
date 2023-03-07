@@ -810,6 +810,7 @@ void Audio::ListAllDspParamNames()
 					break;
 
 				case FMOD_DSP_PARAMETER_TYPE_DATA:
+                {
 					typeName = "DATA";
 					void* ptr = nullptr;
 					unsigned int size = 0;
@@ -818,6 +819,10 @@ void Audio::ListAllDspParamNames()
 					else
 						log_audio("    %2d -> (%s, %d) %s = failed to get", i, typeName, desc->datadesc.datatype, desc->name);
 					break;
+                }
+                    
+                default:
+                    break;
 			}
 		}
 	}

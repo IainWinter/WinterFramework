@@ -192,7 +192,7 @@ bool ShaderConsumer::IsWhitespace() const
 bool ShaderConsumer::IsNewline() const
 {
     return *current == '\n'
-        || *current == '\n\r'
+        //|| *current == '\r\n'
         || *current == '\r';
 }
 

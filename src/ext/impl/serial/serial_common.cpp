@@ -1,14 +1,15 @@
 #include "ext/serial/serial_common.h"
 #include "ext/serial/serial.h"
 
-#include "Common.h"
-#include "Physics.h"
-
 #include "ext/rendering/Sprite.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Particle.h"
 
 #include "ext/EntityPrefab.h"
+
+#include "util/AABB.h"
+
+#include "Physics.h"
 
 #include <string>
 #include <vector>
