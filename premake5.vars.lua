@@ -60,14 +60,24 @@ libdir_vendor_mac_arm64 =
 {
 	path.getabsolute("vendor/_shared/lib/mac_arm64"),
 
-	"/opt/homebrew/Cellar/sdl2/2.0.22/lib",
-	"/opt/homebrew/Cellar/assimp/5.2.5/lib/"
+	"/opt/homebrew/lib"
 }
 
-include_vendor_mac =
+libdir_vendor_mac_x86 =
 {
-	"/opt/homebrew/Cellar/sdl2/2.0.22/include",
-	"/opt/homebrew/Cellar/assimp/5.2.5/include/"
+	path.getabsolute("vendor/_shared/lib/mac_arm64"),
+
+	"/usr/local/homebrew/lib"
+}
+
+include_vendor_mac_arm64 =
+{
+	"/opt/homebrew/include"
+}
+
+include_vendor_mac_x86 =
+{
+	"/usr/local/include"
 }
 
 libdir_vendor_linux_arm64 =

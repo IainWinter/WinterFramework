@@ -50,8 +50,9 @@ project "WinterFramework"
 		buildoptions ("/bigobj /FS")
 
 	filter "system:macosx"
-		libdirs (libdir_vendor_mac_arm64)
-		includedirs (include_vendor_mac)
+		libdirs (libdir_vendor_mac_x86)
+		includedirs (include_vendor_mac_x86)
+			
 		defines (defines_mac)
 
 	filter "system:linux"
