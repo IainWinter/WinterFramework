@@ -9,7 +9,7 @@
 #include <mach-o/dyld.h>
 #endif
 
-#include <phonon_interfaces.h>
+#include "phonon_interfaces.h"
 
 // --------------------------------------------------------------------------------------------------------------------
 // Global State

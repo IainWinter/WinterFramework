@@ -137,7 +137,7 @@ void Library::getLoadedBinaryPath(const char* name,
                                   int maxPathLength)
 {
     getLoadingBinaryPath(loadedBinaryPath, maxPathLength);
-    strncat_s(loadedBinaryPath, maxPathLength, name, strlen(name));
+    strncat(loadedBinaryPath, name, strlen(name));
 }
 
 #if defined(IPL_OS_WINDOWS)

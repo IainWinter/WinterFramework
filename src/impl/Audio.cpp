@@ -710,7 +710,7 @@ Audio& Audio::SetParamDSP(int dspIndex, int paramIndex, bool value)
 		return *this;
 	}
 
-	log_audio("i~Set dsp %d integer boolean %d to %s", dspIndex, paramIndex, value ? "true" : false);
+	log_audio("i~Set dsp %d integer boolean %d to %s", dspIndex, paramIndex, value ? "true" : "false");
 
 	return *this;
 }

@@ -16,7 +16,7 @@
 #elif defined(IPL_OS_MACOSX)
 #endif
 
-#include <fmod/fmod.hpp>
+#include "fmod/fmod.hpp"
 
 #include "phonon/phonon.h"
 

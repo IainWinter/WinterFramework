@@ -740,31 +740,31 @@ public:
 
 	ShaderProgram& Use();
 
-	void Set(const std::string& name, const   int& x);
-	void Set(const std::string& name, const   u32& x);
-	void Set(const std::string& name, const   f32& x);
-	void Set(const std::string& name, const fvec1& x);
-	void Set(const std::string& name, const fvec2& x);
-	void Set(const std::string& name, const fvec3& x);
-	void Set(const std::string& name, const fvec4& x);
-	void Set(const std::string& name, const ivec1& x);
-	void Set(const std::string& name, const ivec2& x);
-	void Set(const std::string& name, const ivec3& x);
-	void Set(const std::string& name, const ivec4& x);
-	void Set(const std::string& name, const fmat2& x);
-	void Set(const std::string& name, const fmat3& x);
-	void Set(const std::string& name, const fmat4& x);
+	void Set(const std::string& name, const   int& x) override;
+	void Set(const std::string& name, const   u32& x) override;
+	void Set(const std::string& name, const   f32& x) override;
+	void Set(const std::string& name, const fvec1& x) override;
+	void Set(const std::string& name, const fvec2& x) override;
+	void Set(const std::string& name, const fvec3& x) override;
+	void Set(const std::string& name, const fvec4& x) override;
+	void Set(const std::string& name, const ivec1& x) override;
+	void Set(const std::string& name, const ivec2& x) override;
+	void Set(const std::string& name, const ivec3& x) override;
+	void Set(const std::string& name, const ivec4& x) override;
+	void Set(const std::string& name, const fmat2& x) override;
+	void Set(const std::string& name, const fmat3& x) override;
+	void Set(const std::string& name, const fmat4& x) override;
     
     // convert from Color to vec4
-	void Set(const std::string& name, const Color& color);
+	void Set(const std::string& name, const Color& color) override;
 
 	// auto sends texture to device
-    void Set(const std::string& name, r<Texture> texture);
+    void Set(const std::string& name, r<Texture> texture) override;
 	void Set(const std::string& name, Texture& texture);
 
-	void SetArray(const std::string& name, const int* x, int count);
-	void SetArray(const std::string& name, const u32* x, int count);
-	void SetArray(const std::string& name, const f32* x, int count);
+	void SetArray(const std::string& name, const int* x, int count) override;
+	void SetArray(const std::string& name, const u32* x, int count) override;
+	void SetArray(const std::string& name, const f32* x, int count) override;
 
 // interface
 
