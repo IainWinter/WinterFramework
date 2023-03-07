@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Defines.h"
+#include "util/typedef.h"
 #include "Log.h"
 
 #include "entt/entity/registry.hpp"
