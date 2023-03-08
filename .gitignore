@@ -1,6 +1,7 @@
 .git
 .vs
 /lib
+/build
 *.sln
 *.DS_Store
 /vendor/box2d/lib

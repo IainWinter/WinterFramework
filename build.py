@@ -27,4 +27,4 @@ elif (buildType == "d" or buildType == "debug"):
 else:
     panic_help()
 
-os.system("make");
+# os.system("make");

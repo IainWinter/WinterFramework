@@ -136,7 +136,7 @@ void SteamAudio::RunSimulation()
 
     IPLSimulationSharedInputs sharedReflection = {};
     sharedReflection.listener = listenerPos;
-    sharedReflection.duration = 1.05;
+    sharedReflection.duration = 1.05f;
     sharedReflection.numRays = 3000;
     sharedReflection.numBounces = 5;
     sharedReflection.irradianceMinDistance = .5f;
@@ -189,7 +189,7 @@ SteamAudioGeometry SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 	auto verts = _mesh.View<vec3>(Mesh::aPosition);
 	auto index = _mesh.View<int>(Mesh::aIndexBuffer);
 
-	int triCount = index.size() / 3;
+	int triCount = (int)index.size() / 3;
 
 	IPLMaterial material = { 0.13f, 0.20f, 0.24f, 0.05f, 0.015f, 0.002f, 0.001f };
 
@@ -199,7 +199,7 @@ SteamAudioGeometry SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 	meshSettings.numMaterials = 1;
 
 	meshSettings.vertices = (IPLVector3*)verts.data();
-	meshSettings.numVertices = verts.size();
+	meshSettings.numVertices = (IPLint32)verts.size();
 
 	meshSettings.materials = new IPLMaterial[1]{ material };
 

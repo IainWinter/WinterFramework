@@ -23,7 +23,7 @@ struct graph
 	{
 		nodes.push_back(node);
 
-		int i = nodes.size() - 1;
+		int i = (int)nodes.size() - 1;
 
 		index[node] = i;
 		return i;

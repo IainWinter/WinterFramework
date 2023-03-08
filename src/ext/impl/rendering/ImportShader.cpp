@@ -198,7 +198,7 @@ bool ShaderConsumer::IsNewline() const
 
 int ShaderConsumer::IsString(const char* str) const
 {
-    int length = strlen(str);
+    int length = (int)strlen(str);
     for (int i = 0; i < length; i++)
     {
         if (current[i] != str[i])

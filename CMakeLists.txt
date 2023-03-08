@@ -9,6 +9,18 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
 
 #
+# Set build file settings
+#
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  add_compile_options(/bigobj)
+else ()
+  add_compile_options(-Wa,-mbig-obj)
+endif ()
+
+#
 # Project
 #
 
@@ -32,12 +44,24 @@ include_directories(./vendor/hitbox/include)
 include_directories(./vendor/imgui/include)
 include_directories(./vendor/phonon_fmod/include)
 
-include_directories(/opt/homebrew/include)
+IF (WIN32)
+	include_directories(./vendor/_shared/include/_win)
+ELSE()
+	include_directories(/opt/homebrew/include)
+ENDIF()
+
 
 #
 # Definitions
 #
+
 add_compile_definitions(ASSET_ROOT_PATH)
+
+if (WIN32)
+	add_compile_definitions(IPL_OS_WINDOWS)
+elseif (APPLE)
+	add_compile_definitions(IPL_OS_MACOSX)
+endif ()
 
 #
 # Output
