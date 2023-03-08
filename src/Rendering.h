@@ -14,29 +14,29 @@ typedef unsigned int GLenum;
 typedef unsigned int GLuint;
 typedef int GLint;
 
-// I want to create the simplest graphics api that hides as much as possible away
-// I only need simple Texture/Mesh/Shader, I dont even need materials
+// I want to create the simplest graphics API that hides as much as possible away
+// I only need simple Texture/Mesh/Shader, I don't even need materials
 // user should be able to understand where the memory is without needing to know the specifics of each type
-//   I like how cuda does it with host and device
-// Each thing could be interfaces with a graphics objeect type, might make things more? or less confusing
-// This should just be a wrapper, I dont want to cover everything, so expose underlying library
+//   I like how CUDA does it with host and device
+// Each thing could be interfaces with a graphics object type, might make things more? or less confusing
+// This should just be a wrapper, I don't want to cover everything, so expose underlying library
 
 // Constructor  ( create host memory / load from files )
 // SendToDevice ( create device memory and copy over) [free host if static]
 // Cleanup      ( destroy host and device memory if they exists)
 
 // you cannot: SendToDevice(), FreeHost(), SendToHost()
-// Sending to host requires it is never freeed, and therefore not static
+// Sending to host requires it is never freed, and therefore not static
 
 // ended up using RAII, using shared pointers for most things is really what you want to instance
 
-// todo: tink about how the container objecst (Target/Mesh) should work with FreeHost/FreeDevice, should they free their Buffers?
-//			Seems like they shouldnt because they could be instanced
+// todo: think about how the container objects (Target/Mesh) should work with FreeHost/FreeDevice, should they free their Buffers?
+//			Seems like they shouldn't because they could be instanced
 // 
-//	Currently if a container's host is freeed and a buffer is static, it will be freeed. This works because if something is atatic then its host shouldnt be read
-//			  if a container's device is freeed nothing will happen to the buffers, this will wait until the lifetime of the object runs out, or you manually iterate and remove them
-//						his works because two containers could want to use the same buffer, and if one dies the other shouldnt loose the buffer's device data, but once all lifetime are up
-//						then they will be automatically destroied.
+//	Currently if a container's host is freed and a buffer is static, it will be freed. This works because if something is static then its host shouldn't be read
+//			  if a container's device is freed nothing will happen to the buffers, this will wait until the lifetime of the object runs out, or you manually iterate and remove them
+//						his works because two containers could want to use the same buffer, and if one dies the other shouldn't loose the buffer's device data, but once all lifetime are up
+//						then they will be automatically destroyed.
 
 // todo: Texture cannot resize on device without having data on host...
 //			this is an issue because the memory on the host gets resized as well, which could be a big alloc & copy
@@ -83,7 +83,7 @@ public:
 
 	virtual bool OnHost()       const = 0; 
 	virtual bool OnDevice()     const = 0;
-	virtual int  DeviceHandle() const = 0;      // underlying opengl handle, useful for custom calls
+	virtual int  DeviceHandle() const = 0;      // underlying opening handle, useful for custom calls
 
 protected:
 	virtual void _FreeHost()         = 0;       // delete host memory
@@ -147,7 +147,7 @@ public:
 	//};
 
 private:
-	u8*          m_host            = nullptr; // deafult construction
+	u8*          m_host            = nullptr; // default construction
 	GLuint       m_device          = 0u;
 
 	int          m_width           = 0;
@@ -287,7 +287,7 @@ public:
 private:
 	using _attachments = std::unordered_map<AttachmentName, r<Texture>>;
 
-	_attachments m_attachments;        // deafult construction
+	_attachments m_attachments;        // default construction
 	GLuint       m_device       = 0;
 
 	int          m_width        = 0;
@@ -348,12 +348,12 @@ private:
 };
 
 // meshes are annoying
-// can have many many differnt setups
-// I am going to make the desision to spit each buffer into a seperate array so they can be appended
+// can have many different setups
+// I am going to make the decision to spit each buffer into a separate array so they can be appended
 // this is useful for a GenerateNormals function, which would add some buffers
 
 // so goal is to be able to add a buffer ONLY by typename
-// if vert attribs are a map, not an array, then I will store the device buffers as such
+// if vert attributes are a map, not an array, then I will store the device buffers as such
 
 struct Buffer : IDeviceObject
 {
@@ -371,7 +371,7 @@ private:
 	_data        m_host;
 	GLuint       m_device   = 0u;
 
-	int          m_length   = 0; // need length after host is freeed
+	int          m_length   = 0; // need length after host is freed
 	int          m_repeat   = 0;
 	ElementType  m_type     = eByte;
 
@@ -450,13 +450,13 @@ private:
 	Buffer& copy_into(const Buffer& copy);
 };
 
-// tihs allows you to get the number of elements and element type from some glm types
+// this allows you to get the number of elements and element type from some glm types
 
 template<typename _t>
 std::pair<int, Buffer::ElementType> get_element_type_info()
 {
 	Buffer::ElementType type;
-	int repeat = 1; // deafult
+	int repeat = 1; // default
 
 	constexpr bool isFloat = std::is_same<_t, float>::value;
 	constexpr bool isByte  = std::is_same<_t,  char>::value || std::is_same<_t, unsigned char>::value; // or bool?
@@ -481,15 +481,15 @@ std::pair<int, Buffer::ElementType> get_element_type_info()
 	if constexpr (isByte)  { type = Buffer::eByte;  }
 	if constexpr (isInt)   { type = Buffer::eInt; }
 
-	//assert(repeat <= 4 && "vec4 is max data allowed in one VA attrib");
-	// attribs now auto expand to handle this
+	//assert(repeat <= 4 && "vec4 is max data allowed in one VA attribute");
+	// attributes now auto expand to handle this
 
 	return { repeat, type };
 }
 
 // mesh data is a list of buffer objects bound together
 // by a vertex array
-// attribs in shaders need to be in the order of AttribName
+// attributes in shaders need to be in the order of AttribName
 
 struct Mesh : IDeviceObject
 {
@@ -525,7 +525,7 @@ public:
 	{
 		int instancedStride;
 		int offset;            // this is used if the buffer is larger than a vec4
-		int repeat;            // so each buffer knows how many repeats (buffer with 5 repeats) first attrib has 4, next has 1
+		int repeat;            // so each buffer knows how many repeats (buffer with 5 repeats) first attribute has 4, next has 1
 		bool normalized;
 	};
 
@@ -533,7 +533,7 @@ private:
 	using _buffers = std::unordered_map<AttribName, r<Buffer>>;
 	using _info    = std::unordered_map<AttribName, BufferInfo>;
 
-	_buffers     m_buffers;            // deafult construction
+	_buffers     m_buffers;            // default construction
 	_info        m_info;
 
 	GLuint       m_device      = 0;
@@ -585,9 +585,9 @@ public:
 	Mesh& SetInst(AttribName name, int instancedStride);
 
 	// set the byte offset of an attribute
-	// a single buffer can be bound to many attribs, this allows use of differnt parts of the data
-	// for each attrib
-	// max size for each attrib element is a vec4, so for a mat4, offsets are requires to use a single buffer
+	// a single buffer can be bound to many attributes, this allows use of different parts of the data
+	// for each attribute
+	// max size for each attribute element is a vec4, so for a mat4, offsets are requires to use a single buffer
 	Mesh& SetOffset(AttribName name, int offset);
 
 	// set if a buffer should be linked with normalization or not
@@ -596,7 +596,7 @@ public:
 // todo: design Add api better
 
 	// instances a buffer
-	// if buffer->Repeat() returns more than 4, the attribs past 'name' are also linked to this buffer
+	// if buffer->Repeat() returns more than 4, the attributes past 'name' are also linked to this buffer
 	// and their infos are set to reflect the offset inside each buffer element
 	Mesh& Add(AttribName name, int instancedStride, int forceRepeat, bool normalized, const r<Buffer>& buffer);
 
@@ -639,14 +639,14 @@ public:
 public:
 
 	// All these functions will skip buffers
-	// that dont meet assertion requirements
+	// that don't meet assertion requirements
 	
 	// OnHost gives no information about underlying buffers
 	// only if it contains any buffers
 	// this is to meet interface: SendToDevice frees static hosts
 	// then onhost would return false for when the mesh would try and call free host on itself
 	// little hackey
-	// might want to return true always just to hammer the point home that this func isnt what its ment to be
+	// might want to return true always just to hammer the point home that this func isn't what its meant to be
 
 	bool OnHost()       const override;
 	bool OnDevice()     const override;
@@ -725,7 +725,7 @@ public:
 private:
 	using _buffers = std::unordered_map<ShaderName, std::string>;
 	
-	_buffers     m_buffers;            // deafult construction
+	_buffers     m_buffers;            // default construction
 	GLuint       m_device   = 0;
 
 	int          m_slot     = 0;       // number of active texture slots

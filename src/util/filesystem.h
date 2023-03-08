@@ -29,6 +29,6 @@ namespace File
 //
 std::string _a(const std::string& assetPath);
 
-///  Convert a fullpath to a relitive path into the assets folder, if possible
+///  Convert a fullpath to a relative path into the assets folder, if possible
 ///
 std::string _ar(const std::string& fullpath);

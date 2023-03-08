@@ -52,7 +52,7 @@ struct ContactCallback : b2ContactListener
 		Entity entityA = FixtureToEntity(contact->GetFixtureA());
 		Entity entityB = FixtureToEntity(contact->GetFixtureB());
 
-		if (!entityA.IsAlive() || !entityB.IsAlive()) return; // when an entity is deleted in collision / midframe
+		if (!entityA.IsAlive() || !entityB.IsAlive()) return; // when an entity is deleted in collision / mid frame
 
 		Rigidbody2D& bodyA = entityA.Get<Rigidbody2D>();
 		Rigidbody2D& bodyB = entityB.Get<Rigidbody2D>();
@@ -163,7 +163,7 @@ Collider::Collider(ColliderType type)
 	: m_type(type)
 {
 	// all colliders have at least one attachment
-	// allow them to store a refernece to this
+	// allow them to store a reference to this
 
 	m_attachments.push_back(ColliderAttachment());
 }
@@ -190,7 +190,7 @@ Collider& Collider::SetDensity(float density, int attachment)
 
 	else
 	{
-		log_physics("w~Tried to set the density of an attachment that doesnt exist: "
+		log_physics("w~Tried to set the density of an attachment that doesn't exist: "
 			"%d. There are only %d on this body", attachment, m_attachments.size());
 	}
 
@@ -218,7 +218,7 @@ float Collider::GetDensity(int attachment) const
 
 	else
 	{
-		log_physics("w~Tried to get the density of an attachment that doesnt exist: "
+		log_physics("w~Tried to get the density of an attachment that doesn't exist: "
 			"%d. There are only %d on this body", attachment, m_attachments.size());
 	}
 
@@ -702,7 +702,7 @@ RayQueryResult PhysicsWorld::QueryRay(vec2 point, vec2 target) const
 	//  so I am going to change this to a simpler sort where only the closest is guaranteed to be
 	//  the first result
 	
-	// upon a perf test, I saw almost no differnce between a sort and a linear loop
+	// upon a perf test, I saw almost no difference between a sort and a linear loop
 	// prolly cus there are only a few elements per result
 
 	std::sort(

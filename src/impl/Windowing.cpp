@@ -54,7 +54,7 @@ void Window::Init()
 
 	gl(glClearColor(0.f, 0.f, 0.f, 0.f));
 
-	// sand breaks because this isnt setup
+	// sand breaks because this isn't setup
 	gl(glEnable(GL_DEPTH_TEST));
 
 	// enable transparency
@@ -302,7 +302,7 @@ Window& Window::ResizeViewport(int width, int height)
 	m_config.Width  = width;
 	m_config.Height = height;
 
-	if (m_opengl) // if opengl isnt init, then when window is first opened it will take the m_config size
+	if (m_opengl) // if opengl isn't init, then when window is first opened it will take the m_config size
 	{
 		gl(glViewport(0, 0, m_config.Width, m_config.Height));
 		log_window("d~Set viewport to %d %d", m_config.Width, m_config.Height);

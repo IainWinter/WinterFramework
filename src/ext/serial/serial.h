@@ -63,8 +63,8 @@ namespace meta
 	}
 }
 
-// ! This doesnt support pointers !
-// wrap in a std container and provide custom behaviour to your needs
+// ! This doesn't support pointers !
+// wrap in a std container and provide custom behavior to your needs
 
 namespace meta
 {
@@ -178,7 +178,7 @@ namespace meta
 	}
 
 	// represents a type, treats all data the same, ie. an int/float are a class with 0 members
-	// types with no members can have custom serializers so can still be saved/loaded
+	// types with no members can have custom serializes so can still be saved/loaded
 	//
 	class type
 	{
@@ -489,9 +489,9 @@ namespace meta
 			: m_storage (nullptr)
 		{}
 
-        // should add a const refernce 
+        // should add a const reference 
         
-		//	makes a refernce to instance
+		//	makes a reference to instance
 		// 
 		any(type* type, void* instance)
 		{
@@ -657,7 +657,7 @@ namespace meta
 			write_class(get_class<_t>(), (const void*)&value);
 		}
 
-		// create a temperary writer for custom data
+		// create a temporary writer for custom data
 		pseudo_writer pseudo();
 
 		//
@@ -721,7 +721,7 @@ namespace meta
 			read_class(meta::get_class<_t>(), &value);
 		}
 
-		// create a temperary reader for custom data
+		// create a temporary reader for custom data
 		pseudo_reader pseudo();
 
 		//
@@ -920,7 +920,7 @@ namespace meta
 	};
 
 	//
-	// default behaviour is to just write the value
+	// default behavior is to just write the value
 	// specialize these for custom types
 	//
 
@@ -1137,7 +1137,7 @@ namespace meta
 
 		// interface
 		
-		// this doesnt work because the vtable causes this function to be called in the dlls
+		// this doesn't work because the vtable causes this function to be called in the dlls
 		// stack >:(
 		type* _realloc() override
 		{
@@ -1376,16 +1376,16 @@ namespace meta
 
 		// mark this class as having a custom writer,
 		// this is needed for the serial_writers to pick up if the class has members
-		// but doesnt want default serialization behaviour
+		// but doesn't want default serialization behavior
 		describe<_t>& custom_write(const std::function<void(serial_writer*, const _t&)>& func)
 		{
 			if (m_current) m_current->set_custom_writer(func);
 			return *this;
 		}
 
-		// mark this class as having a custom readear,
+		// mark this class as having a custom reader,
 		// this is needed for the serial_readers to pick up if the class has members
-		// but doesnt want default deserialization behaviour
+		// but doesn't want default deserialization behavior
 		describe<_t>& custom_read(const std::function<void(serial_reader*, _t&)>& func)
 		{
 			if (m_current) m_current->set_custom_reader(func);

@@ -6,7 +6,7 @@
 #include "util/Transform3D.h"
 #include <unordered_map>
 
-// could use major improvments !!!
+// could use major improvements !!!
 // 
 // 1. see BatchSpriteRenderer most apply here
 

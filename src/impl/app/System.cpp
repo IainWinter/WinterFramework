@@ -87,7 +87,7 @@ SystemBase::SystemBase()
 
 SystemBase::~SystemBase()
 {
-	log_world("i~\tDestroied System %s", GetName());
+	log_world("i~\tDestroyed System %s", GetName());
 }
 
 bool SystemBase::GetInitState() const
@@ -282,7 +282,7 @@ World::~World()
 
 	m_bus.DetachFromParent();
 
-	log_world("i~Destroied World %s", GetName());
+	log_world("i~Destroyed World %s", GetName());
 }
 
 const std::vector<SystemBase*>& World::GetSystems() const
@@ -423,7 +423,7 @@ void World::Tick()
 	m_fixedTimeAcc += Time::DeltaTime();
 	if (m_fixedTimeAcc >= Time::FixedTime())
 	{
-		m_fixedTimeAcc = 0.f; // should subtract the fixed time, but that cuases runaway frame drops
+		m_fixedTimeAcc = 0.f; // should subtract the fixed time, but that causes runaway frame drops
 		TickFixed();
 	}
 

@@ -6,7 +6,7 @@
 inline Transform2D WorldTransform(const Entity& e, const Transform2D& transform)
 {
 	// end recursion on no transform
-	// this effectivly says that even if you are parented,
+	// this effectively says that even if you are parented,
 	// the parenting for position breaks at the first without a
 	// transform component
 	

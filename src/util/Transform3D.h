@@ -25,7 +25,7 @@ struct Transform
     //vec3 Forward() const; // todo
     //vec3 Right()   const;
 
-    // doesnt have interpolation yet...
+    // doesn't have interpolation yet...
 
     // might want to make this just a mode of a transform, aka have a flag for 2d or 3d mode
     // that will make the code cleaner, but for now this works. Its only used in the line renderer for the camera gizmo

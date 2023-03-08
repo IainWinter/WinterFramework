@@ -46,7 +46,7 @@ private:
 	// Config before we attach this to a body
 
 	r<b2FixtureDef> m_tempDef;   // owned
-	r<b2Shape>      m_tempShape; // owned, we also need this as the def doesnt own the shape ptr
+	r<b2Shape>      m_tempShape; // owned, we also need this as the def doesn't own the shape ptr
 
 public:
 	ColliderAttachment();
@@ -251,7 +251,7 @@ private:
 	b2BodyDef m_preinit;
     std::vector<b2Shape*> colliders;
     
-	// deafult value on each new collider, if the new collider had 0 density
+	// default value on each new collider, if the new collider had 0 density
 	float m_density;
 	bool m_collisionEnabled;
 
@@ -387,7 +387,7 @@ public:
 	PhysicsWorld(PhysicsWorld&& move) noexcept;
 	PhysicsWorld& operator=(PhysicsWorld&& move) noexcept;
 	
-	//  no copys
+	//  no copy
 	PhysicsWorld(const PhysicsWorld& move) = delete;
 	PhysicsWorld& operator=(const PhysicsWorld& move) = delete;
 
@@ -396,12 +396,12 @@ public:
 	{
 		OnCollisionFunc f = [func](WorldCollsionInfo info)
 		{
-			// this is wastefull because this causes a loop in m_onCollision for each pair
-			// better solve would be a pair hash that doesnt care about order, then a map of pair hash -> func
+			// this is wasteful because this causes a loop in m_onCollision for each pair
+			// better solve would be a pair hash that doesn't care about order, then a map of pair hash -> func
 			// but this is ez
 
 			if (   !info.A.Get<Rigidbody2D>().IsCollisionEnabled()
-				|| !info.B.Get<Rigidbody2D>().IsCollisionEnabled()) // exit if collision isnt enabled, need to make a sensor bool so those can work still
+				|| !info.B.Get<Rigidbody2D>().IsCollisionEnabled()) // exit if collision isn't enabled, need to make a sensor bool so those can work still
 			{
 				return;
 			}

@@ -3,7 +3,7 @@
 #include <string>
 
 //
-//  If a path is a fullpath or a relitive path
+//  If a path is a fullpath or a relative path
 //	Returns a fullpath into the ASSET_ROOT_FOLDER
 //
 std::pair<bool, std::string> IsPathRelative(const std::string& path);

@@ -39,7 +39,7 @@ struct event_CreateEntity
 	std::function<void(Entity)> callback;
 };
 
-// System lifecycle
+// System life cycle
 
 // constructor
 // Init
@@ -101,7 +101,7 @@ private:
 	// some of these do extra stuff, but I like the idea of having the ability to
 	// put the metrics here instead of in the location where they are called
 
-	void _Init(r<World> world); // pass world so every system doesnt need a constructor
+	void _Init(r<World> world); // pass world so every system doesn't need a constructor
 	void _Dnit();
 
 	void _OnAttach();
@@ -194,8 +194,8 @@ struct System : SystemBase
 };
 
 //
-//	A world is a seperated state and transformation functions that update the state
-//		Each world is seperate, but it is possible to talk through events
+//	A world is a separated state and transformation functions that update the state
+//		Each world is separate, but it is possible to talk through events
 //
 //
 struct World final : std::enable_shared_from_this<World>

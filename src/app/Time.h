@@ -24,7 +24,7 @@ namespace Time
         float total_time        = 0.0f;
         float total_time_scaled = 0.0f;
 
-        // for optimizations, dont do math in function calls
+        // for optimizations, don't do math in function calls
 
         float current_delta = 0.f;
         float current_delta_scaled = 0.f;

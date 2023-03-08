@@ -7,7 +7,7 @@
 #include "util/error_check.h"
 
 // imgui is going to be the UI library for everything in the game
-// so hard commit to tieing it up with the window
+// so hard commit to tying it up with the window
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -77,8 +77,8 @@ public:
 	void BeginImgui();
 	void EndImgui();
 	
-	// for now this works, but shouldnt be here
-	// dont call this func to make removing it ezpz
+	// for now this works, but shouldn't be here
+	// don't call this func to make removing it ezpz
 	Window& ResizeViewport(int width, int height);
 
 	Window& Resize(int width, int height, bool center = true);
@@ -93,7 +93,7 @@ public:
 	Window(Window&& move) noexcept;
 	Window& operator=(Window&& move) noexcept;
 	
-	//  no copys
+	//  no copy
 	Window(const Window& copy) = delete;
 	Window& operator=(const Window& copy) = delete;
 

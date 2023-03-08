@@ -8,7 +8,7 @@
 #include "ext/rendering/Particle.h"
 
 //
-//	dependancy graph of known types
+//	dependency graph of known types
 //
 class serial_dependency
 {

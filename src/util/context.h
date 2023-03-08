@@ -20,7 +20,7 @@ public:
 };
 
 // would be nice if there was a way to not have to store the location in the context
-// itself. But that requires another struc to pass an int pointer
+// itself. But that requires another struct to pass an int pointer
 
 // _t must be a wContext
 template<typename _t>
@@ -28,7 +28,7 @@ class wContextStore
 {
 	_t* current = nullptr;
 
-	// this is an id that counts up everytime we set the curernt context
+	// this is an id that counts up every time we set the current context
     // gets used to identify the current module
 	int location = 0;
 

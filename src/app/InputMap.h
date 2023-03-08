@@ -21,7 +21,7 @@ struct event_Input
 	union
 	{
 		float state; // for 1d inputs (buttons)
-		vec2 axis;   // for 2d inputs (axies)
+		vec2 axis;   // for 2d inputs (axes)
 	};
 
 	bool enabled() { return state == 1.f; }
@@ -103,11 +103,11 @@ namespace Input
 		std::unordered_map<InputName, AxisGroup> GroupAxes;
 
 		// mapping of name to axis
-		// all buttons can be represented as axies with a deadzone
+		// all buttons can be represented as axes with a deadzone
 		// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
 		std::unordered_map<InputName, InputAxis> Axes;
 
-		// mapping of code to inputname
+		// mapping of code to input name
 		// allows us to skip a search through all components of each axis to find a mapping
 		std::unordered_map<InputCode, InputName> Mapping;
 

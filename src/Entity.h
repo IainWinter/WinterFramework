@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <mutex>
 
-// bug: entt tags (empty structs) dont return in list so query t_... breaks, should always have data in component, or fix this!
+// bug: entt tags (empty structs) don't return in list so query t_... breaks, should always have data in component, or fix this!
 
 namespace tuple_helpers
 {
@@ -42,7 +42,7 @@ namespace tuple_helpers
 }
 
 // Question is should functions assert or soft error and just print to log
-// if using the engine, then you really dont want a crash because they you need to restart the editor if a script
+// if using the engine, then you really don't want a crash because they you need to restart the editor if a script
 // fails
 // but when working with the framework, its nice to ensure functionality
 
@@ -67,7 +67,7 @@ struct EntityEventHandler
 	void handle(entt::registry& reg, entt::entity e);
 };
 
-// a wrapper so user doesnt need to mess with pointers
+// a wrapper so user doesn't need to mess with pointers
 struct EntityEvent
 {
 	EntityEventHandler* instance;
@@ -142,7 +142,7 @@ struct EntityWorld
 private:
 	entt::registry m_registry;
 	
-	// defering deletes to the end of frames to allow events to be processed
+	// deferring deletes to the end of frames to allow events to be processed
 	std::unordered_set<entt::entity> m_deferDelete;
 	std::mutex m_deferDeleteMutex;
 
@@ -274,7 +274,7 @@ public:
 	Entity Clone();
 	
 	u32 Id() const;
-	u32 raw_id() const; // doesnt check for if this id is valid or not
+	u32 raw_id() const; // doesn't check for if this id is valid or not
 	EntityWorld* Owning() const;
 	
 	bool IsAlive() const;
@@ -282,7 +282,7 @@ public:
 	void Destroy();
 
 	bool IsAliveAtEndOfFrame() const;
-	void DestroyAtEndOfFrame() const; // threadsafe and guards against double defer deletes
+	void DestroyAtEndOfFrame() const; // thread safe and guards against double defer deletes
 
 	Entity& OnDestroy(const std::function<void(Entity)>& func);
 
@@ -364,7 +364,7 @@ public:
 	// Asserts
 	                         void assert_is_valid()       const { assert(IsAlive()        && "Entity is not valid"); }
 	template<typename... _t> void assert_no_components()  const { assert(!HasAny<_t...>() && "Entity already contains one of these components"); }
-	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesnt contain one of these components"); }
+	template<typename... _t> void assert_has_components() const { assert(Has<_t...>()     && "Entity doesn't contain one of these components"); }
 };
 
 template<typename... _t>

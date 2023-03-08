@@ -91,7 +91,7 @@ public:
 	Audio(AudioSource& parent);
 	Audio(FMOD::Studio::EventInstance* inst, AudioSource& parent);
 
-	// return the parent AudioSource, doesnt necessarily exist
+	// return the parent AudioSource, doesn't necessarily exist
 	AudioSource GetParent() const;
 
 	// start or restart (from the beginning) the instance
@@ -107,7 +107,7 @@ public:
 	bool IsPlaying() const;
 	bool HasParent() const;
 
-	// immedietly pauses audio instance
+	// immediately pauses audio instance
 	Audio& Pause();
 
 	// resume playback from when audio instance was paused

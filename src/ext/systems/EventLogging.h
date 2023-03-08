@@ -17,13 +17,13 @@ struct EventLogging : System<EventLogging>
 	void on(event_Shutdown& e)
 	{
 		log_event(
-			"Recieved: event_Shutdown {}");
+			"Received: event_Shutdown {}");
 	}
 
 	void on(event_WindowResize& e)
 	{
 		log_event(
-			"Recieved: event_WindowResize {"
+			"Received: event_WindowResize {"
 			"\n\twidth %d"
 			"\n\theight %d"
 			"\n}", e.width, e.height);
@@ -32,7 +32,7 @@ struct EventLogging : System<EventLogging>
 	void on(event_Mouse& e)
 	{
 		log_event(
-			"Recieved: event_Mouse {"
+			"Received: event_Mouse {"
 			"\n\tpixel_x %d"
 			"\n\tpixel_y %d"
 			"\n\tscreen_x %f"
@@ -62,7 +62,7 @@ struct EventLogging : System<EventLogging>
 	//	};
 
 	//	log_event(
-	//		"[Event] Recieved: event_Input {"
+	//		"[Event] Received: event_Input {"
 	//		"\n\tname %s"
 	//		"\n\tstate %f"
 	//		"\n}\n", names.at(e.name), e.state);

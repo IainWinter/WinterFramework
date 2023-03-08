@@ -248,7 +248,7 @@ void register_common_types()
 		.member<&ParticleEmitter::timeBetweenSpawn>("timeBetweenSpawn")
 		.member<&ParticleEmitter::currentTime>("currentTime")
 		.member<&ParticleEmitter::enableAutoEmit>("enableAutoEmit")
-		.member<&ParticleEmitter::spawners>("spawners");
+		.member<&ParticleEmitter::spawners>("spanners");
 
 	describe<Camera>()
 		.name("Camera")

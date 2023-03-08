@@ -207,7 +207,7 @@ namespace meta
 			}
 
 			// for now just delete and assume that they will be re-registered
-			// this doesnt work because when calling a virtual function we get passed into the dll
+			// this doesn't work because when calling a virtual function we get passed into the dll
 			// stack
 
 			// to get around this, use a custom allocator or alloc memory here

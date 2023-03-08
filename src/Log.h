@@ -48,7 +48,7 @@ void set_log_enabled(char flag, bool enabled);
 //
 //   error: e~ red text
 //   warn:  w~ yellow text
-//   info:  i~ dark grey
+//   info:  i~ dark gray
 //   debug: d~ cyan
 
 // enable or disable styles

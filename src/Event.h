@@ -108,7 +108,7 @@ class EventSink
 public:
     void AttachPipe(std::shared_ptr<IEventPipe> pipe);
     
-    // Remove a pipe by refernce, does not delete
+    // Remove a pipe by reference, does not delete
     void DetachPipe(std::shared_ptr<IEventPipe> pipe);
     
     // Remove a pipe by searching for a bound instance or free function pointer
@@ -150,7 +150,7 @@ private:
 };
 
 //
-//  A group of event sinks and links to child busses
+//  A group of event sinks and links to child buses
 //      - Events are sent to all children, but not parent
 //      - To bubble up event, user needs a link to the parent bus
 //
@@ -216,7 +216,7 @@ private:
 };
 
 //
-//  A queue of events that are executed in a batch. todo: Add make threadsafe
+//  A queue of events that are executed in a batch. todo: Add make thread safe
 //
 class EventQueue
 {

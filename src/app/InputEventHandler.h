@@ -12,7 +12,7 @@ public:
     InputEventHandler();
 
     // This has to be created with new, as this attaches events in the constructor
-    // if copied, these will point to destroied stack memory
+    // if copied, these will point to destroyed stack memory
     InputEventHandler(EventQueue* queue);
     
     void on(event_Key& e);

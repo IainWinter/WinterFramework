@@ -164,7 +164,7 @@ u32 Entity::Id() const
 
 u32 Entity::raw_id() const
 {
-	return (u32)m_handle; // isnt there like a smuggle functions for this?
+	return (u32)m_handle; // isn't there like a smuggle functions for this?
 }
 
 EntityWorld* Entity::Owning() const

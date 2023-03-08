@@ -148,7 +148,7 @@ void* pool_allocator::get_block_address(size_t index) const
 {
 	for (auto [page_index_start, page] : m_pages)
 	{
-		if (page->contains_block(index - page_index_start)) // valid if negitive or overflow
+		if (page->contains_block(index - page_index_start)) // valid if negative or overflow
 		{
 			return page->get_block_address(index - page_index_start);
 		}

@@ -133,7 +133,7 @@ public:
 	//
 	void AddMesh(const Transform& transform, r<Mesh> mesh, r<Material> material);
 
-	//	Remove a refernce to a mesh and its material if no other meshes reference it
+	//	Remove a reference to a mesh and its material if no other meshes reference it
 	//
 	void RemoveMesh(const r<Mesh>& mesh);
 

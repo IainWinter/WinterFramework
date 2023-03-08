@@ -30,5 +30,5 @@ std::tuple<u8*, int, int, int> load_image(const std::string& filepath)
 
 void free_image(void* pixels)
 {
-	free(pixels); // stb calls free, doesnt HAVE to though so this is a lil jank
+	free(pixels); // stb calls free, doesn't HAVE to though so this is a lil jank
 }

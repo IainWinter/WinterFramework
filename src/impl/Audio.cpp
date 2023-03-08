@@ -457,7 +457,7 @@ void DestroyInstance(EventInstance* inst)
 		return;
 	}
 
-	log_audio("i~Destroied audio instance %s", name.c_str());
+	log_audio("i~Destroyed audio instance %s", name.c_str());
 }
 
 // end internal
@@ -499,7 +499,7 @@ void Audio::Destroy()
 {
 	if (!IsAlive())
 	{
-		log_audio("e~Failed to destroy audio instance. Is has already been destroied");
+		log_audio("e~Failed to destroy audio instance. Is has already been destroyed");
 		return;
 	}
 
@@ -522,7 +522,7 @@ bool Audio::IsPlaying() const
 {
 	if (!IsAlive())
 	{
-		log_audio("e~Failed to get audio instance playback state. Is has already been destroied");
+		log_audio("e~Failed to get audio instance playback state. Is has already been destroyed");
 		return false;
 	}
 
@@ -1021,7 +1021,7 @@ void AudioSource::StopAll()
 	}
 
 	// inst list should be empty now because of callbacks, these might be async though as some audio fades...
-	// todo: investigate behaviour
+	// todo: investigate behavior
 }
 
 bool AudioSource::IsAlive() const

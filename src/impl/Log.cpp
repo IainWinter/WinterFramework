@@ -94,7 +94,7 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 			}
 		}
 
-		text += 2; // dont write style flag
+		text += 2; // don't write style flag
 	}
 
 	int header_length = strlen(header);

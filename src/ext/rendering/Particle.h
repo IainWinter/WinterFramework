@@ -138,7 +138,7 @@ inline Particle RandomParticle(const a<TextureAtlas>& atlas)
 //
 //	float m_age = 1.f;
 //
-//	// could be in seperate component
+//	// could be in separate component
 //
 //	Transform2D original;     // for linear effects over time
 //	Color tint;               // overall tint

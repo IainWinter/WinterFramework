@@ -2,7 +2,7 @@
 
 #include <string>
 
-// doesnt unload anything...
+// doesn't unload anything...
 
 struct ImFont;
 

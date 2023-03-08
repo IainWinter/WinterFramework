@@ -64,7 +64,7 @@ namespace Asset
 	template<typename _t, typename... _a> a<_t> LoadFromFile(const std::string& filename, const _a&... args);
 
 	//
-	//	Getting avalible assets
+	//	Getting available assets
 	//
 
 	template<typename _t>

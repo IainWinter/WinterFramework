@@ -11,7 +11,7 @@ struct graph
 	// the list of nodes
 	std::vector<_t> nodes;
 
-	// an map from node to its index
+	// a map from node -> index
 	std::unordered_map<_t, int> index;
 
 	// map of edges

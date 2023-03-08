@@ -41,7 +41,7 @@ public:
 	{
 		char* address = alloc_bytes(sizeof(_t) * count);
 		
-		// dont construct
+		// don't construct
 		//for (size_t i = 0; i < count; i++)
 		//{
 		//	new (address + sizeof(_t) * i) _t();

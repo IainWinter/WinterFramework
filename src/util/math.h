@@ -8,7 +8,7 @@
 
 #include "util/typedef.h"
 
-// make glm the deafult math library
+// make glm the default math library
 // no need to think about if something is glm or not because it should
 // be ingrained into the framework at a core level
 using namespace glm;

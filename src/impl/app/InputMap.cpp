@@ -38,8 +38,8 @@ namespace Input
 			.member<&InputContext::Axes>("Axes")
 			.member<&InputContext::Mapping>("Mapping");
 
-		// populate inital states, kinda sucks to have to do this
-		// but needed for iterating avalible states by using the keys of ctx->State
+		// populate initial states, kinda sucks to have to do this
+		// but needed for iterating available states by using the keys of ctx->State
 
 		State[GetInputCode(KEY_A)] = 0.f;
 		State[GetInputCode(KEY_B)] = 0.f;

@@ -12,7 +12,7 @@ Transform::Transform(vec3 position, vec3 scale, quat rotation)
     , rotation (rotation)
 {}
 
-// Rotation doesnt really work
+// Rotation doesn't really work
 Transform::Transform(const Transform2D& transform2D)
     : position (transform2D.position, transform2D.z)
     , scale    (transform2D.scale, 1.f)

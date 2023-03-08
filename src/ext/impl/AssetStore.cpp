@@ -165,11 +165,11 @@ namespace Asset
         // invalid
         
         // need a way to test this better, it seems like it may link the dll
-        // to the same place everytime which may hide some bugs
+        // to the same place every time which may hide some bugs
 
         for (auto& [name, loaded] : ctx->loaded)
         {
-            if (location == loaded.whoLoaded) // dont worry about memory allocated by us
+            if (location == loaded.whoLoaded) // don't worry about memory allocated by us
             {
                 continue;
             }

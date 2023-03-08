@@ -30,8 +30,8 @@ void json_writer::string_end()                { m_out << '"'; }
 
 void json_writer::write_bytes(const char* bytes, size_t length)
 {
-	// this changes the length in begin_string, but json doesnt care about the reported length
-	// the reader uses json.h's length, which doesnt include escaped chars
+	// this changes the length in begin_string, but json doesn't care about the reported length
+	// the reader uses json.h's length, which doesn't include escaped chars
 	// should investigate this fully
 
 	for (size_t i = 0; i < length; i++)
@@ -196,7 +196,7 @@ void json_reader::read_bytes(char* bytes, size_t length)
 			break;
 		}
 
-		//case json_type_e::json_type_object: // why was this nessesary?
+		//case json_type_e::json_type_object: // why was this necessary?
 		//{
 		//	meta::type* type = m_frames.top().type;
 		//	read_class(type, bytes);
@@ -207,7 +207,7 @@ void json_reader::read_bytes(char* bytes, size_t length)
 
 		default:
 		{
-			assert(false && "json type wasnt valid");
+			assert(false && "json type wasn't valid");
 		}
 	}
 }

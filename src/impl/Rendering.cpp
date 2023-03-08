@@ -421,7 +421,7 @@ void Target::Add(AttachmentName name, const r<Texture>& texture)
 	}
 
 	assert(m_attachments.find(name) == m_attachments.end() && "Attachment already exists in target");
-	// should put asserts for depth and spencil for what rgb values they need
+	// should put asserts for depth and stencil for what rgb values they need
 	m_attachments.emplace(name, texture);
 }
 
@@ -637,7 +637,7 @@ void Buffer::_InitOnDevice()
 
 void Buffer::_UpdateOnDevice()
 {
-	// on realloc, does old buffer need to be destroied?
+	// on realloc, does old buffer need to be destroyed?
 
     gl(glBindBuffer(GL_ARRAY_BUFFER, m_device));
     
@@ -757,7 +757,7 @@ Mesh& Mesh::Add(AttribName name, int instancedStride, int forceRepeat, bool norm
 	assert(name != aIndexBuffer || (buffer->Type() == Buffer::eInt && buffer->Repeat() == 1) && "index buffer must be of type 'int' with a repeat of 1.");
 	assert(forceRepeat > 0 && "Repeat must be above 0");
 
-	// if repeat is larger than 4, then use the next attribs
+	// if repeat is larger than 4, then use the next attributes
 	// add the same buffer ref, but change the offset and repeat of buffer info
 
 	int repeat = forceRepeat;
@@ -933,7 +933,7 @@ Mesh& Mesh::copy_into(const Mesh& copy)
 
 		for (const AttribName& name : names)
 		{
-			m_buffers[name] = copyBuffer; // emplace didnt copy?
+			m_buffers[name] = copyBuffer; // emplace didn't copy?
 		}
 	}
 
@@ -1137,7 +1137,7 @@ GLenum gl_format(Texture::Usage usage)
 		case Texture::Usage::uDEPTH:    return GL_DEPTH_COMPONENT;
 		case Texture::Usage::uSTENCIL:  return GL_STENCIL_INDEX;
 		case Texture::Usage::uINT_32:   return GL_RGBA_INTEGER;
-		case Texture::Usage::uFLOAT_32: return GL_RGBA; // this doesnt have to specify float???
+		case Texture::Usage::uFLOAT_32: return GL_RGBA; // this doesn't have to specify float???
 	}
 
 	assert(false);
