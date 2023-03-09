@@ -30,26 +30,25 @@ project(WinterFramework)
 # Source files
 #
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS "./src/*.cpp")
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS "src/*")
 
 #
 # Include everything in src, and from vendors
 #
 
-include_directories(./src)
-include_directories(./vendor/_shared/include)
-include_directories(./vendor/box2d/include)
-include_directories(./vendor/fmod/include)
-include_directories(./vendor/hitbox/include)
-include_directories(./vendor/imgui/include)
-include_directories(./vendor/phonon_fmod/include)
+include_directories(src)
+include_directories(vendor/_shared/include)
+include_directories(vendor/box2d/include)
+include_directories(vendor/fmod/include)
+include_directories(vendor/hitbox/include)
+include_directories(vendor/imgui/include)
+include_directories(vendor/phonon_fmod/include)
 
-IF (WIN32)
-	include_directories(./vendor/_shared/include/_win)
-ELSE()
+if (WIN32)
+	include_directories(vendor/_shared/include/_win)
+else ()
 	include_directories(/opt/homebrew/include)
-ENDIF()
-
+endif ()
 
 #
 # Definitions
@@ -68,3 +67,11 @@ endif ()
 #
 
 add_library(WinterFramework STATIC ${sources})
+
+#
+# Link vendor
+#
+
+find_library(HitboxTarget Hitbox PATHS vendor/Hitbox/lib)
+
+target_link_libraries(WinterFramework HitboxTarget)
