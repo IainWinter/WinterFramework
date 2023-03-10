@@ -3,8 +3,7 @@
 
 #include "util/error_check.h" // gives gl
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb/load_image.h"
+#include "io/ImageFromDisk.h"
 
 IDeviceObject::IDeviceObject(
 	bool isStatic,
@@ -280,7 +279,7 @@ Texture::Texture(
 )
 	: IDeviceObject (isStatic, OBJECT_TEXTURE)
 {
-	auto [pixels, width, height, channels] = load_image(path);
+	auto [pixels, width, height, channels] = io_LoadImageFromFile(path.c_str());
 	assert(channels > 0 && channels <= 4 && "Invalid RGBA channel count created by stb");
 	init_texture_host_memory(pixels, width, height, (Usage)channels);
 }
