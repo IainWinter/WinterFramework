@@ -6,7 +6,6 @@
 
 group "vendor"
 	include "vendor/box2d"
-	include "vendor/hitbox"
 	include "vendor/imgui"
 	include "vendor/phonon_fmod"
 group ""
@@ -29,9 +28,9 @@ project "WinterFramework"
 	defines (defines_all)
 	libdirs (libdir_vendor_self)
 
-	files { 
-		"src/**.h",
-		"src/impl/**.cpp",
+	files {
+		"include/**.h",
+		"src/**.cpp",
 
 		-- choose extensions, right now it's all of them
 
@@ -40,7 +39,8 @@ project "WinterFramework"
 	}
 
 	includedirs {
-		"src"
+		"src",
+		"include"
 	}
 
 	filter "system:Windows"

@@ -1,5 +1,10 @@
 cfgdir = "%{cfg.buildcfg}"
 
+inc_framework =
+{
+	path.getabsolute("include ")
+}
+
 src_framework =
 {
 	path.getabsolute("src")
@@ -23,7 +28,6 @@ include_vendor =
 
 	path.getabsolute("vendor/box2d/include"),
 	path.getabsolute("vendor/imgui/include"),
-	path.getabsolute("vendor/hitbox/include"),
 	path.getabsolute("vendor/phonon_fmod/include")
 }
 
@@ -42,7 +46,6 @@ libdir_vendor_self =
 {
 	path.getabsolute("vendor/box2d/lib/%{cfgdir}"),
 	path.getabsolute("vendor/imgui/lib/%{cfgdir}"),
-	path.getabsolute("vendor/hitbox/lib/%{cfgdir}"),
 	path.getabsolute("vendor/fmod_steamaudio/lib/%{cfgdir}")
 }
 
@@ -94,8 +97,7 @@ links_vendor =
 {
 	"SDL2",
 	"box2d",
-	"ImGui", 
-	"hitbox",
+	"ImGui",
 	"fmod",
 	"fmodstudio",
 	"phonon",
