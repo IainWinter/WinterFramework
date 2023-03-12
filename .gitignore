@@ -1,10 +1,2 @@
 .git
-.vs
-/lib
-/build
-*.sln
 *.DS_Store
-/vendor/box2d/lib
-/vendor/imgui/lib
-/vendor/hitbox/lib
-/vendor/phonon_fmod/lib

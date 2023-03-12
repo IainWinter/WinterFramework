@@ -635,7 +635,7 @@ PhysicsWorld::~PhysicsWorld()
 void PhysicsWorld::ReallocWorld()
 {
 	delete m_world;
-	m_world = new b2World();
+	m_world = new b2World(b2Vec2(0, 0));
 	m_world->SetContactListener(new ContactCallback(this));
 }
 

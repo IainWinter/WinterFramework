@@ -2,8 +2,8 @@
 
 #include "Defines.h"
 
-#include "SDL2/SDL_scancode.h"
-#include "SDL2/SDL_gamecontroller.h"
+#include "SDL_scancode.h"
+#include "SDL_gamecontroller.h"
 
 #include "util/ref.h"
 #include "util/math.h"

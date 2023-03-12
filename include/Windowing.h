@@ -14,7 +14,7 @@
 #include "imgui/imgui_impl_sdl.h"
 #include "imgui/implot.h"
 
-#include "SDL2/SDL.h"
+#include "SDL.h"
 #include "glad/glad.h"
 
 #include <string>
@@ -78,7 +78,7 @@ public:
 	void EndImgui();
 	
 	// for now this works, but shouldn't be here
-	// don't call this func to make removing it ezpz
+	// don't call this function to make removing it ezpz
 	Window& ResizeViewport(int width, int height);
 
 	Window& Resize(int width, int height, bool center = true);
@@ -96,8 +96,6 @@ public:
 	//  no copy
 	Window(const Window& copy) = delete;
 	Window& operator=(const Window& copy) = delete;
-
-// init funcs
 
 private:
 	const char* Init_Video();

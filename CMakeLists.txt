@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 3.12)
 
 #
+# Include libs that need to be built
+#
+
+set(ASSIMP_NO_EXPORT ON)
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_INSTALL_PDB OFF)
+set(ASSIMP_INSTALL OFF)
+set(LIBRARY_SUFFIX "")
+set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_GLTF_IMPORTER TRUE)
+
+add_subdirectory(vendor/fullsrc/assimp vendor/assimp)
+add_subdirectory(vendor/fullsrc/box2d vendor/box2d)
+add_subdirectory(vendor/fullsrc/SDL2 vendor/SDL2)
+add_subdirectory(vendor/fullsrc/ImGui vendor/ImGui)
+add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
+
+#
 # Set C++ version and output dirs
 #
 
@@ -30,48 +49,50 @@ project(WinterFramework)
 # Source files
 #
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS "src/*")
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS "include/*" "src/*" "vendor/public/src/*" "vendor/private/src/*")
+
+#
+# Output a static library
+#
+
+add_library(WinterFramework STATIC ${sources})
+
+target_link_directories(WinterFramework PRIVATE vendor/prebuilt/win_x64)
+
+target_link_libraries(WinterFramework PRIVATE assimp)
+target_link_libraries(WinterFramework PRIVATE box2d)
+target_link_libraries(WinterFramework PRIVATE SDL2)
+target_link_libraries(WinterFramework PRIVATE ImGui)
+target_link_libraries(WinterFramework PRIVATE phonon_fmod)
+target_link_libraries(WinterFramework PRIVATE fmod)
+target_link_libraries(WinterFramework PRIVATE fmodstudio)
+target_link_libraries(WinterFramework PRIVATE phonon)
 
 #
 # Include everything in src, and from vendors
 #
 
-include_directories(src)
-include_directories(vendor/_shared/include)
-include_directories(vendor/box2d/include)
-include_directories(vendor/fmod/include)
-include_directories(vendor/hitbox/include)
-include_directories(vendor/imgui/include)
-include_directories(vendor/phonon_fmod/include)
+target_include_directories(WinterFramework
+	PUBLIC include
+	PRIVATE src
 
-if (WIN32)
-	include_directories(vendor/_shared/include/_win)
-else ()
-	include_directories(/opt/homebrew/include)
-endif ()
+	# should be PRIVATE
+	PUBLIC vendor/private/include
+
+	PUBLIC vendor/public/include
+
+	PRIVATE vendor/fullsrc/assimp/include
+	PUBLIC vendor/fullsrc/box2d/include
+	PUBLIC vendor/fullsrc/SDL2/include
+	PUBLIC vendor/fullsrc/ImGui/include
+	PUBLIC vendor/fullsrc/phonon_fmod/include
+)
 
 #
 # Definitions
 #
 
-add_compile_definitions(ASSET_ROOT_PATH)
-
-if (WIN32)
-	add_compile_definitions(IPL_OS_WINDOWS)
-elseif (APPLE)
-	add_compile_definitions(IPL_OS_MACOSX)
-endif ()
-
-#
-# Output
-#
-
-add_library(WinterFramework STATIC ${sources})
-
-#
-# Link vendor
-#
-
-find_library(HitboxTarget Hitbox PATHS vendor/Hitbox/lib)
-
-target_link_libraries(WinterFramework HitboxTarget)
+target_compile_definitions(WinterFramework 
+	PRIVATE ASSET_ROOT_PATH="./assets"
+	PUBLIC SDL_MAIN_HANDLED
+)
