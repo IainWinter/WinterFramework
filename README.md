@@ -1,9 +1,13 @@
+# Winter Framework
+
+
+
 Main goal of this project is to simplify what I have been doing in IwEngine. Before I had a folder with 10+ files for each of the major systems. I didn't use many libraries in IwEngine because my goal was to learn how to create them, and now I see how much work it takes to harden and maintain libraries like EnTT and Box2d. Therefore, in this project I make full use of as many libraries as possible and mainly focus on tying them together and making simple & clean APIs.
 
 Focusing on making it as small and understandable as possible. I have a feeling that each of the libraries from before could just be a single file.
 Most of the functionality gets included no matter what, so a single file makes it simpler to use. Also, a single file lets you know the level of abstraction as you get deeper into the file as things need to be defined before they can be used. Looking at a folder of many files does not give you this info at a glance.
 
-| Piece of framework | Description |
+| File | Description |
 | --- | --- |
 | Audio | A wrapper around FMOD exposing the API through components. |
 | Common | Some helper functions and components that get used frequently by more than a single piece of the framework. |
@@ -14,44 +18,23 @@ Most of the functionality gets included no matter what, so a single file makes i
 | Physics | A wrapper around box2d that ties into the entity system to automatically maintain the physics world |
 | Rendering | Taking ideas from CUDA about host and device memory, this follows the same naming scheme through a unified interface for each OpenGL object. Currently supports Texture/Target, Buffer/Mesh and ShaderProgram |
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
-| App | Ties everything together to create an application framework. Can load Worlds and attach Systems to update the state. Each World stores its own entities, and multiple can be loaded at once to compose scenes. |
+| Folder | |
+| app | An Engine loop and world system that I am going to change at some point soon when I explore multithreading |
+| engine | functions for passing the state of the framework over dll fences |
+| ext | extensions that make use of the framework |
+| util | simple data structures and other classes used by the framework  |
+| io | (future) all functions that need disk/network access  |
 
 # Build
 
-## Windows
-
 ```
 git pull https://github.com/IainWinter/WinterFramework
 cd WinterFramework
-./tools/premake5.exe vs2022
+mkdir build
+cd build
+cmake ../
 ```
-
-## Linux
-
-```
-sudo apt-get install libsdl2-dev
-
-git pull https://github.com/IainWinter/WinterFramework
-cd WinterFramework
-./tools/premake5 gmake2
-```
-
-## Mac
-
-```
-brew install SDL2
-
-git pull https://github.com/IainWinter/WinterFramework
-cd WinterFramework
-./tools/mac_premake5 xcode4
-```
-
-Right now you need to copy the appropriate dlls into your project's bin folder. They are included in the vendor folder.
-* Windows: SDL.dll and fmod.dll/fmodstudio.dll
-* Linux: you need to download fmod
-* Mac: fmod.dylib/fmodstudio.dylib
-
-Fmod also requires you to have an account on their website if you have a buDgEt.
+then use ```make``` or Visual Studio
 
 # Examples
 
