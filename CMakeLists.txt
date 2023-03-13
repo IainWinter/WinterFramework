@@ -12,10 +12,15 @@ set(LIBRARY_SUFFIX "")
 set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
 set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
 set(ASSIMP_BUILD_GLTF_IMPORTER TRUE)
-
 add_subdirectory(vendor/fullsrc/assimp vendor/assimp)
-add_subdirectory(vendor/fullsrc/box2d vendor/box2d)
+
+set(SDL2_DISABLE_INSTALL ON)
+set(SDL2_DISABLE_SDL2MAIN ON)
+set(SDL2_DISABLE_UNINSTALL ON)
+set(SDL_AUDIO OFF)
 add_subdirectory(vendor/fullsrc/SDL2 vendor/SDL2)
+
+add_subdirectory(vendor/fullsrc/box2d vendor/box2d)
 add_subdirectory(vendor/fullsrc/ImGui vendor/ImGui)
 add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
 
@@ -24,8 +29,8 @@ add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
 #
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
+# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
+# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
 
 #
 # Set build file settings
@@ -36,7 +41,7 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
   add_compile_options(/bigobj)
 else ()
-  add_compile_options(-Wa,-mbig-obj)
+  #add_compile_options(-Wa,-mbig-obj)
 endif ()
 
 #
