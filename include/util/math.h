@@ -23,10 +23,7 @@ vec2  get_randnc(float scale);
 
 vec2 get_rand_jitter(vec2 x, float jitter);
 
-#ifndef LINUX
-float lerp(float        a, float        b, float w);
-#endif
-
+float lerpf(float        a, float        b, float w);
 vec2  lerp(const vec2&  a, const vec2&  b, float w);
 vec3  lerp(const vec3&  a, const vec3&  b, float w);
 vec4  lerp(const vec4&  a, const vec4&  b, float w);
@@ -46,7 +43,7 @@ _t lerpf(const _t& a, const _t& b, float w)
 
 	for (size_t i = 0; i < length; i++)
 	{
-		of[i] = lerp(af[i], bf[i], w);
+		of[i] = lerpf(af[i], bf[i], w);
 	}
 
 	return out;

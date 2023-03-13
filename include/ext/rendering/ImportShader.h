@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Rendering.h"
+#include <sstream>
 
 struct ShaderSource
 {

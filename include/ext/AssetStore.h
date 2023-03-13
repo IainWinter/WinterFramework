@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <vector>
 #include <filesystem>
+#include <string.h>
 
 namespace Asset
 {

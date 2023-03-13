@@ -2,7 +2,7 @@
 #include "util/filesystem.h"
 
 #include <fstream>
-#include <sstream>
+#include <string.h>
 
 ShaderSource LoadShaderSourceFromFile(const char* filename)
 {

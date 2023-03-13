@@ -44,6 +44,14 @@ else ()
   #add_compile_options(-Wa,-mbig-obj)
 endif ()
 
+#if (WIN32)
+#	set(VENDOR_PREBUILT_DIR vendor/prebuilt/win_x64)
+#elseif (APPLE)
+#	set(VENDOR_PREBUILT_DIR vendor/prebuilt/mac_arm64)
+#elseif (LINUX)	
+	set(VENDOR_PREBUILT_DIR vendor/prebuilt/linux_x64)
+#endif ()
+
 #
 # Project
 #
@@ -62,7 +70,7 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "include/*" "src/*" "vendor/public/s
 
 add_library(WinterFramework STATIC ${sources})
 
-target_link_directories(WinterFramework PRIVATE vendor/prebuilt/win_x64)
+target_link_directories(WinterFramework PRIVATE ${VENDOR_PREBUILT_DIR})
 
 target_link_libraries(WinterFramework PRIVATE assimp)
 target_link_libraries(WinterFramework PRIVATE box2d)

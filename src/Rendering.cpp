@@ -2,8 +2,9 @@
 #include "Log.h"
 
 #include "util/error_check.h" // gives gl
-
 #include "io/ImageFromDisk.h"
+
+#include <string.h>
 
 IDeviceObject::IDeviceObject(
 	bool isStatic,
