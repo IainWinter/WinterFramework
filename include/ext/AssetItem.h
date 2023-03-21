@@ -28,6 +28,9 @@ private:
 	// Use data here if this is just a wrapper
 	r<_t> pass;
 
+	template<typename _u>
+	friend struct AssetItem;
+
 public:
 	AssetItem() = default;
 
@@ -48,6 +51,26 @@ public:
 		control = copy.control;
 		pass = copy.pass;
 		inc_use_count(1);
+	}
+
+	// like shared_ptr conversion
+
+	template <class _u, std::enable_if_t<std::_SP_pointer_compatible<_u, _t>::value, int> = 0>
+	AssetItem(const AssetItem<_u>& other)
+	{
+		//r<Asset::AssetControlBlock<_u>> ptr = other.control.lock();
+		//auto t = std::static_pointer_cast<Asset::AssetControlBlock<_t>>(ptr);
+
+		
+		//		control = wr<Asset::AssetControlBlock<_t>>(ptr);
+
+		// only takes pass right now
+		// idk why i cant get the static_pointer_cast to take the control block
+
+		r<Asset::AssetControlBlock<_u>> ptr = other.control.lock();
+
+		control = *(r<Asset::AssetControlBlock<_t>>*)&ptr;
+		pass = other.pass;
 	}
 
 	AssetItem(AssetItem&& move) noexcept
@@ -121,3 +144,9 @@ private:
 
 template<typename _t>
 using a = AssetItem<_t>;
+
+template<typename _t, typename... _args>
+a<_t> mka(_args&&... args)
+{
+	return a<_t>(mkr<_t>(std::forward<_args>(args)...));
+}

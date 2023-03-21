@@ -24,14 +24,14 @@ vec2  get_randnc(float scale);
 vec2 get_rand_jitter(vec2 x, float jitter);
 
 float lerpf(float        a, float        b, float w);
-vec2  lerp(const vec2&  a, const vec2&  b, float w);
-vec3  lerp(const vec3&  a, const vec3&  b, float w);
-vec4  lerp(const vec4&  a, const vec4&  b, float w);
+vec2  lerp (const vec2&  a, const vec2&  b, float w);
+vec3  lerp (const vec3&  a, const vec3&  b, float w);
+vec4  lerp (const vec4&  a, const vec4&  b, float w);
 
 // do a lerp per value
 // casts to a float array
 template<typename _t>
-_t lerpf(const _t& a, const _t& b, float w)
+_t lerpfa(const _t& a, const _t& b, float w)
 {
 	float* af = (float*)&a;
 	float* bf = (float*)&b;

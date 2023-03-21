@@ -21,7 +21,7 @@ public:
 
 	void Begin();
 	void Draw(const Camera& camera, bool mixTint = false);
-    
+
 	void SubmitSprite(
 		const Transform2D& transform,
 		const Color& tint);
@@ -59,45 +59,10 @@ private:
 
 		int count;
 
-		BatchData()
-		{
-			quad = Mesh(DYNAMIC_HOST)
-				//.Add<vec2>(Mesh::aPosition,     { vec2(-1, -1), vec2(1, -1), vec2(1, 1), vec2(-1, 1) })
-				.Add<vec2>(Mesh::aPosition,     { vec2(-0.5f, -0.5f), vec2(0.5f, -0.5f), vec2(0.5f, 0.5f), vec2(-0.5f, 0.5f) })
-				.Add<vec2>(Mesh::aTextureCoord, { vec2( 0,  0), vec2(1,  0), vec2(1, 1), vec2( 0, 1) })
-				.Add<int> (Mesh::aIndexBuffer,  { 0, 1, 2, 0, 2, 3 })
+		BatchData();
 
-				.Add<vec4>(Mesh::aCustom_a1, 1)
-				.Add<vec4>(Mesh::aCustom_a2, 1)
-				.Add<mat4>(Mesh::aCustom_b1, 1);
-
-			uvs    = quad.Get(Mesh::aCustom_a1).get();
-			tints  = quad.Get(Mesh::aCustom_a2).get();
-			models = quad.Get(Mesh::aCustom_b1).get();
-
-			count = 0;
-		}
-
-		void add(const mat4& model, const vec4& uv, const vec4& tint)
-		{
-			uvs   ->Push(uv);
-			tints ->Push(tint);
-			models->Push(model);
-
-			count += 1;
-		}
-
-		void finalize()
-		{
-			quad.MarkForUpdate();
-			quad.DrawInstanced(count);
-
-			uvs   ->Resize(count);
-			tints ->Resize(count);
-			models->Resize(count);
-
-			count = 0;
-		}
+		void add(const mat4& model, const vec4& uv, const vec4& tint);
+		void finalize();
 	};
 
 	std::unordered_map<r<Texture>, BatchData> m_batches;

@@ -59,6 +59,8 @@ public:
 
 	void SetListenerPosition(vec3 position);
 
+	void SaveObjFile();
+
 	// internal
 	void _RemoveSource(_IPLSource_t* source);
 	void _RemoveGeometry(_IPLStaticMesh_t* geometry);

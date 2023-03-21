@@ -25,9 +25,9 @@ void PhysicsInterpolationUpdate::Update()
 
 	for (auto [transform, body] : Query<Transform2D, Rigidbody2D>())
 	{
-		transform.position.x = lerp(body.GetLastTransform().position.x, body.GetPosition().x, ratio);
-		transform.position.y = lerp(body.GetLastTransform().position.y, body.GetPosition().y, ratio);
-		transform.rotation   = lerp(body.GetLastTransform().rotation,   body.GetAngle(),      ratio);
+		transform.position.x = lerpf(body.GetLastTransform().position.x, body.GetPosition().x, ratio);
+		transform.position.y = lerpf(body.GetLastTransform().position.y, body.GetPosition().y, ratio);
+		transform.rotation   = lerpf(body.GetLastTransform().rotation,   body.GetAngle(),      ratio);
 	}
 }
 

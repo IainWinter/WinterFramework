@@ -607,7 +607,7 @@ public:
 	Mesh& Add(AttribName name, int instancedStride, int isStatic, bool normalized, const std::vector<_t>& data)
 	{
 		auto [repeat, type] = get_element_type_info<_t>();
-		r<Buffer> buffer = mkr<Buffer>(data.size(), repeat, type, PICK_INHERIT);
+		r<Buffer> buffer = mkr<Buffer>((int)data.size(), repeat, type, PICK_INHERIT);
 		buffer->Set((int)data.size(), (const void*)data.data());
 		return Add(name, instancedStride, buffer->Repeat(), normalized, buffer);
 	}

@@ -39,7 +39,7 @@ set(CMAKE_CXX_STANDARD 20)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (CMAKE_GENERATOR MATCHES "Visual Studio")
-  add_compile_options(/bigobj)
+  add_compile_options(/bigobj /MP)
 else ()
   #add_compile_options(-Wa,-mbig-obj)
 endif ()
@@ -70,16 +70,22 @@ file(GLOB_RECURSE sources CONFIGURE_DEPENDS "include/*" "src/*" "vendor/public/s
 
 add_library(WinterFramework STATIC ${sources})
 
+#
+# Link vendor libraries
+#
+
 target_link_directories(WinterFramework PRIVATE ${VENDOR_PREBUILT_DIR})
 
-target_link_libraries(WinterFramework PRIVATE assimp)
-target_link_libraries(WinterFramework PRIVATE box2d)
-target_link_libraries(WinterFramework PRIVATE SDL2)
-target_link_libraries(WinterFramework PRIVATE ImGui)
-target_link_libraries(WinterFramework PRIVATE phonon_fmod)
-target_link_libraries(WinterFramework PRIVATE fmod)
-target_link_libraries(WinterFramework PRIVATE fmodstudio)
-target_link_libraries(WinterFramework PRIVATE phonon)
+target_link_libraries(WinterFramework
+	PRIVATE assimp
+	PRIVATE box2d
+	PRIVATE SDL2
+	PRIVATE ImGui
+	PRIVATE phonon_fmod
+	PRIVATE fmod
+	PRIVATE fmodstudio
+	PRIVATE phonon
+)
 
 #
 # Include everything in src, and from vendors

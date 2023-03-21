@@ -136,17 +136,18 @@ namespace meta
 	{
 		// store this in a string as types need to be realloced sometimes
 		std::string m_name;
-		id_type m_id;
 
-		size_t m_size;
+		id_type m_id              = 0;       // only put init values to stop warnings
 
-		bool m_is_floating;
-		bool m_is_integral;
+		size_t m_size             = 0;
+
+		bool m_is_floating        = false;
+		bool m_is_integral        = false;
 		
-		bool m_is_complex;
+		bool m_is_complex         = false;
 
-		bool m_has_custom_write;
-		bool m_has_custom_read;
+		bool m_has_custom_write   = false;
+		bool m_has_custom_read    = false;
 	};
 
 	template<typename _t>
@@ -1218,13 +1219,18 @@ namespace meta
 
 		any construct() const override
 		{
-			_t t = _t();
-			return any(t);
+			if constexpr (std::is_default_constructible<_t>::value)
+				return any(_t());
+
+			return any();
 		}
 
 		void construct(void* instance) const override
 		{
-			new (instance) _t();
+			// no-op if there is no default constructor
+
+			if constexpr (std::is_default_constructible<_t>::value)
+				new (instance) _t();
 		}
 
 		const any& prop(const std::string& name) const override

@@ -230,6 +230,12 @@ void SteamAudio::SetListenerPosition(vec3 position)
 	m_listenerPosition = position;
 }
 
+void SteamAudio::SaveObjFile()
+{
+	iplSceneCommit(m_scene);
+	iplSceneSaveOBJ(m_scene, "./steamAudioSceneOut.obj");
+}
+
 void SteamAudio::_RemoveSource(_IPLSource_t* source)
 {
 	auto itr = std::find_if(

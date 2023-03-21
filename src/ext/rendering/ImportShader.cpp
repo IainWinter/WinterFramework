@@ -1,6 +1,8 @@
 #include "ext/rendering/ImportShader.h"
 #include "util/filesystem.h"
 
+#include "Log.h"
+
 #include <fstream>
 #include <string.h>
 
@@ -109,7 +111,7 @@ void ShaderConsumer::ConsumePreprocessor()
 
     std::string arguments = std::string(beginArguments, current);
 
-    printf("Import shader found preprocessor: %s %s\n", preprocess.c_str(), arguments.c_str());
+    log_io("i~Import shader found preprocessor: %s %s", preprocess.c_str(), arguments.c_str());
 
     if (preprocess == "include")
     {
