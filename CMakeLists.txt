@@ -44,13 +44,13 @@ else ()
   #add_compile_options(-Wa,-mbig-obj)
 endif ()
 
-#if (WIN32)
-#	set(VENDOR_PREBUILT_DIR vendor/prebuilt/win_x64)
-#elseif (APPLE)
-#	set(VENDOR_PREBUILT_DIR vendor/prebuilt/mac_arm64)
-#elseif (LINUX)	
+if (WIN32)
+	set(VENDOR_PREBUILT_DIR vendor/prebuilt/win_x64)
+elseif (APPLE)
+	set(VENDOR_PREBUILT_DIR vendor/prebuilt/mac_arm64)
+elseif (LINUX)	
 	set(VENDOR_PREBUILT_DIR vendor/prebuilt/linux_x64)
-#endif ()
+endif ()
 
 #
 # Project

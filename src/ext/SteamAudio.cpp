@@ -167,6 +167,12 @@ void SteamAudio::RunSimulation()
 
 SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 {
+    if (!m_simulator)
+    {
+        log_audio("Failed to create a Steam Audio Source");
+        return {};
+    }
+    
 	Audio audio = m_audio.CreateAudio(eventName);
 	
 	IPLSourceSettings sourceSettings = {};
@@ -184,6 +190,12 @@ SteamAudioSource SteamAudio::CreateSource(const std::string& eventName)
 
 SteamAudioGeometry SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 {
+    if (!m_scene)
+    {
+        log_audio("Failed to create a Steam Audio Static Mesh");
+        return {};
+    }
+    
 	// Copy the mesh into the phonon format
 
 	auto verts = _mesh.View<vec3>(Mesh::aPosition);
@@ -232,6 +244,12 @@ void SteamAudio::SetListenerPosition(vec3 position)
 
 void SteamAudio::SaveObjFile()
 {
+    if (!m_scene)
+    {
+        log_audio("Failed to save obj file");
+        return;
+    }
+    
 	iplSceneCommit(m_scene);
 	iplSceneSaveOBJ(m_scene, "./steamAudioSceneOut.obj");
 }

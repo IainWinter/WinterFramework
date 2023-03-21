@@ -55,7 +55,7 @@ public:
 
 	// like shared_ptr conversion
 
-	template <class _u, std::enable_if_t<std::_SP_pointer_compatible<_u, _t>::value, int> = 0>
+	template <class _u, std::enable_if_t<std::is_convertible<_u*, _t*>::value, int> = 0>
 	AssetItem(const AssetItem<_u>& other)
 	{
 		//r<Asset::AssetControlBlock<_u>> ptr = other.control.lock();
