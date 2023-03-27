@@ -41,6 +41,9 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Tex
 
 	mat4 world = transform.World();
 	world[3][2] += z;
+
+	// add a little offset to stop z fighting
+	// gets a little wonky with many particles
 	z += .0001f;
 
 	vec4 uv = vec4(uvOffset, uvScale);

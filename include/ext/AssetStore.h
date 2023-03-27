@@ -140,6 +140,20 @@ namespace Asset
 		return Get<_t>(name);
 	}
 
+	// this is a hack for registering assets that are polymorphic
+	// GetAllAssetsOfType will then be able to know the base type
+	// in the future this should happen automatically
+	template<typename _base, typename _t, typename... _a>
+	a<_base> MakeAs(const std::string& name, const _a&... args)
+	{
+		if (!Has(name))
+		{
+			RegisterAsset<_base>(name, mkr<_t>(args...));
+		}
+
+		return Get<_base>(name);
+	}
+
 	template<typename _t, typename... _a>
 	a<_t> LoadFromFile(const std::string& filename, const _a&... args)
 	{
