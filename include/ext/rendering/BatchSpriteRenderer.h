@@ -22,6 +22,8 @@ public:
 	void Begin();
 	void Draw(const Camera& camera, bool mixTint = false);
 
+	void SetZOffsetPerDraw(float zOffsetPerDraw);
+
 	void SubmitSprite(
 		const Transform2D& transform,
 		const Color& tint);
@@ -48,6 +50,9 @@ private:
 	r<Texture> m_default;
 	float z = 0;
 
+	// Set to offset each draw by a small amount
+	float zOffsetPerDraw = 0.0001f;
+
 	void InitProgram();
 
 	struct BatchData
@@ -70,6 +75,7 @@ private:
 	void SetProgram(const mat4& proj, const mat4& view, bool mixTint);
 	void DrawBatch(r<Texture> texture, BatchData& batch);
     
+
 public:
     r<Texture> GetDefaultTexture() const;
 };

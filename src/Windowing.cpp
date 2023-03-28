@@ -410,7 +410,7 @@ void Window::BeginImgui()
 {
 	// might want to allow user to configure this
 	// but 99% of the time you want to draw imgui 
-	// to the screen not some backbuffer
+	// to the screen not some back buffer
 		
 	gl(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 

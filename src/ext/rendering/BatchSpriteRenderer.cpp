@@ -22,6 +22,11 @@ void BatchSpriteRenderer::Draw(const Camera& camera, bool mixTint)
 	m_batches.clear(); // can have a much better scheme for keeping vector memory alive
 }
 
+void BatchSpriteRenderer::SetZOffsetPerDraw(float zOffsetPerDraw)
+{
+	this->zOffsetPerDraw = zOffsetPerDraw;
+}
+
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color& tint)
 {
 	SubmitSprite(transform, nullptr, vec2(0.f), vec2(0.f), tint);
@@ -44,7 +49,7 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Tex
 
 	// add a little offset to stop z fighting
 	// gets a little wonky with many particles
-	z += .0001f;
+	z += zOffsetPerDraw;
 
 	vec4 uv = vec4(uvOffset, uvScale);
 
