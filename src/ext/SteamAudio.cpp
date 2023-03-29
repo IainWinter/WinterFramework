@@ -290,7 +290,30 @@ SteamAudioSource::SteamAudioSource(Audio audio, _IPLSource_t* source, SteamAudio
 	: Audio    (audio)
 	, m_source (source)
 	, m_world  (world)
-{}
+{
+	m_outputs = mkr<SteamAudioSourceSimulationResults>();
+}
+
+void SteamAudioSource::Destroy()
+{
+	if (!m_source || !m_world)
+	{
+		log_audio("e~Tried to destroy null SteamAudioSource");
+		return;
+	}
+
+	m_world->_RemoveSource(m_source);
+
+	m_source = nullptr;
+	m_world = nullptr;
+
+	Audio::Destroy();
+}
+
+const SteamAudioSourceSimulationResults& SteamAudioSource::GetSimulationResults() const
+{
+	return *m_outputs;
+}
 
 void SteamAudioSource::_UpdateSourceInputs()
 {
@@ -321,6 +344,25 @@ void SteamAudioSource::_UpdateDSPParams()
 {
 	// flags for 'simulated-defined' are set in FMOD Studio
 
+	IPLSimulationOutputs outputs;
+	iplSourceGetOutputs(m_source, IPL_DIRECT_AND_REFLECT, &outputs);
+	
+	// Copy the results, mainly for debug
+
+	m_outputs->airAbsorption[0] = outputs.direct.airAbsorption[0];
+	m_outputs->airAbsorption[1] = outputs.direct.airAbsorption[1];
+	m_outputs->airAbsorption[2] = outputs.direct.airAbsorption[2];
+
+	m_outputs->transmission[0] = outputs.direct.transmission[0];
+	m_outputs->transmission[1] = outputs.direct.transmission[1];
+	m_outputs->transmission[2] = outputs.direct.transmission[2];
+
+	m_outputs->directivity = outputs.direct.directivity;
+	m_outputs->distanceAttenuation = outputs.direct.distanceAttenuation;
+	m_outputs->occlusion = outputs.direct.occlusion;
+	m_outputs->directFlags = (int)outputs.direct.flags;
+	m_outputs->transmissionType = (int)outputs.direct.transmissionType;
+
 	SetParamDSP(0, SpatializeEffect::APPLY_OCCLUSION, 1);
 	SetParamDSP(0, SpatializeEffect::SIMULATION_OUTPUTS, &m_source, sizeof(IPLSource*));
 }
@@ -328,22 +370,6 @@ void SteamAudioSource::_UpdateDSPParams()
 bool SteamAudioSource::_IsSource(_IPLSource_t* source) const
 {
 	return m_source == source;
-}
-
-void SteamAudioSource::Destroy()
-{
-	if (!m_source || !m_world)
-	{
-		log_audio("e~Tried to destroy null SteamAudioSource");
-		return;
-	}
-
-	m_world->_RemoveSource(m_source);
-
-	m_source = nullptr;
-	m_world = nullptr;
-
-	Audio::Destroy();
 }
 
 SteamAudioGeometry::SteamAudioGeometry()

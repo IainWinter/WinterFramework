@@ -14,6 +14,21 @@ struct _IPLSource_t;
 
 class SteamAudio;
 
+// these are all handles
+
+struct SteamAudioSourceSimulationResults
+{
+	float airAbsorption[3];
+	float transmission[3];
+
+	float directivity;
+	float distanceAttenuation;
+	float occlusion;
+
+	int directFlags;
+	int transmissionType;
+};
+
 // A source of audio in a 3D scene
 class SteamAudioSource : public Audio
 {
@@ -23,6 +38,8 @@ public:
 
 	void Destroy() override;
 
+	const SteamAudioSourceSimulationResults& GetSimulationResults() const;
+
 	// internal
 	void _UpdateSourceInputs();
 	void _UpdateDSPParams();
@@ -31,6 +48,9 @@ public:
 private:
 	_IPLSource_t* m_source;
 	SteamAudio* m_world;
+
+	// for debug
+	r<SteamAudioSourceSimulationResults> m_outputs;
 };
 
 class SteamAudioGeometry
