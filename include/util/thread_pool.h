@@ -3,6 +3,7 @@
 #include <vector>
 #include <thread>
 #include <functional>
+#include <condition_variable>
 #include "util/tsque.h"
 
 struct thread_pool
@@ -17,6 +18,9 @@ private:
 	std::vector<std::thread> m_threads;
 	tsque<work_item> m_work; // if the thread should stop, work to be done
 
+    std::condition_variable var;
+    std::mutex waitMutex;
+    
 public:
 	thread_pool(int thread_count)
 	{
@@ -31,6 +35,8 @@ public:
 						work_item work = m_work.pop_front();
 						if (work.poison) break;
 						work.work();
+                        
+                        var.notify_one();
 					}
 				}
 			));
@@ -64,4 +70,10 @@ public:
 	{
 		m_work.push_back(work_item{ false, work });
 	}
+    
+    void wait()
+    {
+        std::unique_lock lock(waitMutex);
+        var.wait(lock, [this]() { return m_work.size() == 0; });
+    }
 };
