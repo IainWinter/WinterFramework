@@ -312,7 +312,10 @@ void SteamAudioSource::Destroy()
 
 const SteamAudioSourceSimulationResults& SteamAudioSource::GetSimulationResults() const
 {
-	return *m_outputs;
+    if (m_outputs)
+        return *m_outputs;
+    
+    return {};
 }
 
 void SteamAudioSource::_UpdateSourceInputs()
