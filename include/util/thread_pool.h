@@ -17,7 +17,8 @@ private:
 
 	std::vector<std::thread> m_threads;
 	tsque<work_item> m_work; // if the thread should stop, work to be done
-
+    std::atomic<int> m_workCount;
+    
     std::condition_variable var;
     std::mutex waitMutex;
     
@@ -36,6 +37,7 @@ public:
 						if (work.poison) break;
 						work.work();
                         
+                        m_workCount -= 1;
                         var.notify_one();
 					}
 				}
@@ -68,12 +70,13 @@ public:
 
 	void thread(const std::function<void()>& work)
 	{
+        m_workCount += 1;
 		m_work.push_back(work_item{ false, work });
 	}
     
     void wait()
     {
         std::unique_lock lock(waitMutex);
-        var.wait(lock, [this]() { return m_work.size() == 0; });
+        var.wait(lock, [this]() { return m_workCount == 0; });
     }
 };
