@@ -143,11 +143,8 @@ namespace meta
 
 		bool m_is_floating        = false;
 		bool m_is_integral        = false;
-		
+        
 		bool m_is_complex         = false;
-
-		bool m_has_custom_write   = false;
-		bool m_has_custom_read    = false;
 	};
 
 	template<typename _t>
@@ -1116,13 +1113,13 @@ namespace meta
 
 		void set_custom_writer(const std::function<void(serial_writer*, const _t&)>& func)
 		{
-			set_prop("custom_write", true);
+			_class_type::set_prop("custom_write", true);
 			m_write = func;
 		}
 
 		void set_custom_reader(const std::function<void(serial_reader*, _t&)>& func)
 		{
-			set_prop("custom_read", true);
+            _class_type::set_prop("custom_read", true);
 			m_read = func;
 		}
 
@@ -1343,12 +1340,19 @@ namespace meta
 	public:
 		describe()
 		{
-			if (!has_registered_type(_get_id<_t>()))
-			{
-				m_current = _get_class<_t>();
-			}
+			if (!has_registered_type(_get_id<_t>())) // only make if there is no class by default
+                force_redefine();
+            
+            // should remove this logging
+            printf("meta::describe blocked describing type for a second time %s\n", _get_class<_t>()->name());
 		}
 
+        describe<_t>& force_redefine()
+        {
+            m_current = _get_class<_t>();
+            return *this;
+        }
+        
 		// set the name of the class
 		describe<_t>& name(const char* name)
 		{

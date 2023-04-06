@@ -2,28 +2,45 @@
 
 // should use this here, or make time a util
 #include "app/Time.h"
-
 #include "ext/serial/serial_json.h"
 
-SimpleTraceScope::SimpleTraceScope(SimpleTrace* trace)
+#include "SDL_thread.h"
+
+#include <thread>
+
+float millis()
 {
-    m_event.ts = Time::TotalTimeNow();
+    return Time::TotalTimeNow() * 1000.f;
+}
+
+SimpleTraceScope::SimpleTraceScope(const char* name, SimpleTrace* trace)
+{
+    unsigned long tid = SDL_ThreadID();
+    unsigned long pid = 0;
+    
     m_trace = trace;
+    
+    m_event.name = name;
+    m_event.tid = tid;
+    m_event.pid = pid;
+    m_event.ts = millis();
 }
 
 SimpleTraceScope::~SimpleTraceScope()
 {
-    m_event.dur = (Time::TotalTimeNow() - m_event.ts) * 1000.f;
+    m_event.dur = millis() - m_event.ts;
     m_trace->Report(m_event);
 }
 
 void SimpleTrace::Reset()
 {
-    report = {};
+    std::unique_lock lock(mut);
+    report.traceEvents = {};
 }
 
 void SimpleTrace::Report(const SimpleTraceEvent& event)
 {
+    std::unique_lock lock(mut);
     report.traceEvents.push_back(event);
 }
 
@@ -38,9 +55,9 @@ SimpleTrace* SimpleTrace::GetInstance()
     return &trace;
 }
 
-SimpleTraceScope wTimeScope()
+SimpleTraceScope wTimeScope(const char* name)
 {
-    return SimpleTraceScope(SimpleTrace::GetInstance());
+    return SimpleTraceScope(name, SimpleTrace::GetInstance());
 }
 
 void wInitSimpleTrace()

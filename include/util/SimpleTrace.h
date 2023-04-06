@@ -2,23 +2,25 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
 // store a list of trace events for google trace viewer
 
 struct SimpleTraceEvent
 {
-    int pid;
-    int tid;
-    float ts;
-    float dur;
+    int pid = 0;
+    int tid = 0;
+    float ts = 0.0;
+    float dur = 0.0;
     std::string ph = "X";
-    std::string name;
-    
+    std::string name = "Unset Name";
+        
     // could have custom object of args
 };
 
 struct SimpleTraceReport
 {
+    // should use concurrent vec
     std::vector<SimpleTraceEvent> traceEvents;
 };
 
@@ -27,7 +29,7 @@ class SimpleTrace;
 class SimpleTraceScope
 {
 public:
-    SimpleTraceScope(SimpleTrace* trace);
+    SimpleTraceScope(const char* name, SimpleTrace* trace);
     ~SimpleTraceScope();
     
 private:
@@ -50,8 +52,8 @@ private:
     
 private:
     SimpleTraceReport report;
+    std::mutex mut;
 };
 
-SimpleTraceScope wTimeScope();
-
+SimpleTraceScope wTimeScope(const char* name);
 void wInitSimpleTrace();

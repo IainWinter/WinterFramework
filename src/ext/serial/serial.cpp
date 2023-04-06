@@ -1,5 +1,4 @@
 #include "ext/serial/serial.h"
-#include "Log.h"
 #include <cstring>
 
 namespace meta
@@ -78,8 +77,6 @@ namespace meta
 
 	void serial_reader::read_class(type* type, void* instance)
 	{
-		log_io("reading class %s", type->name());
-
 		if (!type->get_type()->is_complex() || type->get_type()->has_custom_read()) // simple / custom
 		{
 			type->_serial_read(this, instance);
@@ -228,6 +225,7 @@ namespace meta
 			.custom_read(&read_any);
         
         describe<std::string>()
+            .force_redefine()
             .custom_write(&write_string)
             .custom_read(&read_string);
 	}
