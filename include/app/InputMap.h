@@ -8,13 +8,21 @@
 
 //
 // some oddities
-//		Mapping can be overwritten if the two Group axes use the same buttons
-//		
-//		Should rename 'Virtual Axis' to just Axis, and 'Input Axis' to 'Input Group' or something along those lines
+//		tofix: Mappings can be overwritten if two Group axes use the same buttons
 
-
+/**
+ * A type to identify axies
+ */
 using InputName = std::string;
 
+/**
+ * A type to identify masks
+ */
+using InputMask = std::string;
+
+/**
+ * An event for inputs
+ */
 struct event_Input
 {
 	InputName name;
@@ -29,6 +37,9 @@ struct event_Input
 
 namespace Input
 {
+    /**
+     * An adapter for each input enum. Converts from the enum values to a linear integer range.
+     */
 	struct InputCode
 	{
 		int code;
@@ -45,13 +56,9 @@ namespace Input
 	};
 }
 
-namespace std
-{
-	template <>
-	struct hash<Input::InputCode>
-	{
-		size_t operator()(const Input::InputCode& code) const
-		{
+namespace std {
+	template <> struct hash<Input::InputCode> {
+		size_t operator()(const Input::InputCode& code) const {
 			return (int)code;
 		}
 	};
@@ -59,41 +66,197 @@ namespace std
 
 namespace Input
 {
+    /**
+     *  Settings for each axis.
+     *  InputAxis and GroupAxis store this so these settings can be applied at both levels.
+     */
 	struct InputAxisSettings
 	{
-		// round to 0 if below this length
+        /**
+         * Round to 0 if below this length.
+         */
 		float deadzone = 0.f;
 
-		// limit to a unit vector
+        /**
+         * Limit the length of output to 1.
+         */
 		bool limitToUnit = true;
 
-		// normalize to a unit vector
+        /**
+         * Normalize the length of the output to 1.
+         */
 		bool normalized = false;
 
-		// if this is empty, it will be accepted by any active mask
+        /**
+         * Masks allow for storing multiple 'control schemes' at once, but only listen to one.
+         * If mask is an empty string, it will be accepted by any active mask.
+         */
 		std::string mask;
 
 		bool operator==(const InputAxisSettings& other) const;
 		bool operator!=(const InputAxisSettings& other) const;
 	};
 
+    /**
+     * An axis is defined as a collection of inputs and weights.
+     * Using this scheme it is easy to define X/Y axes, and combo buttons.
+     * To create mutl-bindings like Controller Left Stick / WASD / Arrow keys, see AxisGroup.
+     */
 	struct InputAxis
 	{
 		std::unordered_map<int, vec2> components; // (code, component) -> sum of State[code] * component is axis state
 		InputAxisSettings settings;
-
+                
 		bool operator==(const InputAxis& other) const;
 		bool operator!=(const InputAxis& other) const;
 	};
 
+    /**
+     * A summation of input axes. Useful to bind many inputs to the same axis.
+     * The main use for Group Axes is binding keyboard and analouge controller inputs as
+     * they need to have seperate deadzones before summation. After summation
+     * the final value is processed again using the group axis' settings.
+     */
 	struct AxisGroup
 	{
 		std::vector<InputName> axes;
 		InputAxisSettings settings;
-
+        
 		bool operator==(const AxisGroup& other) const;
 		bool operator!=(const AxisGroup& other) const;
 	};
+
+    /**
+     * Allows for Input and Group axis to set their settings without code copy
+     */
+    template<typename _a>
+    class InputAxisSettingsBuilder
+    {
+    public:
+        InputAxisSettingsBuilder(InputAxisSettings* settings)
+            : m_settings (settings)
+        {}
+        
+        _a& Deadzone(float deadzone) {
+            m_settings->deadzone = deadzone;
+            return *(_a*)this;
+        }
+        
+        _a& LimitToUnit(bool limitToUnit) {
+            m_settings->limitToUnit = limitToUnit;
+            return *(_a*)this;
+        }
+        
+        _a& Normalized(bool normalized) {
+            m_settings->normalized = normalized;
+            return *(_a*)this;
+        }
+        
+        _a& Mask(const std::string& mask) {
+            m_settings->mask = mask;
+            return *(_a*)this;
+        }
+        
+    private:
+        InputAxisSettings* m_settings;
+    };
+
+    /**
+     * Provides a fluent interface for configuring input axes
+     */
+    class InputAxisBuilder : public InputAxisSettingsBuilder<InputAxisBuilder>
+    {
+    public:
+        InputAxisBuilder(InputAxis* axis, const InputName& name);
+        
+        InputAxisBuilder& Map(InputCode code, vec2 weight);
+        InputAxisBuilder& MapButton(InputCode code, float weight = 1.f);
+        
+    private:
+        InputAxis* m_axis;
+        InputName m_name;
+    };
+
+    /**
+     * Provides a fluent interface for configuring axis groups
+     */
+    class AxisGroupBuilder : public InputAxisSettingsBuilder<AxisGroupBuilder>
+    {
+    public:
+        AxisGroupBuilder(AxisGroup* axis, const InputName& name);
+        
+        AxisGroupBuilder& Map(const InputName& name);
+        
+    private:
+        AxisGroup* m_axis;
+        InputName m_name;
+    };
+
+    /**
+     * Makes and returns a new input axis.
+     * The returned axis is a reference with builder functions to bind inputs.
+     */
+    InputAxisBuilder CreateAxis(const InputName& name);
+
+    /**
+     * Makes and returns a new group axis.
+     * The returned axis is a reference with builder functions to bind input axes by name.
+     */
+    AxisGroupBuilder CreateGroupAxis(const InputName& name);
+
+    /**
+     * Return the state of an axis. If an input axis and axis group share names, the group will take presedence and be returned.
+     */
+    vec2 GetAxis(const InputName& axis);
+
+    /**
+     * Buttons are treated as axies with only an x component.
+     * Shorthand for GetAxis(button).x
+     */
+    float GetButton(const InputName& button);
+
+    /**
+     * For single press buttons.
+     * Once true is returned, false will be returned until the button is released and pressed again.
+     */
+    bool Once(const InputName& button);
+
+    /**
+     * Set the global active mask. See InputAxisSettings::mask
+     */
+    void SetActiveMask(const std::string& mask);
+
+    /**
+     * If the viewport doesn't take up the whole window, use this function to
+     * map the screen to viewport. This is not fullscreen at the OS level, it's
+     * inside the window for splitscreen / editor windows.
+     */
+    void SetViewportBounds(vec2 screenMin, vec2 screenSize);
+
+    /**
+     * Map a screen coord to a viewport coord. Only needed when viewport
+     * is a diferent size than the window
+     */
+    vec2 MapToViewport(float screenX, float screenY);
+
+    /**
+     * Serialize an input context to a file
+     */
+    void WriteInputPack(const std::string& filename);
+
+    /**
+     * Deserialize an input context from a file
+     */
+    void ReadInputPack(const std::string& filename);
+
+
+    /**
+     *     Internal
+     */
+
+
+    void SetState(int code, float state);
+    const InputName& GetMapping(InputCode code);
 
 	struct InputContext : wContext
 	{
@@ -128,66 +291,4 @@ namespace Input
 	};
 
 	wContextDecl(InputContext);
-
-	float GetButton(const InputName& button);
-	vec2 GetAxis(const InputName& axis);
-
-	// returns true the first time a button is true
-	// and false until it is released and pressed again
-	bool Once(const InputName& button);
-
-	//
-	//	Creating axes
-	//
-
-	bool AxisExists(const InputName& axis);
-	bool GroupAxisExists(const InputName& axis);
-
-	InputAxis& CreateAxis(const InputName& name);
-	AxisGroup& CreateGroupAxis(const InputName& name);
-
-	//
-	//	Settings
-	//
-
-	void SetAxisSettings(const InputName& axis, const InputAxisSettings& settings);
-	void SetGroupAxisSettings(const InputName& axis, const InputAxisSettings& settings);
-
-	//
-	//	Components
-	//
-
-	void SetAxisComponent(const InputName& axis, InputCode code, vec2 weight = vec2(1, 0));
-
-	// Combine multiple axes into a single Group axis
-	void SetGroupAxisComponent(const InputName& axis, const InputName& component);
-	
-	//
-	//	Mappings
-	//
-
-	const InputName& GetMapping(InputCode code);
-
-	// Internal, for framework to set state
-	void SetState(int code, float state);
-
-	//
-	// Save an input context to disk and load it
-	//
-
-	void WriteInputPack(const std::string& filename);
-	void  ReadInputPack(const std::string& filename);
-
-	//
-	//	Viewport
-	//
-
-	void SetViewportBounds(vec2 screenMin, vec2 screenSize);
-	vec2 MapToViewport(float screenX, float screenY);
-
-	//
-	//	Mask
-	//
-
-	void SetActiveMask(const std::string& mask);
 }

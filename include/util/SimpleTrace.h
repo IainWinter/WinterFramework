@@ -55,5 +55,7 @@ private:
     std::mutex mut;
 };
 
+#define wTIME_SCOPE(name) auto timer = wTimeScope(name)
+
 SimpleTraceScope wTimeScope(const char* name);
 void wInitSimpleTrace();
