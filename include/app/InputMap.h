@@ -11,7 +11,7 @@
 //		tofix: Mappings can be overwritten if two Group axes use the same buttons
 
 /**
- * A type to identify axies
+ * A type to identify axes
  */
 using InputName = std::string;
 
@@ -100,7 +100,7 @@ namespace Input
     /**
      * An axis is defined as a collection of inputs and weights.
      * Using this scheme it is easy to define X/Y axes, and combo buttons.
-     * To create mutl-bindings like Controller Left Stick / WASD / Arrow keys, see AxisGroup.
+     * To create multi-bindings like Controller Left Stick / WASD / Arrow keys, see AxisGroup.
      */
 	struct InputAxis
 	{
@@ -113,8 +113,8 @@ namespace Input
 
     /**
      * A summation of input axes. Useful to bind many inputs to the same axis.
-     * The main use for Group Axes is binding keyboard and analouge controller inputs as
-     * they need to have seperate deadzones before summation. After summation
+     * The main use for Group Axes is binding keyboard and analogue controller inputs as
+     * they need to have separate dead zones before summation. After summation
      * the final value is processed again using the group axis' settings.
      */
 	struct AxisGroup
@@ -205,12 +205,12 @@ namespace Input
     AxisGroupBuilder CreateGroupAxis(const InputName& name);
 
     /**
-     * Return the state of an axis. If an input axis and axis group share names, the group will take presedence and be returned.
+     * Return the state of an axis. If an input axis and axis group share names, the group will take precedence and be returned.
      */
     vec2 GetAxis(const InputName& axis);
 
     /**
-     * Buttons are treated as axies with only an x component.
+     * Buttons are treated as axes with only an x component.
      * Shorthand for GetAxis(button).x
      */
     float GetButton(const InputName& button);
@@ -227,15 +227,15 @@ namespace Input
     void SetActiveMask(const std::string& mask);
 
     /**
-     * If the viewport doesn't take up the whole window, use this function to
-     * map the screen to viewport. This is not fullscreen at the OS level, it's
-     * inside the window for splitscreen / editor windows.
+     * If the view port doesn't take up the whole window, use this function to
+     * map the screen to view port. This is not fullscreen at the OS level, it's
+     * inside the window for split screen / editor windows.
      */
     void SetViewportBounds(vec2 screenMin, vec2 screenSize);
 
     /**
-     * Map a screen coord to a viewport coord. Only needed when viewport
-     * is a diferent size than the window
+     * Map a screen coordinate to a view port coordinate. Only needed when view port
+     * is a different size than the window
      */
     vec2 MapToViewport(float screenX, float screenY);
 
@@ -266,8 +266,8 @@ namespace Input
 		std::unordered_map<InputName, AxisGroup> GroupAxes;
 
 		// mapping of name to axis
-		// all buttons can be represented as axes with a deadzone
-		// multibutton combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
+		// all buttons can be represented as axes with a dead zone
+		// multi-button combos can be thought as an axis with components ('A', .5) and ('B', .5) and a dead zone = 1
 		std::unordered_map<InputName, InputAxis> Axes;
 
 		// mapping of code to input name
@@ -280,7 +280,7 @@ namespace Input
 		// once states
 		std::unordered_set<InputName> OnceButtonIsDown;
 
-		// for mapping mouse into viewport
+		// for mapping mouse into view port
 		vec2 ViewportMin;
 		vec2 ViewportSize;
 

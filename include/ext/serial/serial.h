@@ -1344,7 +1344,7 @@ namespace meta
                 force_redefine();
             
             // should remove this logging
-            printf("meta::describe blocked describing type for a second time %s\n", _get_class<_t>()->name());
+            // printf("meta::describe blocked describing type for a second time %s\n", _get_class<_t>()->name());
 		}
 
         describe<_t>& force_redefine()
