@@ -60,6 +60,9 @@ struct B2_API b2BodyUserData
 	b2BodyUserData()
 	{
 		pointer = 0;
+
+		entityOwning = nullptr;
+		entityId = -1;
 	}
 
 	/// For legacy compatibility

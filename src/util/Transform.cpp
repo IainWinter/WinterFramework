@@ -22,7 +22,7 @@ Transform2D::Transform2D(
     : position (position)
     , scale    (scale)
     , rotation (rotation)
-    , z        (0.f)
+    , z        (z)
 {}
 
 Transform2D::Transform2D(

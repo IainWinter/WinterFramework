@@ -34,18 +34,19 @@ SimpleTraceScope::~SimpleTraceScope()
 
 void SimpleTrace::Reset()
 {
-    std::unique_lock lock(mut);
-    report.traceEvents = {};
+    events.clear();
 }
 
 void SimpleTrace::Report(const SimpleTraceEvent& event)
 {
-    std::unique_lock lock(mut);
-    report.traceEvents.push_back(event);
+    events.push_back(event);
 }
 
 void SimpleTrace::GenerateReport(std::ostream& stream) const
 {
+    SimpleTraceReport report;
+    report.traceEvents = std::vector<SimpleTraceEvent>(events.begin(), events.end());
+
     json_writer(stream).write(report);
 }
 

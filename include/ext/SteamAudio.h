@@ -3,6 +3,12 @@
 #include "Audio.h"
 #include "Rendering.h"
 
+// Could put this in a class called SteamAudioSimulator which is DI in to SteamAudio
+#include <thread>
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
+
 // simple wrapper around steam audio
 // forward declare, is this what the _interfaces file is for?
 
@@ -66,12 +72,23 @@ private:
 	SteamAudio* m_world;
 };
 
+//class SteamAudioSimulator
+//{
+//public:
+//	virtual void UpdateData();
+//	virtual void GetData();
+//
+//	virtual void Run();
+//	virtual void Stop();
+//};
+
 class SteamAudio
 {
 public:
 	SteamAudio(AudioWorld& audio);
 
 	void Init();
+	void Dnit();
 	void RunSimulation();
 
 	SteamAudioSource CreateSource(const std::string& eventName);
@@ -86,6 +103,10 @@ public:
 	void _RemoveGeometry(_IPLStaticMesh_t* geometry);
 
 private:
+	void WriteSimulationInputs();
+	void ReadSimulationResults();
+
+private:
 	AudioWorld& m_audio;
 
 	_IPLContext_t* m_steam;
@@ -97,4 +118,19 @@ private:
 	// This is for reverb calculations
 	vec3 m_listenerPosition;
 	_IPLSource_t* m_listener;
+
+	// todo:
+	//
+	// Running the simulation in a separate thread
+	// Could put this in a class called SteamAudioSimulator which is DI in to SteamAudio
+	//
+
+	// This is so I can run the simulation in another thread
+	std::thread m_simulationThread;
+
+	std::atomic<bool> m_simInputsReady;
+	std::atomic<bool> m_simResultsReady;
+	std::atomic<bool> m_simRunning;
+	std::mutex m_simMut;
+	std::condition_variable m_simWait;
 };

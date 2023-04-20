@@ -108,9 +108,44 @@ void SteamAudio::Init()
 	iplFMODSetHRTF(hrtf);
 	iplFMODSetSimulationSettings(simulationSettings);
 	iplFMODSetReverbSource(m_listener);
+
+	m_simResultsReady = false;
+	m_simInputsReady = false;
+	m_simRunning = true;
+
+	m_simulationThread = std::thread([this]()
+	{
+		while (true)
+		{
+			{ // wait for inputs
+				std::unique_lock lock(m_simMut);
+				m_simWait.wait(lock, [this]() { return (bool)m_simInputsReady; });
+			}
+
+			if (!m_simRunning) // break after for quick dnit
+				break;
+
+			iplSimulatorRunDirect(m_simulator);
+			iplSimulatorRunReflections(m_simulator);
+
+			m_simResultsReady = true;
+			m_simInputsReady = false;
+		}
+	});
 }
 
-void SteamAudio::RunSimulation()
+void SteamAudio::Dnit()
+{
+	m_simRunning = false;
+
+	m_simInputsReady = true; // wake up thread
+	m_simWait.notify_one();
+
+	if (m_simulationThread.joinable())
+		m_simulationThread.join();
+}
+
+void SteamAudio::WriteSimulationInputs()
 {
 	// Apply any changes to the scene / simulator
 
@@ -148,20 +183,30 @@ void SteamAudio::RunSimulation()
 	// Set direct audio settings
 
 	for (SteamAudioSource& source : m_simulateDirect)
-	{
 		source._UpdateSourceInputs();
-	}
+}
 
-	// Run simulations
-
-	iplSimulatorRunDirect(m_simulator);
-	iplSimulatorRunReflections(m_simulator);
-
+void SteamAudio::ReadSimulationResults()
+{
 	// Set the dsp parameters for the phonon fmod plugins
 
 	for (SteamAudioSource& source : m_simulateDirect)
-	{
 		source._UpdateDSPParams();
+}
+
+void SteamAudio::RunSimulation()
+{
+	if (m_simResultsReady) // read data if sim is done
+	{
+		ReadSimulationResults();
+		m_simResultsReady = false;
+	}
+
+	if (!m_simInputsReady) // Upload data if sim is done
+	{
+		WriteSimulationInputs();
+		m_simInputsReady = true;
+		m_simWait.notify_one();
 	}
 }
 
@@ -312,10 +357,12 @@ void SteamAudioSource::Destroy()
 
 const SteamAudioSourceSimulationResults& SteamAudioSource::GetSimulationResults() const
 {
+	static SteamAudioSourceSimulationResults _default;
+
     if (m_outputs)
         return *m_outputs;
     
-    return {};
+    return _default;
 }
 
 void SteamAudioSource::_UpdateSourceInputs()
@@ -334,7 +381,7 @@ void SteamAudioSource::_UpdateSourceInputs()
 	inputsDirect.occlusionType = IPL_OCCLUSIONTYPE_RAYCAST;
 	inputsDirect.source = sourcePos;
 
-	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect); 
+	iplSourceSetInputs(m_source, IPL_SIMULATIONFLAGS_DIRECT, &inputsDirect);
 
 	IPLSimulationInputs inputsReflection = {};
 	inputsReflection.flags = IPL_SIMULATIONFLAGS_REFLECTIONS;

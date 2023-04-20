@@ -4,6 +4,8 @@
 #include <vector>
 #include <mutex>
 
+#include <concurrent_vector.h>
+
 // store a list of trace events for google trace viewer
 
 struct SimpleTraceEvent
@@ -20,7 +22,6 @@ struct SimpleTraceEvent
 
 struct SimpleTraceReport
 {
-    // should use concurrent vec
     std::vector<SimpleTraceEvent> traceEvents;
 };
 
@@ -51,8 +52,7 @@ private:
     SimpleTrace() = default;
     
 private:
-    SimpleTraceReport report;
-    std::mutex mut;
+    concurrency::concurrent_vector<SimpleTraceEvent> events;
 };
 
 #define wTIME_SCOPE(name) auto timer = wTimeScope(name)
