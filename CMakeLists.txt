@@ -24,6 +24,9 @@ add_subdirectory(vendor/fullsrc/box2d vendor/box2d)
 add_subdirectory(vendor/fullsrc/ImGui vendor/ImGui)
 add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
 
+set(TBB_TEST OFF)
+add_subdirectory(vendor/fullsrc/tbb vendor/tbb)
+
 #
 # Set C++ version and output dirs
 #
@@ -82,6 +85,7 @@ target_link_libraries(WinterFramework
 	PRIVATE SDL2
 	PRIVATE ImGui
 	PRIVATE phonon_fmod
+	PRIVATE tbb
 	PRIVATE fmod
 	PRIVATE fmodstudio
 	PRIVATE phonon
@@ -105,6 +109,7 @@ target_include_directories(WinterFramework
 	PUBLIC vendor/fullsrc/SDL2/include
 	PUBLIC vendor/fullsrc/ImGui/include
 	PUBLIC vendor/fullsrc/phonon_fmod/include
+	PUBLIC vendor/fullsrc/tbb/include
 )
 
 #

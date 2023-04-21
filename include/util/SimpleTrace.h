@@ -4,7 +4,7 @@
 #include <vector>
 #include <mutex>
 
-#include <concurrent_vector.h>
+#include "oneapi/tbb/concurrent_vector.h"
 
 // store a list of trace events for google trace viewer
 
@@ -52,7 +52,7 @@ private:
     SimpleTrace() = default;
     
 private:
-    concurrency::concurrent_vector<SimpleTraceEvent> events;
+    tbb::concurrent_vector<SimpleTraceEvent> events;
 };
 
 #define wTIME_SCOPE(name) auto timer = wTimeScope(name)
