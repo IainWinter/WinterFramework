@@ -70,6 +70,9 @@ struct B2_API b2BodyUserData
 
 	void* entityOwning;
 	unsigned int entityId;
+
+	// for new entity system
+	void* entityPtr;
 };
 
 /// You can define this to inject whatever data you want in b2Fixture

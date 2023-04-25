@@ -34,7 +34,7 @@ struct RayQueryCallback : b2RayCastCallback
 
 	float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
 	{
-		result.results.push_back({ FixtureToEntity(fixture), fraction * length, _fb(point), _fb(normal) });
+		result.results.push_back({ fixture, FixtureToEntity(fixture), fraction * length, _fb(point), _fb(normal) });
 		return -1;
 	}
 };
@@ -434,6 +434,12 @@ Rigidbody2D::Rigidbody2D()
 	, m_collisionEnabled (true)
 {}
 	
+void Rigidbody2D::RemoveFromWorld()
+{
+	if (m_world && m_instance)
+		m_world->DestroyBody(m_instance);
+}
+
 Rigidbody2D& Rigidbody2D::SetTransform(Transform2D& transform)
 {
 	SetPosition(transform.position);
@@ -502,6 +508,12 @@ Rigidbody2D& Rigidbody2D::SetDensity(float density)
 Rigidbody2D& Rigidbody2D::SetType(Type type)
 {
 	m_instance->SetType((b2BodyType)type);
+	return *this;
+}
+
+Rigidbody2D& Rigidbody2D::SetEntity(void* entityPtr)
+{
+	m_instance->GetUserData().entityPtr = entityPtr;
 	return *this;
 }
 
@@ -677,6 +689,19 @@ void PhysicsWorld::Remove(Entity& e)
 	Rigidbody2D& body = e.Get<Rigidbody2D>();
 	m_world->DestroyBody(body.m_instance);
 	body.m_instance = nullptr;
+}
+
+Rigidbody2D PhysicsWorld::CreateBody(void* userptr)
+{
+	b2BodyDef def = {};
+	def.type = b2_dynamicBody;
+
+	Rigidbody2D body;
+	body.m_instance = m_world->CreateBody(&def);
+	body.m_world = m_world;
+	body.SetEntity(userptr);
+
+	return body;
 }
 
 void PhysicsWorld::Tick(float dt)

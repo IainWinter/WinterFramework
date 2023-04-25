@@ -246,7 +246,8 @@ public:
 private:
 	// If null, not in physics world. This pointer is not owned
 	b2Body* m_instance;
-	
+	b2World* m_world;
+
 	// this is for serialization loading
 	b2BodyDef m_preinit;
     std::vector<b2Shape*> colliders;
@@ -266,6 +267,9 @@ private:
     
 public:
 	Rigidbody2D();
+
+	// Remove this body from the world
+	void RemoveFromWorld();
 
 	Rigidbody2D& SetTransform(Transform2D& transform);
 	const Transform2D& GetLastTransform() const;
@@ -299,6 +303,7 @@ public:
 	Rigidbody2D& SetRotationFixed  (bool  isFixed);
 	Rigidbody2D& SetDensity        (float density);
 	Rigidbody2D& SetType           (Type type);
+	Rigidbody2D& SetEntity         (void* entityPtr);
 
 	// colliders
 
@@ -344,6 +349,7 @@ struct RayQueryResult
 {
 	struct Result
 	{
+		b2Fixture* fixture; // temp for new entity system
 		Entity entity;
 		float distance;
 		vec2 point;
@@ -376,6 +382,8 @@ public:
 
 	void Add(EntityWith<Rigidbody2D> e);
 	void Remove(Entity& e);
+
+	Rigidbody2D CreateBody(void* userptr = nullptr);
 
 	void Tick(float dt);
 
