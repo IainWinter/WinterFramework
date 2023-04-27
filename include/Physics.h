@@ -303,7 +303,7 @@ public:
 	Rigidbody2D& SetRotationFixed  (bool  isFixed);
 	Rigidbody2D& SetDensity        (float density);
 	Rigidbody2D& SetType           (Type type);
-	Rigidbody2D& SetEntity         (void* entityPtr);
+	Rigidbody2D& SetEntity         (int id);
 
 	// colliders
 
@@ -383,7 +383,7 @@ public:
 	void Add(EntityWith<Rigidbody2D> e);
 	void Remove(Entity& e);
 
-	Rigidbody2D CreateBody(void* userptr = nullptr);
+	Rigidbody2D CreateBody();
 
 	void Tick(float dt);
 

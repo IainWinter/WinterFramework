@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.12)
 # Include libs that need to be built
 #
 
+set(CMAKE_CXX_STANDARD 20)
+
 set(ASSIMP_NO_EXPORT ON)
 set(ASSIMP_BUILD_TESTS OFF)
 set(ASSIMP_INSTALL_PDB OFF)
@@ -26,14 +28,6 @@ add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
 
 set(TBB_TEST OFF)
 add_subdirectory(vendor/fullsrc/tbb vendor/tbb)
-
-#
-# Set C++ version and output dirs
-#
-
-set(CMAKE_CXX_STANDARD 20)
-# set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
-# set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/${CMAKE_BUILD_TYPE})
 
 #
 # Set build file settings

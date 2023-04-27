@@ -511,9 +511,9 @@ Rigidbody2D& Rigidbody2D::SetType(Type type)
 	return *this;
 }
 
-Rigidbody2D& Rigidbody2D::SetEntity(void* entityPtr)
+Rigidbody2D& Rigidbody2D::SetEntity(int id)
 {
-	m_instance->GetUserData().entityPtr = entityPtr;
+	m_instance->GetUserData().entityId_ = id;
 	return *this;
 }
 
@@ -691,7 +691,7 @@ void PhysicsWorld::Remove(Entity& e)
 	body.m_instance = nullptr;
 }
 
-Rigidbody2D PhysicsWorld::CreateBody(void* userptr)
+Rigidbody2D PhysicsWorld::CreateBody()
 {
 	b2BodyDef def = {};
 	def.type = b2_dynamicBody;
@@ -699,7 +699,6 @@ Rigidbody2D PhysicsWorld::CreateBody(void* userptr)
 	Rigidbody2D body;
 	body.m_instance = m_world->CreateBody(&def);
 	body.m_world = m_world;
-	body.SetEntity(userptr);
 
 	return body;
 }
