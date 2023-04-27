@@ -49,7 +49,7 @@ void SteamAudio::Init()
 {
 	// Load the phonon dll
 
-	m_audio.LoadPlugin("/Users/iain/dev/SimpleDarkGame/app/bin/Debug/" + GetLibraryName("phonon_fmod"));
+	m_audio.LoadPlugin(GetLibraryName("phonon_fmod"));
 
 	// Create context
 
