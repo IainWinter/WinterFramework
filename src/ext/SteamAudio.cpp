@@ -4,6 +4,8 @@
 #include "phonon_fmod/steamaudio_fmod.h"
 #include "phonon_fmod/dsp_names.h"
 
+#include "io/LibraryName.h"
+
 // commonly used flags 
 
 IPLSimulationFlags IPL_DIRECT_AND_REFLECT = (IPLSimulationFlags)(
@@ -47,7 +49,7 @@ void SteamAudio::Init()
 {
 	// Load the phonon dll
 
-	m_audio.LoadPlugin("phonon_fmod.dll");
+	m_audio.LoadPlugin("/Users/iain/dev/SimpleDarkGame/app/bin/Debug/" + GetLibraryName("phonon_fmod"));
 
 	// Create context
 
@@ -237,7 +239,7 @@ SteamAudioGeometry SteamAudio::CreateStaticMesh(const Mesh& _mesh)
 {
     if (!m_scene)
     {
-        log_audio("Failed to create a Steam Audio Static Mesh");
+        log_audio("w~Failed to create a Steam Audio Static Mesh");
         return {};
     }
     
@@ -291,7 +293,7 @@ void SteamAudio::SaveObjFile()
 {
     if (!m_scene)
     {
-        log_audio("Failed to save obj file");
+        log_audio("w~Failed to save obj file");
         return;
     }
     
