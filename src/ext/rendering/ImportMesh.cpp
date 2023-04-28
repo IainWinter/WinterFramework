@@ -39,10 +39,15 @@ Model LoadModelFromFile(const std::string& filename)
 		if (aimesh->HasPositions())
 		{
 			mesh->Add<vec3>(Mesh::aPosition)
-				.Get(Mesh::aPosition)
-					->Set(aimesh->mNumVertices, aimesh->mVertices);
+				.Get(Mesh::aPosition)->Set(aimesh->mNumVertices, aimesh->mVertices);
 		}
 
+        if (aimesh->HasNormals())
+        {
+            mesh->Add<vec3>(Mesh::aNormal)
+                .Get(Mesh::aNormal)->Set(aimesh->mNumVertices, aimesh->mNormals);
+        }
+        
 		r<Buffer> indexBuffer = mesh->Add<int>(Mesh::aIndexBuffer).Get(Mesh::aIndexBuffer);
 
 		for (unsigned f = 0, i = 0; f < aimesh->mNumFaces; f++)

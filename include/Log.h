@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 enum log_mask : size_t
 {
 	LOG_AUDIO     = 1 << 0,
