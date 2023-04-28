@@ -29,7 +29,6 @@ void EngineLoopBase::_Init()
 	Asset::CreateContext();
 	File::CreateContext();
 	Input::CreateContext();
-	wlog::CreateContext();
 
 	// init debug renders
 	Debug::Init();
@@ -80,7 +79,6 @@ void EngineLoopBase::_Dnit()
 	File::DestroyContext();
 	Input::DestroyContext();
 	Render::DestroyContext();
-	wlog::DestroyContext();
 }
 
 bool EngineLoopBase::Tick()

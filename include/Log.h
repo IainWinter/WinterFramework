@@ -1,38 +1,21 @@
 #pragma once
 
-#include "util/pool_allocator.h"
-#include "util/context.h"
-#include <deque>
-#include <unordered_map>
-
 enum log_mask : size_t
 {
-	LOG_AUDIO     =    1,
-	LOG_ENTITY    =    2,
-	LOG_EVENT     =    4,
-	LOG_PHYSICS   =    8,
-	LOG_RENDER    =   16,
-	LOG_WINDOW    =   32,
-	LOG_WORLD     =   64,
-	LOG_CONSOLE   =  128,
-	LOG_IO        =  256,
-	LOG_GAME      =  512,
-	LOG_APP       = 1024,
+	LOG_AUDIO     = 1 << 0,
+	LOG_ENTITY    = 1 << 1,
+	LOG_EVENT     = 1 << 2,
+	LOG_PHYSICS   = 1 << 3,
+	LOG_RENDER    = 1 << 4,
+	LOG_WINDOW    = 1 << 5,
+	LOG_WORLD     = 1 << 6,
+	LOG_CONSOLE   = 1 << 7,
+	LOG_IO        = 1 << 8,
+	LOG_GAME      = 1 << 9,
+	LOG_APP       = 1 << 10,
 
 	LOG_ALL       = 0xFFFFFFFF
 };
-
-// return the list of the last `max_log_count` of logs
-//
-//const std::deque<const char*>& get_all_logs();
-
-// create a string that contains all logs (allocates and copies every time)
-//
-//std::string combine_all_logs();
-
-// set the number of logs to keep before erasing the first
-//
-void set_max_log_count(size_t count);
 
 // enables logging for the flipped bits in the mask, see @log_mask for options
 //
@@ -56,7 +39,7 @@ void set_log_enabled(char flag, bool enabled);
 void set_log_style_flags_enabled(bool enable);
 
 // set the style string for a single char flag
-//                     fg              bg
+//                    text          highlight
 // 
 // Black			\033[30m		\033[40m	
 // Red				\033[31m		\033[41m
@@ -95,37 +78,3 @@ void log_console(const char* fmt, ...);
 void log_io     (const char* fmt, ...);
 void log_game   (const char* fmt, ...);
 void log_app    (const char* fmt, ...);
-
-namespace wlog
-{
-	#define wLOG_SIZE 1024
-
-	struct log_context : wContext
-	{
-		pool_allocator m_pool = pool_allocator(wLOG_SIZE, 2);
-		std::deque<const char*> m_record;
-
-		size_t m_max_size = 1000;
-		size_t m_mask = LOG_ALL;
-
-		std::unordered_map<char, const char*> m_styles =
-		{
-			{'e', "\033[91m"},
-			{'w', "\033[93m"},
-			{'i', "\033[90m"},
-			{'d', "\033[96m"}
-		};
-
-		std::unordered_map<char, bool> m_enabled =
-		{
-			{'e', true},
-			{'w', true},
-			{'i', true},
-			{'d', true}
-		};
-
-		bool m_enable_style = true;
-	};
-
-	wContextDecl(log_context);
-}
