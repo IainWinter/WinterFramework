@@ -251,6 +251,11 @@ namespace Input
 
 
     /**
+    * Update the states for falloff
+    */
+    void UpdateStates(float deltaTime);
+
+    /**
      *     Internal
      */
 

@@ -204,9 +204,9 @@ enum MouseInput
 	MOUSE_VEL_WHEEL_X,
 	MOUSE_VEL_WHEEL_Y,
 
-	// these are sent by the Window, EngineLoop handles breaking it into x,y/vx,vy
 	MOUSE_INPUT_COUNT,
 
+	// these are sent by the Window, EngineLoop handles breaking it into x,y/vx,vy
 	MOUSE_VEL_POS,
 	MOUSE_VEL_WHEEL,
 };

@@ -140,6 +140,17 @@ namespace Input
         if (in.is_open()) json_reader(in).read(*ctx.GetCurrent());
     }
 
+    void UpdateStates(float deltaTime)
+    {
+        // I want this to actually calc falloff base on a setting
+        // but only need it for mouse vel right now
+
+        ctx->State[GetInputCode(MOUSE_VEL_X)] = 0;
+        ctx->State[GetInputCode(MOUSE_VEL_Y)] = 0;
+        ctx->State[GetInputCode(MOUSE_VEL_WHEEL_X)] = 0;
+        ctx->State[GetInputCode(MOUSE_VEL_WHEEL_Y)] = 0;
+    }
+
     InputAxisBuilder::InputAxisBuilder(InputAxis* axis, const InputName& name)
         : InputAxisSettingsBuilder (&axis->settings)
         , m_axis                   (axis)
