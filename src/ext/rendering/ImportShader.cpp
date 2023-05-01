@@ -6,6 +6,11 @@
 #include <fstream>
 #include <string.h>
 
+r<ShaderProgram> ImportShader(const char* filename)
+{
+    return CreateShaderProgramFromSource(LoadShaderSourceFromFile(filename));
+}
+
 ShaderSource LoadShaderSourceFromFile(const char* filename)
 {
     std::ifstream file(filename);

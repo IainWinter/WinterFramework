@@ -3,6 +3,14 @@
 #include "Rendering.h"
 #include <sstream>
 
+//  Import a shader from a source file
+//
+r<ShaderProgram> ImportShader(const char* filename);
+
+//
+// detail
+//
+
 struct ShaderSource
 {
 	std::vector<std::pair<ShaderProgram::ShaderName, std::string>> source;
