@@ -127,6 +127,9 @@ public:
 	template<typename _f>
 	Job Create(_f&& work);
 
+	// call this after a tree has been run to free its nodes
+	void Cleanup();
+
 	void PrintGraphviz(std::ostream& o);
 
 private:

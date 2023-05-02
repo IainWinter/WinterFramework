@@ -324,7 +324,7 @@ void SharedTexture::_copy_in(const SharedTexture& copy)
 
 void SharedTexture::_move_in(SharedTexture&& move)
 {
-	m_outdated = true;
+	m_outdated = move.m_outdated;
 	m_host = std::exchange(move.m_host, {});
 	m_device = std::exchange(move.m_device, {});
 }
@@ -392,7 +392,6 @@ TextureView wCreateTexture(const char* filepath)
 	TextureLayout layout;
 	layout.width = raw.width;
 	layout.height = raw.height;
-	layout.width = raw.width;
 	layout.depth = 1;
 	layout.format = (TextureFormat)raw.channels;
 

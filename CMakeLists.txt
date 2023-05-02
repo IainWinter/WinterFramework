@@ -113,4 +113,5 @@ target_include_directories(WinterFramework
 target_compile_definitions(WinterFramework 
 	PRIVATE ASSET_ROOT_PATH="./assets"
 	PUBLIC SDL_MAIN_HANDLED
+	PUBLIC wGL_DEBUG
 )

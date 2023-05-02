@@ -220,6 +220,19 @@ void Texture::_FreeDevice()
 
 void Texture::_InitOnDevice()
 {
+	log_render("Sending texture to device old version"
+				"\n %d"
+				"\n %d"
+				"\n %d"
+				"\n %d"
+				"\n %d"
+				"\n %d",
+				(int)GL_TEXTURE_2D,
+				(int)gl_iformat(m_usage), (int)Width(), (int)Height(),
+				(int)gl_format(m_usage), (int)gl_type(m_usage)
+	);
+
+
 	gl(glGenTextures(1, &m_device));
 	gl(glBindTexture(GL_TEXTURE_2D, m_device));
 	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
