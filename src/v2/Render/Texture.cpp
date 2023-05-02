@@ -381,6 +381,12 @@ Texture_New wCreateTexture(const TextureLayout& layout, TextureAccess access)
 
 Texture_New wCreateTexture(const char* filepath, TextureAccess access)
 {
+	TextureView view = wCreateTexture(filepath);
+	return Texture_New(mkr<SharedTexture>(view, access));
+}
+
+TextureView wCreateTexture(const char* filepath)
+{
 	RawImageData raw = io_LoadImageFromFile(filepath);
 
 	TextureLayout layout;
@@ -390,7 +396,5 @@ Texture_New wCreateTexture(const char* filepath, TextureAccess access)
 	layout.depth = 1;
 	layout.format = (TextureFormat)raw.channels;
 
-	TextureView view((u8*)raw.buffer, layout);
-	
-	return Texture_New(mkr<SharedTexture>(view, access));
+	return TextureView((u8*)raw.buffer, layout);
 }

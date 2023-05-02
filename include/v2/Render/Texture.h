@@ -179,3 +179,4 @@ public:
 
 Texture_New wCreateTexture(const TextureLayout& layout, TextureAccess access);
 Texture_New wCreateTexture(const char* filepath, TextureAccess access);
+TextureView wCreateTexture(const char* filepath);
