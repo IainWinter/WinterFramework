@@ -1,8 +1,6 @@
 #include "ext/rendering/SimpleRender.h"
 #include "util/error_check.h"
 
-#include "util/metrics.h"
-
 // mesh
 r<ShaderProgram> meshProgram;
 
