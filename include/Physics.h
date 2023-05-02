@@ -231,6 +231,14 @@ private:
 //	void InitPoints(const ArrayView<vec2>& points);
 //};
 
+struct LastPositionState2D
+{
+	vec2 position;
+	float angle;
+	float timePoint;
+	float deltaTime;
+};
+
 struct Rigidbody2D
 {
 public:
@@ -257,10 +265,7 @@ private:
 	bool m_collisionEnabled;
 
 	// last physics tick location for interpolation
-	vec2 m_lastPosition;
-	float m_lastAngle;
-	float m_lastTimepoint;
-	float m_dt;
+	LastPositionState2D m_last;
 
 	// attached colliders
 	std::vector<r<Collider>> m_colliders;
@@ -276,9 +281,8 @@ public:
 
 	Rigidbody2D& SetTransform(Transform2D& transform);
 
-	vec2 GetPosition(float timenow) const;
-	float GetAngle(float timenow) const;
-	void UpdateLast(float dt, float timepoint);
+	const LastPositionState2D& GetLast() const;
+	void UpdateLast(float deltaTime, float timePoint);
 
 	void ApplyForce (vec2 force);
 	void ApplyForce (vec2 force, vec2 offsetFromCenter);
