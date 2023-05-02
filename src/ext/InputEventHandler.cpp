@@ -1,11 +1,13 @@
-#include "app/InputEventHandler.h"
+#include "ext/InputEventHandler.h"
 
 InputEventHandler::InputEventHandler()
-    : m_queue (nullptr)
+    : m_map   (nullptr)
+    , m_queue (nullptr)
 {}
 
-InputEventHandler::InputEventHandler(EventQueue* queue)
-    : m_queue (queue)
+InputEventHandler::InputEventHandler(InputMap* map, EventQueue* queue)
+    : m_map   (map)
+    , m_queue (queue)
 {
     auto bus = queue->GetBus();
     
@@ -45,7 +47,7 @@ void InputEventHandler::on(event_Mouse& e)
 
         case MOUSE_VEL_POS:
         {
-            vec2 pos = Input::MapToViewport(e.screen_x, e.screen_y);
+            vec2 pos = m_map->MapToViewport(e.screen_x, e.screen_y);
 
             HandleInputMapping(GetInputCode(MOUSE_POS_X), pos.x);
             HandleInputMapping(GetInputCode(MOUSE_POS_Y), pos.y);
@@ -78,15 +80,15 @@ void InputEventHandler::on(event_Controller& e)
 
 void InputEventHandler::HandleInputMapping(int code, float state)
 {
-    Input::SetState(code, state);
+    m_map->SetState(code, state);
 
-    InputName input = Input::GetMapping(code);
+    InputName input = m_map->GetMapping(code);
 
     if (input.size() > 0)
     {
         event_Input e;
         e.name = input;
-        e.axis = Input::GetAxis(input);
+        e.axis = m_map->GetAxis(input);
 
         m_queue->Send(e);
     }

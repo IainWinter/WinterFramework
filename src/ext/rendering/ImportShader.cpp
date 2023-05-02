@@ -14,11 +14,24 @@ r<ShaderProgram> ImportShader(const char* filename)
 ShaderSource LoadShaderSourceFromFile(const char* filename)
 {
     std::ifstream file(filename);
+
+    if (!file.is_open())
+    {
+        log_io("e~Failed to open shader file: %s", filename);
+        return {};
+    }
+
     std::stringstream buffer;
     buffer << file.rdbuf();
     file.close();
 
     std::string contents = buffer.str();
+
+    if (contents.size() == 0)
+    {
+        log_io("w~Loaded shader was empty: %s", filename);
+        return {};
+    }
 
     return ProcessShaderSource(contents.c_str());
 }

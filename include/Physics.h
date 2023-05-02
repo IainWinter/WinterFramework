@@ -257,7 +257,10 @@ private:
 	bool m_collisionEnabled;
 
 	// last physics tick location for interpolation
-	Transform2D m_lastTransform;
+	vec2 m_lastPosition;
+	float m_lastAngle;
+	float m_lastTimepoint;
+	float m_dt;
 
 	// attached colliders
 	std::vector<r<Collider>> m_colliders;
@@ -272,8 +275,10 @@ public:
 	void RemoveFromWorld();
 
 	Rigidbody2D& SetTransform(Transform2D& transform);
-	const Transform2D& GetLastTransform() const;
-	void UpdateLastTransform();
+
+	vec2 GetPosition(float timenow) const;
+	float GetAngle(float timenow) const;
+	void UpdateLast(float dt, float timepoint);
 
 	void ApplyForce (vec2 force);
 	void ApplyForce (vec2 force, vec2 offsetFromCenter);

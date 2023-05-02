@@ -994,6 +994,16 @@ void ShaderProgram::Set(const std::string& name, r<Texture> texture)
     Set(name, *texture);
 }
 
+void ShaderProgram::Set(const std::string& name, Texture& texture)
+{
+	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
+	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
+	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
+	gl(glUniform1i(gl_location(name), m_slot));
+
+	//m_slot += 1;
+}
+
 void ShaderProgram::SetArray(const std::string& name, const int* x, int count)
 {
 	gl(glUniform1iv(gl_location(name), count, (int*)&x));
@@ -1007,16 +1017,6 @@ void ShaderProgram::SetArray(const std::string& name, const u32* x, int count)
 void ShaderProgram::SetArray(const std::string& name, const f32* x, int count)
 {
 	gl(glUniform1fv(gl_location(name), count, (f32*)&x));
-}
-
-void ShaderProgram::Set(const std::string& name, Texture& texture)
-{
-	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
-	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
-	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
-	gl(glUniform1i(gl_location(name), m_slot));
-
-	//m_slot += 1;
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }
