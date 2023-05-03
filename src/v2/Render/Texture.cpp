@@ -203,59 +203,59 @@ void DeviceTexture::_move_in(DeviceTexture&& move)
 //	Shared Texture
 //
 
-bool SharedTexture::HasData() const
+bool Texture_New::HasData() const
 {
 	return m_host.View().HasData() || m_device.View().HasData();
 }
 
-void SharedTexture::Resize(const TextureLayout& newLayout)
+void Texture_New::Resize(const TextureLayout& newLayout)
 {
 	m_outdated = false;
 	m_host.Resize(newLayout);
 	m_device.CopyToDevice(m_host.View());
 }
 
-TextureView SharedTexture::View()
+TextureView Texture_New::View()
 {
 	m_outdated = true;
 	return m_host.View();
 }
 
-TextureViewConst SharedTexture::View() const
+TextureViewConst Texture_New::View() const
 {
 	return m_host.View();
 }
 
-int SharedTexture::GetHandle() const
+int Texture_New::GetHandle() const
 {
 	return m_device.View().GetHandle();
 }
 
-void SharedTexture::SendToDevice()
+void Texture_New::SendToDevice()
 {
 	m_device.CopyToDevice(m_host.View());
 }
 
-void SharedTexture::SendToHost()
+void Texture_New::SendToHost()
 {
 	m_device.CopyToHost(&m_host);
 }
 
-void SharedTexture::FreeHost()
+void Texture_New::FreeHost()
 {
 	m_host = {};
 }
 
-void SharedTexture::FreeDevice()
+void Texture_New::FreeDevice()
 {
 	m_device = {};
 }
 
-SharedTexture::SharedTexture()
+Texture_New::Texture_New()
 	: m_outdated (false)
 {}
 
-SharedTexture::SharedTexture(const TextureLayout& layout, TextureAccess access)
+Texture_New::Texture_New(const TextureLayout& layout, TextureAccess access)
 	: m_outdated (false)
 {
 	bool createHost = access == aHost || access == aHostDevice;
@@ -268,21 +268,21 @@ SharedTexture::SharedTexture(const TextureLayout& layout, TextureAccess access)
 		m_device = DeviceTexture(layout);
 }
 
-SharedTexture::SharedTexture(const TextureView& view, TextureAccess access)
+Texture_New::Texture_New(const TextureView& view, TextureAccess access)
 	: m_outdated (false)
 	, m_host	 (view)
 {
 	_sync(access);
 }
 
-SharedTexture::SharedTexture(const TextureHandle& handle, TextureAccess access)
+Texture_New::Texture_New(const TextureHandle& handle, TextureAccess access)
 	: m_outdated (false)
 	, m_device   (handle)
 {
 	_sync(access);
 }
 
-SharedTexture::SharedTexture(const TextureView& view, const TextureHandle& handle)
+Texture_New::Texture_New(const TextureView& view, const TextureHandle& handle)
 	: m_outdated (false)
 	, m_host	 (view)
 	, m_device   (handle)
@@ -293,43 +293,43 @@ SharedTexture::SharedTexture(const TextureView& view, const TextureHandle& handl
 	}
 }
 
-SharedTexture::SharedTexture(const SharedTexture& copy)
+Texture_New::Texture_New(const Texture_New& copy)
 {
 	_copy_in(copy);
 }
 
-SharedTexture::SharedTexture(SharedTexture&& move) noexcept
+Texture_New::Texture_New(Texture_New&& move) noexcept
 {
-	_move_in(std::forward<SharedTexture>(move));
+	_move_in(std::forward<Texture_New>(move));
 }
 
-SharedTexture& SharedTexture::operator=(const SharedTexture& copy)
+Texture_New& Texture_New::operator=(const Texture_New& copy)
 {
 	_copy_in(copy);
 	return *this;
 }
 
-SharedTexture& SharedTexture::operator=(SharedTexture&& move) noexcept
+Texture_New& Texture_New::operator=(Texture_New&& move) noexcept
 {
-	_move_in(std::forward<SharedTexture>(move));
+	_move_in(std::forward<Texture_New>(move));
 	return *this;
 }
 
-void SharedTexture::_copy_in(const SharedTexture& copy)
+void Texture_New::_copy_in(const Texture_New& copy)
 {
 	m_outdated = true;
 	m_host = copy.m_host;
 	m_device = copy.m_device;
 }
 
-void SharedTexture::_move_in(SharedTexture&& move)
+void Texture_New::_move_in(Texture_New&& move)
 {
-	m_outdated = true;
+	m_outdated = move.m_outdated;
 	m_host = std::exchange(move.m_host, {});
 	m_device = std::exchange(move.m_device, {});
 }
 
-void SharedTexture::_sync(TextureAccess access)
+void Texture_New::_sync(TextureAccess access)
 {
 	bool noHost = !m_host.View().HasData();
 	bool noDevice = !m_device.View().HasData();
@@ -362,35 +362,25 @@ void SharedTexture::_sync(TextureAccess access)
 //	Texture
 //
 
-Texture_New::Texture_New(SharedTexture&& move)
-	: instance (mkr<SharedTexture>(std::move(move)))
-{}
-
-Texture_New::Texture_New(const a<SharedTexture>& inst)
-	: instance (inst)
-{}
-
-Texture_New wCreateTexture(const TextureLayout& layout, TextureAccess access)
-{
-	return Texture_New(mkr<SharedTexture>(layout, access));
-}
-
 // put in another file
 
 #include "io/ImageFromDisk.h"
 
-Texture_New wCreateTexture(const char* filepath, TextureAccess access)
+Texture_New wTextureCreate(const char* filepath, TextureAccess access)
+{
+	TextureView view = wTextureLoadView(filepath);
+	return Texture_New(view, access);
+}
+
+TextureView wTextureLoadView(const char* filepath)
 {
 	RawImageData raw = io_LoadImageFromFile(filepath);
 
 	TextureLayout layout;
 	layout.width = raw.width;
 	layout.height = raw.height;
-	layout.width = raw.width;
 	layout.depth = 1;
 	layout.format = (TextureFormat)raw.channels;
 
-	TextureView view((u8*)raw.buffer, layout);
-	
-	return Texture_New(mkr<SharedTexture>(view, access));
+	return TextureView((u8*)raw.buffer, layout);
 }

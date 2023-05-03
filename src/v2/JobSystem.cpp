@@ -68,10 +68,7 @@ JobTree::JobTree(/* allocator */)
 
 JobTree::~JobTree()
 {
-	for (JobNode* node : nodes)
-		_free_node(node);
-
-	nodes.clear();
+	Cleanup();
 }
 
 std::vector<JobNode*> JobTree::GetRoots()
@@ -83,6 +80,14 @@ std::vector<JobNode*> JobTree::GetRoots()
             roots.push_back(node);
         
 	return roots;
+}
+
+void JobTree::Cleanup()
+{
+	for (JobNode* node : nodes)
+		_free_node(node);
+
+	nodes.clear();
 }
 
 void JobTree::PrintGraphviz(std::ostream& o)

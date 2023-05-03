@@ -10,39 +10,15 @@
 // unnessesary copies of data.
 
 //
-//    [Host Data]    [Data Layout]      [Device Handle]       [Data Layout]         (non-owning)
+//    [Host Data]    [Data Layout]      [Device Handle]       [Data Layout]         (data)
 //          |          |                       |                   |
 //          +----------+                       +---------+---------+
 //                     |                       |
 //                 [View ]                  [Handle]                                (non-owning)
 //                    |                        |
-//             [HostXXX class]            [DeviceXXX class]                         (owns view)
+//             [HostXXX class]            [DeviceXXX class]                         (owns view & data)
 //			          |                        |		
 //                    +------------+-----------+
 //                                 |
-//                          [SharedXXX class]                                       (owns Host/DeviceXXX)
-
-
-#include "v2/Render/Texture.h"
-
-inline void NewRenderingTest()
-{
-	// read a texture from memory and copy it into a device only SharedTexture
-
-	TextureLayout layout;
-	layout.width = 100;
-	layout.height = 100;
-	layout.format = fRGBA;
-
-	Texture_New texture = wCreateTexture(layout, aHost);
-	TextureView view = texture.instance->View();
-
-	Color t = view.At(0);
-
-	view.Set(0, Color(0, 255, 0));
-
-
-	//Texture_New fromFile = wCreateTexture(_A("level.png"), aHostDevice);
-
-
-}
+//                             [XXX class]                                          (owns Host/DeviceXXX)
+//

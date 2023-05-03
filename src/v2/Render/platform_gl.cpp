@@ -3,6 +3,8 @@
 
 TextureHandle _texture_device_alloc(const TextureViewConst& view)
 {
+	log_render("_texture_device_alloc %p ", view.GetBytes());
+
 	u32 handle = -1;
 	u32 target = gl_tex_target(view.GetLayout().NumberOfDimensions());
 	
@@ -11,6 +13,7 @@ TextureHandle _texture_device_alloc(const TextureViewConst& view)
 	TextureHandle texture = TextureHandle(handle, target, view.GetLayout());
 	
 	_texture_device_bind(texture);
+	_texture_device_filter_set(texture, fPixel);
 	_texture_device_realloc(&texture, view);
 	
 	return texture;
@@ -21,6 +24,8 @@ void _texture_device_free(TextureHandle* texture)
 	if (!texture->HasData())
 		return;
 
+	log_render("_texture_device_free %d ", texture->GetHandle());
+
 	GLuint handle = texture->GetHandle();
 	
 	gl(glDeleteTextures(1, &handle));
@@ -29,11 +34,15 @@ void _texture_device_free(TextureHandle* texture)
 
 void _texture_device_bind(const TextureHandle& texture)
 {
+	log_render("_texture_device_bind %d -> %d", texture.GetTarget(), texture.GetHandle());
+
 	gl(glBindTexture(texture.GetTarget(), texture.GetHandle()));
 }
 
 void _texture_device_realloc(TextureHandle* texture, const TextureViewConst& view)
 {
+	log_render("_texture_device_realloc %d -> %d", texture->GetTarget(), texture->GetHandle());
+
 	const TextureLayout& layout = view.GetLayout();
 	const u8* buffer = view.GetBytes();
 	

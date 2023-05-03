@@ -106,7 +106,7 @@ private:
 
 //	Texture with a host and device side
 //
-class SharedTexture
+class Texture_New
 {
 public:
 	bool HasData() const;
@@ -125,31 +125,31 @@ public:
 	void FreeDevice();
 
 public:
-	SharedTexture();
-	SharedTexture(const TextureLayout& layout, TextureAccess access);
+	Texture_New();
+	Texture_New(const TextureLayout& layout, TextureAccess access);
 
 	// Take ownership of a TextureView
 	// Create a host texture depending on the TextureAccess
-	SharedTexture(const TextureView& view, TextureAccess access);
+	Texture_New(const TextureView& view, TextureAccess access);
 
 	// Take ownership of a TextureHandle
 	// Create a host texture depending on the TextureAccess
-	SharedTexture(const TextureHandle& handle, TextureAccess access);
+	Texture_New(const TextureHandle& handle, TextureAccess access);
 
 	// Take ownership of a TextureView and TextureHandle
 	// their layouts must be identical
-	SharedTexture(const TextureView& view, const TextureHandle& handle);
+	Texture_New(const TextureView& view, const TextureHandle& handle);
 
 public:
-	SharedTexture(const SharedTexture& copy);
-	SharedTexture(SharedTexture&& move) noexcept;
+	Texture_New(const Texture_New& copy);
+	Texture_New(Texture_New&& move) noexcept;
 
-	SharedTexture& operator=(const SharedTexture& copy);
-	SharedTexture& operator=(SharedTexture&& move) noexcept;
+	Texture_New& operator=(const Texture_New& copy);
+	Texture_New& operator=(Texture_New&& move) noexcept;
 
 private:
-	void _copy_in(const SharedTexture& copy);
-	void _move_in(SharedTexture&& move);
+	void _copy_in(const Texture_New& copy);
+	void _move_in(Texture_New&& move);
 
 	void _sync(TextureAccess access);
 
@@ -162,20 +162,9 @@ private:
 	bool m_outdated;
 };
 
-//	A wrapper around an asset reference to a SharedTexture.
-//	Create through wCreateTexture to allow for custom loaders
 //
-class Texture_New
-{
-public:
-	a<SharedTexture> instance;
+//	Loading Textures
+//
 
-public:
-	Texture_New() = default;
-
-	Texture_New(const a<SharedTexture>& inst);
-	Texture_New(SharedTexture&& move);
-};
-
-Texture_New wCreateTexture(const TextureLayout& layout, TextureAccess access);
-Texture_New wCreateTexture(const char* filepath, TextureAccess access);
+Texture_New wTextureCreate(const char* filepath, TextureAccess access);
+TextureView wTextureLoadView(const char* filepath);
