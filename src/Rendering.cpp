@@ -220,19 +220,6 @@ void Texture::_FreeDevice()
 
 void Texture::_InitOnDevice()
 {
-	log_render("Sending texture to device old version"
-				"\n %d"
-				"\n %d"
-				"\n %d"
-				"\n %d"
-				"\n %d"
-				"\n %d",
-				(int)GL_TEXTURE_2D,
-				(int)gl_iformat(m_usage), (int)Width(), (int)Height(),
-				(int)gl_format(m_usage), (int)gl_type(m_usage)
-	);
-
-
 	gl(glGenTextures(1, &m_device));
 	gl(glBindTexture(GL_TEXTURE_2D, m_device));
 	gl(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
@@ -1007,19 +994,6 @@ void ShaderProgram::Set(const std::string& name, r<Texture> texture)
     Set(name, *texture);
 }
 
-void ShaderProgram::Set(const std::string& name, Texture& texture)
-{
-	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
-	SetTexture(name, texture.DeviceHandle());
-}
-
-void ShaderProgram::SetTexture(const std::string& name, int deviceHandle)
-{
-	gl(glBindTexture(GL_TEXTURE_2D, deviceHandle)); // need texture usage
-	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
-	gl(glUniform1i(gl_location(name), m_slot));
-}
-
 void ShaderProgram::SetArray(const std::string& name, const int* x, int count)
 {
 	gl(glUniform1iv(gl_location(name), count, (int*)&x));
@@ -1033,6 +1007,16 @@ void ShaderProgram::SetArray(const std::string& name, const u32* x, int count)
 void ShaderProgram::SetArray(const std::string& name, const f32* x, int count)
 {
 	gl(glUniform1fv(gl_location(name), count, (f32*)&x));
+}
+
+void ShaderProgram::Set(const std::string& name, Texture& texture)
+{
+	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
+	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
+	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
+	gl(glUniform1i(gl_location(name), m_slot));
+
+	//m_slot += 1;
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }

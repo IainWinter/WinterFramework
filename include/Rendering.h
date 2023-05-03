@@ -760,7 +760,6 @@ public:
 	// auto sends texture to device
     void Set(const std::string& name, r<Texture> texture) override;
 	void Set(const std::string& name, Texture& texture);
-	void SetTexture(const std::string& name, int deviceHandle);
 
 	void SetArray(const std::string& name, const int* x, int count) override;
 	void SetArray(const std::string& name, const u32* x, int count) override;

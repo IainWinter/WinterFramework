@@ -45,7 +45,7 @@ inline bool MessageCallback(
 	return hasError;
 }
 
-#ifdef wGL_DEBUG
+#ifdef IW_DEBUG
 #	define gl(stmt)  stmt; if (MessageCallback(#stmt, __FILE__, __LINE__)) {}
 #	define gle(stmt) stmt; if (MessageCallback(#stmt, __FILE__, __LINE__)) { err = true; }
 #else

@@ -66,7 +66,7 @@ size_t put_str(char** str_itr, const char* str, char stop_char = '\0')
 		str += 1;
 	}
 
-	return (size_t)str - (size_t)start;
+	return (size_t)str - (size_t)start + 1;
 }
 
 void log_with_header(const char* header, const char* fmt, va_list args)
@@ -122,8 +122,6 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 
 		while (*tmp_itr != '\0')
 		{
-			tmp_itr += 1; // advance past newline
-
 			put(&itr, '\n'); // put newline
 
 			for (int i = 0; i < strlen(header); i++) // write spaces
