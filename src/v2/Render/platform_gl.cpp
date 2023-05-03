@@ -13,6 +13,7 @@ TextureHandle _texture_device_alloc(const TextureViewConst& view)
 	TextureHandle texture = TextureHandle(handle, target, view.GetLayout());
 	
 	_texture_device_bind(texture);
+	_texture_device_filter_set(texture, fPixel);
 	_texture_device_realloc(&texture, view);
 	
 	return texture;
