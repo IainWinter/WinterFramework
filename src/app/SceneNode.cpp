@@ -23,29 +23,30 @@ SceneNode::~SceneNode()
 	bus.DetachFromParent();
 
 	for (SystemBase* system : update.GetOrderedList())
-	{
-		if (system->GetState() > SYSTEM_ATTACHED)
+		if (system->GetState() >= SYSTEM_ATTACHED)
 			system->_OnDetach();
 
-		if (system->GetState() > SYSTEM_INIT)
+	for (SystemBase* system : update.GetOrderedList())
+		if (system->GetState() >= SYSTEM_INIT)
 			system->_Dnit();
-	}
 }
 
 void SceneNode::_Tick(float deltaTime, float fixedTime)
 {
+	event.Execute();
+	entities.ExecuteDeferdDeletions();
+
 	std::vector<SystemBase*> systems = update.GetOrderedList();
 
 	// init or attach nodes
 
 	for (SystemBase* system : systems)
-	{
 		if (system->GetState() == SYSTEM_CREATED)
 			system->_Init(this);
 
+	for (SystemBase* system : systems)
 		if (system->GetState() == SYSTEM_INIT)
 			system->_OnAttach();
-	}
 
 	timeAcc += deltaTime;
 
@@ -57,13 +58,12 @@ void SceneNode::_Tick(float deltaTime, float fixedTime)
 
 		for (SystemBase* system : systems)
 			system->_FixedUpdate();
+
+		physics.Tick(fixedTime);
 	}
 
 	for (SystemBase* system : systems)
 		system->_Update();
-
-	event.Execute();
-	entities.ExecuteDeferdDeletions();
 }
 
 void SceneNode::_TickUI()

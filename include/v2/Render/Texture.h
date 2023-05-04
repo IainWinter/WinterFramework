@@ -1,7 +1,6 @@
 #pragma once
 
 #include "v2/Render/TextureView.h"
-#include "ext/AssetItem.h"
 
 //  Takes ownership of a TextureView
 //

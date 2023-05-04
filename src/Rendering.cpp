@@ -1012,10 +1012,14 @@ void ShaderProgram::SetArray(const std::string& name, const f32* x, int count)
 void ShaderProgram::Set(const std::string& name, Texture& texture)
 {
 	if (!texture.OnDevice() || texture.Outdated()) texture.SendToDevice();
-	gl(glBindTexture(GL_TEXTURE_2D, texture.DeviceHandle())); // need texture usage
+	SetTexture(name, texture.DeviceHandle());
+}
+
+void ShaderProgram::SetTexture(const std::string& name, int handle)
+{
+	gl(glBindTexture(GL_TEXTURE_2D, handle)); // need texture usage
 	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
 	gl(glUniform1i(gl_location(name), m_slot));
-
 	//m_slot += 1;
 }
 

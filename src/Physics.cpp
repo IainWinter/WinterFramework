@@ -445,20 +445,22 @@ Rigidbody2D& Rigidbody2D::SetTransform(Transform2D& transform)
 	SetPosition(transform.position);
 	SetAngle   (transform.rotation);
 
-	m_lastTransform = transform;
+	UpdateLast(1.f, 0);
 
 	return *this;
 }
 
-const Transform2D& Rigidbody2D::GetLastTransform() const
+const LastPositionState2D& Rigidbody2D::GetLast() const
 {
-	return m_lastTransform;
+	return m_last;
 }
 
-void Rigidbody2D::UpdateLastTransform()
+void Rigidbody2D::UpdateLast(float deltaTime, float timePoint)
 {
-	m_lastTransform.position = GetPosition();
-	m_lastTransform.rotation = GetAngle();
+	m_last.position = GetPosition();
+	m_last.angle = GetAngle();
+	m_last.timePoint = timePoint;
+	m_last.deltaTime = deltaTime;
 }
 
 void Rigidbody2D::ApplyForce(vec2 force)                        { m_instance->ApplyForceToCenter(_tb(force), true); }

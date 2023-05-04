@@ -20,6 +20,7 @@ UpdateTreeNode& UpdateTreeNode::Then(SystemBase* update)
 	{
 		UpdateTreeNode* child = new UpdateTreeNode();
 		child->m_update = update;
+		
 		m_children.push_back(child);
 	}
 

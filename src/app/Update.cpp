@@ -51,7 +51,7 @@ void SystemBase::_OnDetach()
 
 void SystemBase::_Update()
 {
-	log_app("i~Update system");
+	//log_app("i~Update system");
 
 	_break(ON_UPDATE);
 	Update();
@@ -59,7 +59,7 @@ void SystemBase::_Update()
 
 void SystemBase::_FixedUpdate()
 {
-	log_app("i~Fixed update system");
+	//log_app("i~Fixed update system");
 
 	_break(ON_FIXEDUPDATE);
 	FixedUpdate();
@@ -67,7 +67,7 @@ void SystemBase::_FixedUpdate()
 
 void SystemBase::_UI()
 {
-	log_app("i~UI system");
+	//log_app("i~UI system");
 
 	_break(ON_UI);
 	UI();
@@ -75,7 +75,7 @@ void SystemBase::_UI()
 
 void SystemBase::_Debug()
 {
-	log_app("i~Debug system");
+	//log_app("i~Debug system");
 
 	_break(ON_DEBUG);
 	Debug();
