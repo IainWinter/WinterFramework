@@ -1,7 +1,6 @@
 #include "util/SimpleTrace.h"
 
-// should use this here, or make time a util
-#include "app/Time.h"
+#include "Clock.h"
 #include "ext/serial/serial_json.h"
 
 #include "SDL_thread.h"

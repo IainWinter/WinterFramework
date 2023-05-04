@@ -136,24 +136,19 @@ void EventBus::DetachFromParent()
 }
 
 EventQueue::EventQueue()
-    : m_bus (nullptr)
+    : bus (nullptr)
 {}
 
 EventQueue::EventQueue(EventBus* bus)
-    : m_bus (bus)
+    : bus (bus)
 {}
-
-EventBus* EventQueue::GetBus() const
-{
-    return m_bus;
-}
 
 void EventQueue::Execute()
 {
     for (int i = 0; i < m_queue.size(); i++)
     {
         QueuedEvent* event = m_queue.at(i);
-        event->Send(m_bus);
+        event->Send(bus);
         delete event;
     }
     

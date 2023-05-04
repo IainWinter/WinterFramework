@@ -1,6 +1,8 @@
 #include "app/EngineLoop.h"
 #include "ext/serial/serial_common.h"
 
+#include "Rendering.h"
+
 void EngineLoopBase::on(event_Shutdown& e)
 {
 	m_running = false;
@@ -8,16 +10,10 @@ void EngineLoopBase::on(event_Shutdown& e)
 
 void EngineLoopBase::on(event_ConsoleCommand& e)
 {
-	app.GetConsole().Execute(e.command);
+	app.console.Execute(e.command);
 }
 
-void EngineLoopBase::on(event_CreateEntity& e)
-{
-	Entity entity = e.world->GetEntityWorld().Create();
-	if (e.callback) e.callback(entity);
-}
-
-void EngineLoopBase::_Init()
+void EngineLoopBase::Init()
 {
     // create framework contexts
 	meta::CreateContext();
@@ -28,68 +24,54 @@ void EngineLoopBase::_Init()
 	Render::CreateContext();
 	Asset::CreateContext();
 	File::CreateContext();
-	Input::CreateContext();
 
-	// init debug renders
-	Debug::Init();
-
-    m_inputHandler = InputEventHandler(&app.GetRootEventQueue());
+	delete m_inputHandler;
+    m_inputHandler = new InputEventHandler(&app.input, &app.event);
     
 	// attach system events
-	app.GetRootEventBus().Attach<event_Shutdown>(this);
-	app.GetRootEventBus().Attach<event_ConsoleCommand>(this);
-	app.GetRootEventBus().Attach<event_CreateEntity>(this);
+	app.bus.Attach<event_Shutdown>(this);
+	app.bus.Attach<event_ConsoleCommand>(this);
 
-	// open window and create graphics context, allows sending data to device
-	app.GetWindow().Init();
+	// open window and create graphics context
+	app.window.Init();
 
 	// init the audio engine
-	app.GetAudio().Init();
+	app.audio.Init();
 
-	// set imgui config flags
-	PreInitUI();
+	// set imgui flags
+	_PreInitUI();
 
 	// init Imgui
-	app.GetWindow().InitUI();
+	app.window.InitUI();
 
-	// init user UI, load fonts ect.
-	InitUI();
+	// init user UI, load fonts
+	_InitUI();
 
 	// init user code
-	Init();
-
-	// should prob send events from init functions before first tick
+	_Init();
 }
 
-void EngineLoopBase::_Dnit()
+void EngineLoopBase::Dnit()
 {
     // dnit user worlds
-	app.RemoveAllWorlds();
-	app.GetRootEventBus().Detach(this);
-    
-    // dnit user code
-	Dnit();
-    
-	// dnit debug renders
-	Debug::Dnit();
+	app.bus.Detach(this);
 
+    // dnit user code
+	_Dnit();
+    
     // destroy framework contexts
     Time::DestroyContext();
 	Asset::DestroyContext();
 	File::DestroyContext();
-	Input::DestroyContext();
 	Render::DestroyContext();
+
+	delete m_inputHandler;
 }
 
 bool EngineLoopBase::Tick()
 {
 	Time::UpdateTime();
-	Render::SetWindowSize(app.GetWindow().Width(), app.GetWindow().Height());
-
-	// update render state
-	// put this in a better spot
-	//Render::GetContext()->window_width  = app.GetWindow().Width();
-	//Render::GetContext()->window_height = app.GetWindow().Height();
+	Render::SetWindowSize(app.window.Width(), app.window.Height());
 
 	app.Tick();
 

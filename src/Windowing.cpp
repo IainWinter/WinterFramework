@@ -50,7 +50,7 @@ void Window::Init()
 
 	gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 
-	Resize(m_config.Width, m_config.Height);
+	SetSize(m_config.Width, m_config.Height);
 
 	gl(glClearColor(0.f, 0.f, 0.f, 0.f));
 
@@ -209,7 +209,7 @@ void Window::PumpEvents()
 				{
 					case SDL_WINDOWEVENT_RESIZED:
 					{
-						ResizeViewport(event.window.data1, event.window.data2);
+						SetViewport(event.window.data1, event.window.data2);
 						m_config.Width  = event.window.data1;
 						m_config.Height = event.window.data2;
 
@@ -297,7 +297,7 @@ void Window::PumpEvents()
 	}
 }
 
-Window& Window::ResizeViewport(int width, int height)
+Window& Window::SetViewport(int width, int height)
 {
 	m_config.Width  = width;
 	m_config.Height = height;
@@ -311,7 +311,7 @@ Window& Window::ResizeViewport(int width, int height)
 	return *this;
 }
 
-Window& Window::Resize(int width, int height, bool center)
+Window& Window::SetSize(int width, int height, bool center)
 {
 	if (m_window) // only if open
 	{
@@ -320,7 +320,7 @@ Window& Window::Resize(int width, int height, bool center)
 		log_window("d~Set window size to %d %d", width, height);
 	}
 
-	ResizeViewport(width, height);
+	SetViewport(width, height);
 
 	return *this;
 }
@@ -343,7 +343,7 @@ Window& Window::SetFullscreen(int mode)
 
 			int w, h;
 			SDL_GetWindowSize(m_window, &w, &h);
-			Resize(w, h, true);
+			SetSize(w, h, true);
 
 			break;
 		}
@@ -545,8 +545,8 @@ const std::string& WindowRef::Title()      const { return m_window->Title(); }
 
 WindowRef& WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); return *this;  }
 
-WindowRef& WindowRef::ResizeViewport(int width, int height) { m_window->ResizeViewport(width, height); return *this; }
-WindowRef& WindowRef::Resize(int width, int height, bool center) { m_window->Resize(width, height, center); return *this; }
+WindowRef& WindowRef::ResizeViewport(int width, int height) { m_window->SetViewport(width, height); return *this; }
+WindowRef& WindowRef::Resize(int width, int height, bool center) { m_window->SetSize(width, height, center); return *this; }
 
 WindowRef& WindowRef::SetFullscreen(int mode) { m_window->SetFullscreen(mode); return *this; }
 WindowRef& WindowRef::SetVSync(bool vsync) { m_window->SetVSync(vsync); return *this; }

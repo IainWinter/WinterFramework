@@ -79,9 +79,9 @@ public:
 	
 	// for now this works, but shouldn't be here
 	// don't call this function to make removing it ezpz
-	Window& ResizeViewport(int width, int height);
+	Window& SetViewport(int width, int height);
 
-	Window& Resize(int width, int height, bool center = true);
+	Window& SetSize(int width, int height, bool center = true);
 	Window& SetTitle(const std::string& title);
 
 	Window& SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen

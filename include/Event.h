@@ -224,8 +224,6 @@ public:
     EventQueue();
     EventQueue(EventBus* bus);
     
-    EventBus* GetBus() const;
-    
     void Execute();
     
     template<typename _event>
@@ -253,12 +251,15 @@ private:
             , where (where)
         {}
         
-        void Send(EventBus* bus) override
+        void Send(EventBus* _bus) override
         {   
-            bus->Send(event);
+            _bus->Send(event);
         }
     };
     
-    EventBus* m_bus;
+public:
+    EventBus* bus;
+
+private:
     std::vector<QueuedEvent*> m_queue;
 };
