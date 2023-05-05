@@ -19,6 +19,9 @@ Scene Application::CreateScene(const char* name)
 	SceneNode* node = new SceneNode(this, name);
 	m_scenes.push_back(node);
 
+	// link the event buses together so Scenes get Application level events
+	bus.ChildAttach(&node->bus);
+
 	return Scene(node);
 }
 

@@ -2,40 +2,43 @@
 
 #include <vector>
 
-class SystemBase;
-class UpdateTree;
+// Keep it simple!
+// Just add support for single layer of groups, doesnt have to be an actual tree
 
-class UpdateTreeNode
+class SystemBase;
+class SceneUpdate;
+class SceneNode;
+
+class UpdateGroup
 {
 public:
-	~UpdateTreeNode();
+	~UpdateGroup();
 
 	template<typename _t>
-	UpdateTreeNode& Then();
-
-	template<typename _callable>
-	void Walk(_callable&& callable);
+	UpdateGroup& Then();
 
 private:
-	UpdateTreeNode& Then(SystemBase* system);
+	void AddUpdate(SystemBase* update);
 
 private:
-	SystemBase* m_update = nullptr;
-	std::vector<UpdateTreeNode*> m_children;
+	// So user cannot see updates, but SceneUpdate can iterate them
+	friend class SceneUpdate;
+
+private:
+	std::vector<SystemBase*> m_updates;
 };
 
-class UpdateTree
+class SceneUpdate
 {
 public:
-	UpdateTreeNode& CreateGroup(const char* name);
+	~SceneUpdate();
 
-	std::vector<SystemBase*> GetOrderedList();
-	
-	template<typename _callable>
-	void Walk(_callable&& callable);
+	UpdateGroup& CreateGroup(const char* name);
+
+	std::vector<SystemBase*> GetUpdateOrder(); // this is bad should return an iterator
 
 private:
-	std::vector<UpdateTreeNode*> m_roots;
+	std::vector<UpdateGroup*> m_groups;
 };
 
 //
@@ -43,22 +46,8 @@ private:
 //
 
 template<typename _t>
-inline UpdateTreeNode& UpdateTreeNode::Then()
+inline UpdateGroup& UpdateGroup::Then()
 {
-	return Then(new _t());
-}
-
-template<typename _callable>
-void UpdateTreeNode::Walk(_callable&& callable)
-{
-	callable(m_update);
-	for (UpdateTreeNode* node : m_children)
-		node->Walk(callable);
-}
-
-template<typename _callable>
-void UpdateTree::Walk(_callable&& callable)
-{
-	for (UpdateTreeNode* node : m_roots)
-		node->Walk(callable);
+	AddUpdate(new _t());
+	return *this;
 }

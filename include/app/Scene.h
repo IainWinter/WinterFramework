@@ -9,7 +9,7 @@ public:
 	Scene(SceneNode* node);
 
 public:
-	UpdateTreeNode& CreateGroup(const char* name);
+	UpdateGroup& CreateGroup(const char* name);
 
 private:
 	friend struct Application;

@@ -1,42 +1,38 @@
 #include "app/UpdateTree.h"
 #include "app/Update.h"
 
-UpdateTreeNode::~UpdateTreeNode()
+UpdateGroup::~UpdateGroup()
 {
-	delete m_update;
-
-	for (UpdateTreeNode* node : m_children)
-		delete node;
+	for (SystemBase* update : m_updates)
+		delete update;
 }
 
-UpdateTreeNode& UpdateTreeNode::Then(SystemBase* update)
+void UpdateGroup::AddUpdate(SystemBase* update)
 {
-	if (!m_update)
-	{
-		m_update = update;
-	}
-
-	else
-	{
-		UpdateTreeNode* child = new UpdateTreeNode();
-		child->m_update = update;
-		
-		m_children.push_back(child);
-	}
-
-	return *this;
+	m_updates.push_back(update);
 }
 
-UpdateTreeNode& UpdateTree::CreateGroup(const char* name)
+SceneUpdate::~SceneUpdate()
 {
-	UpdateTreeNode* group = new UpdateTreeNode();
-	m_roots.push_back(group);
+	for (UpdateGroup* group : m_groups)
+		delete group;
+}
+
+UpdateGroup& SceneUpdate::CreateGroup(const char* name)
+{
+	UpdateGroup* group = new UpdateGroup();
+	m_groups.push_back(group);
+	
 	return *group;
 }
 
-std::vector<SystemBase*> UpdateTree::GetOrderedList()
+std::vector<SystemBase*> SceneUpdate::GetUpdateOrder()
 {
 	std::vector<SystemBase*> list;
-	Walk([&list](SystemBase* s) { list.push_back(s); });
+	
+	for (UpdateGroup* group : m_groups)
+	for (SystemBase* update : group->m_updates)
+		list.push_back(update);
+
 	return list;
 }

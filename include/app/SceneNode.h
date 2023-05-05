@@ -17,7 +17,7 @@ struct SceneNode
 	EventBus bus;
 	EventQueue event;
 
-	UpdateTree update;
+	SceneUpdate update;
 	float timeAcc;
 	bool inDebugMode;
 
