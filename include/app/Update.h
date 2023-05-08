@@ -88,7 +88,7 @@ protected:
 
 	vec2  GetAxis  (const InputName& name);
 	float GetButton(const InputName& name);
-	bool  Once     (const InputName& name);
+	bool  GetOnce  (const InputName& name);
 
 public:
 

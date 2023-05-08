@@ -730,6 +730,8 @@ private:
 
 	int          m_slot     = 0;       // number of active texture slots
 
+	std::unordered_map<std::string, int> m_handleToSlot;
+
 public:
 	int NumberOfShaders()       const;
 	int NumberOfBoundTextures() const;

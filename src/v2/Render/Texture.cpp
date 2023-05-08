@@ -226,9 +226,9 @@ TextureViewConst Texture_New::View() const
 	return m_host.View();
 }
 
-int Texture_New::GetHandle() const
+TextureHandle Texture_New::ViewDevice() const
 {
-	return m_device.View().GetHandle();
+	return m_device.View();
 }
 
 void Texture_New::SendToDevice()

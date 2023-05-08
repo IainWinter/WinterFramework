@@ -43,6 +43,8 @@ public:
     Transform2D& operator*=(const Transform2D& other);
 
     mat4 World()   const;
+    mat4 World(float z)   const;
+
     vec2 Forward() const;
     vec2 Right()   const;
 };

@@ -116,7 +116,7 @@ public:
 	TextureView View();
 	TextureViewConst View() const;
 
-	int GetHandle() const;
+	TextureHandle ViewDevice() const;
 
 	void SendToDevice();
 	void SendToHost();

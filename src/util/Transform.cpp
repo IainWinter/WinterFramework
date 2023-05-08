@@ -62,6 +62,11 @@ Transform2D& Transform2D::operator*=(const Transform2D& other)
 
 mat4 Transform2D::World() const
 {
+    return World(z);
+}
+
+mat4 Transform2D::World(float z) const
+{
     float sr = sin(rotation);
     float cr = cos(rotation);
 
@@ -72,6 +77,7 @@ mat4 Transform2D::World() const
                     0,            0,   1,   0,
             position.x,  position.y,   z,   1
     );
+
 }
 
 vec2 Transform2D::Forward() const

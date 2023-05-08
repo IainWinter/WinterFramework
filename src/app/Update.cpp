@@ -141,7 +141,7 @@ float SystemBase::GetButton(const InputName& name)
 	return m_scene->app->input.GetButton(name);
 }
 
-bool SystemBase::Once(const InputName& name)
+bool SystemBase::GetOnce(const InputName& name)
 {
 	return m_scene->app->input.Once(name);
 }

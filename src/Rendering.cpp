@@ -1017,10 +1017,17 @@ void ShaderProgram::Set(const std::string& name, Texture& texture)
 
 void ShaderProgram::SetTexture(const std::string& name, int handle)
 {
-	gl(glBindTexture(GL_TEXTURE_2D, handle)); // need texture usage
-	gl(glActiveTexture(gl_program_texture_slot(m_slot)));
-	gl(glUniform1i(gl_location(name), m_slot));
-	//m_slot += 1;
+	if (m_handleToSlot.count(name) == 0)
+	{
+		m_handleToSlot.emplace(name, m_slot);
+		m_slot++;
+	}
+
+	int slot = m_handleToSlot.at(name);
+
+	gl(glActiveTexture(gl_program_texture_slot(slot)));
+	gl(glBindTexture(GL_TEXTURE_2D, handle)); // todo: need texture usage
+	gl(glUniform1i(gl_location(name), slot));
 }
 
 bool ShaderProgram::OnHost()       const { return m_buffers.size() != 0; }
@@ -1045,6 +1052,8 @@ void ShaderProgram::_InitOnDevice()
 	for (auto& [name, buffer] : m_buffers)
 	{
 		const char* source = buffer.c_str();
+
+		log_render("Compiling shader source: %s", source);
 
 		GLuint shader = gl(glCreateShader(gl_shader_type(name)));
 		glShaderSource(shader, 1, &source, nullptr);
