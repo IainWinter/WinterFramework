@@ -14,9 +14,9 @@ Application::~Application()
 		delete s;
 }
 
-Scene Application::CreateScene(const char* name)
+Scene Application::CreateScene()
 {
-	SceneNode* node = new SceneNode(this, name);
+	SceneNode* node = new SceneNode(this);
 	m_scenes.push_back(node);
 
 	// link the event buses together so Scenes get Application level events
@@ -45,14 +45,14 @@ void Application::Tick()
 	// app loop
     
 	for (SceneNode* node : m_scenes)
-		node->_Tick(Time::DeltaTime(), Time::FixedTime());
+		node->Tick(Time::DeltaTime(), Time::FixedTime());
 
 	// UI
 
 	window.BeginImgui();
 
 	for (SceneNode* node : m_scenes)
-		node->_TickUI();
+		node->TickUI();
 
 	window.EndImgui();
 

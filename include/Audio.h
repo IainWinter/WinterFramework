@@ -55,6 +55,25 @@ private:
 	FMOD::Studio::VCA* m_vca;
 };
 
+// the most basic amp
+class AudioBus
+{
+public:
+	AudioBus();
+	AudioBus(FMOD::Studio::Bus* bus);
+
+	bool IsAlive() const;
+
+	AudioBus& SetVolume(float volume);
+	float     GetVolume() const;
+
+	AudioBus& SetPaused(bool paused);
+	bool       IsPaused() const;
+
+private:
+	FMOD::Studio::Bus* m_bus;
+};
+
 // an event description used to spawn new instances
 class AudioSource
 {
@@ -161,8 +180,8 @@ public:
 
 	bool LoadPlugin(const std::string& filepath, unsigned int* handle = nullptr);
 
-	AudioVCA GetVCA(const std::string& vcaName);
-
+	AudioVCA    GetVCA(const std::string& vcaName);
+	AudioBus    GetBus(const std::string& busName);
 	AudioSource GetAudioSource(const std::string& eventName);
 
 	// create a paused audio instance
@@ -181,5 +200,6 @@ private:
 	std::unordered_map<std::string, FMOD::Studio::Bank*> m_bank;
 
 	std::unordered_map<std::string, AudioVCA>    m_vca;
+	std::unordered_map<std::string, AudioBus>    m_bus;
 	std::unordered_map<std::string, AudioSource> m_desc;
 };

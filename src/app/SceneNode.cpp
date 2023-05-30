@@ -1,12 +1,13 @@
 #include "app/SceneNode.h"
+#include "app/SceneUpdateGroupNode.h"
 #include "app/Update.h"
 
-SceneNode::SceneNode(Application* app, const char* name)
-	: event       (&bus)
-	, app         (app)
-	, name        (name)
-	, timeAcc     (0.f)
-	, inDebugMode (false)
+SceneNode::SceneNode(Application* app)
+	: event          (&bus)
+	, app            (app)
+	, timeAcc        (0.f)
+	, inDebugMode    (false)
+	, physicsRunning (true)
 {
 	entities.OnAdd   <Rigidbody2D>([this](Entity e) { physics.Add(e); });
 	entities.OnRemove<Rigidbody2D>([this](Entity e) { physics.Remove(e); });
@@ -22,59 +23,95 @@ SceneNode::~SceneNode()
 {
 	bus.DetachFromParent();
 
-	std::vector<SystemBase*> systems = update.GetUpdateOrder();
+	for (SceneUpdateGroupNode* group : groups)
+		group->Detach();
 
-	for (SystemBase* system : systems)
-		if (system->GetState() >= SYSTEM_ATTACHED)
-			system->_OnDetach();
-
-	for (SystemBase* system : systems)
-		if (system->GetState() >= SYSTEM_INIT)
-			system->_Dnit();
+	for (SceneUpdateGroupNode* group : groups)
+		group->Dnit();
 }
 
-void SceneNode::_Tick(float deltaTime, float fixedTime)
+void SceneNode::Tick(float deltaTime, float fixedTime)
 {
 	event.Execute();
 	entities.ExecuteDeferdDeletions();
 
-	std::vector<SystemBase*> systems = update.GetUpdateOrder();
-
 	// init or attach nodes
 
-	for (SystemBase* system : systems)
-		if (system->GetState() == SYSTEM_CREATED)
-			system->_Init(this);
+	for (SceneUpdateGroupNode* group : groups)
+		group->Init(this);
 
-	for (SystemBase* system : systems)
-		if (system->GetState() == SYSTEM_INIT)
-			system->_OnAttach();
+	for (SceneUpdateGroupNode* group : groups)
+		group->Attach();
 
-	timeAcc += deltaTime;
-
-	while (timeAcc > fixedTime)
+	// So far this seems to be the best way to also pause the physics
+	// without putting the physics tick in a system
+	if (physicsRunning)
 	{
-		// should subtract the fixed time, but that causes runaway frame drops
-		//timeAcc -= fixedTime;
-		timeAcc = 0;
+		timeAcc += deltaTime;
 
-		for (SystemBase* system : systems)
-			system->_FixedUpdate();
+		while (timeAcc > fixedTime)
+		{
+			// should subtract the fixed time, but that causes runaway frame drops
+			//timeAcc -= fixedTime;
+			timeAcc = 0;
 
-		physics.Tick(fixedTime);
+			for (SceneUpdateGroupNode* group : groups)
+				group->FixedUpdate();
+
+			physics.Tick(fixedTime);
+		}
 	}
 
-	for (SystemBase* system : systems)
-		system->_Update();
+	for (SceneUpdateGroupNode* group : groups)
+		group->Update();
 }
 
-void SceneNode::_TickUI()
+void SceneNode::TickUI()
 {
-	std::vector<SystemBase*> systems = update.GetUpdateOrder();
+	for (SceneUpdateGroupNode* group : groups)
+		group->UI();
 
-	for (SystemBase* system : systems)
-		system->_UI();
+	for (SceneUpdateGroupNode* group : groups)
+		group->Debug();
+}
 
-	for (SystemBase* system : systems)
-		system->_Debug();
+SceneUpdateGroupNode* SceneNode::NewGroup()
+{
+	SceneUpdateGroupNode* group = new SceneUpdateGroupNode();
+
+	groups.push_back(group);
+	return group;
+}
+
+void SceneNode::DeleteGroup(SceneUpdateGroupNode* group)
+{
+	auto itr = std::find(groups.begin(), groups.end(), group);
+
+	if (itr == groups.end())
+		return;
+
+	groups.erase(itr);
+	delete group;
+}
+
+void SceneNode::AttachGroup(SceneUpdateGroupNode* group)
+{
+	auto itr = std::find(groups.begin(), groups.end(), group);
+
+	if (itr != groups.end())
+		return;
+
+	groups.push_back(group);
+	group->Attach();
+}
+
+void SceneNode::DetachGroup(SceneUpdateGroupNode* group)
+{
+	auto itr = std::find(groups.begin(), groups.end(), group);
+
+	if (itr == groups.end())
+		return;
+
+	groups.erase(itr);
+	group->Detach();
 }

@@ -81,6 +81,22 @@ void SystemBase::_Debug()
 	Debug();
 }
 
+SystemBase::~SystemBase()
+{
+	// This is a hack to solve the issue of UpdateGroup
+	// removing system immediately not calling detach / dnit
+
+	// Maybe instead, it just marks them for deletion, though
+	// the update Group calls new, so it would be a little confusing for
+	// for the SceneNode to call delete
+
+	if (GetState() >= SYSTEM_ATTACHED)
+		_OnDetach();
+
+	if (GetState() >= SYSTEM_INIT)
+		_Dnit();
+}
+
 Entity SystemBase::CreateEntity()
 {
 	return m_scene->entities.Create();

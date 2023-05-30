@@ -13,8 +13,7 @@ public:
 	Application();
 	~Application();
 
-	Scene CreateScene(const char* name);
-
+	Scene CreateScene();
 	void DestroyScene(Scene* scene);
 
 	void Tick();

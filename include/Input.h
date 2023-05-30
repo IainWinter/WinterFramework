@@ -10,12 +10,12 @@
 //		to fix: Mappings can be overwritten if two Group axes use the same buttons
 
 /**
- * A type to identify axes, could replace with enum
+ * A type to identify axes, you should replace with an enum
  */
 using InputName = std::string;
 
 /**
- * A type to identify masks, could replace with enum
+ * A type to identify masks, you should replace with an enum
  */
 using InputMask = std::string;
 

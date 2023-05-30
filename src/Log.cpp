@@ -78,9 +78,9 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 
 	const char* text = fmt;
 	char style_token = fmt[0];
-	bool has_style = len >= 2 && fmt[1] == '~';
+	bool log_includes_style_token = len >= 2 && fmt[1] == '~';
 
-	if (has_style) // log includes style token
+	if (log_includes_style_token)
 	{
 		text += 2; // skip the format even if styles are disabled
 
@@ -88,12 +88,12 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 		// or it's not enabled
 
 		if (g_enabled.count(style_token) == 0 || !g_enabled.at(style_token))        
-			return; // exit
+			return;
 
 		// if style token, but no style
 
 		if (g_styles.count(style_token) == 0)
-			return; // exit
+			return;
 	}
 
 	// now we create the log and print it
@@ -101,7 +101,7 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 	char str[1024 * 5];
 	char* itr = str;
 
-	if (has_style && g_enable_style) // if styles are enabled, write the style
+	if (log_includes_style_token && g_enable_style) // if styles are enabled, write the style
 		put_str(&itr, g_styles.at(style_token));
 
 	put_str(&itr, header);
@@ -112,7 +112,7 @@ void log_with_header(const char* header, const char* fmt, va_list args)
 		itr += strlen(itr);
 	}
 
-	else // or write to a temp buffer for newline tabbing                             ... todo: there is some issue with the chars after tmp_itr printing random bytes
+	else // or write to a temp buffer for newline tabbing
 	{
 		char tmp[1024 * 5];
 		const char* tmp_itr = tmp;

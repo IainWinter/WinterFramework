@@ -1,9 +1,7 @@
 #pragma once
 
 #include <vector>
-
-// Keep it simple!
-// Just add support for single layer of groups, doesnt have to be an actual tree
+#include <string>
 
 class SystemBase;
 class SceneUpdate;
@@ -12,6 +10,7 @@ class SceneNode;
 class UpdateGroup
 {
 public:
+	UpdateGroup(const std::string& name);
 	~UpdateGroup();
 
 	template<typename _t>
@@ -26,6 +25,7 @@ private:
 
 private:
 	std::vector<SystemBase*> m_updates;
+	std::string m_name;
 };
 
 class SceneUpdate
@@ -33,7 +33,8 @@ class SceneUpdate
 public:
 	~SceneUpdate();
 
-	UpdateGroup& CreateGroup(const char* name);
+	UpdateGroup& CreateGroup(const std::string& name);
+	void DestroyGroup(const std::string& name);
 
 	std::vector<SystemBase*> GetUpdateOrder(); // this is bad should return an iterator
 

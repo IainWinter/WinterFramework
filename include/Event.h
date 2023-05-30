@@ -194,7 +194,7 @@ public:
     void Send(EventType type, void* event);
     
     template<typename _event>
-    void Send(_event& event)
+    void Send(_event&& event)
     {
         Send(GetEventType<_event>(), &event);
     }

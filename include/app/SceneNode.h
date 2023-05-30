@@ -1,12 +1,11 @@
 #pragma once
 
-#include "app/UpdateTree.h"
-
 #include "Entity.h"
 #include "Physics.h"
 #include "Event.h"
 
 class Application;
+struct SceneUpdateGroupNode;
 
 struct SceneNode
 {
@@ -17,24 +16,20 @@ struct SceneNode
 	EventBus bus;
 	EventQueue event;
 
-	SceneUpdate update;
+	std::vector<SceneUpdateGroupNode*> groups;
 	float timeAcc;
 	bool inDebugMode;
 
-	const char* name;
+	bool physicsRunning;
 
-	SceneNode(Application* app, const char* name);
+	SceneNode(Application* app);
 	~SceneNode();
 
-private:
-	friend class Application;
+	void Tick(float deltaTime, float fixedTime);
+	void TickUI();
 
-private:
-	void _Tick(float deltaTime, float fixedTime);
-	void _TickUI();
-
-private:
-	// todo: 
-	// The order is always fixed, so only enumerate tree when it has changed
-	//std::vector<SystemBase*> updateCache;
+	SceneUpdateGroupNode* NewGroup();
+	void DeleteGroup(SceneUpdateGroupNode* group);
+	void AttachGroup(SceneUpdateGroupNode* group);
+	void DetachGroup(SceneUpdateGroupNode* group);
 };

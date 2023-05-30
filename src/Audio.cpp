@@ -144,7 +144,7 @@ void AudioWorld::LoadBank(const std::string& bankFilePath)
 	for (Bus* bus : GetBuses(bank))
 	{
 		std::string busName = get_name(bus);
-		//m_bus[busName] = AudioVCA(vca);
+		m_bus[busName] = AudioBus(bus);
 
 		log_audio("i~  > %s", busName.c_str());
 	}
@@ -167,14 +167,13 @@ void AudioWorld::FreeBank(const std::string& bankName)
 	Bank* bank = m_bank[bankName];
 
 	for (EventDescription* desc : GetEventDescriptions(bank))
-	{
 		m_desc.erase(get_name(desc));
-	}
 
 	for (VCA* vca : GetVCAs(bank))
-	{
 		m_vca.erase(get_name(vca));
-	}
+
+	for (Bus* bus : GetBuses(bank))
+		m_vca.erase(get_name(bus));
 
 	m_bank.erase(bankName);
 
@@ -223,7 +222,20 @@ AudioVCA AudioWorld::GetVCA(const std::string& vcaName)
 		return AudioVCA();
 	}
 
-	return m_vca.find(vcaName)->second;
+	return itr->second;
+}
+
+
+AudioBus AudioWorld::GetBus(const std::string& busName)
+{
+	auto itr = m_bus.find(busName);
+	if (itr == m_bus.end())
+	{
+		log_audio("w~Failed to get Bus. Doesn't exist");
+		return AudioBus();
+	}
+
+	return itr->second;
 }
 
 AudioSource AudioWorld::GetAudioSource(const std::string& eventName)
@@ -387,13 +399,98 @@ float AudioVCA::GetVolume() const
 		return 0.f;
 	}
 
-	float volume;
+	float volume = 0.f;
 	if (fa(m_vca->getVolume(&volume)))
 	{
 		log_audio("e~Failed to get VCA volume");
 	}
 
 	return volume;
+}
+
+AudioBus::AudioBus() 
+	: m_bus (nullptr)
+{}
+
+AudioBus::AudioBus(FMOD::Studio::Bus* bus)
+	: m_bus (bus)
+{}
+
+bool AudioBus::IsAlive() const 
+{
+	return !!m_bus; 
+}
+
+AudioBus& AudioBus::SetVolume(float volume) 
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to set bus volume. nullptr");
+		return *this;
+	}
+
+	if (fa(m_bus->setVolume(volume)))
+	{
+		log_audio("e~Failed to set bus volume");
+		return *this;
+	}
+
+	log_audio("i~Set bus %s volume to %f", get_name(m_bus).c_str(), volume);
+
+	return *this;
+}
+
+float AudioBus::GetVolume() const
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to get bus volume. nullptr");
+		return 0.f;
+	}
+
+	float volume = 0.f;
+	if (fa(m_bus->getVolume(&volume)))
+	{
+		log_audio("e~Failed to get bus volume");
+	}
+
+	return volume;
+}
+
+AudioBus& AudioBus::SetPaused(bool paused)
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to set bus is paused. nullptr");
+		return *this;
+	}
+
+	if (fa(m_bus->setPaused(paused)))
+	{
+		log_audio("e~Failed to set bus is paused");
+		return *this;
+	}
+
+	log_audio("i~Set bus %s is paused to %s", get_name(m_bus).c_str(), paused ? "true": "false");
+
+	return *this;
+}
+
+bool AudioBus::IsPaused() const
+{
+	if (!IsAlive())
+	{
+		log_audio("e~Failed to get bus is paused. nullptr");
+		return 0.f;
+	}
+
+	bool paused = false;
+	if (fa(m_bus->getPaused(&paused)))
+	{
+		log_audio("e~Failed to get bus is paused");
+	}
+
+	return paused;
 }
 
 Audio::Audio()

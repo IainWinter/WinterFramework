@@ -4,6 +4,7 @@
 #include "Input.h"
 
 #include "app/SceneNode.h"
+#include "app/Application.h"
 
 #include "ext/EntityPrefab.h"
 #include "ext/AssetItem.h"
@@ -30,10 +31,12 @@ enum SystemState
 	SYSTEM_DNIT
 };
 
+struct SceneUpdateGroupNode;
+
 class SystemBase
 {
 public:
-	virtual ~SystemBase() = default;
+	virtual ~SystemBase();
 
 protected:
 
@@ -68,10 +71,8 @@ protected:
 
 // sending events
 
-	template<typename _e> void Send     (_e&& event);
-	template<typename _e> void SendNow  (_e&& event);
-	template<typename _e> void SendUp   (_e&& event);
-	template<typename _e> void SendUpNow(_e&& event);
+	template<typename _e> void Send  (_e&& event);
+	template<typename _e> void SendUp(_e&& event);
 
 // audio
 
@@ -119,7 +120,7 @@ private:
 	friend struct System;
 	
 	// for _XXXMethod
-	friend struct SceneNode;
+	friend struct SceneUpdateGroupNode;
 
 private:
 	SceneNode* m_scene = nullptr;
@@ -179,9 +180,9 @@ inline void SystemBase::Send(_e&& event)
 }
 
 template<typename _e>
-inline void SystemBase::SendNow(_e&& event)
+inline void SystemBase::SendUp(_e&& event)
 {
-	m_scene->bus.Send(std::forward<_e>(event));
+	m_scene->app->event.Send(std::forward<_e>(event));
 }
 
 template<typename _t>
