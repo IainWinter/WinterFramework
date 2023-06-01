@@ -191,7 +191,7 @@ public:
 
 	Entity Create();
 	Entity Wrap(u32 id);
-	void ExecuteDeferdDeletions();
+	void ExecuteDeferredDeletions();
 	void Clear();
 
 	int NumberOfEntities() const;

@@ -25,7 +25,7 @@ Entity EntityWorld::Wrap(u32 id)
 	return Entity((entt::entity)id, this);
 }
 
-void EntityWorld::ExecuteDeferdDeletions()
+void EntityWorld::ExecuteDeferredDeletions()
 {
 	for (const entt::entity& handle : m_deferDelete)
 	{

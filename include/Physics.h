@@ -30,6 +30,9 @@ struct WorldCollsionInfo
 	b2Contact* contact;
 };
 
+using OnWorldCollisionFunc = std::function<void(WorldCollsionInfo)>;
+using OnCollisionFunc = std::function<void(CollisionInfo)>;
+
 // fwd
 struct Rigidbody2D;
 struct PhysicsWorld;
@@ -375,8 +378,6 @@ struct RayQueryResult
 	vec2          FirstNormal()   const;
 };
 
-using OnCollisionFunc = std::function<void(WorldCollsionInfo)>;
-
 struct PhysicsWorld
 {
 private:
@@ -409,9 +410,9 @@ public:
 	PhysicsWorld& operator=(const PhysicsWorld& move) = delete;
 
 	template<typename _c1, typename _c2>
-	OnCollisionFunc OnCollision(const OnCollisionFunc& func)
+	OnWorldCollisionFunc OnCollision(const OnWorldCollisionFunc& func)
 	{
-		OnCollisionFunc f = [func](WorldCollsionInfo info)
+		OnWorldCollisionFunc f = [func](WorldCollsionInfo info)
 		{
 			// this is wasteful because this causes a loop in m_onCollision for each pair
 			// better solve would be a pair hash that doesn't care about order, then a map of pair hash -> func
@@ -435,7 +436,7 @@ public:
 		return f;
 	}
 
-	void RemoveOnCollision(const OnCollisionFunc& func)
+	void RemoveOnCollision(const OnWorldCollisionFunc& func)
 	{
 		m_onCollision -= func;
 	}

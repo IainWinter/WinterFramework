@@ -49,7 +49,10 @@ void Application::Tick()
 	window.PumpEvents();
 	event.Execute();
 
-	// app loop
+	for (SceneNode* node : m_scenes)
+		node->event.Execute();
+
+	// Game tick
     
 	for (SceneNode* node : m_scenes)
 		node->Tick(Time::DeltaTime(), Time::FixedTime());
@@ -62,6 +65,13 @@ void Application::Tick()
 		node->TickUI();
 
 	window.EndImgui();
+
+	// Need to execute deferred deletes here because those may send
+	// events up to the app bus which change the state in a critical way for next
+	// frame
+	
+	for (SceneNode* node : m_scenes)
+		node->entities.ExecuteDeferredDeletions();
 
 	// OS
 	

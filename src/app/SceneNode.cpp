@@ -37,9 +37,6 @@ SceneNode::~SceneNode()
 
 void SceneNode::Tick(float deltaTime, float fixedTime)
 {
-	event.Execute();
-	entities.ExecuteDeferdDeletions();
-
 	// init or attach nodes
 
 	for (SceneUpdateGroupNode* group : groups)
