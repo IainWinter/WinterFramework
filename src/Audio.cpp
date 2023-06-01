@@ -10,6 +10,8 @@
 
 using namespace FMOD::Studio;
 
+static bool g_forget_callbacks = false;
+
 bool fa(int result)
 {
 	bool err = result != FMOD_OK;
@@ -67,6 +69,8 @@ void AudioWorld::Init()
 
 void AudioWorld::Dnit()
 {
+	g_forget_callbacks = true;
+
 	if (!m_system)
 	{
 		log_audio("e~Failed to dnit audio engine. Audio engine has failed to init");
@@ -1059,6 +1063,9 @@ AudioSource::AudioSource(EventDescription* desc)
 
 FMOD_RESULT WhenDone(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINSTANCE* inst_in, void* user)
 {
+	if (g_forget_callbacks)
+		return FMOD_OK;
+
 	if (type == FMOD_STUDIO_EVENT_CALLBACK_STOPPED)
 	{
 		EventInstance* inst = (EventInstance*)inst_in;
@@ -1068,6 +1075,9 @@ FMOD_RESULT WhenDone(FMOD_STUDIO_EVENT_CALLBACK_TYPE type, FMOD_STUDIO_EVENTINST
 		
 		// audio could have been removed manually, this is async so just check if its in the list
 		// before removing
+
+		// this can crash when the app is closed if the dnit doesn't wait for all of these to callback
+		// could out a flag that says the Audio World has been destroyed don't try and cleanup
 
 		auto itr = std::find(insts->begin(), insts->end(), inst);
 		if (itr != insts->end())

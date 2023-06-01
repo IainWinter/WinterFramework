@@ -40,7 +40,7 @@ int TextureLayout::NumberOfBytes() const
 int TextureLayout::NumberOfDimensions() const
 {
 	if (depth > 1) return 3;
-	if (height > 1) return 2;
+	if (height >= 1) return 2;
 	return 1;
 }
 

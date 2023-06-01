@@ -50,7 +50,11 @@
 
 /// The maximum number of vertices on a convex polygon. You cannot increase
 /// this too much because b2BlockAllocator has a maximum object size.
-#define b2_maxPolygonVertices	8
+/// 
+/// 12 for hitbox generator. Should reduce to 8 and limit the generator to split polys over 8
+/// 
+/// 
+#define b2_maxPolygonVertices	12
 
 // User data
 

@@ -53,7 +53,7 @@ vec2 safe_normalize(const ivec2& p)
 					: vec2(p.x / n, p.y / n);
 }
 
-HitboxBounds MakeHitboxBounds(const std::vector<ivec2>& points)
+HitboxBounds MakeHitboxBounds(const std::vector<vec2>& points)
 {
 	HitboxBounds bounds;
 	std::swap(bounds.Min, bounds.Max);
@@ -125,7 +125,7 @@ bool IsSolid(int x, int y, int width, int height, const std::function<bool(int, 
 	return x >= 0 && y >= 0 && x < width && y < height && isSolid(x, y);
 }
 
-std::vector<ivec2> MakeContour(int width, int height, const std::function<bool(int, int)>& isSolid)
+std::vector<vec2> MakeContour(int width, int height, const std::function<bool(int, int)>& isSolid)
 {
 	ivec2 start = ivec2(0, 0);
 
@@ -153,7 +153,7 @@ error:
 	return {};
 skiperror:
 
-	std::vector<ivec2> contour; // out
+	std::vector<vec2> contour; // out
 
 	StepDirection nextStep = StepDirection::None;
 	ivec2 point = start;
@@ -177,7 +177,7 @@ skiperror:
 
 		else
 		{
-			ivec2 pr { point.x + 1, point.y };
+			vec2 pr { point.x + 1, point.y };
 			if (IsSolid(pr.x, pr.y, width, height, isSolid))
 			{
 				if (contour.empty() || (contour.back() != pr && contour.front() != pr))
@@ -186,7 +186,7 @@ skiperror:
 				}
 			}
 
-			ivec2 pu{ point.x, point.y + 1 };
+			vec2 pu{ point.x, point.y + 1 };
 			if (IsSolid(pu.x, pu.y, width, height, isSolid))
 			{
 				if (contour.empty() || (contour.back() != pu && contour.front() != pu))
@@ -217,12 +217,12 @@ skiperror:
 	return contour;
 }
 
-std::vector<vec2> MakePolygon(const std::vector<ivec2>& contour, const HitboxBounds& boundingBox, int accuracy)
+std::vector<vec2> MakePolygon(const std::vector<vec2>& contour, const HitboxBounds& boundingBox, int accuracy)
 {
 	if (contour.size() <= 3)
 	{
-        return std::vector<vec2>(contour.begin(), contour.end());
-    }
+		return contour;
+	}
 
 	float kAverageDiagonal = 400.f * static_cast<float>(std::sqrt(2));
 
@@ -235,7 +235,7 @@ std::vector<vec2> MakePolygon(const std::vector<ivec2>& contour, const HitboxBou
 
 	float threshold = minDistance + maxDistance - (accuracy / 100.f) * maxDistance;
 
-    std::vector<vec2> polygon;
+	std::vector<vec2> polygon;
 	std::vector<uint8_t> vertices(contour.size() - 1, 1);
 
 	size_t i = 0;
@@ -250,14 +250,14 @@ std::vector<vec2> MakePolygon(const std::vector<ivec2>& contour, const HitboxBou
 	{
 		std::tie(i, j) = indexes.back();
 		indexes.pop_back();
-		vec2 a = (vec2)contour[i];
-		vec2 b = (vec2)contour[j];
+		const auto& a = contour[i];
+		const auto& b = contour[j];
 		float maxDistance = 0.f;
 		size_t maxIndex = i;
 
 		for (size_t k = i + 1; k < j; k++)
 		{
-			vec2 p = (vec2)contour[k];
+			auto& p = contour[k];
 
 			float distance = 0;
 
@@ -472,7 +472,7 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<vec2>& contour
 
 std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<vec2>>& triangles)
 {
-	std::vector<std::vector<vec2>> polygons = triangles;
+    std::vector<std::vector<vec2>> polygons = triangles;//MakeTriangles(polygon);
 
 	for (auto polygonA = polygons.begin(); polygonA != polygons.end(); ++polygonA)
 	{
@@ -549,30 +549,23 @@ std::vector<std::vector<vec2>> CombineTriangles(const std::vector<std::vector<ve
 	return polygons;
 }
 
-Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& isSolid, bool combineTriangles)
+std::pair<std::vector<std::vector<vec2>>, HitboxBounds> MakeHitbox(int accuracy, int width, int height, const std::function<bool(int, int)>& isSolid)
 {
 	// library has issues with small dim size
 	if (width < 2 || height < 2) return {};
 
-	auto contour = MakeContour(width, height, isSolid);
+	auto contour  = MakeContour(width, height, isSolid);
 
 	// no start point found, just exit
 	if (contour.size() == 0) return {};
 
-	auto bounds = MakeHitboxBounds(contour);
+	auto bounds   = MakeHitboxBounds(contour);
 
 	// infinte loop on bounds.x/y == 0 in make_polygon
 	if (bounds.Width() == 0 || bounds.Height() == 0)
 		return {};
     
-	auto polygon = MakePolygon(contour, bounds, accuracy);
-
-	std::vector<std::vector<vec2>> polygons;
-
-	if (combineTriangles)
-		polygons = CombineTriangles(polygon);
-	else
-		polygons = MakeTriangles(polygon);
+	auto polygons = CombineTriangles(MakePolygon(contour, bounds, accuracy));
 	
 	for (int i = 0; i < polygons.size(); i++)
 	{
@@ -593,5 +586,5 @@ Hitbox MakeHitbox(int accuracy, int width, int height, const std::function<bool(
 		}
 	}
 
-    return { polygons, bounds };
+	return std::make_pair(polygons, bounds);
 }

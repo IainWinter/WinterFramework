@@ -59,7 +59,14 @@ project(WinterFramework)
 # Source files
 #
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS "include/*" "src/*" "vendor/public/src/*" "vendor/private/src/*")
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS 
+	"include/*" 
+	"src/*" 
+	"vendor/public/include/*"
+	"vendor/public/src/*" 
+	"vendor/private/include/*"
+	"vendor/private/src/*"
+)
 
 #
 # Output a static library

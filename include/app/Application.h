@@ -15,6 +15,7 @@ public:
 
 	Scene CreateScene();
 	void DestroyScene(Scene* scene);
+	void DeleteScenes();
 
 	void Tick();
 

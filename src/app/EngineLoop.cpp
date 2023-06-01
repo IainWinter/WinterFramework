@@ -53,12 +53,21 @@ void EngineLoopBase::Init()
 
 void EngineLoopBase::Dnit()
 {
-    // dnit user worlds
-	app.bus.Detach(this);
-
     // dnit user code
 	_Dnit();
-    
+
+	// delete user state
+	app.DeleteScenes();
+
+	// close window and audio
+	app.audio.Dnit();
+	app.window.Dnit();
+
+	// flush last events
+	app.event.Execute();
+
+	app.bus.Detach(this);
+
     // destroy framework contexts
     Time::DestroyContext();
 	Asset::DestroyContext();

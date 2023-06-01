@@ -10,8 +10,7 @@ Application::Application()
 
 Application::~Application()
 {
-	for (SceneNode* s : m_scenes)
-		delete s;
+	DeleteScenes();
 }
 
 Scene Application::CreateScene()
@@ -33,6 +32,14 @@ void Application::DestroyScene(Scene* scene)
 		delete node;
 
 	node = nullptr;
+}
+
+void Application::DeleteScenes()
+{
+	for (SceneNode* s : m_scenes)
+		delete s;
+
+	m_scenes.clear();
 }
 
 void Application::Tick()

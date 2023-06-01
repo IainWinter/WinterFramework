@@ -162,6 +162,16 @@ bool SystemBase::GetOnce(const InputName& name)
 	return m_scene->app->input.Once(name);
 }
 
+EntityWorld& SystemBase::_world()
+{
+	return m_scene->entities;
+}
+
+PhysicsWorld& SystemBase::_physics()
+{
+	return m_scene->physics;
+}
+
 void SystemBase::SetBreak(SystemBreak on)
 {
 	m_break = on;

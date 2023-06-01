@@ -14,13 +14,9 @@ SceneNode::SceneNode(Application* app)
     
 	entities.OnAdd<Transform2D>([this](Entity e)
     {
-        if (e.Has<Rigidbody2D>())
-            e.Get<Rigidbody2D>().SetTransform(e.Get<Transform2D>());
+		if (Rigidbody2D* body = e.TryGet<Rigidbody2D>())
+			body->SetTransform(e.Get<Transform2D>());
     });
-
-	entities.OnRemove<Audio>([this](Entity e) { 
-		e.Get<Audio>().Destroy(); 
-	});
 }
 
 SceneNode::~SceneNode()
