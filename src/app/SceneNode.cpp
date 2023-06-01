@@ -17,6 +17,10 @@ SceneNode::SceneNode(Application* app)
         if (e.Has<Rigidbody2D>())
             e.Get<Rigidbody2D>().SetTransform(e.Get<Transform2D>());
     });
+
+	entities.OnRemove<Audio>([this](Entity e) { 
+		e.Get<Audio>().Destroy(); 
+	});
 }
 
 SceneNode::~SceneNode()
@@ -28,6 +32,11 @@ SceneNode::~SceneNode()
 
 	for (SceneUpdateGroupNode* group : groups)
 		group->Dnit();
+
+	for (SceneUpdateGroupNode* group : groups)
+		delete group;
+
+	entities.Clear();
 }
 
 void SceneNode::Tick(float deltaTime, float fixedTime)

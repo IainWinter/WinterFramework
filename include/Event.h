@@ -107,8 +107,6 @@ class EventSink
 {
 public:
     void AttachPipe(std::shared_ptr<IEventPipe> pipe);
-    
-    // Remove a pipe by reference, does not delete
     void DetachPipe(std::shared_ptr<IEventPipe> pipe);
     
     // Remove a pipe by searching for a bound instance or free function pointer
