@@ -172,6 +172,11 @@ PhysicsWorld& SystemBase::_physics()
 	return m_scene->physics;
 }
 
+EventQueue& SystemBase::_events()
+{
+	return m_scene->event;
+}
+
 void SystemBase::SetBreak(SystemBreak on)
 {
 	m_break = on;

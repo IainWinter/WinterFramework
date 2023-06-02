@@ -71,8 +71,8 @@ protected:
 
 // sending events
 
-	template<typename _e> void Send  (_e&& event);
-	template<typename _e> void SendUp(_e&& event);
+	template<typename _e> void Send  (_e&& event, const char* _fromFile = nullptr, int _fromLine = 0);
+	template<typename _e> void SendUp(_e&& event, const char* _fromFile = nullptr, int _fromLine = 0);
 
 // audio
 
@@ -98,6 +98,7 @@ protected:
 
 	EntityWorld&  _world();
 	PhysicsWorld& _physics();
+	EventQueue& _events();
 
 public:
 
@@ -182,15 +183,15 @@ inline int SystemBase::GetNumberOf()
 }
 
 template<typename _e>
-inline void SystemBase::Send(_e&& event)
+inline void SystemBase::Send(_e&& event, const char* _fromFile, int _fromLine)
 {
-	m_scene->event.Send(std::forward<_e>(event));
+	m_scene->event.Send(std::forward<_e>(event), _fromFile, _fromLine);
 }
 
 template<typename _e>
-inline void SystemBase::SendUp(_e&& event)
+inline void SystemBase::SendUp(_e&& event, const char* _fromFile, int _fromLine)
 {
-	m_scene->app->event.Send(std::forward<_e>(event));
+	m_scene->app->event.Send(std::forward<_e>(event), _fromFile, _fromLine);
 }
 
 template<typename _t>
@@ -206,3 +207,11 @@ inline void System<_t>::Detach()
 {
 	m_scene->bus.Detach<_e>(this);
 }
+
+// Trying this, may not work. I want to be able to use the same function name
+// might be a tricky word to replace
+
+#ifdef EVENTS_REPORT_FILE
+#	define Send(x) Send(x, __FILE__, __LINE__);
+#	define SendUp(x) SendUp(x, __FILE__, __LINE__);
+#endif

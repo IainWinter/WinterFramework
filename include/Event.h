@@ -7,6 +7,12 @@
 #include <unordered_map>
 #include <memory>
 
+// #define EVENTS_REPORT_FILE
+
+#ifdef EVENTS_REPORT_FILE
+#   include "Log.h"
+#endif
+
 template<typename _event>
 using _event_ff = void (*)(_event&);
 
@@ -225,9 +231,9 @@ public:
     void Execute();
     
     template<typename _event>
-    void Send(const _event& event, const char* where = "")
+    void Send(const _event& event, const char* _fromFile = nullptr, int _fromLine = 0)
     {
-        QueuedEventWrapped<_event>* queued = new QueuedEventWrapped<_event>(event, where);
+        QueuedEventWrapped<_event>* queued = new QueuedEventWrapped<_event>(event, _fromFile, _fromLine);
         m_queue.push_back(queued);
     }
     
@@ -242,15 +248,25 @@ private:
     struct QueuedEventWrapped : QueuedEvent
     {
         _event event;
-        const char* where;
+        const char* _eventName;
+        const char* _fromFile;
+        int _fromLine;
         
-        QueuedEventWrapped(const _event& event, const char* where)
-            : event (event)
-            , where (where)
-        {}
+        QueuedEventWrapped(const _event& event, const char* _fromFile, int _fromLine)
+            : event     (event)
+            , _fromFile (_fromFile)
+            , _fromLine (_fromLine)
+        {
+            _eventName = typeid(_event).name();
+        }
         
         void Send(EventBus* _bus) override
-        {   
+        {
+#ifdef EVENTS_REPORT_FILE
+            if (_fromFile)
+                log_event("i~%s from %s[%d]", _eventName, _fromFile, _fromLine);
+#endif
+
             _bus->Send(event);
         }
     };

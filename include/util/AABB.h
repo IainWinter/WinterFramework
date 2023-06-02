@@ -19,7 +19,7 @@ struct aabb2D
 
     float width() const;
     float height() const;
-    vec2 Dimensions() const;
+    vec2 dimensions() const;
 
     static aabb2D from_points   (const std::vector<vec2>& points);
     static aabb2D from_transform(const Transform2D& points);

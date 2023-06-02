@@ -8,6 +8,7 @@
 #include "util/ref.h"
 #include "util/stl.h"
 #include "util/Transform.h"
+#include "util/AABB.h"
 
 // may be able to fwd
 #include "box2d/box2d.h"

@@ -6,9 +6,7 @@ aabb2D::aabb2D()
     , max (-FLT_MAX)
 {}
 
-aabb2D::aabb2D(
-    vec2 min, vec2 max
-)
+aabb2D::aabb2D(vec2 min, vec2 max)
     : min (min)
     , max (max)
 {}
@@ -51,7 +49,7 @@ float aabb2D::height() const
     return max.y - min.y;
 }
 
-vec2 aabb2D::Dimensions() const
+vec2 aabb2D::dimensions() const
 {
     return vec2(width(), height());
 }
@@ -73,5 +71,5 @@ aabb2D aabb2D::from_points(const std::vector<vec2>& points)
 
 aabb2D aabb2D::from_transform(const Transform2D& transform)
 {
-    return aabb2D(transform.position, transform.scale, transform.rotation);
+    return aabb2D(transform.position, transform.scale / 2.f, transform.rotation);
 }
