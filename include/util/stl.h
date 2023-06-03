@@ -66,6 +66,13 @@ namespace std
             return (size_t(x.x) << 32) + size_t(x.y);
         }
     };
+
+    template <>
+    struct hash<vec2> {
+        size_t operator()(const vec2& x) const {
+            return (size_t(x.x) << 32) + size_t(x.y);
+        }
+    };
 }
 
 
