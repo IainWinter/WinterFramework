@@ -55,32 +55,36 @@ Here is an example of an app that draws a red square on the screen. It can be mo
 #include "app/EngineLoop.h"
 #include "ext/rendering/BatchSpriteRenderer.h"
 
-struct ExampleSystem : System<ExampleSystem>
+struct ExampleSystem : SystemBase
 {
 	BatchSpriteRenderer render;
 	Entity sprite;
 
 	void Init() override
 	{
-		// Creating entities in the world & adding components
+		// Creating an entity in the world & adding components
+		
 		sprite = CreateEntity();
-		sprite.Add<Transform2D>();
+		
+		sprite.Add<Transform2D>()
+			.SetScale(vec2(2.f));
+			
+		sprite.Add<Sprite>()
+			.SetTint(Color(255, 0, 0));
 	}
 	
 	void Update() override
 	{
 		// getting components of a specific entity
 
-		sprite.Get<Transform2D>().position += 5.f * Input::GetAxis("Move") * Time::DeltaTime();
+		sprite.Get<Transform2D>().position += 5.f * GetAxis("Move") * Time::DeltaTime();
 
 		// use of an extension that provides a simple batch quad renderer
 
 		render.Begin();
 
-		for (auto [transform] : Query<Transform2D>()) // querying of components from ECS
-		{
-			render.SubmitSprite(transform, Color(255, 0, 0));
-		}
+		for (auto [transform, sprite] : Query<Transform2D, Sprite>()) // querying of components from ECS
+			render.SubmitSprite(transform, sprite);
 
 		render.Draw(Camera(10, 10, 10));
 	}
@@ -90,36 +94,35 @@ struct Example : EngineLoop<Example>
 {
 	void Init() override
 	{
-		// Worlds hold all entity data & systems for updating state
+		// Scenes hold all entity data & systems for updating state
 
-		r<World> world = app.CreateWorld();
-		world->CreateSystem<ExampleSystem>();
+		Scene scene = app.CreateScene();
+		
+		scene.CreateGroup()
+			.Then<ExampleSystem>();
 
-		// Binding axes to keyboard and controller inputs
+		// Binding keyboard and controller inputs to axes
 
 		// Create an axis for the left joystick 
 
-		Input::InputAxisSettings leftStickSettings;
-		leftStickSettings.deadzone = 0.1f;
-
-		Input::CreateAxis("Left Stick");
-		Input::SetAxisComponent("Left Stick", cAXIS_LEFTX, vec2(1.f, 0.f));
-		Input::SetAxisComponent("Left Stick", cAXIS_LEFTY, vec2(0.f, 1.f));
-		Input::SetAxisSettings("Left Stick", leftStickSettings);
-
+		app.input.CreateAxis("Left Stick")
+			.Map(cAXIS_LEFTX, vec2(1.f, 0.f))
+			.Map(cAXIS_LEFTY, vec2(0.f, 1.f))
+			.Deadzone(0.1f);
+		
 		// Create an axis for the WASD keys
-
-		Input::CreateAxis("WASD");
-		Input::SetAxisComponent("WASD", KEY_W, vec2( 0.f,  1.f));
-		Input::SetAxisComponent("WASD", KEY_A, vec2(-1.f,  0.f));
-		Input::SetAxisComponent("WASD", KEY_S, vec2( 0.f, -1.f));
-		Input::SetAxisComponent("WASD", KEY_D, vec2( 1.f,  0.f));
+		
+		app.input.CreateAxis("WASD")
+			.Map(KEY_W, vec2( 0.f,  1.f))
+			.Map(KEY_A, vec2(-1.f,  0.f))
+			.Map(KEY_S, vec2( 0.f, -1.f))
+			.Map(KEY_D, vec2( 1.f,  0.f));
 
 		// Combine these axes into a single group axis
 
-		Input::CreateGroupAxis("Move");
-		Input::SetGroupAxisComponent("Move", "Left Stick");
-		Input::SetGroupAxisComponent("Move", "WASD");
+		app.input.CreateGroupAxis("Move")
+			.Map("Left Stick")
+			.Map("WASD");
 
 		// Attaching events to the main bus
 
