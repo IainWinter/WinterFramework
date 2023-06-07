@@ -91,6 +91,8 @@ protected:
 	float GetButton(const InputName& name);
 	bool  GetOnce  (const InputName& name);
 
+	float GetRawState(InputCode code);
+
 // getting the raw framework classes
 // ideally, events would be sent to a class which had these in scope, but
 // there is no way to attach events to a scene, so this needs to be exposed

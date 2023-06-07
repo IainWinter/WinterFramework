@@ -106,7 +106,7 @@ struct Particle
 		{
 			log_render(
 				"e~Index out of bounds in GetTint. Shouldn't be possible\n"
-				"\tIndexA: %d IndexB: %d Number of tints", 
+				"\tIndexA: %d IndexB: %d Number of tints: %d", 
 				indexA, indexB, (int)tints.size()
 			);
 

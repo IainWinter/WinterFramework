@@ -10,6 +10,9 @@
 
 #include <utility>
 
+#define wPI 3.1415926535f
+#define w2PI wPI * 2.f
+
 // make glm the default math library
 // no need to think about if something is glm or not because it should
 // be ingrained into the framework at a core level
@@ -67,6 +70,7 @@ vec2 turn_towards(const vec2& current, const vec2& target, float strength);
 
 vec2 on_unit(float a);
 vec2 right(vec2 v);
+vec2 left(vec2 v);
 
 float pow4(float x);
 float angle(vec2 v);

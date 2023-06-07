@@ -149,7 +149,7 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 
 		else
 		{
-			render.SubmitSprite(t, p.GetTint());
+			render.SubmitColor(t, p.GetTint());
 		}
 	}
 

@@ -208,6 +208,12 @@ const InputName& InputMap::GetMapping(InputCode code)
     return itr != Mapping.end() ? itr->second : _default;
 }
 
+float InputMap::GetRawState(InputCode code)
+{
+    auto itr = State.find(code);
+    return itr != State.end() ? itr->second : 0.f;
+}
+
 bool InputAxisSettings::operator==(const InputAxisSettings& other) const
 {
 	return deadzone    == other.deadzone

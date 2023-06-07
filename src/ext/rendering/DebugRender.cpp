@@ -57,7 +57,7 @@ namespace Debug
         transform.rotation = 0.f;
         transform.z = z;
         
-        debugSprites->SubmitSprite(transform, color);
+        debugSprites->SubmitColor(transform, color);
     }
 
     void Circle(const vec2& center, float radius, const Color& color)

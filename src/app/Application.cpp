@@ -46,6 +46,13 @@ void Application::Tick()
 {
 	// Events
 
+	// Need to execute deferred deletes here because those may send
+	// events up to the app bus which change the state in a critical way for next
+	// frame
+
+	for (SceneNode* node : m_scenes)
+		node->entities.ExecuteDeferredDeletions();
+
 	window.PumpEvents();
 	event.Execute();
 
@@ -65,13 +72,6 @@ void Application::Tick()
 		node->TickUI();
 
 	window.EndImgui();
-
-	// Need to execute deferred deletes here because those may send
-	// events up to the app bus which change the state in a critical way for next
-	// frame
-	
-	for (SceneNode* node : m_scenes)
-		node->entities.ExecuteDeferredDeletions();
 
 	// OS
 	

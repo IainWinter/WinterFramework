@@ -27,7 +27,7 @@ void BatchSpriteRenderer::SetZOffsetPerDraw(float zOffsetPerDraw)
 	this->zOffsetPerDraw = zOffsetPerDraw;
 }
 
-void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color& tint)
+void BatchSpriteRenderer::SubmitColor(const Transform2D& transform, const Color& tint)
 {
 	SubmitSprite(transform, nullptr, vec2(0.f), vec2(0.f), tint);
 }
@@ -35,6 +35,20 @@ void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Color
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Sprite& sprite)
 {
 	SubmitSprite(transform, sprite.source, sprite.uvOffset, sprite.uvScale, sprite.tint);
+}
+
+void BatchSpriteRenderer::SubmitParticle(const Transform2D& transform, const Particle& particle)
+{
+	if (particle.HasAtlas())
+	{
+		const TextureAtlas::Bounds& bounds = particle.GetCurrentFrameUV();
+		SubmitSprite(transform, particle.atlas->source, bounds.uvOffset, bounds.uvScale, particle.GetTint());
+	}
+
+	else
+	{
+		SubmitSprite(transform, nullptr, vec2(0.f), vec2(1.f), particle.GetTint());
+	}
 }
 
 void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Texture>& texture, const vec2& uvOffset, const vec2& uvScale, const Color& tint)

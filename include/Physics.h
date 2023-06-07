@@ -182,14 +182,14 @@ struct HullCollider : Collider
 
 	// set points from a range
 	template<typename _itr>
-	HullCollider& SetPoints(const _itr& begin, const _itr& end, vec2 scale = vec2(1.f))
+	HullCollider& SetPoints(const _itr& begin, const _itr& end, vec2 scale = vec2(1.f), vec2 offset = vec2(0.f))
 	{
 		// convert points to box2d
 		std::vector<b2Vec2> converted;
 
 		for (_itr b = begin; b != end; ++b)
 		{
-			b2Vec2 b2 = _tb(*b * scale);
+			b2Vec2 b2 = _tb(*b * scale + offset);
 			converted.push_back(b2);
 		}
 
@@ -277,6 +277,8 @@ private:
 	friend struct PhysicsWorld;
 	friend struct ColliderAttachment;
     
+	aabb2D m_aabb;
+
 public:
 	Rigidbody2D();
 
@@ -332,6 +334,9 @@ public:
 	
 	const std::vector<r<Collider>>& GetColliders() const;
 	
+	void UpdateBounds(aabb2D bounds);
+	aabb2D GetBounds() const;
+
 	void SetPreInit(const b2BodyDef& def);
 	
 	// return a body def that can be used to serialize this Rigidbody

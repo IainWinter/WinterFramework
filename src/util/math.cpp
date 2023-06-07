@@ -88,7 +88,12 @@ vec2 on_unit(float a)
 
 vec2 right(vec2 v)
 {
-	return vec2(v.y, -v.x); // todo: verify this is right
+	return vec2(v.y, -v.x);
+}
+
+vec2 left(vec2 v)
+{
+	return vec2(-v.y, v.x);
 }
 
 float pow4(float x)

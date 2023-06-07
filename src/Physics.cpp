@@ -578,6 +578,34 @@ const std::vector<r<Collider>>& Rigidbody2D::GetColliders() const
 	return m_colliders;
 }
 
+void Rigidbody2D::UpdateBounds(aabb2D bounds)
+{
+	m_aabb = bounds;
+}
+
+aabb2D Rigidbody2D::GetBounds() const
+{
+	//for (const std::shared_ptr<Collider>& collider : m_colliders)
+	//{
+	//	b2AABB aabb;
+	//	collider->m_attachments[0].GetShape().ComputeAABB(&aabb, {});
+	//}
+
+	//b2AABB aabb;
+	//aabb.lowerBound = b2Vec2(FLT_MAX, FLT_MAX);
+	//aabb.upperBound = b2Vec2(-FLT_MAX, -FLT_MAX);
+	//b2Fixture* fixture = m_instance->GetFixtureList();
+	//while (fixture != NULL)
+	//{
+	//	aabb.Combine(aabb, fixture->GetAABB(0));
+	//	fixture = fixture->GetNext();
+	//}
+
+	//return aabb2D(_fb(aabb.lowerBound), _fb(aabb.upperBound));
+
+	return m_aabb.transform(GetPosition(), GetAngle());
+}
+
 void Rigidbody2D::SetPreInit(const b2BodyDef& def)
 {
 	m_preinit = def;

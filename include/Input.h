@@ -253,6 +253,7 @@ public:
 
     void SetState(int code, float state);
     const InputName& GetMapping(InputCode code);
+    float GetRawState(InputCode code);
 
     InputMap();
 

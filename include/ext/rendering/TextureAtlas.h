@@ -8,8 +8,8 @@ struct TextureAtlas
 {
 	struct Bounds
 	{
-		vec2 uvOffset;
-		vec2 uvScale;
+		vec2 uvOffset = vec2(0.f);
+		vec2 uvScale  = vec2(1.f);
 	};
 
 	a<Texture> source;

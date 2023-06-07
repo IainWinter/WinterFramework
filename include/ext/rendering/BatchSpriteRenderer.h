@@ -4,6 +4,7 @@
 #include "util/Transform.h"
 #include "ext/rendering/Camera.h"
 #include "ext/rendering/Sprite.h"
+#include "ext/rendering/Particle.h"
 #include <unordered_map>
 
 // could use major improvements !!!
@@ -24,7 +25,7 @@ public:
 
 	void SetZOffsetPerDraw(float zOffsetPerDraw);
 
-	void SubmitSprite(
+	void SubmitColor(
 		const Transform2D& transform,
 		const Color& tint);
 
@@ -32,13 +33,17 @@ public:
 		const Transform2D& transform,
 		const Sprite& sprite);
 
+	void SubmitParticle(
+		const Transform2D& transform,
+		const Particle& particle);
+
 	void SubmitSprite(
 		const Transform2D& transform, 
-		const r<Texture>& texture, 
+		const r<Texture>& texture,
 		const vec2& uvOffset = vec2(0.f),
 		const vec2& uvScale  = vec2(1.f),
 		const Color& tint    = Color());
-
+	
 private:
 	ShaderProgram m_program;
 
