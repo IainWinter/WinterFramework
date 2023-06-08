@@ -380,14 +380,14 @@ Window& Window::SetVSync(bool vsync)
 {
 	switch ((int)vsync)
 	{
-		case 0: SDL_GL_SetSwapInterval((int)vsync); break;
-		case 1: SDL_GL_SetSwapInterval((int)vsync); break;
+		case 0: SDL_GL_SetSwapInterval(0); break;
+		case 1: SDL_GL_SetSwapInterval(1); break;
 		default:
 			log_world("e~Error: Tried to set invalid vsync mode %d", (int)vsync);
 			break;
 	}
 
-	log_window("d~Set window vsync mode to %d", vsync);
+	log_window("d~Set window vsync mode to %s", vsync ? "true" : "false");
 
 	return *this;
 }
