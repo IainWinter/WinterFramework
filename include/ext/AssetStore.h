@@ -106,6 +106,8 @@ namespace Asset
 
 		if (itr == ctx->loaded.end()) // return empty
 		{
+			// todo: maybe should return a default to not cause crashes?
+
 			return a<_t>();
 		}
 

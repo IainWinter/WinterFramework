@@ -49,13 +49,19 @@ void SceneNode::Tick(float deltaTime, float fixedTime)
 	// without putting the physics tick in a system
 	if (physicsRunning)
 	{
+		int maxitr = 2;
+		int itr = 0;
+
 		timeAcc += deltaTime;
 
 		while (timeAcc > fixedTime)
 		{
-			// should subtract the fixed time, but that causes runaway frame drops
-			//timeAcc -= fixedTime;
-			timeAcc = 0;
+			// limit iterations
+			if (itr > maxitr) break;
+			itr += 1;
+
+			// this is required to keep physics engine running at the same speed with vsync enabled
+			timeAcc -= fixedTime;
 
 			for (SceneUpdateGroupNode* group : groups)
 				group->FixedUpdate();

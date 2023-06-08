@@ -76,6 +76,16 @@ vec2 CameraLens::World2DToScreen(vec2 world2D) const
 	return (pos + realDim) / realDim / 2.f;
 }
 
+CameraLens lens_Orthographic(float height, float aspect, float near, float far)
+{
+	return CameraLens().SetOrthographic(height, aspect, near, far);
+}
+
+CameraLens lens_Perspective(float fov, float aspect, float near, float far)
+{
+	return CameraLens().SetPerspective(fov, aspect, near, far);
+}
+
 void EditorLikeCameraMovement(CameraLens& lens, const EditorLikeCameraMovementInput& input)
 {
     if (input.leftShiftPressed)

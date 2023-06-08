@@ -54,10 +54,17 @@ void Application::Tick()
 		node->entities.ExecuteDeferredDeletions();
 
 	window.PumpEvents();
-	event.Execute();
 
-	for (SceneNode* node : m_scenes)
-		node->event.Execute();
+	bool hasEvents = false;
+	do
+	{
+		hasEvents = false;
+		hasEvents |= event.Execute();
+
+		for (SceneNode* node : m_scenes)
+			hasEvents |= node->event.Execute();
+
+	} while (hasEvents);
 
 	// Game tick
     

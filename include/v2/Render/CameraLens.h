@@ -45,6 +45,9 @@ public:
 	vec2 World2DToScreen(vec2 world2D) const;
 };
 
+CameraLens lens_Orthographic(float height, float aspect, float near, float far);
+CameraLens lens_Perspective(float fov, float aspect, float near, float far);
+
 struct EditorLikeCameraMovementInput
 {
 	bool rightMouseClicked;

@@ -143,14 +143,18 @@ EventQueue::EventQueue(EventBus* bus)
     : bus (bus)
 {}
 
-void EventQueue::Execute()
+bool EventQueue::Execute()
 {
+    bool hasEvents = m_queue.size() > 0;
+
     for (int i = 0; i < m_queue.size(); i++)
     {
         QueuedEvent* event = m_queue.at(i);
         event->Send(bus);
         delete event;
     }
-    
+
     m_queue.clear();
+
+    return hasEvents;
 }

@@ -228,7 +228,7 @@ public:
     EventQueue();
     EventQueue(EventBus* bus);
     
-    void Execute();
+    bool Execute();
     
     template<typename _event>
     void Send(const _event& event, const char* _fromFile = nullptr, int _fromLine = 0)
