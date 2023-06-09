@@ -11,7 +11,7 @@ Scene::Scene(SceneNode* node)
 
 SceneUpdateGroup Scene::CreateGroup()
 {
-	return SceneUpdateGroup(m_node->NewGroup());
+	return SceneUpdateGroup(m_node->NewGroup(), m_node);
 }
 
 void Scene::DestroyGroup(SceneUpdateGroup* group)

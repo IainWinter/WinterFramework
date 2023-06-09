@@ -1,6 +1,7 @@
 #pragma once
 
 struct SceneUpdateGroupNode;
+struct SceneNode;
 class Scene;
 class SystemBase;
 
@@ -12,12 +13,16 @@ class SceneUpdateGroup
 {
 public:
 	SceneUpdateGroup();
-	SceneUpdateGroup(SceneUpdateGroupNode* node);
+	SceneUpdateGroup(SceneUpdateGroupNode* node, SceneNode* sceneNode);
 
 public:
 	template<typename _t>
 	SceneUpdateGroup& Then();
-	
+
+	// Call this if you need to init systems before attaching
+	// another group. Not needed most of the time
+	SceneUpdateGroup& InitNow();
+
 private:
 	void TakeOwnershipOfSystem(SystemBase* system);
 
@@ -26,6 +31,7 @@ private:
 
 private:
 	SceneUpdateGroupNode* m_node;
+	SceneNode* m_sceneNode;
 };
 
 template<typename _t>

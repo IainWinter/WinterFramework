@@ -214,6 +214,6 @@ inline void System<_t>::Detach()
 // might be a tricky word to replace
 
 #ifdef EVENTS_REPORT_FILE
-#	define Send(x) Send(x, __FILE__, __LINE__);
-#	define SendUp(x) SendUp(x, __FILE__, __LINE__);
+#	define Send(...) Send(__VA_ARGS__, __FILE__, __LINE__);
+#	define SendUp(...) SendUp(__VA_ARGS__, __FILE__, __LINE__);
 #endif

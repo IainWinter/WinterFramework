@@ -5,9 +5,18 @@ SceneUpdateGroup::SceneUpdateGroup()
 	: m_node (nullptr)
 {}
 
-SceneUpdateGroup::SceneUpdateGroup(SceneUpdateGroupNode* node)
-	: m_node (node)
+SceneUpdateGroup::SceneUpdateGroup(SceneUpdateGroupNode* node, SceneNode* sceneNode)
+	: m_node      (node)
+	, m_sceneNode (sceneNode)
 {}
+
+SceneUpdateGroup& SceneUpdateGroup::InitNow()
+{
+	m_node->Init(m_sceneNode);
+	m_node->Attach();
+
+	return *this;
+}
 
 void SceneUpdateGroup::TakeOwnershipOfSystem(SystemBase* system)
 {
