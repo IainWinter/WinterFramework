@@ -13,3 +13,9 @@ r<_t> mkr(_args&&... args)
 { 
 	return std::make_shared<_t>(std::forward<_args>(args)...); 
 }
+
+template<typename _t>
+r<_t> ref(_t&& move)
+{
+	return std::make_shared<_t>(std::forward<_t>(move));
+}

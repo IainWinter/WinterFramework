@@ -115,3 +115,8 @@ bool fe(float a, float b, float e)
 {
 	return abs(a - b) < e;
 }
+
+ivec2 get_xy(int index, int width)
+{
+	return { index % width, index / width };
+}

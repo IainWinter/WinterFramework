@@ -60,7 +60,7 @@ struct ContactCallback : b2ContactListener
 		if (bodyA.IsCollisionEnabled()) bodyA.OnCollision(CollisionInfo { entityA, entityB, contact, true });
 		if (bodyB.IsCollisionEnabled()) bodyB.OnCollision(CollisionInfo { entityB, entityA, contact, false });
 
-		m_world->FireOnCollision(WorldCollsionInfo
+		m_world->FireOnCollision(WorldCollisionInfo
 		{
 			entityA, entityB, contact
 		});
@@ -432,6 +432,7 @@ Rigidbody2D::Rigidbody2D()
 	: m_instance         (nullptr)
 	, m_density          (1.f)
 	, m_collisionEnabled (true)
+	, m_world            (nullptr)
 {}
 	
 void Rigidbody2D::RemoveFromWorld()
@@ -735,7 +736,7 @@ Rigidbody2D PhysicsWorld::CreateBody()
 
 void PhysicsWorld::Tick(float dt)
 {
-	m_world->Step(dt, 8, 3);
+	m_world->Step(dt, 6, 2);
 }
 
 RayQueryResult PhysicsWorld::QueryRay(vec2 point, vec2 direction, float distance) const

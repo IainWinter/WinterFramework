@@ -24,14 +24,14 @@ struct CollisionInfo
 	bool isA;
 };
 
-struct WorldCollsionInfo
+struct WorldCollisionInfo
 {
 	Entity A;
 	Entity B;
 	b2Contact* contact;
 };
 
-using OnWorldCollisionFunc = std::function<void(WorldCollsionInfo)>;
+using OnWorldCollisionFunc = std::function<void(WorldCollisionInfo)>;
 using OnCollisionFunc = std::function<void(CollisionInfo)>;
 
 // fwd
@@ -237,10 +237,10 @@ private:
 
 struct LastPositionState2D
 {
-	vec2 position;
-	float angle;
-	float timePoint;
-	float deltaTime;
+	vec2 position = vec2(0.f);
+	float angle = 0;
+	float timePoint = 0;
+	float deltaTime = 0;
 };
 
 struct Rigidbody2D
@@ -388,7 +388,7 @@ struct PhysicsWorld
 {
 private:
 	b2World* m_world;
-	func<void(WorldCollsionInfo)> m_onCollision;
+	func<void(WorldCollisionInfo)> m_onCollision;
 
 public:
 	PhysicsWorld();
@@ -418,7 +418,7 @@ public:
 	template<typename _c1, typename _c2>
 	OnWorldCollisionFunc OnCollision(const OnWorldCollisionFunc& func)
 	{
-		OnWorldCollisionFunc f = [func](WorldCollsionInfo info)
+		OnWorldCollisionFunc f = [func](WorldCollisionInfo info)
 		{
 			// this is wasteful because this causes a loop in m_onCollision for each pair
 			// better solve would be a pair hash that doesn't care about order, then a map of pair hash -> func
@@ -447,7 +447,7 @@ public:
 		m_onCollision -= func;
 	}
 
-	void FireOnCollision(const WorldCollsionInfo& info)
+	void FireOnCollision(const WorldCollisionInfo& info)
 	{
 		m_onCollision(info);
 	}

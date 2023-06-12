@@ -79,11 +79,7 @@ float aspect(const vec2& v);
 
 bool fe(float a, float b, float e = 0.0001f);
 
-template<typename _t>
-std::pair<_t, _t> get_xy(const _t& index, const _t& width)
-{
-	return { index % width, index / width };
-}
+ivec2 get_xy(int index, int width);
 
 template<typename _t>
 _t value_or(void* ptr, const _t& defaultValue)
