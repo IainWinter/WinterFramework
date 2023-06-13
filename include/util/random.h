@@ -1,38 +1,38 @@
 #pragma once
 
-#include "Common.h"
-#include <vector>
-#include <utility>
+#include "util/math.h"
 
-template<typename _t>
-size_t choosei(const std::vector<std::pair<_t, float>>& item_weights)
-{
-	float total_weight = 0.f;
-	for (const auto& [item, weight] : item_weights)
-	{
-		total_weight += weight;
-	}
+void rand_seed(int seed);
 
-	float pick = get_rand(1.f) * total_weight;
-				
-	float last_weight = 0.f;
-	for (size_t i = 0; i < item_weights.size(); i++)
-	{
-		const auto& [item, weight] = item_weights.at(i);
+int rand_i();
+float rand_f();
 
-		if (pick > last_weight && pick < weight + last_weight)
-		{
-			return i;
-		}
+int rand_im(int max);
+float rand_fm(float max);
 
-		last_weight += weight;
-	}
+int rand_imm(int min, int max);
+float rand_fmm(float min, float max);
 
-	return 0;
+int rand_ic(int extent);
+float rand_fc(float extent);
+
+vec2 rand_2f();
+vec2 rand_2fm(float maxX, float maxY);
+vec2 rand_2fmm(float minX, float maxX, float minY, float maxY);
+vec2 rand_2fc(float extentX, float extentY);
+vec2 rand_2fn(float radius);
+
+vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddingY);
+
+template<typename _enum>
+_enum rand_e(_enum count) {
+	return static_cast<_enum>(rand_im(count));
 }
 
+// maybe put in another file
+#include <vector>
+
 template<typename _t>
-_t choose(const std::vector<std::pair<_t, float>>& item_weights)
-{
-	return item_weights[choosei<_t>(item_weights)].first;
+const _t& rand_item(const std::vector<_t>& vector) {
+	return vector.at(rand_im((int)vector.size()));
 }

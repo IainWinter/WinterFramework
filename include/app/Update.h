@@ -68,7 +68,7 @@ protected:
 	template<typename    _t> _t&                          First();
 	template<typename... _t> Entity                       FirstEntity();
 	template<typename... _t> int                          GetNumberOf();
-
+	
 // sending events
 
 	template<typename _e> void Send  (_e&& event, const char* _fromFile = nullptr, int _fromLine = 0);
