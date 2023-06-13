@@ -13,11 +13,15 @@ float rand_fm(float max);
 int rand_imm(int min, int max);
 float rand_fmm(float min, float max);
 
+int rand_ima(int min, int addition);
+float rand_fma(float min, float addition);
+
 int rand_ic(int extent);
 float rand_fc(float extent);
 
 vec2 rand_2f();
 vec2 rand_2fm(float maxX, float maxY);
+vec2 rand_2fma(float minX, float minY, float additionX, float additionY);
 vec2 rand_2fmm(float minX, float maxX, float minY, float maxY);
 vec2 rand_2fc(float extentX, float extentY);
 vec2 rand_2fn(float radius);

@@ -1,17 +1,15 @@
 #include "util/random.h"
 #include <random>
 
-#include "glm/gtc/random.hpp"
-
-static std::mt19937 random;
+static std::mt19937 g_random;
 static std::uniform_int_distribution<int> dist(0, INT_MAX);
 
 void rand_seed(int seed) {
-	random.seed(seed);
+	g_random.seed(seed);
 }
 
 int _rand() {
-	return dist(random);
+	return dist(g_random);
 }
 
 int rand_i() {
@@ -23,6 +21,9 @@ float rand_f() {
 }
 
 int rand_im(int max) {
+	if (max == 0)
+		return 0;
+
 	return _rand() % max;
 }
 
@@ -36,6 +37,14 @@ int rand_imm(int min, int max) {
 
 float rand_fmm(float min, float max) {
 	return min + rand_fm(max);
+}
+
+int rand_ima(int min, int addition) {
+	return min + rand_im(addition);
+}
+
+float rand_fma(float min, float addition) {
+	return min + rand_fm(addition);
 }
 
 int rand_ic(int extent) {
@@ -56,6 +65,10 @@ vec2 rand_2fm(float maxX, float maxY) {
 
 vec2 rand_2fmm(float minX, float maxX, float minY, float maxY) {
 	return vec2(rand_fmm(minX, maxX), rand_fmm(minY, maxY));
+}
+
+vec2 rand_2fma(float minX, float additionX, float minY, float additionY) {
+	return vec2(rand_fma(minX, additionX), rand_fma(minY, additionY));
 }
 
 vec2 rand_2fc(float extentX, float extentY) {
