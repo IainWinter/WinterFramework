@@ -20,6 +20,10 @@ float rand_f() {
 	return _rand() / (float)dist.max();
 }
 
+bool rand_b() {
+	return _rand() % 2 == 0;
+}
+
 int rand_im(int max) {
 	if (max == 0)
 		return 0;
@@ -81,5 +85,54 @@ vec2 rand_2fn(float radius) {
 
 vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddingY)
 {
-	return vec2();
+	// this seems complex because if you treat the corners as a part of one of the
+	// side sections, the probability is off
+	
+	vec2 insidePadding;
+
+	// push to edge based on sign
+
+	float areaHorizontal = 2 * extentX  * paddingY;
+	float areaVertical   = 2 * extentY  * paddingX;
+	float areaCorner     =     paddingX * paddingY;
+
+	float pickArea = rand_fm(areaHorizontal + areaVertical + areaCorner);
+
+	if (pickArea < areaHorizontal)
+	{
+		insidePadding = rand_2fc(extentX, paddingY);
+
+		bool top = insidePadding.y > 0;
+		bool right = insidePadding.x > 0;
+
+		if (top) insidePadding.y += extentY;
+		else     insidePadding.y -= extentY;
+	}
+
+	else if (pickArea < (areaHorizontal + areaVertical))
+	{
+		insidePadding = rand_2fc(paddingX, extentY);
+
+		bool top = insidePadding.y > 0;
+		bool right = insidePadding.x > 0;
+
+		if (right) insidePadding.x += extentX;
+		else       insidePadding.x -= extentX;
+	}
+
+	else 
+	{
+		insidePadding = rand_2fc(paddingX, paddingY);
+
+		bool top = insidePadding.y > 0;
+		bool right = insidePadding.x > 0;
+
+		if (right) insidePadding.x += extentX;
+		else       insidePadding.x -= extentX;
+
+		if (top) insidePadding.y += extentY;
+		else     insidePadding.y -= extentY;
+	}
+
+	return insidePadding;
 }
