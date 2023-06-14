@@ -307,6 +307,11 @@ void register_common_types()
 		.custom_write(&write_Texture)
 		.custom_read(&read_Texture);
 
+	describe<TextureAtlas::Bounds>()
+		.name("TextureAtlas::Bounds")
+		.member<&TextureAtlas::Bounds::uvOffset>("uvOffset")
+		.member<&TextureAtlas::Bounds::uvScale>("uvScale");
+
 	describe<TextureAtlas>()
 		.name("TextureAtlas")
 		.member<&TextureAtlas::source>("source")

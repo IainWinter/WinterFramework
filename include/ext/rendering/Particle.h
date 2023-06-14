@@ -4,6 +4,12 @@
 #include "util/Transform.h"
 #include "ext/rendering/TextureAtlas.h"
 
+enum BlendMode
+{
+	BLEND_NORMAL,
+	BLEND_ADD
+};
+
 struct Particle
 {
 	a<TextureAtlas> atlas;
@@ -15,10 +21,13 @@ struct Particle
 	float life = 1.f;        // counts down to 0
 	float lifeCurrent = 1.f; 
 
+	BlendMode blendMode = BLEND_NORMAL;
+
 	Transform2D original;
 
 	std::vector<Color> tints;
 	Color tint;
+
 
 	Particle() {}
 	
@@ -45,10 +54,11 @@ struct Particle
 	Particle& SetFrameCurrent    (float                     frameCurrent)    { this->frameCurrent    = frameCurrent;    return *this; }
 	Particle& SetLife            (float                     life)            { this->life            = life;            return *this; }
 	Particle& SetLifeCurrent     (float                     lifeCurrent)     { this->lifeCurrent     = lifeCurrent;     return *this; }
+	Particle& SetBlend           (BlendMode                 blendMode)       { this->blendMode       = blendMode;       return *this; }
 	Particle& SetOriginal        (const Transform2D&        transform)       { this->original        = transform;       return *this; }
-	Particle& SetTint            (const Color&              tint)            { this->tint            = tint;            return *this; }
+	Particle& SetTint            (Color                     tint)            { this->tint            = tint;            return *this; }
 	Particle& SetTints           (const std::vector<Color>& tints)           { this->tints           = tints;           return *this; }
-	Particle& AddTint            (const Color&              tint)            { this->tints.push_back(tint);             return *this; }
+	Particle& AddTint            (Color                     tint)            { this->tints.push_back(tint);             return *this; }
 
 	Particle& SetLifetime(float lifetime)
 	{

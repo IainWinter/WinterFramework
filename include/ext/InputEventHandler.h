@@ -8,6 +8,7 @@ class InputEventHandler
 private:
     EventQueue* m_queue;
     InputMap* m_map;
+    int m_frame = 0;
 
 public:
     InputEventHandler();
@@ -19,6 +20,8 @@ public:
     void on(event_Key& e);
     void on(event_Mouse& e);
     void on(event_Controller& e);
+
+    void TickFrame();
 
 private:
     void HandleInputMapping(int code, float state);

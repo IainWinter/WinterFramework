@@ -18,11 +18,7 @@ TextureAtlas::TextureAtlas(const std::string& filename)
 	std::ifstream in(filename);
 
 	if (in.is_open())
-	{
 		json_reader(in).read(*this);
-	}
-
-	SetAutoTile(1, 1);
 }
 
 TextureAtlas& TextureAtlas::SetAutoTile(int numberOfTilesX, int numberOfTilesY)

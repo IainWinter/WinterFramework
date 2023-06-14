@@ -82,6 +82,8 @@ bool EngineLoopBase::Tick()
 	Time::UpdateTime();
 	Render::SetWindowSize(app.window.Width(), app.window.Height());
 
+	m_inputHandler->TickFrame();
+
 	app.Tick();
 
 	return m_running;

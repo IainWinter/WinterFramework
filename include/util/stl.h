@@ -14,7 +14,9 @@ _t get_rand(const std::vector<_t>& x)
 template<typename _t, typename _int_t>
 void pop_erase(std::vector<_t>& list, _int_t* index)
 {
-    list.at((size_t)*index) = std::move(list.back());
+    if (list.size() > 1 && *index != (list.size() - 1) )
+        list.at((size_t)*index) = std::move(list.back());
+
     list.pop_back();
     *index -= 1;
 }

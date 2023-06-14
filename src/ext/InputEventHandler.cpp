@@ -76,13 +76,19 @@ void InputEventHandler::on(event_Controller& e)
     HandleInputMapping(GetInputCode(e.input), e.value);
 }
 
+void InputEventHandler::TickFrame()
+{
+    m_frame += 1;
+    m_map->SetActiveFrame(m_frame);
+}
+
 void InputEventHandler::HandleInputMapping(int code, float state)
 {
     m_map->SetState(code, state);
 
-    InputName input = m_map->GetMapping(code);
+    const auto& input = m_map->GetMapping(code);
 
-    if (input.size() > 0)
+    for (const InputName& input : m_map->GetMapping(code))
     {
         event_Input e;
         e.name = input;
