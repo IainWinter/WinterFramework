@@ -28,7 +28,7 @@ AxisGroupBuilder InputMap::CreateGroupAxis(const InputName& name)
 vec2 InputMap::GetAxis(const InputName& axis)
 {
 	if (!_GroupAxisExists(axis))
-		return _GetAxisNoRecurse(axis);
+		return _GetAxisNoRecurse(axis, false);
 
 	const AxisGroup& group = GroupAxes.at(axis);
 
@@ -37,17 +37,34 @@ vec2 InputMap::GetAxis(const InputName& axis)
 
 	vec2 sum = vec2(0.f);
 
-	for (const InputName& name : group.axes)
-		sum += _GetAxisNoRecurse(name);
+    if (group.settings.useOnlyLatestInput)
+    {
+        InputName lastStateNameUsed = {};
+        int lastFrameUsed = 0;
 
-	if (length(sum) < group.settings.deadzone)
-		return vec2(0.f);
+        for (const InputName& name : group.axes)
+        {
+            for (const auto& [code, component] : Axes.at(name).components)
+            {
+                InputState& state = State.at(code);
+                if (state.frameLastUpdated > lastFrameUsed)
+                {
+                    lastStateNameUsed = name;
+                    lastFrameUsed = state.frameLastUpdated;
+                }
+            }
+        }
 
-	if (group.settings.normalized)
-		sum = safe_normalize(sum);
+        sum += _GetAxisNoRecurse(lastStateNameUsed, group.settings.useOnlyInputSetThisFrame);
+    }
 
-	if (group.settings.limitToUnit)
-		sum = limit(sum, 1.f);
+    else
+    {
+        for (const InputName& name : group.axes)
+            sum += _GetAxisNoRecurse(name, group.settings.useOnlyInputSetThisFrame);
+    }
+
+    sum = _ApplySettings(sum, group.settings);
 
 	return sum;
 }
@@ -98,10 +115,10 @@ void InputMap::UpdateStates(float deltaTime)
     // I want this to actually calculate falloff base on a setting
     // but only need it for mouse velocity right now, and that should have immediate falloff
 
-    State[GetInputCode(MOUSE_VEL_X)] = 0;
-    State[GetInputCode(MOUSE_VEL_Y)] = 0;
-    State[GetInputCode(MOUSE_VEL_WHEEL_X)] = 0;
-    State[GetInputCode(MOUSE_VEL_WHEEL_Y)] = 0;
+    State[GetInputCode(MOUSE_VEL_X)].value = 0;
+    State[GetInputCode(MOUSE_VEL_Y)].value = 0;
+    State[GetInputCode(MOUSE_VEL_WHEEL_X)].value = 0;
+    State[GetInputCode(MOUSE_VEL_WHEEL_Y)].value = 0;
 }
 
 bool InputMap::_FailsMask(const std::string& mask)
@@ -120,7 +137,7 @@ bool InputMap::_GroupAxisExists(const InputName& axis)
     return GroupAxes.find(axis) != GroupAxes.end();
 }
 
-vec2 InputMap::_GetAxisNoRecurse(const InputName& axisName)
+vec2 InputMap::_GetAxisNoRecurse(const InputName& axisName, bool useOnlyInputSetThisFrameOverride)
 {
 	if (!_AxisExists(axisName))
 		return vec2(0.f);
@@ -130,21 +147,65 @@ vec2 InputMap::_GetAxisNoRecurse(const InputName& axisName)
 	if (_FailsMask(axis.settings.mask))
 		return vec2(0.f);
 
+    bool useOnlyInputSetThisFrame = axis.settings.useOnlyInputSetThisFrame || useOnlyInputSetThisFrameOverride;
+
 	vec2 sum = vec2(0.f);
 
-	for (const auto& [code, component] : axis.components)
-		sum += State[code] * component;
+    if (axis.settings.useOnlyLatestInput)
+    {
+        vec2 lastStateValueUsed = {};
+        int lastFrameUsed = 0;
 
-	if (length(sum) < axis.settings.deadzone)
-		return vec2(0.f);
+        for (const auto& [code, component] : axis.components)
+        {
+            InputState& state = State.at(code);
 
-	if (axis.settings.normalized)
-		sum = safe_normalize(sum);
+            if (state.frameLastUpdated > lastFrameUsed)
+            {
+                lastStateValueUsed = state.value * component;
+                lastFrameUsed = state.frameLastUpdated;
+            }
+        }
 
-	if (axis.settings.limitToUnit)
-		sum = limit(sum, 1.f);
+        if (useOnlyInputSetThisFrame && lastFrameUsed != activeFrame)
+            return vec2(0.f);
+
+        sum += lastStateValueUsed;
+    }
+
+    else
+    {
+        for (const auto& [code, component] : axis.components)
+        {
+            InputState& state = State[code];
+
+            if (useOnlyInputSetThisFrame && state.frameLastUpdated != activeFrame)
+                continue;
+
+		    sum += state.value * component;
+        }
+    }
+
+    sum = _ApplySettings(sum, axis.settings);
 
 	return sum;
+}
+
+vec2 InputMap::_ApplySettings(vec2 in, const InputAxisSettings& settings)
+{
+    if (length(in) < settings.deadzone)
+        return vec2(0.f);
+
+    if (settings.normalized)
+        in = safe_normalize(in);
+
+    if (settings.limitToUnit)
+        in = limit(in, 1.f);
+
+    for (const auto& process : settings.userPipeline)
+        in = process(in);
+
+    return in;
 }
 
 InputAxisBuilder::InputAxisBuilder(InputMap* map, InputAxis* axis, const InputName& name)
@@ -157,7 +218,7 @@ InputAxisBuilder::InputAxisBuilder(InputMap* map, InputAxis* axis, const InputNa
 InputAxisBuilder& InputAxisBuilder::Map(InputCode code, vec2 weight)
 {
     m_axis->components.emplace(code, weight);
-    m_map->Mapping.emplace(code, m_name);
+    m_map->Mapping[code].insert(m_name);
     return *this;
 }
 
@@ -177,15 +238,18 @@ AxisGroupBuilder& AxisGroupBuilder::Map(const InputName& name)
 {
     m_axis->axes.push_back(name);
 
-    // Update mappings - This is not so good
-        
     for (const auto& c : m_map->Axes[name].components)
-        m_map->Mapping[c.first] = m_name;
+        m_map->Mapping[c.first].insert(m_name);
         
     return *this;
 }
 
 // internal
+
+void InputMap::SetActiveFrame(int frame)
+{
+    activeFrame = frame;
+}
 
 void InputMap::SetState(int code, float state)
 {
@@ -197,12 +261,12 @@ void InputMap::SetState(int code, float state)
 		return;
 	}
 
-	State[code] = state;
+    State[code] = { state, activeFrame };
 }
 
-const InputName& InputMap::GetMapping(InputCode code)
+const std::unordered_set<InputName>& InputMap::GetMapping(InputCode code)
 {
-    static InputName _default;
+    static std::unordered_set<InputName> _default;
         
     auto itr = Mapping.find(code);
     return itr != Mapping.end() ? itr->second : _default;
@@ -211,7 +275,7 @@ const InputName& InputMap::GetMapping(InputCode code)
 float InputMap::GetRawState(InputCode code)
 {
     auto itr = State.find(code);
-    return itr != State.end() ? itr->second : 0.f;
+    return itr != State.end() ? itr->second.value : 0.f;
 }
 
 bool InputAxisSettings::operator==(const InputAxisSettings& other) const
@@ -254,163 +318,166 @@ InputMap::InputMap()
     ViewportMin = vec2(0, 0);
     ViewportSize = vec2(1, 1);
 
+    activeMask = "";
+    activeFrame = 0;
+
     // populate initial states, kinda sucks to have to do this
     // but needed for iterating available states by using the keys of State
 
-    State[GetInputCode(KEY_A)] = 0.f;
-    State[GetInputCode(KEY_B)] = 0.f;
-    State[GetInputCode(KEY_C)] = 0.f;
-    State[GetInputCode(KEY_D)] = 0.f;
-    State[GetInputCode(KEY_E)] = 0.f;
-    State[GetInputCode(KEY_F)] = 0.f;
-    State[GetInputCode(KEY_G)] = 0.f;
-    State[GetInputCode(KEY_H)] = 0.f;
-    State[GetInputCode(KEY_I)] = 0.f;
-    State[GetInputCode(KEY_J)] = 0.f;
-    State[GetInputCode(KEY_K)] = 0.f;
-    State[GetInputCode(KEY_L)] = 0.f;
-    State[GetInputCode(KEY_M)] = 0.f;
-    State[GetInputCode(KEY_N)] = 0.f;
-    State[GetInputCode(KEY_O)] = 0.f;
-    State[GetInputCode(KEY_P)] = 0.f;
-    State[GetInputCode(KEY_Q)] = 0.f;
-    State[GetInputCode(KEY_R)] = 0.f;
-    State[GetInputCode(KEY_S)] = 0.f;
-    State[GetInputCode(KEY_T)] = 0.f;
-    State[GetInputCode(KEY_U)] = 0.f;
-    State[GetInputCode(KEY_V)] = 0.f;
-    State[GetInputCode(KEY_W)] = 0.f;
-    State[GetInputCode(KEY_X)] = 0.f;
-    State[GetInputCode(KEY_Y)] = 0.f;
-    State[GetInputCode(KEY_Z)] = 0.f;
-    State[GetInputCode(KEY_1)] = 0.f;
-    State[GetInputCode(KEY_2)] = 0.f;
-    State[GetInputCode(KEY_3)] = 0.f;
-    State[GetInputCode(KEY_4)] = 0.f;
-    State[GetInputCode(KEY_5)] = 0.f;
-    State[GetInputCode(KEY_6)] = 0.f;
-    State[GetInputCode(KEY_7)] = 0.f;
-    State[GetInputCode(KEY_8)] = 0.f;
-    State[GetInputCode(KEY_9)] = 0.f;
-    State[GetInputCode(KEY_0)] = 0.f;
-    State[GetInputCode(KEY_Return)] = 0.f;
-    State[GetInputCode(KEY_Escape)] = 0.f;
-    State[GetInputCode(KEY_Backspace)] = 0.f;
-    State[GetInputCode(KEY_Tab)] = 0.f;
-    State[GetInputCode(KEY_Space)] = 0.f;
-    State[GetInputCode(KEY_Minus)] = 0.f;
-    State[GetInputCode(KEY_Equals)] = 0.f;
-    State[GetInputCode(KEY_Bracket_Left)] = 0.f;
-    State[GetInputCode(KEY_Bracket_Right)] = 0.f;
-    State[GetInputCode(KEY_Backslash)] = 0.f;
-    State[GetInputCode(KEY_SemiColon)] = 0.f;
-    State[GetInputCode(KEY_Apostrophe)] = 0.f;
-    State[GetInputCode(KEY_Grave)] = 0.f;
-    State[GetInputCode(KEY_Comma)] = 0.f;
-    State[GetInputCode(KEY_Period)] = 0.f;
-    State[GetInputCode(KEY_Slash)] = 0.f;
-    State[GetInputCode(KEY_Control_Left)] = 0.f;
-    State[GetInputCode(KEY_Shift_Left)] = 0.f;
-    State[GetInputCode(KEY_Alt_Left)] = 0.f;
-    State[GetInputCode(KEY_GUI_Left)] = 0.f;
-    State[GetInputCode(KEY_Control_Right)] = 0.f;
-    State[GetInputCode(KEY_Shift_Right)] = 0.f;
-    State[GetInputCode(KEY_Alt_Right)] = 0.f;
-    State[GetInputCode(KEY_GUI_Right)] = 0.f;
-    State[GetInputCode(KEY_Right)] = 0.f;
-    State[GetInputCode(KEY_Left)] = 0.f;
-    State[GetInputCode(KEY_Down)] = 0.f;
-    State[GetInputCode(KEY_Up)] = 0.f;
-    State[GetInputCode(KEY_Lock_Caps)] = 0.f;
-    State[GetInputCode(KEY_Lock_Scroll)] = 0.f;
-    State[GetInputCode(KEY_Lock_Number)] = 0.f;
-    State[GetInputCode(KEY_PrintScreen)] = 0.f;
-    State[GetInputCode(KEY_Pause)] = 0.f;
-    State[GetInputCode(KEY_Insert)] = 0.f;
-    State[GetInputCode(KEY_Home)] = 0.f;
-    State[GetInputCode(KEY_Page_Up)] = 0.f;
-    State[GetInputCode(KEY_Page_Down)] = 0.f;
-    State[GetInputCode(KEY_Delete)] = 0.f;
-    State[GetInputCode(KEY_End)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Divide)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Multiply)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Minus)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Plus)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Enter)] = 0.f;
-    State[GetInputCode(KEY_Keypad_1)] = 0.f;
-    State[GetInputCode(KEY_Keypad_2)] = 0.f;
-    State[GetInputCode(KEY_Keypad_3)] = 0.f;
-    State[GetInputCode(KEY_Keypad_4)] = 0.f;
-    State[GetInputCode(KEY_Keypad_5)] = 0.f;
-    State[GetInputCode(KEY_Keypad_6)] = 0.f;
-    State[GetInputCode(KEY_Keypad_7)] = 0.f;
-    State[GetInputCode(KEY_Keypad_8)] = 0.f;
-    State[GetInputCode(KEY_Keypad_9)] = 0.f;
-    State[GetInputCode(KEY_Keypad_0)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Period)] = 0.f;
-    State[GetInputCode(KEY_Keypad_Equals)] = 0.f;
-    State[GetInputCode(KEY_Function_1)] = 0.f;
-    State[GetInputCode(KEY_Function_2)] = 0.f;
-    State[GetInputCode(KEY_Function_3)] = 0.f;
-    State[GetInputCode(KEY_Function_4)] = 0.f;
-    State[GetInputCode(KEY_Function_5)] = 0.f;
-    State[GetInputCode(KEY_Function_6)] = 0.f;
-    State[GetInputCode(KEY_Function_7)] = 0.f;
-    State[GetInputCode(KEY_Function_8)] = 0.f;
-    State[GetInputCode(KEY_Function_9)] = 0.f;
-    State[GetInputCode(KEY_Function_10)] = 0.f;
-    State[GetInputCode(KEY_Function_11)] = 0.f;
-    State[GetInputCode(KEY_Function_12)] = 0.f;
-    State[GetInputCode(KEY_Function_13)] = 0.f;
-    State[GetInputCode(KEY_Function_14)] = 0.f;
-    State[GetInputCode(KEY_Function_15)] = 0.f;
-    State[GetInputCode(KEY_Function_16)] = 0.f;
-    State[GetInputCode(KEY_Function_17)] = 0.f;
-    State[GetInputCode(KEY_Function_18)] = 0.f;
-    State[GetInputCode(KEY_Function_19)] = 0.f;
-    State[GetInputCode(KEY_Function_20)] = 0.f;
-    State[GetInputCode(KEY_Function_21)] = 0.f;
-    State[GetInputCode(KEY_Function_22)] = 0.f;
-    State[GetInputCode(KEY_Function_23)] = 0.f;
-    State[GetInputCode(KEY_Function_24)] = 0.f;
+    State[GetInputCode(KEY_A)].value = 0.f;
+    State[GetInputCode(KEY_B)].value = 0.f;
+    State[GetInputCode(KEY_C)].value = 0.f;
+    State[GetInputCode(KEY_D)].value = 0.f;
+    State[GetInputCode(KEY_E)].value = 0.f;
+    State[GetInputCode(KEY_F)].value = 0.f;
+    State[GetInputCode(KEY_G)].value = 0.f;
+    State[GetInputCode(KEY_H)].value = 0.f;
+    State[GetInputCode(KEY_I)].value = 0.f;
+    State[GetInputCode(KEY_J)].value = 0.f;
+    State[GetInputCode(KEY_K)].value = 0.f;
+    State[GetInputCode(KEY_L)].value = 0.f;
+    State[GetInputCode(KEY_M)].value = 0.f;
+    State[GetInputCode(KEY_N)].value = 0.f;
+    State[GetInputCode(KEY_O)].value = 0.f;
+    State[GetInputCode(KEY_P)].value = 0.f;
+    State[GetInputCode(KEY_Q)].value = 0.f;
+    State[GetInputCode(KEY_R)].value = 0.f;
+    State[GetInputCode(KEY_S)].value = 0.f;
+    State[GetInputCode(KEY_T)].value = 0.f;
+    State[GetInputCode(KEY_U)].value = 0.f;
+    State[GetInputCode(KEY_V)].value = 0.f;
+    State[GetInputCode(KEY_W)].value = 0.f;
+    State[GetInputCode(KEY_X)].value = 0.f;
+    State[GetInputCode(KEY_Y)].value = 0.f;
+    State[GetInputCode(KEY_Z)].value = 0.f;
+    State[GetInputCode(KEY_1)].value = 0.f;
+    State[GetInputCode(KEY_2)].value = 0.f;
+    State[GetInputCode(KEY_3)].value = 0.f;
+    State[GetInputCode(KEY_4)].value = 0.f;
+    State[GetInputCode(KEY_5)].value = 0.f;
+    State[GetInputCode(KEY_6)].value = 0.f;
+    State[GetInputCode(KEY_7)].value = 0.f;
+    State[GetInputCode(KEY_8)].value = 0.f;
+    State[GetInputCode(KEY_9)].value = 0.f;
+    State[GetInputCode(KEY_0)].value = 0.f;
+    State[GetInputCode(KEY_Return)].value = 0.f;
+    State[GetInputCode(KEY_Escape)].value = 0.f;
+    State[GetInputCode(KEY_Backspace)].value = 0.f;
+    State[GetInputCode(KEY_Tab)].value = 0.f;
+    State[GetInputCode(KEY_Space)].value = 0.f;
+    State[GetInputCode(KEY_Minus)].value = 0.f;
+    State[GetInputCode(KEY_Equals)].value = 0.f;
+    State[GetInputCode(KEY_Bracket_Left)].value = 0.f;
+    State[GetInputCode(KEY_Bracket_Right)].value = 0.f;
+    State[GetInputCode(KEY_Backslash)].value = 0.f;
+    State[GetInputCode(KEY_SemiColon)].value = 0.f;
+    State[GetInputCode(KEY_Apostrophe)].value = 0.f;
+    State[GetInputCode(KEY_Grave)].value = 0.f;
+    State[GetInputCode(KEY_Comma)].value = 0.f;
+    State[GetInputCode(KEY_Period)].value = 0.f;
+    State[GetInputCode(KEY_Slash)].value = 0.f;
+    State[GetInputCode(KEY_Control_Left)].value = 0.f;
+    State[GetInputCode(KEY_Shift_Left)].value = 0.f;
+    State[GetInputCode(KEY_Alt_Left)].value = 0.f;
+    State[GetInputCode(KEY_GUI_Left)].value = 0.f;
+    State[GetInputCode(KEY_Control_Right)].value = 0.f;
+    State[GetInputCode(KEY_Shift_Right)].value = 0.f;
+    State[GetInputCode(KEY_Alt_Right)].value = 0.f;
+    State[GetInputCode(KEY_GUI_Right)].value = 0.f;
+    State[GetInputCode(KEY_Right)].value = 0.f;
+    State[GetInputCode(KEY_Left)].value = 0.f;
+    State[GetInputCode(KEY_Down)].value = 0.f;
+    State[GetInputCode(KEY_Up)].value = 0.f;
+    State[GetInputCode(KEY_Lock_Caps)].value = 0.f;
+    State[GetInputCode(KEY_Lock_Scroll)].value = 0.f;
+    State[GetInputCode(KEY_Lock_Number)].value = 0.f;
+    State[GetInputCode(KEY_PrintScreen)].value = 0.f;
+    State[GetInputCode(KEY_Pause)].value = 0.f;
+    State[GetInputCode(KEY_Insert)].value = 0.f;
+    State[GetInputCode(KEY_Home)].value = 0.f;
+    State[GetInputCode(KEY_Page_Up)].value = 0.f;
+    State[GetInputCode(KEY_Page_Down)].value = 0.f;
+    State[GetInputCode(KEY_Delete)].value = 0.f;
+    State[GetInputCode(KEY_End)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Divide)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Multiply)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Minus)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Plus)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Enter)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_1)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_2)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_3)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_4)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_5)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_6)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_7)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_8)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_9)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_0)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Period)].value = 0.f;
+    State[GetInputCode(KEY_Keypad_Equals)].value = 0.f;
+    State[GetInputCode(KEY_Function_1)].value = 0.f;
+    State[GetInputCode(KEY_Function_2)].value = 0.f;
+    State[GetInputCode(KEY_Function_3)].value = 0.f;
+    State[GetInputCode(KEY_Function_4)].value = 0.f;
+    State[GetInputCode(KEY_Function_5)].value = 0.f;
+    State[GetInputCode(KEY_Function_6)].value = 0.f;
+    State[GetInputCode(KEY_Function_7)].value = 0.f;
+    State[GetInputCode(KEY_Function_8)].value = 0.f;
+    State[GetInputCode(KEY_Function_9)].value = 0.f;
+    State[GetInputCode(KEY_Function_10)].value = 0.f;
+    State[GetInputCode(KEY_Function_11)].value = 0.f;
+    State[GetInputCode(KEY_Function_12)].value = 0.f;
+    State[GetInputCode(KEY_Function_13)].value = 0.f;
+    State[GetInputCode(KEY_Function_14)].value = 0.f;
+    State[GetInputCode(KEY_Function_15)].value = 0.f;
+    State[GetInputCode(KEY_Function_16)].value = 0.f;
+    State[GetInputCode(KEY_Function_17)].value = 0.f;
+    State[GetInputCode(KEY_Function_18)].value = 0.f;
+    State[GetInputCode(KEY_Function_19)].value = 0.f;
+    State[GetInputCode(KEY_Function_20)].value = 0.f;
+    State[GetInputCode(KEY_Function_21)].value = 0.f;
+    State[GetInputCode(KEY_Function_22)].value = 0.f;
+    State[GetInputCode(KEY_Function_23)].value = 0.f;
+    State[GetInputCode(KEY_Function_24)].value = 0.f;
 
-    State[GetInputCode(MOUSE_LEFT)] = 0.f;
-    State[GetInputCode(MOUSE_MIDDLE)] = 0.f;
-    State[GetInputCode(MOUSE_RIGHT)] = 0.f;
-    State[GetInputCode(MOUSE_X1)] = 0.f;
-    State[GetInputCode(MOUSE_X2)] = 0.f;
-    State[GetInputCode(MOUSE_POS_X)] = 0.f;
-    State[GetInputCode(MOUSE_POS_Y)] = 0.f;
-    State[GetInputCode(MOUSE_VEL_X)] = 0.f;
-    State[GetInputCode(MOUSE_VEL_Y)] = 0.f;
-    State[GetInputCode(MOUSE_VEL_WHEEL_X)] = 0.f;
-    State[GetInputCode(MOUSE_VEL_WHEEL_Y)] = 0.f;
+    State[GetInputCode(MOUSE_LEFT)].value = 0.f;
+    State[GetInputCode(MOUSE_MIDDLE)].value = 0.f;
+    State[GetInputCode(MOUSE_RIGHT)].value = 0.f;
+    State[GetInputCode(MOUSE_X1)].value = 0.f;
+    State[GetInputCode(MOUSE_X2)].value = 0.f;
+    State[GetInputCode(MOUSE_POS_X)].value = 0.f;
+    State[GetInputCode(MOUSE_POS_Y)].value = 0.f;
+    State[GetInputCode(MOUSE_VEL_X)].value = 0.f;
+    State[GetInputCode(MOUSE_VEL_Y)].value = 0.f;
+    State[GetInputCode(MOUSE_VEL_WHEEL_X)].value = 0.f;
+    State[GetInputCode(MOUSE_VEL_WHEEL_Y)].value = 0.f;
 
-    State[GetInputCode(cBUTTON_A)] = 0.f;
-    State[GetInputCode(cBUTTON_B)] = 0.f;
-    State[GetInputCode(cBUTTON_X)] = 0.f;
-    State[GetInputCode(cBUTTON_Y)] = 0.f;
-    State[GetInputCode(cBUTTON_BACK)] = 0.f;
-    State[GetInputCode(cBUTTON_GUIDE)] = 0.f;
-    State[GetInputCode(cBUTTON_START)] = 0.f;
-    State[GetInputCode(cBUTTON_LEFTSTICK)] = 0.f;
-    State[GetInputCode(cBUTTON_RIGHTSTICK)] = 0.f;
-    State[GetInputCode(cBUTTON_LEFTSHOULDER)] = 0.f;
-    State[GetInputCode(cBUTTON_RIGHTSHOULDER)] = 0.f;
-    State[GetInputCode(cBUTTON_DPAD_UP)] = 0.f;
-    State[GetInputCode(cBUTTON_DPAD_DOWN)] = 0.f;
-    State[GetInputCode(cBUTTON_DPAD_LEFT)] = 0.f;
-    State[GetInputCode(cBUTTON_DPAD_RIGHT)] = 0.f;
-    State[GetInputCode(cBUTTON_MISC1)] = 0.f;
-    State[GetInputCode(cBUTTON_PADDLE1)] = 0.f;
-    State[GetInputCode(cBUTTON_PADDLE2)] = 0.f;
-    State[GetInputCode(cBUTTON_PADDLE3)] = 0.f;
-    State[GetInputCode(cBUTTON_PADDLE4)] = 0.f;
-    State[GetInputCode(cBUTTON_TOUCHPAD)] = 0.f;
-    State[GetInputCode(cAXIS_LEFTX)] = 0.f;
-    State[GetInputCode(cAXIS_LEFTY)] = 0.f;
-    State[GetInputCode(cAXIS_RIGHTX)] = 0.f;
-    State[GetInputCode(cAXIS_RIGHTY)] = 0.f;
-    State[GetInputCode(cAXIS_TRIGGERLEFT)] = 0.f;
-    State[GetInputCode(cAXIS_TRIGGERRIGHT)] = 0.f;
+    State[GetInputCode(cBUTTON_A)].value = 0.f;
+    State[GetInputCode(cBUTTON_B)].value = 0.f;
+    State[GetInputCode(cBUTTON_X)].value = 0.f;
+    State[GetInputCode(cBUTTON_Y)].value = 0.f;
+    State[GetInputCode(cBUTTON_BACK)].value = 0.f;
+    State[GetInputCode(cBUTTON_GUIDE)].value = 0.f;
+    State[GetInputCode(cBUTTON_START)].value = 0.f;
+    State[GetInputCode(cBUTTON_LEFTSTICK)].value = 0.f;
+    State[GetInputCode(cBUTTON_RIGHTSTICK)].value = 0.f;
+    State[GetInputCode(cBUTTON_LEFTSHOULDER)].value = 0.f;
+    State[GetInputCode(cBUTTON_RIGHTSHOULDER)].value = 0.f;
+    State[GetInputCode(cBUTTON_DPAD_UP)].value = 0.f;
+    State[GetInputCode(cBUTTON_DPAD_DOWN)].value = 0.f;
+    State[GetInputCode(cBUTTON_DPAD_LEFT)].value = 0.f;
+    State[GetInputCode(cBUTTON_DPAD_RIGHT)].value = 0.f;
+    State[GetInputCode(cBUTTON_MISC1)].value = 0.f;
+    State[GetInputCode(cBUTTON_PADDLE1)].value = 0.f;
+    State[GetInputCode(cBUTTON_PADDLE2)].value = 0.f;
+    State[GetInputCode(cBUTTON_PADDLE3)].value = 0.f;
+    State[GetInputCode(cBUTTON_PADDLE4)].value = 0.f;
+    State[GetInputCode(cBUTTON_TOUCHPAD)].value = 0.f;
+    State[GetInputCode(cAXIS_LEFTX)].value = 0.f;
+    State[GetInputCode(cAXIS_LEFTY)].value = 0.f;
+    State[GetInputCode(cAXIS_RIGHTX)].value = 0.f;
+    State[GetInputCode(cAXIS_RIGHTY)].value = 0.f;
+    State[GetInputCode(cAXIS_TRIGGERLEFT)].value = 0.f;
+    State[GetInputCode(cAXIS_TRIGGERRIGHT)].value = 0.f;
 }

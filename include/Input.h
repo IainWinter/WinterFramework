@@ -6,9 +6,6 @@
 #include <unordered_set>
 #include <array>
 
-// some oddities
-//		to fix: Mappings can be overwritten if two Group axes use the same buttons
-
 /**
  * A type to identify axes, you should replace with an enum
  */
@@ -67,14 +64,9 @@ namespace std {
 struct InputAxisSettings
 {
     /**
-    * Round to 0 if below this length.
-    */
-	float deadzone = 0.f;
-
-    /**
     * Limit the length of output to 1.
     */
-	bool limitToUnit = true;
+	bool limitToUnit = false;
 
     /**
     * Normalize the length of the output to 1.
@@ -82,10 +74,30 @@ struct InputAxisSettings
 	bool normalized = false;
 
     /**
+    * States or axes which have not been used this frame should be read as 0.
+    */
+    bool useOnlyInputSetThisFrame = false;
+
+    /**
+    * When reading an axis, only consider the state with the latest frame.
+    */
+    bool useOnlyLatestInput = false;
+
+    /**
+    * Round to 0 if below this length.
+    */
+    float deadzone = 0.f;
+
+    /**
     * Masks allow for storing multiple 'control schemes' at once, but only listen to one.
     * If mask is an empty string, it will be accepted by any active mask.
     */
 	std::string mask;
+
+    /**
+    * A list of user defined functions to transform after the default settings.
+    */
+    std::vector<std::function<vec2(vec2)>> userPipeline;
 
 	bool operator==(const InputAxisSettings& other) const;
 	bool operator!=(const InputAxisSettings& other) const;
@@ -93,12 +105,12 @@ struct InputAxisSettings
 
 /**
 * An axis is defined as a collection of inputs and weights.
-* Using this scheme it is easy to define X/Y axes, and combo buttons.
-* To create multi-bindings like Controller Left Stick / WASD / Arrow keys, see AxisGroup.
+* Using this scheme, it is easy to define X/Y axes, and combo buttons.
+* To create multi-bindings like Controller Left Stick / WASD / Arrow keys, use an AxisGroup.
 */
 struct InputAxis
 {
-	std::unordered_map<int, vec2> components; // (code, component) -> sum of State[code] * component is axis state
+	std::unordered_map<int, vec2> components;
 	InputAxisSettings settings;
                 
 	bool operator==(const InputAxis& other) const;
@@ -131,31 +143,50 @@ public:
         : m_settings (settings)
     {}
         
+    // these should really only be set once, so can only
+    // be used to set the flags to the opposite of their
+    // defaults.
+
+    _a& LimitToUnit(/*bool limitToUnit*/) {
+        m_settings->limitToUnit = true;
+        return *(_a*)this;
+    }
+        
+    _a& Normalized(/*bool normalized*/) {
+        m_settings->normalized = true;
+        return *(_a*)this;
+    }
+        
+    _a& UseOnlyInputSetThisFrame(/*bool useOnlyInputSetThisFrame*/) {
+        m_settings->useOnlyInputSetThisFrame = true;
+        return *(_a*)this;
+    }
+
+    _a& UseOnlyLatestInput(/*bool useOnlyInputSetThisFrame*/) {
+        m_settings->useOnlyLatestInput = true;
+        return *(_a*)this;
+    }
+
     _a& Deadzone(float deadzone) {
         m_settings->deadzone = deadzone;
         return *(_a*)this;
     }
-        
-    _a& LimitToUnit(bool limitToUnit) {
-        m_settings->limitToUnit = limitToUnit;
-        return *(_a*)this;
-    }
-        
-    _a& Normalized(bool normalized) {
-        m_settings->normalized = normalized;
-        return *(_a*)this;
-    }
-        
+
     _a& Mask(const std::string& mask) {
         m_settings->mask = mask;
         return *(_a*)this;
     }
-        
+    
+    _a& Process(std::function<vec2(vec2)> function) {
+        m_settings->userPipeline.push_back(function);
+        return *(_a*)this;
+    }
+
 private:
     InputAxisSettings* m_settings;
 };
 
-// need to fwd to builders so they can update Mapping
+// need to forwards declare so builders can update Mapping
 
 class InputMap;
 
@@ -251,8 +282,9 @@ public:
     *     Internal
     */
 
+    void SetActiveFrame(int frame);
     void SetState(int code, float state);
-    const InputName& GetMapping(InputCode code);
+    const std::unordered_set<InputName>& GetMapping(InputCode code);
     float GetRawState(InputCode code);
 
     InputMap();
@@ -261,7 +293,8 @@ private:
     bool _FailsMask(const std::string& mask);
     bool _AxisExists(const InputName& axis);
     bool _GroupAxisExists(const InputName& axis);
-    vec2 _GetAxisNoRecurse(const InputName& axisName);
+    vec2 _GetAxisNoRecurse(const InputName& axisName, bool useOnlyInputSetThisFrameOverride);
+    vec2 _ApplySettings(vec2 in, const InputAxisSettings& settings);
 
 private:
     // mapping of name to Group axis
@@ -276,10 +309,16 @@ private:
 
 	// mapping of code to input name
 	// allows us to skip a search through all components of each axis to find a mapping
-	std::unordered_map<InputCode, InputName> Mapping;
+	std::unordered_map<InputCode, std::unordered_set<InputName>> Mapping;
 
 	// raw states. todo: this should be an array
-	std::unordered_map<int, float> State;
+
+    struct InputState {
+        float value;
+        int frameLastUpdated;
+    };
+
+	std::unordered_map<int, InputState> State;
 
 	// once states
 	std::unordered_set<InputName> OnceButtonIsDown;
@@ -290,6 +329,9 @@ private:
 
 	// active mask
 	std::string activeMask;
+
+    // active frame
+    int activeFrame;
 
     // friend so these can access Mapping, seems fishy
     friend class InputAxisBuilder;
