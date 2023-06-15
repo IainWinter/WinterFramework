@@ -867,4 +867,6 @@ namespace Render
 
 	// set the current alpha blend
 	void SetAlphaBlend(bool blend);
+
+	ivec2 GetWindowSizeInPixels();
 }

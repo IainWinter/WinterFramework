@@ -17,10 +17,14 @@ SceneNode::SceneNode(Application* app)
 		if (Rigidbody2D* body = e.TryGet<Rigidbody2D>())
 			body->SetTransform(e.Get<Transform2D>());
     });
+
+	log_game("d~Scene node created");
 }
 
 SceneNode::~SceneNode()
 {
+	log_game("d~Scene node destroyed");
+
 	bus.DetachFromParent();
 
 	for (SceneUpdateGroupNode* group : groups)
@@ -32,7 +36,14 @@ SceneNode::~SceneNode()
 	for (SceneUpdateGroupNode* group : groups)
 		delete group;
 
-	entities.Clear();
+	// odd that detached groups are deleted out of order
+	// of insertion
+
+	for (SceneUpdateGroupNode* group : groupsDetached)
+		group->Dnit();
+
+	for (SceneUpdateGroupNode* group : groupsDetached)
+		delete group;
 }
 
 void SceneNode::Tick(float deltaTime, float fixedTime)
@@ -111,6 +122,8 @@ void SceneNode::AttachGroup(SceneUpdateGroupNode* group)
 
 	groups.push_back(group);
 	group->Attach();
+
+	groupsDetached.erase(group);
 }
 
 void SceneNode::DetachGroup(SceneUpdateGroupNode* group)
@@ -122,4 +135,6 @@ void SceneNode::DetachGroup(SceneUpdateGroupNode* group)
 
 	groups.erase(itr);
 	group->Detach();
+
+	groupsDetached.insert(group);
 }

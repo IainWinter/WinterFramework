@@ -5,10 +5,11 @@
 struct SceneUpdateGroupNode
 {
 	std::vector<SystemBase*> systems;
+	SystemState state;
 
 	~SceneUpdateGroupNode();
 
-	void TakeOwnershipOfSystem(SystemBase* system);
+	void TakeOwnershipOfSystem(SystemBase* system, const char* name);
 
 	void Init(SceneNode* scene);
 	void Dnit();

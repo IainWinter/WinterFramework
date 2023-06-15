@@ -24,7 +24,7 @@ public:
 	SceneUpdateGroup& InitNow();
 
 private:
-	void TakeOwnershipOfSystem(SystemBase* system);
+	void TakeOwnershipOfSystem(SystemBase* system, const char* name);
 
 private:
 	friend class Scene;
@@ -37,7 +37,6 @@ private:
 template<typename _t>
 inline SceneUpdateGroup& SceneUpdateGroup::Then()
 {
-	_t* t = new _t();
-	TakeOwnershipOfSystem(t);
+	TakeOwnershipOfSystem(new _t(), typeid(_t).name());
 	return *this;
 }

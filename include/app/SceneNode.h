@@ -17,6 +17,7 @@ struct SceneNode
 	EventQueue event;
 
 	std::vector<SceneUpdateGroupNode*> groups;
+	std::unordered_set<SceneUpdateGroupNode*> groupsDetached;
 	float timeAcc;
 	bool inDebugMode;
 

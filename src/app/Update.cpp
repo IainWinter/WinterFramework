@@ -9,10 +9,9 @@
 
 void SystemBase::_Init(SceneNode* scene)
 {
-	log_app("i~Init system");
+	log_app("i~Init system %s", m_name.c_str());
 
 	m_scene = scene;
-	m_state = SYSTEM_INIT;
 
 	_break(ON_INIT);
 	Init();
@@ -20,19 +19,15 @@ void SystemBase::_Init(SceneNode* scene)
 
 void SystemBase::_Dnit()
 {
-	log_app("i~Dnit system");
+	log_app("i~Dnit system %s", m_name.c_str());
 
 	_break(ON_DNIT);
 	Dnit();
-
-	m_state = SYSTEM_DNIT;
 }
 
 void SystemBase::_OnAttach()
 {
-	log_app("i~Attach system");
-
-	m_state = SYSTEM_ATTACHED;
+	log_app("i~Attach system %s", m_name.c_str());
 
 	_break(ON_ATTACH);
 	OnAttach();
@@ -40,18 +35,17 @@ void SystemBase::_OnAttach()
 
 void SystemBase::_OnDetach()
 {
-	log_app("i~Detach system");
+	log_app("i~Detach system %s", m_name.c_str());
 
 	_break(ON_DETACH);
 	OnDetach();
 
 	m_scene->bus.Detach(this);
-	m_state = SYSTEM_DETACHED;
 }
 
 void SystemBase::_Update()
 {
-	//log_app("i~Update system");
+	//log_app("i~Update system %s", m_name.c_str());
 
 	_break(ON_UPDATE);
 	Update();
@@ -59,7 +53,7 @@ void SystemBase::_Update()
 
 void SystemBase::_FixedUpdate()
 {
-	//log_app("i~Fixed update system");
+	//log_app("i~Fixed update system %s", m_name.c_str());
 
 	_break(ON_FIXEDUPDATE);
 	FixedUpdate();
@@ -67,7 +61,7 @@ void SystemBase::_FixedUpdate()
 
 void SystemBase::_UI()
 {
-	//log_app("i~UI system");
+	//log_app("i~UI system %s", m_name.c_str());
 
 	_break(ON_UI);
 	UI();
@@ -75,26 +69,15 @@ void SystemBase::_UI()
 
 void SystemBase::_Debug()
 {
-	//log_app("i~Debug system");
+	//log_app("i~Debug system %s", m_name.c_str());
 
 	_break(ON_DEBUG);
 	Debug();
 }
 
-SystemBase::~SystemBase()
+void SystemBase::_SetName(const std::string& name)
 {
-	// This is a hack to solve the issue of UpdateGroup
-	// removing system immediately not calling detach / dnit
-
-	// Maybe instead, it just marks them for deletion, though
-	// the update Group calls new, so it would be a little confusing for
-	// for the SceneNode to call delete
-
-	if (GetState() >= SYSTEM_ATTACHED)
-		_OnDetach();
-
-	if (GetState() >= SYSTEM_INIT)
-		_Dnit();
+	m_name = name;
 }
 
 Entity SystemBase::CreateEntity()
@@ -190,9 +173,4 @@ void SystemBase::SetBreak(SystemBreak on)
 SystemBreak SystemBase::GetBreak() const
 {
 	return m_break;
-}
-
-SystemState SystemBase::GetState() const
-{
-	return m_state;
 }

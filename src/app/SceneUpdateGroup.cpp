@@ -18,7 +18,7 @@ SceneUpdateGroup& SceneUpdateGroup::InitNow()
 	return *this;
 }
 
-void SceneUpdateGroup::TakeOwnershipOfSystem(SystemBase* system)
+void SceneUpdateGroup::TakeOwnershipOfSystem(SystemBase* system, const char* name)
 {
-	m_node->TakeOwnershipOfSystem(system);
+	m_node->TakeOwnershipOfSystem(system, name);
 }

@@ -9,37 +9,54 @@ SceneUpdateGroupNode::~SceneUpdateGroupNode()
 		delete system;
 }
 
-void SceneUpdateGroupNode::TakeOwnershipOfSystem(SystemBase* system)
+void SceneUpdateGroupNode::TakeOwnershipOfSystem(SystemBase* system, const char* name)
 {
+	system->_SetName(name);
 	systems.push_back(system);
 }
 
 void SceneUpdateGroupNode::Init(SceneNode* scene) 
 {
+	if (state != SYSTEM_CREATED)
+		return;
+
+	state = SYSTEM_INIT;
+
 	for (SystemBase* system : systems)
-		if (system->GetState() == SYSTEM_CREATED)
-			system->_Init(scene);
+		system->_Init(scene);
 }
 
 void SceneUpdateGroupNode::Dnit()
 {
+	if (state != SYSTEM_DETACHED)
+		return;
+
+	state = SYSTEM_DNIT;
+
 	for (SystemBase* system : systems)
-		if (system->GetState() >= SYSTEM_INIT)
-			system->_Dnit();
+		system->_Dnit();
 }
 
 void SceneUpdateGroupNode::Attach()
 {
+	if (state != SYSTEM_INIT)
+		return;
+
+	state = SYSTEM_ATTACHED;
+
 	for (SystemBase* system : systems)
-		if (system->GetState() == SYSTEM_INIT || system->GetState() == SYSTEM_DETACHED)
-			system->_OnAttach();
+		system->_OnAttach();
 }
 
 void SceneUpdateGroupNode::Detach()
 {
+	if (state != SYSTEM_ATTACHED)
+		return;
+
+	state = SYSTEM_DETACHED;
+
 	for (SystemBase* system : systems)
-		if (system->GetState() >= SYSTEM_ATTACHED)
-			system->_OnDetach();
+		system->_OnDetach();
 }
 
 void SceneUpdateGroupNode::UI()

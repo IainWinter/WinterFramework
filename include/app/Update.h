@@ -36,7 +36,7 @@ struct SceneUpdateGroupNode;
 class SystemBase
 {
 public:
-	virtual ~SystemBase();
+	virtual ~SystemBase() {}
 
 protected:
 
@@ -109,7 +109,6 @@ public:
 	void SetBreak(SystemBreak on);
 
 	SystemBreak GetBreak() const;
-	SystemState GetState() const;
 
 private:
 	void _Init(SceneNode* scene); // pass scene so every system doesn't need a constructor
@@ -124,6 +123,8 @@ private:
 	void _UI();
 	void _Debug();
 
+	void _SetName(const std::string& name);
+
 private:
 	// for Attach and Detach to be able to see m_data->bus
 	// without giving direct access to children
@@ -135,9 +136,9 @@ private:
 
 private:
 	SceneNode* m_scene = nullptr;
-
-	SystemState m_state = SYSTEM_CREATED;
+	
 	SystemBreak m_break = ON_NONE;
+	std::string m_name;
 };
 
 template<typename _t>

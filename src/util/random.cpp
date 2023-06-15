@@ -103,7 +103,6 @@ vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddin
 		insidePadding = rand_2fc(extentX, paddingY);
 
 		bool top = insidePadding.y > 0;
-		bool right = insidePadding.x > 0;
 
 		if (top) insidePadding.y += extentY;
 		else     insidePadding.y -= extentY;
@@ -113,7 +112,6 @@ vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddin
 	{
 		insidePadding = rand_2fc(paddingX, extentY);
 
-		bool top = insidePadding.y > 0;
 		bool right = insidePadding.x > 0;
 
 		if (right) insidePadding.x += extentX;
@@ -124,8 +122,8 @@ vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddin
 	{
 		insidePadding = rand_2fc(paddingX, paddingY);
 
-		bool top = insidePadding.y > 0;
 		bool right = insidePadding.x > 0;
+		bool top = insidePadding.y > 0;
 
 		if (right) insidePadding.x += extentX;
 		else       insidePadding.x -= extentX;
