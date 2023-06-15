@@ -39,7 +39,7 @@ void SceneUpdateGroupNode::Dnit()
 
 void SceneUpdateGroupNode::Attach()
 {
-	if (state != SYSTEM_INIT)
+	if (state != SYSTEM_INIT && state != SYSTEM_DETACHED)
 		return;
 
 	state = SYSTEM_ATTACHED;
