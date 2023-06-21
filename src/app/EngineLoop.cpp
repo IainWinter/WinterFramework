@@ -80,7 +80,7 @@ void EngineLoopBase::Dnit()
 bool EngineLoopBase::Tick()
 {
 	Time::UpdateTime();
-	Render::SetWindowSize(app.window.Width(), app.window.Height());
+	Render::SetWindowSize(app.window.GetConfig().Width, app.window.GetConfig().Height);
 
 	m_inputHandler->TickFrame();
 

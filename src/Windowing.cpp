@@ -29,14 +29,10 @@ Window::~Window()
 	Dnit();
 }
 
-int                Window::Width()      const { return m_config.Width; }
-int                Window::Height()     const { return m_config.Height; }
-vec2               Window::Dimensions() const { return vec2(Width(), Height()); }
-const std::string& Window::Title()      const { return m_config.Title; }
-
-SDL_Window*        Window::GetSDLWindow()    const { return m_window; }
-SDL_GLContext      Window::GetGLContext()    const { return m_opengl; }
-ImGuiContext*      Window::GetImGuiContext() const { return m_imgui; }
+WindowConfig Window::GetConfig() const { return m_config; }
+SDL_Window* Window::GetSDLWindow() const { return m_window; }
+SDL_GLContext Window::GetGLContext() const { return m_opengl; }
+ImGuiContext* Window::GetImGuiContext() const { return m_imgui; }
 
 void Window::Init()
 {
@@ -330,6 +326,8 @@ Window& Window::SetTitle(const std::string& title)
 	SDL_SetWindowTitle(m_window, title.c_str());
 	log_window("d~Set window title to %s", title.c_str());
 
+	m_config.Title = title;
+
 	return *this;
 }
 
@@ -373,6 +371,8 @@ Window& Window::SetFullscreen(int mode)
 
 	log_window("d~Set window fullscreen mode to %d", mode);
 
+	m_config.FullScreen = mode;
+
 	return *this;
 }
 
@@ -388,6 +388,8 @@ Window& Window::SetVSync(bool vsync)
 	}
 
 	log_window("d~Set window vsync mode to %s", vsync ? "true" : "false");
+
+	m_config.VSync = vsync;
 
 	return *this;
 }
@@ -538,10 +540,10 @@ WindowRef::WindowRef(Window* window)
 	: m_window (window)
 {}
 
-int                WindowRef::Width()      const { return m_window->Width(); }
-int                WindowRef::Height()     const { return m_window->Height(); }
-vec2               WindowRef::Dimensions() const { return m_window->Dimensions(); }
-const std::string& WindowRef::Title()      const { return m_window->Title(); }
+WindowConfig WindowRef::GetConfig() const
+{
+	return m_window->GetConfig();
+}
 
 WindowRef& WindowRef::SetTitle(const std::string& title) { m_window->SetTitle(title); return *this;  }
 

@@ -102,6 +102,8 @@ protected:
 	PhysicsWorld& _physics();
 	EventQueue& _events();
 
+	WindowRef _window();
+
 public:
 
 // debug

@@ -1,28 +1,6 @@
 #include "ext/physics/ClosestPointOnShape.h"
 
-std::vector<vec2> GetBodyVertices(const Rigidbody2D& body)
-{
-    std::vector<vec2> vertices;
-
-    //for (int i = 0; i < body.GetColliderCount(); i++)
-    //{
-    //    const b2Fixture* f = body.GetCollider(i);
-    //    if (f->GetType() == b2Shape::e_polygon)
-    //    {
-    //        b2PolygonShape* ps = (b2PolygonShape*)f->GetShape();
-    //        for (int j = 0; j < ps->m_count; j++)
-    //        {
-    //            b2Rot rot; rot.Set(body.GetAngle());
-    //            vec2 v = _fb(b2Mul(rot, ps->m_vertices[j])) + body.GetPosition();
-    //            vertices.push_back(v);
-    //        }
-    //    }
-    //}
-
-    return vertices;
-}
-
-vec2 GetClosestPointInLine(vec2 point, vec2 linePoint1, vec2 linePoint2)
+vec2 _GetClosestPointInLine(vec2 point, vec2 linePoint1, vec2 linePoint2)
 {
     vec2 bVec1 = linePoint2 - linePoint1; // LINE FROM POINT 1 to 2
     vec2 bVec2 = point - linePoint1;      // LINE FROM VERTEX TO POINT 1
@@ -40,68 +18,63 @@ vec2 GetClosestPointInLine(vec2 point, vec2 linePoint1, vec2 linePoint2)
     return linePoint1 + vec2(bVec1.x * t, bVec1.y * t);
 }
 
-vec2 GetClosestPointOnCircle(vec2 center, float radius, vec2 point)
+vec2 physics_GetClosestPointOnBody(const Rigidbody2D& body, vec2 pointInWorldSpace)
 {
-    float dist = distance(point, center);
-    return (center - point) * (dist - radius) / dist + point;
-}
+    vec2 pointLocal = pointInWorldSpace;
 
-vec2 GetClosestPoint(const Rigidbody2D& body, vec2 point)
-{
     vec2 closestPoint = vec2(0.f);
-    
-    for (const r<Collider>& collider : body.GetColliders())
-    {
-        vec2 point = vec2(0.f);
-
-        switch (collider->GetType())
-        {
-            case Collider::tCircle:
-            {
-                CircleCollider& circle = collider->As<CircleCollider>();
-                vec2 center = circle.GetCenter() + body.GetPosition();
-                float radius = circle.GetRadius();
-
-                point = GetClosestPointOnCircle(center, radius, point);
-                break;
-            }
-                
-            default:
-                break;
-        }
-        
-        // assign to closestPoint
-    }
+    float minDis = FLT_MAX;
 
     // exit on no collider
-    //if (body.GetColliderCount() == 0) return closestPoint;
+    if (body.GetColliderCount() == 0) return closestPoint;
 
-    //switch (body.GetCollider()->GetType())
-    //{
-    //    case b2Shape::e_polygon:
-    //    {
-    //        std::vector<vec2> vs = GetBodyVertices(body);
-    //        float minDis = FLT_MAX;
+    for (r<Collider> collider : body.GetColliders())
+    {
+        switch (collider->GetType())
+        {
+            case Collider::tHull:
+            {
+                HullCollider& hull = collider->As<HullCollider>();
+                ArrayView<vec2> points = hull.GetPoints();
 
-    //        for (int i = 0; i < vs.size(); i++)
-    //        {
-    //            vec2 closest = GetClosestPointInLine(boxPoint, vs.at(i), vs.at((i + 1) % vs.size()));
-    //            float d = distance(closest, boxPoint);
+                for (int i = 0; i < points.size(); i++)
+                {
+                    vec2 a = points.at(i);
+                    vec2 b = points.at((i + 1) % points.size());
 
-    //            if (d < minDis)
-    //            {
-    //                minDis = d;
-    //                closestPoint = closest;
-    //            }
-    //        }
+                    a = rotate(a, body.GetAngle()) + body.GetPosition();
+                    b = rotate(b, body.GetAngle()) + body.GetPosition();
 
-    //        break;
-    //    }
-    //        
-    //    default:
-    //        log_physics("e~GetClosestPoint Failed invalid collider type.");
-    //        break;
-    //}
+                    vec2 closest = _GetClosestPointInLine(pointLocal, a, b);
+                    float d = distance(closest, pointLocal);
+
+                    if (d < minDis)
+                    {
+                        minDis = d;
+                        closestPoint = closest;
+                    }
+                }
+
+                break;
+            }
+
+            case Collider::tCircle:
+            {
+                float radius = collider->As<CircleCollider>().GetRadius();
+                float dist = distance(pointLocal, body.GetPosition());
+                float circumferenceDistance = dist - radius;
+                vec2 closest = (body.GetPosition() - pointLocal) * circumferenceDistance / dist + pointLocal;
+
+                if (dist < minDis)
+                {
+                    minDis = dist;
+                    closestPoint = closest;
+                }
+
+                break;
+            }
+        }
+    }
 
     return closestPoint;
 }

@@ -786,14 +786,6 @@ namespace meta
 			: m_writer(writer)
 		{}
 
-		~pseudo_writer()
-		{
-			while (m_frames.size() > 0)
-			{
-				end();
-			}
-		}
-
 		template<typename _t>
 		pseudo_writer& begin()
 		{
@@ -824,9 +816,6 @@ namespace meta
 			return *this;
 		}
 
-		// Gets called in destructor
-		// Only need to call if you want to be explicit or if 
-		// there are multiple pseudo writers in scope
 		void end()
 		{
 			m_writer->class_end();
@@ -861,14 +850,6 @@ namespace meta
 			: m_reader (reader)
 		{}
 
-		~pseudo_reader()
-		{
-			while (m_frames.size() > 0)
-			{
-				end();
-			}
-		}
-
 		template<typename _t>
 		pseudo_reader& begin()
 		{
@@ -899,9 +880,6 @@ namespace meta
 			return *this;
 		}
 
-		// Gets called in destructor
-		// Only need to call if you want to be explicit or if 
-		// there are multiple pseudo writers in scope
 		void end()
 		{
 			m_reader->class_end();

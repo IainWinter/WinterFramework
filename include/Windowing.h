@@ -30,6 +30,8 @@ struct WindowConfig
 	std::string Title = "Welcome to Winter Framework";
 	int Width = 640;
 	int Height = 480;
+	int FullScreen = 0;
+	bool VSync = false;
 };
 
 struct Window
@@ -56,14 +58,10 @@ public:
 	Window(const WindowConfig& config, EventQueue* events = nullptr);
 	~Window();
 
-	int                Width()      const;
-	int                Height()     const;
-	vec2               Dimensions() const;
-	const std::string& Title()      const;
-
-	SDL_Window*        GetSDLWindow()    const;
-	SDL_GLContext      GetGLContext()    const;
-	ImGuiContext*      GetImGuiContext() const;
+	WindowConfig GetConfig() const;
+	SDL_Window* GetSDLWindow() const;
+	SDL_GLContext GetGLContext() const;
+	ImGuiContext* GetImGuiContext() const;
 
 	void Init();
 	void InitUI();
@@ -83,7 +81,6 @@ public:
 
 	Window& SetSize(int width, int height, bool center = true);
 	Window& SetTitle(const std::string& title);
-
 	Window& SetFullscreen(int mode); // 0 windowed, 1 borderless, 2 fullscreen
 	Window& SetVSync(bool vsync);
 
@@ -112,11 +109,8 @@ private:
 public:
 	WindowRef(Window* window);
 
-	int                Width()      const;
-	int                Height()     const;
-	vec2               Dimensions() const;
-	const std::string& Title()      const;
-	
+	WindowConfig GetConfig() const;
+
 	WindowRef& SetTitle(const std::string& title);
 
 	WindowRef& ResizeViewport(int width, int height);

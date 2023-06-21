@@ -165,6 +165,11 @@ EventQueue& SystemBase::_events()
 	return m_scene->event;
 }
 
+WindowRef SystemBase::_window()
+{
+	return WindowRef(&m_scene->app->window);
+}
+
 void SystemBase::SetBreak(SystemBreak on)
 {
 	m_break = on;
