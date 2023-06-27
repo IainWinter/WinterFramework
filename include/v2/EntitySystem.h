@@ -1,10 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <unordered_map>
-#include <tuple>
-#include <assert.h>
-#include <utility>
+#include <unordered_set>
 
 // Goal of this system is to allow the game state to just be a struct and have the
 // data/entities opt into the tracking system themselves.
@@ -13,7 +10,7 @@
 // Can bind to variables in concrete entities to mimic runtime composition.
 // On the first call to Id, an id is generated which maps the entity to 
 // its this pointer even if copied or moved.
-class Entity_
+class v2Entity
 {
 public:
     // Return a component or assert if it isn't bound
@@ -24,22 +21,36 @@ public:
     template<typename _t>
     _t* TryGet();
 
+    // Return true if a component is bound
+    template<typename _t>
+    bool Has();
+
     // Assign or get an ID so other systems have a 
     // way to look this entity up even if its memory is moved
     // see gResolveEntity
     int Id();
 
+    // Get the previously assigned ID of this entity
+    int Id() const;
+
+    // Generate a list of the component ids which are added through _bind
+    std::unordered_set<size_t> GetArchetype();
+
 public:
-    Entity_();
-    ~Entity_();
-    Entity_(const Entity_& other);
-    Entity_(Entity_&& other) noexcept;
-    Entity_& operator=(const Entity_& other);
-    Entity_& operator=(Entity_&& other) noexcept;
+    bool operator==(const v2Entity& other) const;
+    bool operator!=(const v2Entity& other) const;
+
+public:
+    v2Entity();
+    virtual ~v2Entity();
+    v2Entity(const v2Entity& other);
+    v2Entity(v2Entity&& other) noexcept;
+    v2Entity& operator=(const v2Entity& other);
+    v2Entity& operator=(v2Entity&& other) noexcept;
 
 private:
-    void copy_from(const Entity_& other);
-    void move_from(Entity_&& other) noexcept;
+    void copy_from(const v2Entity& other);
+    void move_from(v2Entity&& other) noexcept;
     void destroy();
 
 protected:
@@ -50,17 +61,21 @@ protected:
     // Called when bound data is needed, override to bind custom data
     virtual void Bind();
 
+public:
+    // Called when entity is removed form an entity_list
+    virtual void Destroy();
+
 private:
     // Map each component type to a sequential integer
     template<typename _t>
-    int GetComponentId();
+    size_t GetComponentId();
 
     // If data hasn't already been bound, call Bind
     void AttemptBind();
 
 private:
     struct EntityBinder {
-        std::unordered_map<int, void*> values;
+        std::unordered_map<size_t, void*> values;
     };
 
     int id;
@@ -79,47 +94,50 @@ class EntityResolver
 {
 public:
     // Generate a new Id and map it to the pointer
-    int Map(Entity_* ptr);
+    int Map(v2Entity* ptr);
 
     // Update an id to a new pointer
-    void Update(int id, Entity_* ptr);
+    void Update(int id, v2Entity* ptr);
 
     // Get a pointer or nullptr from an id
-    Entity_* Get(int id);
+    v2Entity* Get(int id);
 
     // Remove a mapping
     void Remove(int id);
 
 private:
-    std::unordered_map<int, Entity_*> entities;
+    std::unordered_map<int, v2Entity*> entities;
     int nextId = 0;
 };
 
 // Get an entity pointer or nullptr from an id
-Entity_* gResolveEntity(int id);
+v2Entity* gResolveEntity(int id);
 
 //
 //  Template implementation
 //
 
 template<typename _t>
-_t& Entity_::Get()
+_t& v2Entity::Get()
 {
-    int tid = GetComponentId<_t>();
+    size_t tid = GetComponentId<_t>();
 
     AttemptBind();
 
-    assert(bounded 
-        && bounded->values.count(tid) != 0 
-        && "Need to first bind a value to get it");
+    if (!bounded || bounded->values.count(tid) == 0)
+        throw nullptr;
+
+    //assert(bounded 
+    //    && bounded->values.count(tid) != 0 
+    //    && "Need to first bind a value to get it");
         
     return *(_t*)bounded->values.at(tid);
 }
 
 template<typename _t>
-_t* Entity_::TryGet()
+_t* v2Entity::TryGet()
 {
-    int tid = GetComponentId<_t>();
+    size_t tid = GetComponentId<_t>();
 
     AttemptBind();
 
@@ -129,8 +147,14 @@ _t* Entity_::TryGet()
     return (_t*)bounded->values.at(tid);
 }
 
+template<typename _t>
+bool v2Entity::Has()
+{
+    return TryGet<_t>() != nullptr;
+}
+
 template<typename... _t>
-void Entity_::_bind(_t&... ptr)
+void v2Entity::_bind(_t&... ptr)
 {
     // opt-in through lazy init
     if (!bounded)
@@ -140,8 +164,9 @@ void Entity_::_bind(_t&... ptr)
 }
 
 template<typename _t>
-int Entity_::GetComponentId()
+size_t v2Entity::GetComponentId()
 {
-    static int id = s_nextComponentId++;
-    return id;
+    return typeid(_t).hash_code();
+    //static int id = s_nextComponentId++;
+    //return id;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "v2/Render/TextureView.h"
+#include "v2/Render/MeshView.h"
 #include "util/typedef.h"
 
 // Allocate a buffer based on the specified layout

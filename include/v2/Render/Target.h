@@ -17,12 +17,12 @@
 class HostTarget
 {
 public:
-	HostTarget& Add(TargetName name, Texture_New texture);
+	HostTarget& Add(TargetName name, v2Texture texture);
 	HostTarget& Remove(TargetName name);
 
-	Texture_New Get(TargetName name);
+	v2Texture Get(TargetName name);
 
 private:
-	std::unordered_map<TargetName, Texture_New> m_textures;
+	std::unordered_map<TargetName, v2Texture> m_textures;
 };
 

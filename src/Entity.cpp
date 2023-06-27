@@ -121,13 +121,52 @@ bool Entity::operator!=(const Entity& other) const { return raw_id() != other.ra
 
 Entity& Entity::SetParent(const Entity& entity)
 {
-	Get<EntityMeta>().parent = entity;
+	bool hasSameParent = GetParent() == entity;
+	bool isRemovingParent = entity.raw_id() == entt::null;
+
+	if (hasSameParent)
+		return *this;
+
+	EntityMeta& myMeta = Get<EntityMeta>();
+
+	if (isRemovingParent)
+	{
+		bool hasParent = myMeta.parent.raw_id() != entt::null;
+
+		if (hasParent)
+		{
+			EntityMeta& parentMeta = myMeta.parent.Get<EntityMeta>();
+
+			auto itr = std::find(parentMeta.children.begin(), parentMeta.children.end(), *this);
+			parentMeta.children.erase(itr);
+		}
+	}
+
+	else
+	{
+		EntityMeta& entityMeta = entity.Get<EntityMeta>();
+		entityMeta.children.push_back(*this);
+	}
+
+	myMeta.parent = entity;
+
 	return *this;
 }
 
 Entity Entity::GetParent()
 {
 	return Get<EntityMeta>().parent;
+}
+
+std::vector<Entity>& Entity::GetChildren()
+{
+	return Get<EntityMeta>().children;
+}
+
+void Entity::DestroyChildren() 
+{
+	for (Entity e : GetChildren())
+		e.Destroy();
 }
 
 Entity& Entity::SetName(const char* name)
@@ -178,24 +217,20 @@ bool Entity::IsAlive() const
 	return !!m_owning && m_owning->m_registry.valid(m_handle);
 }
 
-void Entity::Destroy() const
+void Entity::Destroy()
 {
 	assert_is_valid();
 
 	// this has to be here because if it is a component event,
 	// then some of the components get cleaned up before on_destroy gets fired
 	if (Has<OnDestroyComponent>())
-	{
 		Get<OnDestroyComponent>().Fire(*this);
-	}
+
+	// remove from hierarchy
+	SetParent({});
+	GetChildren().clear();
 
 	m_owning->DeleteEntityNow(m_handle);
-}
-
-void Entity::Destroy()
-{
-	const Entity* me = this;
-	me->Destroy();
 
 	m_owning = nullptr;
 	m_handle = entt::null;

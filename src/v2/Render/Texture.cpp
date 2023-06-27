@@ -7,14 +7,9 @@
 //	Host Texture
 //
 
-TextureView HostTexture::View()
+TextureView HostTexture::View() const
 {
 	return m_view;
-}
-
-TextureViewConst HostTexture::View() const
-{
-	return TextureViewConst(m_view);
 }
 
 TextureView HostTexture::Take()
@@ -69,7 +64,7 @@ HostTexture& HostTexture::operator=(HostTexture&& move) noexcept
 
 void HostTexture::_copy_in(const HostTexture& copy)
 {
-	const TextureLayout& layout = copy.View().GetLayout();
+	TextureLayout layout = copy.View().layout;
 	
 	_texture_host_free(&m_view);
 	m_view = _texture_host_alloc(layout);
@@ -105,9 +100,9 @@ TextureHandle DeviceTexture::Take()
 	return handle;
 }
 
-void DeviceTexture::CopyToDevice(const TextureViewConst& view)
+void DeviceTexture::CopyToDevice(const TextureView& view)
 {
-	if (m_handle.HasData())
+	if (m_handle.handle)
 		_texture_device_realloc(&m_handle, view);
 	else
 		m_handle = _texture_device_alloc(view);
@@ -115,8 +110,8 @@ void DeviceTexture::CopyToDevice(const TextureViewConst& view)
 
 void DeviceTexture::CopyToHost(HostTexture* host)
 {
-	if (host->View().GetLayout() != m_handle.GetLayout())
-		host->Resize(m_handle.GetLayout());
+	if (host->View().layout != m_handle.layout)
+		host->Resize(m_handle.layout);
 
 	_texture_device_copy_to_host(m_handle, host->View());
 }
@@ -134,23 +129,23 @@ TextureFilter DeviceTexture::GetFilter()
 }
 
 DeviceTexture::DeviceTexture()
-	: m_filter (fPixel)
+	: m_filter (TextureFilterPixel)
 {}
 
 DeviceTexture::DeviceTexture(const TextureLayout& layout)
-	: m_filter (fPixel)
+	: m_filter (TextureFilterPixel)
 {
 	m_handle = _texture_device_alloc(layout);
 }
 
-DeviceTexture::DeviceTexture(const TextureViewConst& host)
-	: m_filter (fPixel)
+DeviceTexture::DeviceTexture(const TextureView& host)
+	: m_filter (TextureFilterPixel)
 {
 	m_handle = _texture_device_alloc(host);
 }
 
 DeviceTexture::DeviceTexture(const TextureHandle& handle)
-	: m_filter (fPixel)
+	: m_filter (TextureFilterPixel)
 	, m_handle (handle)
 {}
 
@@ -187,7 +182,7 @@ void DeviceTexture::_copy_in(const DeviceTexture& copy)
 	
 	// memory is lost
 	// could copy memory but that needs opengl 4.3+, so should just use normal FBO process
-	m_handle = _texture_device_alloc(copy.View().GetLayout());
+	m_handle = _texture_device_alloc(copy.View().layout);
 	m_filter = copy.m_filter;
 }
 
@@ -203,63 +198,47 @@ void DeviceTexture::_move_in(DeviceTexture&& move)
 //	Shared Texture
 //
 
-bool Texture_New::HasData() const
+bool v2Texture::HasData() const
 {
-	return m_host.View().HasData() || m_device.View().HasData();
+	return m_host.View().buffer || m_device.View().handle;
 }
 
-void Texture_New::Resize(const TextureLayout& newLayout)
+void v2Texture::Resize(const TextureLayout& newLayout)
 {
-	m_outdated = false;
 	m_host.Resize(newLayout);
 	m_device.CopyToDevice(m_host.View());
+	device = m_device.View();
 }
 
-TextureView Texture_New::View()
-{
-	m_outdated = true;
-	return m_host.View();
-}
-
-TextureViewConst Texture_New::View() const
-{
-	return m_host.View();
-}
-
-TextureHandle Texture_New::ViewDevice() const
-{
-	return m_device.View();
-}
-
-void Texture_New::SendToDevice()
+void v2Texture::SendToDevice()
 {
 	m_device.CopyToDevice(m_host.View());
+	device = m_device.View();
 }
 
-void Texture_New::SendToHost()
+void v2Texture::SendToHost()
 {
 	m_device.CopyToHost(&m_host);
+	host = m_host.View();
 }
 
-void Texture_New::FreeHost()
+void v2Texture::FreeHost()
 {
 	m_host = {};
 }
 
-void Texture_New::FreeDevice()
+void v2Texture::FreeDevice()
 {
 	m_device = {};
 }
 
-Texture_New::Texture_New()
-	: m_outdated (false)
+v2Texture::v2Texture()
 {}
 
-Texture_New::Texture_New(const TextureLayout& layout, TextureAccess access)
-	: m_outdated (false)
+v2Texture::v2Texture(const TextureLayout& layout, Access access)
 {
-	bool createHost = access == aHost || access == aHostDevice;
-	bool createDevice = access == aDevice || access == aHostDevice;
+	bool createHost = access == AccessHost || access == AccessHostDevice;
+	bool createDevice = access == AccessDevice || access == AccessHostDevice;
 
 	if (createHost)
 		m_host = HostTexture(layout);
@@ -268,90 +247,91 @@ Texture_New::Texture_New(const TextureLayout& layout, TextureAccess access)
 		m_device = DeviceTexture(layout);
 }
 
-Texture_New::Texture_New(const TextureView& view, TextureAccess access)
-	: m_outdated (false)
-	, m_host	 (view)
+v2Texture::v2Texture(const TextureView& view, Access access)
+	: m_host (view)
 {
 	_sync(access);
 }
 
-Texture_New::Texture_New(const TextureHandle& handle, TextureAccess access)
-	: m_outdated (false)
-	, m_device   (handle)
+v2Texture::v2Texture(const TextureHandle& handle, Access access)
+	: m_device (handle)
 {
 	_sync(access);
 }
 
-Texture_New::Texture_New(const TextureView& view, const TextureHandle& handle)
-	: m_outdated (false)
-	, m_host	 (view)
+v2Texture::v2Texture(const TextureView& view, const TextureHandle& handle)
+	: m_host	 (view)
 	, m_device   (handle)
+	, host       (view)
+	, device     (handle)
 {
-	if (view.GetLayout() != handle.GetLayout())
-	{
+	if (view.layout != handle.layout)
 		throw nullptr; // invalid layouts
-	}
 }
 
-Texture_New::Texture_New(const Texture_New& copy)
+v2Texture::v2Texture(const v2Texture& copy)
 {
 	_copy_in(copy);
 }
 
-Texture_New::Texture_New(Texture_New&& move) noexcept
+v2Texture::v2Texture(v2Texture&& move) noexcept
 {
-	_move_in(std::forward<Texture_New>(move));
+	_move_in(std::forward<v2Texture>(move));
 }
 
-Texture_New& Texture_New::operator=(const Texture_New& copy)
+v2Texture& v2Texture::operator=(const v2Texture& copy)
 {
 	_copy_in(copy);
 	return *this;
 }
 
-Texture_New& Texture_New::operator=(Texture_New&& move) noexcept
+v2Texture& v2Texture::operator=(v2Texture&& move) noexcept
 {
-	_move_in(std::forward<Texture_New>(move));
+	_move_in(std::forward<v2Texture>(move));
 	return *this;
 }
 
-void Texture_New::_copy_in(const Texture_New& copy)
+void v2Texture::_copy_in(const v2Texture& copy)
 {
-	m_outdated = true;
 	m_host = copy.m_host;
 	m_device = copy.m_device;
+
+	host = m_host.View();
+	device = m_device.View();
 }
 
-void Texture_New::_move_in(Texture_New&& move)
+void v2Texture::_move_in(v2Texture&& move)
 {
-	m_outdated = move.m_outdated;
 	m_host = std::exchange(move.m_host, {});
 	m_device = std::exchange(move.m_device, {});
+
+	host = m_host.View();
+	device = m_device.View();
 }
 
-void Texture_New::_sync(TextureAccess access)
+void v2Texture::_sync(Access access)
 {
-	bool noHost = !m_host.View().HasData();
-	bool noDevice = !m_device.View().HasData();
+	bool noHost = !m_host.View().buffer;
+	bool noDevice = !m_device.View().handle;
 
 	switch (access)
 	{
 		// if the host has not been created, copy device memory
 		// assume device exists if host doesn't
-		case aHost:
+		case AccessHost:
 			if (noHost) SendToHost();
 			FreeDevice();
 			break;
 
 		// if the device has not been created, copy host memory
 		// assume host exists if device doesn't
-		case aDevice:
+		case AccessDevice:
 			if (noDevice) SendToDevice();
 			FreeHost();
 			break;
 
 		// sync memory between host and device, but don't free
-		case aHostDevice:
+		case AccessHostDevice:
 			if (noHost) SendToHost();
 			if (noDevice) SendToDevice();
 			break;
@@ -366,10 +346,10 @@ void Texture_New::_sync(TextureAccess access)
 
 #include "io/ImageFromDisk.h"
 
-Texture_New wTextureCreate(const char* filepath, TextureAccess access)
+v2Texture wTextureCreate(const char* filepath, Access access)
 {
 	TextureView view = wTextureLoadView(filepath);
-	return Texture_New(view, access);
+	return v2Texture(view, access);
 }
 
 TextureView wTextureLoadView(const char* filepath)

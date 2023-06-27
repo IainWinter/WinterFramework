@@ -1,6 +1,6 @@
 #pragma once
 
-#include "v2/Render/RenderOptions.h"
+#include "v2/Render/TextureLayout.h"
 
 // fwd
 using GLenum = unsigned int;

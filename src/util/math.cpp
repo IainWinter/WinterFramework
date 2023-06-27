@@ -120,3 +120,8 @@ ivec2 get_xy(int index, int width)
 {
 	return { index % width, index / width };
 }
+
+std::pair<int, int> get_xyp(int index, int width)
+{
+	return { index % width, index / width };
+}

@@ -80,6 +80,7 @@ float aspect(const vec2& v);
 bool fe(float a, float b, float e = 0.0001f);
 
 ivec2 get_xy(int index, int width);
+std::pair<int, int> get_xyp(int index, int width);
 
 template<typename _t>
 _t value_or(void* ptr, const _t& defaultValue)

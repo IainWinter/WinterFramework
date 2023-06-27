@@ -1,6 +1,7 @@
 #pragma once
 
 #include "v2/Render/TextureView.h"
+#include "v2/Render/Access.h"
 
 //  Takes ownership of a TextureView
 //
@@ -11,8 +12,7 @@ public:
 	// the texture will not be reallocated
 	void Resize(const TextureLayout& newLayout);
 
-	TextureView View();
-	TextureViewConst View() const;
+	TextureView View() const;
 
 	// Take ownership of the memory
 	TextureView Take();
@@ -44,7 +44,7 @@ private:
 	TextureView m_view;
 };
 
-//	Defines a buffer in device VRAM
+//	Takes ownership of a TextureHandle
 //
 class DeviceTexture
 {
@@ -60,7 +60,7 @@ public:
 	
 	// Copy a host texture into this device texture.
 	// If the dimensions are not the same, Resize will be called
-	void CopyToDevice(const TextureViewConst& view);
+	void CopyToDevice(const TextureView& view);
 
 	// Copy the device texture into a specified host texture.
 	// If the layouts are not the same, the host will be realloced
@@ -77,7 +77,7 @@ public:
 	DeviceTexture(const TextureLayout& layout);
 	
 	// Allocate memory on the device for a layout, and fill it with data from the host
-	DeviceTexture(const TextureViewConst& host);
+	DeviceTexture(const TextureView& host);
 
 	// Take ownership of a TextureHandle
 	DeviceTexture(const TextureHandle& handle);
@@ -105,7 +105,7 @@ private:
 
 //	Texture with a host and device side
 //
-class Texture_New
+class v2Texture
 {
 public:
 	bool HasData() const;
@@ -113,57 +113,57 @@ public:
 	// Resize the texture in VRAM and host RAM
 	void Resize(const TextureLayout& newLayout);
 
-	TextureView View();
-	TextureViewConst View() const;
-
-	TextureHandle ViewDevice() const;
-
 	void SendToDevice();
 	void SendToHost();
 	void FreeHost();
 	void FreeDevice();
 
 public:
-	Texture_New();
-	Texture_New(const TextureLayout& layout, TextureAccess access);
+	v2Texture();
+
+	// Create host and or device textures depending on access
+	v2Texture(const TextureLayout& layout, Access access);
 
 	// Take ownership of a TextureView
-	// Create a host texture depending on the TextureAccess
-	Texture_New(const TextureView& view, TextureAccess access);
+	// Create a device texture depending on access
+	v2Texture(const TextureView& view, Access access);
 
 	// Take ownership of a TextureHandle
-	// Create a host texture depending on the TextureAccess
-	Texture_New(const TextureHandle& handle, TextureAccess access);
+	// Create a host texture depending on access
+	v2Texture(const TextureHandle& handle, Access access);
 
 	// Take ownership of a TextureView and TextureHandle
 	// their layouts must be identical
-	Texture_New(const TextureView& view, const TextureHandle& handle);
+	v2Texture(const TextureView& view, const TextureHandle& handle);
 
 public:
-	Texture_New(const Texture_New& copy);
-	Texture_New(Texture_New&& move) noexcept;
+	v2Texture(const v2Texture& copy);
+	v2Texture(v2Texture&& move) noexcept;
 
-	Texture_New& operator=(const Texture_New& copy);
-	Texture_New& operator=(Texture_New&& move) noexcept;
+	v2Texture& operator=(const v2Texture& copy);
+	v2Texture& operator=(v2Texture&& move) noexcept;
 
 private:
-	void _copy_in(const Texture_New& copy);
-	void _move_in(Texture_New&& move);
+	void _copy_in(const v2Texture& copy);
+	void _move_in(v2Texture&& move);
 
-	void _sync(TextureAccess access);
+	void _sync(Access access);
+
+	// read only accessors
+public:
+	TextureView host;
+	TextureHandle device;
 
 private:
 	HostTexture m_host;
 	DeviceTexture m_device;
-
-	// A flag that is set whenever a non-const host operation is called.
-	// When set, the device should be updated before using this texture in a shader
-	bool m_outdated;
 };
 
 //
 //	Loading Textures
 //
 
-Texture_New wTextureCreate(const char* filepath, TextureAccess access);
+v2Texture wTextureCreate(const char* filepath, Access access);
+
+// this leaks memory
 TextureView wTextureLoadView(const char* filepath);

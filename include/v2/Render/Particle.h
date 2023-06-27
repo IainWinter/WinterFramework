@@ -1,14 +1,73 @@
 #pragma once
 
+#include "util/math.h"
+#include "util/Color.h"
+
+// use old system for now
 #include "Rendering.h"
+
+#include <array>
+
+#include "v2/Render/CameraLens.h"
+#include "v2/Render/TextureCache.h"
 
 struct ParticleData
 {
-	vec2 position;
-	vec2 scale;
-	Color tint;
-	float life;
-	int textureIndex;
+	vec3 position = vec3(0.f);
+	vec3 rotation = vec3(0.f);
+	vec2 scale = vec2(1.f);
+
+	vec4 tint = vec4(1.f);
+	
+	vec2 uvScale = vec2(1.f);
+	vec2 uvOffset = vec2(0.f);
+	
+	// this is an index of cached textures in the particle system
+	int texture = 1;
+
+	// not passed to GPU
+
+	vec3 velocity = vec3(0.f);
+	float damping = 0.f;
+
+	vec3 aVelocity = vec3(0.f);
+	float aDamping = 0.f;
+
+	float life = 1.f;
+
+	bool enableScalingByLife = false;
+	float initialLife = 0.f;
+	vec2 initialScale = vec2(1.f);
+	vec2 finalScale = vec2(0.f);
+
+	bool additiveBlend = false;
+	bool autoOrderZAroundOrigin = true;
+};
+
+class ParticleMesh
+{
+private:
+	GLuint m_particlesVAO = 0;
+	GLuint m_particleInstVBO = 0;
+
+	ParticleData* m_particles = nullptr;
+	int m_fixedCount = 0;
+
+public:
+	int count = 0;
+
+	ParticleMesh() = default;
+	ParticleMesh(int fixedCount);
+
+	// cant be bothered to make constructors
+	void Destroy();
+
+	void Emit(const ParticleData& particle);
+	void Update(float dt);
+	
+	void Draw();
+
+	void SortZOrder(float zBase);
 };
 
 // A particle system which stores a tightly packed list of 
@@ -17,8 +76,32 @@ struct ParticleData
 class ParticleSystem
 {
 public:
+	ParticleSystem();
 
+	void Init();
+
+	int GetCount() const;
+	void SetScreen(vec2 min, vec2 max);
+
+	void Emit(const ParticleData& particle);
+	void EmitAllowOutsideBounds(const ParticleData& particle);
+
+	void Update(float dt);
+
+	void Draw(const CameraLens& lens);
+
+	TextureCacheImg RegTexture(r<Texture> texture);
 
 private:
-	std::vector<ParticleData> m_particles;
+	ParticleMesh m_additiveBlend;
+	ParticleMesh m_noBlend;
+
+	ShaderProgram m_shader;
+
+	bool m_oldCache;
+	TextureCache m_textureCache;
+	std::unordered_map<int, TextureCacheImg> m_textureCacheImgs;
+
+	vec2 m_min;
+	vec2 m_max;
 };

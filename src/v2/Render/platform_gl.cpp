@@ -1,19 +1,19 @@
 #include "v2/Render/platform_gl.h"
 #include "util/error_check.h" // gives gl
 
-TextureHandle _texture_device_alloc(const TextureViewConst& view)
+TextureHandle _texture_device_alloc(const TextureView& view)
 {
-	log_render("_texture_device_alloc %p ", view.GetBytes());
+	log_render("_texture_device_alloc %p ", view.buffer);
 
 	u32 handle = -1;
-	u32 target = gl_tex_target(view.GetLayout().NumberOfDimensions());
+	u32 target = gl_tex_target(view.layout.NumberOfDimensions());
 	
 	gl(glGenTextures(1, &handle));
 	
-	TextureHandle texture = TextureHandle(handle, target, view.GetLayout());
+	TextureHandle texture = TextureHandle(handle, target, view.layout);
 	
 	_texture_device_bind(texture);
-	_texture_device_filter_set(texture, fPixel);
+	_texture_device_filter_set(texture, TextureFilterPixel);
 	_texture_device_realloc(&texture, view);
 	
 	return texture;
@@ -21,12 +21,12 @@ TextureHandle _texture_device_alloc(const TextureViewConst& view)
 
 void _texture_device_free(TextureHandle* texture)
 {
-	if (!texture->HasData())
+	if (!texture->handle)
 		return;
 
-	log_render("_texture_device_free %d ", texture->GetHandle());
+	log_render("_texture_device_free %d ", texture->handle);
 
-	GLuint handle = texture->GetHandle();
+	GLuint handle = texture->handle;
 	
 	gl(glDeleteTextures(1, &handle));
 	*texture = {};
@@ -34,17 +34,17 @@ void _texture_device_free(TextureHandle* texture)
 
 void _texture_device_bind(const TextureHandle& texture)
 {
-	log_render("_texture_device_bind %d -> %d", texture.GetTarget(), texture.GetHandle());
+	log_render("_texture_device_bind %d -> %d", texture.type, texture.handle);
 
-	gl(glBindTexture(texture.GetTarget(), texture.GetHandle()));
+	gl(glBindTexture(texture.type, texture.handle));
 }
 
-void _texture_device_realloc(TextureHandle* texture, const TextureViewConst& view)
+void _texture_device_realloc(TextureHandle* texture, const TextureView& view)
 {
-	log_render("_texture_device_realloc %d -> %d", texture->GetTarget(), texture->GetHandle());
+	log_render("_texture_device_realloc %d -> %d", texture->type, texture->handle);
 
-	const TextureLayout& layout = view.GetLayout();
-	const u8* buffer = view.GetBytes();
+	const TextureLayout& layout = view.layout;
+	const u8* buffer = view.buffer;
 	
 	GLenum iformat = gl_iformat(layout.format);
 	GLenum format = gl_format(layout.format);
@@ -53,7 +53,7 @@ void _texture_device_realloc(TextureHandle* texture, const TextureViewConst& vie
 	GLint height = layout.height;
 	GLint depth = layout.depth;
 
-	GLuint target = texture->GetTarget();
+	GLuint target = texture->type;
 	
 	switch (layout.NumberOfDimensions())
 	{
@@ -71,26 +71,26 @@ void _texture_device_realloc(TextureHandle* texture, const TextureViewConst& vie
 
 void _texture_device_copy_to_host(const TextureHandle& texture, const TextureView& view)
 {
-	if (texture.GetLayout() != view.GetLayout()) // If layouts are not the same, exit
+	if (texture.layout != view.layout) // If layouts are not the same, exit
 	{
-		// could bring in platform_host to realloc view, but I like that they are seperate
+		// could bring in platform_host to realloc view, but I like that they are separate
 		// just resize host before calling this function
 		return;
 	}
 	
-	TextureFormat format = texture.GetLayout().format;
+	TextureFormat format = texture.layout.format;
 	
-	GLenum target = texture.GetTarget();
+	GLenum target = texture.type;
 	GLenum gformat = gl_format(format);
 	GLenum type = gl_type(format);
 
-	gl(glBindTexture(target, texture.GetHandle()));
-	gl(glGetTexImage(target, 0, gformat, type, view.GetBytes()));
+	gl(glBindTexture(target, texture.handle));
+	gl(glGetTexImage(target, 0, gformat, type, view.buffer));
 }
 
 void _texture_device_filter_set(const TextureHandle& texture, TextureFilter filter)
 {
-	GLuint target = texture.GetTarget();
+	GLuint target = texture.type;
 	GLenum gfilter = gl_filter(filter);
 	
 	gl(glTexParameteri(target, GL_TEXTURE_MIN_FILTER, gfilter));
@@ -99,12 +99,12 @@ void _texture_device_filter_set(const TextureHandle& texture, TextureFilter filt
 
 void _texture_device_clamp_set(const TextureHandle& texture /*, TextureClamp clamp */)
 {
-	GLuint target = texture.GetTarget();
+	GLuint target = texture.type;
 	GLenum clampW = GL_CLAMP_TO_EDGE;
 	GLenum clampH = GL_CLAMP_TO_EDGE;
 	GLenum clampD = GL_CLAMP_TO_EDGE;
 	
-	int dimCount = texture.GetLayout().NumberOfDimensions();
+	int dimCount = texture.layout.NumberOfDimensions();
 	
 	if (dimCount >= 1) gl(glTexParameteri(target, GL_TEXTURE_WRAP_S, clampW));
 	if (dimCount >= 2) gl(glTexParameteri(target, GL_TEXTURE_WRAP_T, clampH));

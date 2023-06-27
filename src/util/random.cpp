@@ -24,6 +24,11 @@ bool rand_b() {
 	return _rand() % 2 == 0;
 }
 
+bool rand_bf(float odds)
+{
+	return rand_f() < odds;
+}
+
 int rand_im(int max) {
 	if (max == 0)
 		return 0;

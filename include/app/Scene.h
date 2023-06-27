@@ -25,6 +25,11 @@ public:
 
 	void SetPhysicsRunning(bool running);
 
+	// just for testing a new system that
+	// cannot auto reg physics
+	// not needed outside of v2/EntitySystem stuff
+	SceneNode* _get_node();
+
 private:
 	friend class Application;
 

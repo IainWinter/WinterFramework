@@ -63,11 +63,11 @@ protected:
 
 // entity queries
 
-	template<typename... _t> EntityQuery<_t...>           Query();
-	template<typename... _t> EntityQueryWithEntity<_t...> QueryWithEntity();
-	template<typename    _t> _t&                          First();
-	template<typename... _t> Entity                       FirstEntity();
-	template<typename... _t> int                          GetNumberOf();
+	//template<typename... _t> EntityQuery<_t...>           Query();
+	//template<typename... _t> EntityQueryWithEntity<_t...> QueryWithEntity();
+	//template<typename    _t> _t&                          First();
+	//template<typename... _t> Entity                       FirstEntity();
+	//template<typename... _t> int                          GetNumberOf();
 	
 // sending events
 
@@ -157,35 +157,35 @@ public:
 // template impl
 //
 
-template<typename... _t> 
-inline EntityQuery<_t...> SystemBase::Query()
-{
-	return m_scene->entities.Query<_t...>();
-}
-
-template<typename... _t> 
-inline EntityQueryWithEntity<_t...> SystemBase::QueryWithEntity()
-{
-	return m_scene->entities.QueryWithEntity<_t...>();
-}
-
-template<typename _t> 
-inline _t& SystemBase::First()
-{
-	return m_scene->entities.First<_t>();
-}
-
-template<typename... _t> 
-inline Entity SystemBase::FirstEntity()
-{
-	return m_scene->entities.FirstEntity<_t...>();
-}
-
-template<typename... _t>
-inline int SystemBase::GetNumberOf()
-{
-	return m_scene->entities.GetNumberOf<_t...>();
-}
+//template<typename... _t> 
+//inline EntityQuery<_t...> SystemBase::Query()
+//{
+//	return m_scene->entities.Query<_t...>();
+//}
+//
+//template<typename... _t> 
+//inline EntityQueryWithEntity<_t...> SystemBase::QueryWithEntity()
+//{
+//	return m_scene->entities.QueryWithEntity<_t...>();
+//}
+//
+//template<typename _t> 
+//inline _t& SystemBase::First()
+//{
+//	return m_scene->entities.First<_t>();
+//}
+//
+//template<typename... _t> 
+//inline Entity SystemBase::FirstEntity()
+//{
+//	return m_scene->entities.FirstEntity<_t...>();
+//}
+//
+//template<typename... _t>
+//inline int SystemBase::GetNumberOf()
+//{
+//	return m_scene->entities.GetNumberOf<_t...>();
+//}
 
 template<typename _e>
 inline void SystemBase::Send(_e&& event, const char* _fromFile, int _fromLine)

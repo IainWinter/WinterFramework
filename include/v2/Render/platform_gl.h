@@ -5,7 +5,7 @@
 #include "util/typedef.h"
 
 // Create a new texture on the device and allocate a buffer and copy data in from the specified view
-TextureHandle _texture_device_alloc(const TextureViewConst& view);
+TextureHandle _texture_device_alloc(const TextureView& view);
 
 // Destroy a texture and its buffer on the device
 void _texture_device_free(TextureHandle* texture);
@@ -18,10 +18,11 @@ void _texture_device_bind(const TextureHandle& texture);
 //void _texture_device_copy(TextureHandle texture);
 
 // Reallocate the buffer of a texture on the device according to specified view
-void _texture_device_realloc(TextureHandle* texture, const TextureViewConst& view);
+void _texture_device_realloc(TextureHandle* texture, const TextureView& view);
 
 // Read the textures buffer into the specified view. View must have the same layout as the texture
 void _texture_device_copy_to_host(const TextureHandle& texture, const TextureView& view);
 
 void _texture_device_filter_set(const TextureHandle& texture, TextureFilter filter);
 void _texture_device_clamp_set(const TextureHandle& texture /*, TextureClamp clamp ... */);
+

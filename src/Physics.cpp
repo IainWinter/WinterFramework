@@ -19,7 +19,11 @@ struct PointQueryCallback : b2QueryCallback
 
 	bool ReportFixture(b2Fixture* fixture)
 	{
-		result.results.push_back({ FixtureToEntity(fixture), distance(_fb(fixture->GetBody()->GetPosition()), point) });
+		int id = fixture->GetBody()->GetUserData().entityId;
+		if (id == 0 || id == -1)
+			result.results.push_back({ {}, distance(_fb(fixture->GetBody()->GetPosition()), point), fixture->GetBody()->GetUserData().v2EntityId });
+		else
+			result.results.push_back({ FixtureToEntity(fixture), distance(_fb(fixture->GetBody()->GetPosition()), point) });
 		return false;
 	}
 };
@@ -34,7 +38,11 @@ struct RayQueryCallback : b2RayCastCallback
 
 	float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
 	{
-		result.results.push_back({ fixture, FixtureToEntity(fixture), fraction * length, _fb(point), _fb(normal) });
+		int id = fixture->GetBody()->GetUserData().entityId;
+		if (id == 0 || id == -1)
+			result.results.push_back({ fixture, {}, fraction * length, _fb(point), _fb(normal), fixture->GetBody()->GetUserData().v2EntityId });
+		else
+			result.results.push_back({ fixture, FixtureToEntity(fixture), fraction * length, _fb(point), _fb(normal) });
 		return -1;
 	}
 };
@@ -439,6 +447,9 @@ void Rigidbody2D::RemoveFromWorld()
 {
 	if (m_world && m_instance)
 		m_world->DestroyBody(m_instance);
+
+	m_instance = nullptr;
+	m_world = nullptr;
 }
 
 Rigidbody2D& Rigidbody2D::SetTransform(Transform2D& transform)
@@ -516,7 +527,7 @@ Rigidbody2D& Rigidbody2D::SetType(Type type)
 
 Rigidbody2D& Rigidbody2D::SetEntity(int id)
 {
-	m_instance->GetUserData().entityId_ = id;
+	m_instance->GetUserData().v2EntityId = id;
 	return *this;
 }
 
@@ -724,14 +735,21 @@ void PhysicsWorld::Remove(Entity& e)
 
 Rigidbody2D PhysicsWorld::CreateBody()
 {
+	Rigidbody2D body;
+	body.m_world = m_world;
+
+	RegisterBody(&body);
+
+	return body;
+}
+
+void PhysicsWorld::RegisterBody(Rigidbody2D* body)
+{
 	b2BodyDef def = {};
 	def.type = b2_dynamicBody;
 
-	Rigidbody2D body;
-	body.m_instance = m_world->CreateBody(&def);
-	body.m_world = m_world;
-
-	return body;
+	body->m_instance = m_world->CreateBody(&def);
+	body->m_world = m_world;
 }
 
 void PhysicsWorld::Tick(float dt)

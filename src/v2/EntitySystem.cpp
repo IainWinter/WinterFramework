@@ -1,43 +1,50 @@
 #include "v2/EntitySystem.h"
+#include "Log.h"
 
-int Entity_::s_nextComponentId = 0;
+int v2Entity::s_nextComponentId = 0;
 
 static EntityResolver resolver;
 
-Entity_::Entity_()
+v2Entity::v2Entity()
     : id            (0)
     , attemptedBind (false)
     , bounded       (nullptr)
 {}
 
-Entity_::~Entity_()
+v2Entity::~v2Entity()
 {
     destroy();
 }
 
-Entity_::Entity_(const Entity_& other)
+v2Entity::v2Entity(const v2Entity& other)
+    : id            (0)
+    , attemptedBind (false)
+    , bounded       (nullptr)
 {
     copy_from(other);
 }
 
-Entity_::Entity_(Entity_&& other) noexcept
+v2Entity::v2Entity(v2Entity&& other) noexcept
+    : id            (0)
+    , attemptedBind (false)
+    , bounded       (nullptr)
 {
-    move_from(std::forward<Entity_>(other));
+    move_from(std::forward<v2Entity>(other));
 }
 
-Entity_& Entity_::operator=(const Entity_& other)
+v2Entity& v2Entity::operator=(const v2Entity& other)
 {
     copy_from(other);
     return *this;
 }
 
-Entity_& Entity_::operator=(Entity_&& other) noexcept
+v2Entity& v2Entity::operator=(v2Entity&& other) noexcept
 {
-    move_from(std::forward<Entity_>(other));
+    move_from(std::forward<v2Entity>(other));
     return *this;
 }
 
-void Entity_::copy_from(const Entity_& other)
+void v2Entity::copy_from(const v2Entity& other)
 {
     // need to destroy the data and not copy anything
     destroy();
@@ -50,7 +57,7 @@ void Entity_::copy_from(const Entity_& other)
     attemptedBind = false;
 }
 
-void Entity_::move_from(Entity_&& other) noexcept
+void v2Entity::move_from(v2Entity&& other) noexcept
 {
     // can't move because the location of data has changed
     copy_from(other);
@@ -64,12 +71,15 @@ void Entity_::move_from(Entity_&& other) noexcept
     }
 }
 
-void Entity_::destroy()
+void v2Entity::destroy()
 {
     delete bounded;
+
+    if (id > 0)
+        resolver.Remove(id);
 }
 
-int Entity_::Id()
+int v2Entity::Id()
 {
     if (id > 0)
         return id;
@@ -79,10 +89,46 @@ int Entity_::Id()
     return id;
 }
 
-void Entity_::Bind()
-{}
+int v2Entity::Id() const
+{
+    return id;
+}
 
-void Entity_::AttemptBind()
+std::unordered_set<size_t> v2Entity::GetArchetype()
+{
+    AttemptBind();
+
+    if (!bounded)
+        return {};
+
+    std::unordered_set<size_t> archetype;
+
+    for (auto [component_id, _] : bounded->values)
+        archetype.insert(component_id);
+
+    return archetype;
+}
+
+bool v2Entity::operator==(const v2Entity& other) const 
+{
+    if (Id() == 0 || other.Id() == 0)
+        return false;
+
+    return Id() == other.Id(); 
+}
+
+bool v2Entity::operator!=(const v2Entity& other) const 
+{
+    if (Id() == 0 || other.Id() == 0)
+        return true;
+
+    return Id() != other.Id();
+}
+
+void v2Entity::Bind() {}
+void v2Entity::Destroy() {}
+
+void v2Entity::AttemptBind()
 {
     if (attemptedBind)
         return;
@@ -92,20 +138,28 @@ void Entity_::AttemptBind()
     Bind();
 }
 
-int EntityResolver::Map(Entity_* ptr)
+int EntityResolver::Map(v2Entity* ptr)
 {
     int id = ++nextId;
     entities[id] = ptr;
+
+    log_entity("Mapped %d -> %p", id, ptr);
+
     return id;
 }
 
-void EntityResolver::Update(int id, Entity_* ptr)
+void EntityResolver::Update(int id, v2Entity* ptr)
 {
-    assert(entities.count(id) > 0 && "Entity resolver has not mapped id");
+    //assert( && "Entity resolver has not mapped id");
+    if (entities.count(id) == 0)
+        throw nullptr;
+
+    log_entity("Updated mapping %d -> %p, was %p", id, ptr, entities[id]);
+
     entities[id] = ptr;
 }
 
-Entity_* EntityResolver::Get(int id)
+v2Entity* EntityResolver::Get(int id)
 {
     auto itr = entities.find(id);
 
@@ -117,6 +171,8 @@ Entity_* EntityResolver::Get(int id)
 
 void EntityResolver::Remove(int id)
 {
+    log_entity("Removed mapping %d -> %p", id, entities[id]);
+
     auto itr = entities.find(id);
 
     if (itr == entities.end())
@@ -125,7 +181,7 @@ void EntityResolver::Remove(int id)
     entities.erase(itr);
 }
 
-Entity_* gResolveEntity(int id)
+v2Entity* gResolveEntity(int id)
 {
     return resolver.Get(id);
 }

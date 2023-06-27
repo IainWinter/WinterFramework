@@ -268,6 +268,10 @@ public:
 	Entity& SetParent(const Entity& entity);
 	Entity GetParent();
 
+	std::vector<Entity>& GetChildren();
+
+	void DestroyChildren();
+
 	Entity& SetName(const char* name);
 	const std::string& GetName();
 
@@ -278,7 +282,6 @@ public:
 	EntityWorld* Owning() const;
 	
 	bool IsAlive() const;
-	void Destroy() const;
 	void Destroy();
 
 	bool IsAliveAtEndOfFrame() const;
@@ -408,6 +411,15 @@ namespace std {
 	};
 }
 
+struct EntityMeta
+{
+	Entity parent;
+	std::vector<Entity> children;
+
+	std::string name = "Unnamed Entity";
+	std::string id = nonce(16);  // should use a uuid
+};
+
 // common components
 
 struct OnDestroyComponent
@@ -418,14 +430,6 @@ struct OnDestroyComponent
 	{
 		for (auto& func : funcs) func(e);
 	}
-};
-
-// this is for looping over every entity with EntityQuery
-struct EntityMeta
-{
-	Entity parent; // should split into EntityParent component
-	std::string name = "Unnamed Entity";
-    std::string id = nonce(16);  // should use a uuid
 };
 
 //

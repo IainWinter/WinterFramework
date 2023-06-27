@@ -1,4 +1,4 @@
-#include "v2/Render/RenderOptions.h"
+#include "v2/Render/TextureLayout.h"
 
 int TextureLayout::Index(int x, int y) const
 {
@@ -19,14 +19,14 @@ int TextureLayout::NumberOfBytesPerPixel() const
 {
 	switch (format)
 	{
-		case fR:       return 1;
-		case fRG:      return 2;
-		case fRGB:     return 3;
-		case fRGBA:    return 4;
-		case fInt32:   return 4;
-		case fFloat32: return 4;
-		case fDepth:   return 4;
-		case fStencil: return 1;
+		case TextureFormatR:       return 1;
+		case TextureFormatRG:      return 2;
+		case TextureFormatRGB:     return 3;
+		case TextureFormatRGBA:    return 4;
+		case TextureFormatInt32:   return 4;
+		case TextureFormatFloat32: return 4;
+		case TextureFormatDepth:   return 4;
+		case TextureFormatStencil: return 1;
 	}
 
 	return -1;
@@ -44,6 +44,14 @@ int TextureLayout::NumberOfDimensions() const
 	return 1;
 }
 
+bool TextureLayout::Equals(const TextureLayout& other) const
+{
+	return width == other.width
+		&& height == other.height
+		&& depth == other.depth
+		&& format == other.format;
+}
+
 bool TextureLayout::operator==(const TextureLayout& other) const
 {
 	return Equals(other);
@@ -52,12 +60,4 @@ bool TextureLayout::operator==(const TextureLayout& other) const
 bool TextureLayout::operator!=(const TextureLayout& other) const
 {
 	return !Equals(other);
-}
-
-bool TextureLayout::Equals(const TextureLayout& other) const
-{
-	return width == other.width
-		&& height == other.height
-		&& depth == other.depth
-		&& format == other.format;
 }

@@ -34,3 +34,7 @@ void Scene::SetPhysicsRunning(bool running)
 {
 	m_node->physicsRunning = running;
 }
+
+SceneNode* Scene::_get_node() {
+	return m_node;
+}

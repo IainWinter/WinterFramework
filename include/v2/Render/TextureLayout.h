@@ -5,48 +5,42 @@ enum TextureFormat
 	// Legal to cast a channel count to the first 4
 
 	// 1 byte
-	fR = 1,
+	TextureFormatR = 1,
 
 	// 2 bytes
-	fRG,
+	TextureFormatRG,
 
 	// 3 bytes
-	fRGB,
+	TextureFormatRGB,
 
 	// 4 bytes
-	fRGBA,
+	TextureFormatRGBA,
 
 	// 1 32 bit int
-	fInt32,
+	TextureFormatInt32,
 
 	// 1 32 bit float
-	fFloat32,
+	TextureFormatFloat32,
 
-	fDepth,
-	fStencil
+	TextureFormatDepth,
+	TextureFormatStencil
 };
 
 enum TextureFilter
 {
-	fPixel,
-	fSmooth
-};
-
-enum TextureAccess
-{
-	aHost,
-	aDevice,
-	aHostDevice
+	TextureFilterPixel,
+	TextureFilterSmooth
 };
 
 //	Defines the layout of data in a texture's buffer
 //
 struct TextureLayout
 {
-	int width;
+	int width = 0;
 	int height = 1;
 	int depth = 1;
-	TextureFormat format = fRGB;
+	TextureFormat format = TextureFormatRGBA;
+	//TextureFilter filter = TextureFilterPixel;
 
 	int Index(int x, int y) const;
 	int Index(int x, int y, int z) const;
@@ -57,21 +51,8 @@ struct TextureLayout
 	int NumberOfBytes() const;
 	int NumberOfDimensions() const;
 
+	bool Equals(const TextureLayout& other) const;
+
 	bool operator==(const TextureLayout& other) const;
 	bool operator!=(const TextureLayout& other) const;
-
-	bool Equals(const TextureLayout& other) const;
-};
-
-//	
-//
-enum TargetName
-{
-	aColor,
-	aColor1,
-	aColor2,
-	aColor3,
-	aColor4,
-
-	aDepth
 };

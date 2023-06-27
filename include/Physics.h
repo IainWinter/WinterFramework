@@ -353,6 +353,8 @@ struct PointQueryResult
 	{
 		Entity entity;
 		float distance;
+
+		int v2EntityId;
 	};
 
 	std::vector<Result> results;
@@ -372,6 +374,8 @@ struct RayQueryResult
 		float distance;
 		vec2 point;
 		vec2 normal;
+
+		int v2EntityId;
 	};
 
 	std::vector<Result> results;
@@ -400,6 +404,7 @@ public:
 	void Remove(Entity& e);
 
 	Rigidbody2D CreateBody();
+	void RegisterBody(Rigidbody2D* body);
 
 	void Tick(float dt);
 

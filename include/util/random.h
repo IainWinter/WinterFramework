@@ -8,6 +8,8 @@ int rand_i();
 float rand_f();
 bool rand_b();
 
+bool rand_bf(float odds);
+
 int rand_im(int max);
 float rand_fm(float max);
 
@@ -19,7 +21,6 @@ float rand_fma(float min, float addition);
 
 int rand_ic(int extent);
 float rand_fc(float extent);
-
 
 vec2 rand_2f();
 vec2 rand_2fm(float maxX, float maxY);
