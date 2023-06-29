@@ -442,7 +442,7 @@ Rigidbody2D::Rigidbody2D()
 	, m_collisionEnabled (true)
 	, m_world            (nullptr)
 {}
-	
+
 void Rigidbody2D::RemoveFromWorld()
 {
 	if (m_world && m_instance)
@@ -475,35 +475,35 @@ void Rigidbody2D::UpdateLast(float deltaTime, float timePoint)
 	m_last.deltaTime = deltaTime;
 }
 
-void Rigidbody2D::ApplyForce(vec2 force)                        { m_instance->ApplyForceToCenter(_tb(force), true); }
-void Rigidbody2D::ApplyForce(vec2 force, vec2 offsetFromCenter) { m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }
-void Rigidbody2D::ApplyTorque(float force)                      { m_instance->ApplyTorque(force, true); }
+void Rigidbody2D::ApplyForce(vec2 force)                        { if (m_instance) m_instance->ApplyForceToCenter(_tb(force), true); }
+void Rigidbody2D::ApplyForce(vec2 force, vec2 offsetFromCenter) { if (m_instance) m_instance->ApplyForce(_tb(force), _tb(GetPosition() + offsetFromCenter), true); }
+void Rigidbody2D::ApplyTorque(float force)                      { if (m_instance) m_instance->ApplyTorque(force, true); }
 	
-vec2  Rigidbody2D::GetPosition()        const { return _fb(m_instance->GetPosition()); }
-vec2  Rigidbody2D::GetVelocity()        const { return _fb(m_instance->GetLinearVelocity()); }
-float Rigidbody2D::GetAngle()           const { return m_instance->GetAngle(); }
-float Rigidbody2D::GetAngularVelocity() const { return m_instance->GetAngularVelocity(); }
-float Rigidbody2D::GetDamping()         const { return m_instance->GetLinearDamping(); }
-float Rigidbody2D::GetAngularDamping()  const { return m_instance->GetAngularDamping(); }
-bool  Rigidbody2D::IsRotationFixed()    const { return m_instance->IsFixedRotation(); }
-bool  Rigidbody2D::IsCollisionEnabled() const { return m_collisionEnabled; }
-float Rigidbody2D::GetDensity()         const { return m_density; }
-float Rigidbody2D::GetMass()            const { return m_instance->GetMass(); }
-float Rigidbody2D::GetSpeed()           const { return length(GetVelocity()); }
-float Rigidbody2D::GetAngularSpeed()    const { return abs(GetAngularVelocity()); }
+vec2  Rigidbody2D::GetPosition()        const { return !m_instance ? vec2(0.f) : _fb(m_instance->GetPosition()); }
+vec2  Rigidbody2D::GetVelocity()        const { return !m_instance ? vec2(0.f) : _fb(m_instance->GetLinearVelocity()); }
+float Rigidbody2D::GetAngle()           const { return !m_instance ? 0.f : m_instance->GetAngle(); }
+float Rigidbody2D::GetAngularVelocity() const { return !m_instance ? 0.f : m_instance->GetAngularVelocity(); }
+float Rigidbody2D::GetDamping()         const { return !m_instance ? 0.f : m_instance->GetLinearDamping(); }
+float Rigidbody2D::GetAngularDamping()  const { return !m_instance ? 0.f : m_instance->GetAngularDamping(); }
+bool  Rigidbody2D::IsRotationFixed()    const { return !m_instance ? false : m_instance->IsFixedRotation(); }
+bool  Rigidbody2D::IsCollisionEnabled() const { return !m_instance ? false : m_collisionEnabled; }
+float Rigidbody2D::GetDensity()         const { return !m_instance ? 0.f : m_density; }
+float Rigidbody2D::GetMass()            const { return !m_instance ? 0.f : m_instance->GetMass(); }
+float Rigidbody2D::GetSpeed()           const { return !m_instance ? 0.f : length(GetVelocity()); }
+float Rigidbody2D::GetAngularSpeed()    const { return !m_instance ? 0.f : abs(GetAngularVelocity()); }
 
 Rigidbody2D::Type Rigidbody2D::GetType() const
 {
-	return (Rigidbody2D::Type)m_instance->GetType();
+	return !m_instance ? Type::Static : (Rigidbody2D::Type)m_instance->GetType();
 }
 
-Rigidbody2D& Rigidbody2D::SetPosition       (vec2  pos)      { m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); return *this; }
-Rigidbody2D& Rigidbody2D::SetVelocity       (vec2  vel)      { m_instance->SetLinearVelocity (_tb(vel));                         return *this; }
-Rigidbody2D& Rigidbody2D::SetAngle          (float angle)    { m_instance->SetTransform      (m_instance->GetPosition(), angle); return *this; }
-Rigidbody2D& Rigidbody2D::SetAngularVelocity(float avel)     { m_instance->SetAngularVelocity(avel);                             return *this; }
-Rigidbody2D& Rigidbody2D::SetDamping        (float damping)  { m_instance->SetLinearDamping  (damping);                          return *this; }
-Rigidbody2D& Rigidbody2D::SetAngularDamping (float adamping) { m_instance->SetAngularDamping (adamping);                         return *this; }
-Rigidbody2D& Rigidbody2D::SetRotationFixed  (bool  isFixed)  { m_instance->SetFixedRotation  (isFixed);                          return *this; }
+Rigidbody2D& Rigidbody2D::SetPosition       (vec2  pos)      { if (m_instance) m_instance->SetTransform      (_tb(pos), m_instance->GetAngle()); return *this; }
+Rigidbody2D& Rigidbody2D::SetVelocity       (vec2  vel)      { if (m_instance) m_instance->SetLinearVelocity (_tb(vel));                         return *this; }
+Rigidbody2D& Rigidbody2D::SetAngle          (float angle)    { if (m_instance) m_instance->SetTransform      (m_instance->GetPosition(), angle); return *this; }
+Rigidbody2D& Rigidbody2D::SetAngularVelocity(float avel)     { if (m_instance) m_instance->SetAngularVelocity(avel);                             return *this; }
+Rigidbody2D& Rigidbody2D::SetDamping        (float damping)  { if (m_instance) m_instance->SetLinearDamping  (damping);                          return *this; }
+Rigidbody2D& Rigidbody2D::SetAngularDamping (float adamping) { if (m_instance) m_instance->SetAngularDamping (adamping);                         return *this; }
+Rigidbody2D& Rigidbody2D::SetRotationFixed  (bool  isFixed)  { if (m_instance) m_instance->SetFixedRotation  (isFixed);                          return *this; }
 
 Rigidbody2D& Rigidbody2D::SetEnableCollision(bool respond)
 {
@@ -652,6 +652,9 @@ b2BodyDef Rigidbody2D::GetBodyDef() const
 
 b2Fixture* Rigidbody2D::GetCol(int index) const
 {
+	if (!m_instance)
+		return nullptr;
+
 	b2Fixture* fix = m_instance->GetFixtureList();
 	for (int i = 0; i < index; i++) fix = fix->GetNext();
 	return fix;

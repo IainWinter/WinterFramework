@@ -256,8 +256,9 @@ public:
 	};
 
 private:
-	// If null, not in physics world. This pointer is not owned
 	b2Body* m_instance;
+
+	// If null, not in physics world. This pointer is not owned
 	b2World* m_world;
 
 	// this is for serialization loading
@@ -281,9 +282,11 @@ private:
 
 public:
 	Rigidbody2D();
-
-	// Remove this body from the world
+	
 	void RemoveFromWorld();
+
+	void move_into(Rigidbody2D&& other);
+	void copy_into(const Rigidbody2D& other);
 
 	Rigidbody2D& SetTransform(Transform2D& transform);
 

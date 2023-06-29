@@ -334,7 +334,7 @@ namespace meta
 		{
 			if constexpr (_owns)
 			{
-				m_instance = new _t(*instance);
+				m_instance = new _t(std::move(*instance));
 			}
 		}
 		
@@ -1230,12 +1230,18 @@ namespace meta
 
 		void copy_to(void* to, const void* from) const override
 		{
-			*(_t*)to = *(const _t*)from;
+			if constexpr (std::is_copy_assignable<_t>::value) 
+			{
+				*(_t*)to = *(const _t*)from;
+			}
 		}
 
 		void move_to(void* to, void* from) const override
 		{
-			*(_t*)to = std::forward<_t>(*(_t*)from);
+			if constexpr (std::is_move_assignable<_t>::value)
+			{
+				*(_t*)to = std::forward<_t>(*(_t*)from);
+			}
 		}
 	};
 

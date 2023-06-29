@@ -190,7 +190,7 @@ inline Particle RandomParticle(const a<TextureAtlas>& atlas)
 //	float AgeLeft()         const { return 1.f - Age(); }
 //	bool  HasAtlas()        const { return atlas != nullptr; }
 //
-//	const TextureAtlas::Bounds& GetCurrentFrameUV() const { return atlas->GetUVForFrame(GetCurrentFrame() % frameCount); }
+//	const TextureAtlas::CellHitbox& GetCurrentFrameUV() const { return atlas->GetUVForFrame(GetCurrentFrame() % frameCount); }
 //	                   Texture& GetTexture()              { return *atlas->source; }
 //
 //	Color GetTint() const

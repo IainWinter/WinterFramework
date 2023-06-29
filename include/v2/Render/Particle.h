@@ -27,6 +27,11 @@ struct ParticleData
 
 	// not passed to GPU
 
+	// use this to index into other data arrays to effect the particle
+	int userIndex = 0;
+
+	// would allow all this to be removed
+
 	vec3 velocity = vec3(0.f);
 	float damping = 0.f;
 
@@ -62,9 +67,11 @@ public:
 	// cant be bothered to make constructors
 	void Destroy();
 
-	void Emit(const ParticleData& particle);
+	ParticleData& Get(int i);
+
+	int Emit(const ParticleData& particle);
+
 	void Update(float dt);
-	
 	void Draw();
 
 	void SortZOrder(float zBase);
@@ -77,17 +84,19 @@ class ParticleSystem
 {
 public:
 	ParticleSystem();
+	~ParticleSystem();
 
 	void Init();
 
 	int GetCount() const;
 	void SetScreen(vec2 min, vec2 max);
 
-	void Emit(const ParticleData& particle);
-	void EmitAllowOutsideBounds(const ParticleData& particle);
+	ParticleData& Get(int index, bool additive);
+
+	int Emit(const ParticleData& particle);
+	int EmitAllowOutsideBounds(const ParticleData& particle);
 
 	void Update(float dt);
-
 	void Draw(const CameraLens& lens);
 
 	TextureCacheImg RegTexture(r<Texture> texture);

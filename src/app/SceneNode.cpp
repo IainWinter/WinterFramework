@@ -9,14 +9,14 @@ SceneNode::SceneNode(Application* app)
 	, inDebugMode    (false)
 	, physicsRunning (true)
 {
-	entities.OnAdd   <Rigidbody2D>([this](Entity e) { physics.Add(e); });
-	entities.OnRemove<Rigidbody2D>([this](Entity e) { physics.Remove(e); });
-    
-	entities.OnAdd<Transform2D>([this](Entity e)
-    {
-		if (Rigidbody2D* body = e.TryGet<Rigidbody2D>())
-			body->SetTransform(e.Get<Transform2D>());
-    });
+	//entities.OnAdd   <Rigidbody2D>([this](Entity e) { physics.Add(e); });
+	//entities.OnRemove<Rigidbody2D>([this](Entity e) { physics.Remove(e); });
+ //   
+	//entities.OnAdd<Transform2D>([this](Entity e)
+ //   {
+	//	if (Rigidbody2D* body = e.TryGet<Rigidbody2D>())
+	//		body->SetTransform(e.Get<Transform2D>());
+ //   });
 
 	log_game("d~Scene node created");
 }
@@ -65,7 +65,10 @@ void SceneNode::Tick(float deltaTime, float fixedTime)
 
 		timeAcc += deltaTime;
 
-		while (timeAcc > fixedTime)
+		if (timeAcc > 0.5f) // if there is over a half second of physics to calculate, just skip it
+			timeAcc = 0.f;
+
+		while (timeAcc >= fixedTime)
 		{
 			// limit iterations
 			if (itr > maxitr) break;

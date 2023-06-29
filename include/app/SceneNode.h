@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Entity.h"
 #include "Physics.h"
 #include "Event.h"
 
@@ -11,7 +10,8 @@ struct SceneNode
 {
 	Application* app;
 
-	EntityWorld entities;
+	//EntityWorld entities;
+	//entity_scene_data* entities;
 	PhysicsWorld physics;
 	EventBus bus;
 	EventQueue event;

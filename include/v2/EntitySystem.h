@@ -48,6 +48,12 @@ public:
     v2Entity& operator=(const v2Entity& other);
     v2Entity& operator=(v2Entity&& other) noexcept;
 
+    // Cleanup components outside of deconstructor 
+    virtual void Remove();
+
+    // temp, should just use serializer
+    virtual void debug_print() const;
+
 private:
     void copy_from(const v2Entity& other);
     void move_from(v2Entity&& other) noexcept;
@@ -60,10 +66,6 @@ protected:
 
     // Called when bound data is needed, override to bind custom data
     virtual void Bind();
-
-public:
-    // Called when entity is removed form an entity_list
-    virtual void Destroy();
 
 private:
     // Map each component type to a sequential integer

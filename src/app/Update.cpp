@@ -80,30 +80,30 @@ void SystemBase::_SetName(const std::string& name)
 	m_name = name;
 }
 
-Entity SystemBase::CreateEntity()
-{
-	return m_scene->entities.Create();
-}
+//Entity SystemBase::CreateEntity()
+//{
+//	return m_scene->entities.Create();
+//}
 
-Entity SystemBase::CreateEntity(const EntityPrefab& prefab)
-{
-	Entity entity = CreateEntity();
-
-	for (const meta::any& any : prefab.GetComponents())
-		entity.Add(any);
-
-	return entity;
-}
-
-Entity SystemBase::CreateEntity(const a<EntityPrefab>& prefab)
-{
-	return CreateEntity(*prefab.ptr());
-}
-
-Entity SystemBase::WrapEntity(u32 entityId)
-{
-	return m_scene->entities.Wrap(entityId);
-}
+//Entity SystemBase::CreateEntity(const EntityPrefab& prefab)
+//{
+//	Entity entity = CreateEntity();
+//
+//	for (const meta::any& any : prefab.GetComponents())
+//		entity.Add(any);
+//
+//	return entity;
+//}
+//
+//Entity SystemBase::CreateEntity(const a<EntityPrefab>& prefab)
+//{
+//	return CreateEntity(*prefab.ptr());
+//}
+//
+//Entity SystemBase::WrapEntity(u32 entityId)
+//{
+//	return m_scene->entities.Wrap(entityId);
+//}
 
 Audio SystemBase::CreateAudio(const std::string& eventPath)
 {
@@ -150,10 +150,10 @@ float SystemBase::GetRawState(InputCode code)
 	return m_scene->app->input.GetRawState(code);
 }
 
-EntityWorld& SystemBase::_world()
-{
-	return m_scene->entities;
-}
+//EntityWorld& SystemBase::_world()
+//{
+//	return m_scene->entities;
+//}
 
 PhysicsWorld& SystemBase::_physics()
 {

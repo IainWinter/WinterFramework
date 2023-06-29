@@ -165,7 +165,7 @@ skiperror:
 		bool downRight = IsSolid(point.x + 1, point.y + 1, width, height, isSolid);
 		bool downLeft  = IsSolid(point.x,     point.y + 1, width, height, isSolid);
 
-		const auto state = static_cast<size_t>(upLeft | upRight << 1 | downRight << 3 | downLeft << 2);
+		const auto state = static_cast<size_t>((int)upLeft | (int)upRight << 1 | (int)downRight << 3 | (int)downLeft << 2);
 
 		if (IsSolid(point.x, point.y, width, height, isSolid))
 		{

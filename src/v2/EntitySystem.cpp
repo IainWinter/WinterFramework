@@ -74,6 +74,7 @@ void v2Entity::move_from(v2Entity&& other) noexcept
 void v2Entity::destroy()
 {
     delete bounded;
+    bounded = nullptr;
 
     if (id > 0)
         resolver.Remove(id);
@@ -101,6 +102,8 @@ std::unordered_set<size_t> v2Entity::GetArchetype()
     if (!bounded)
         return {};
 
+ //   return bounded->archetype;
+
     std::unordered_set<size_t> archetype;
 
     for (auto [component_id, _] : bounded->values)
@@ -125,8 +128,9 @@ bool v2Entity::operator!=(const v2Entity& other) const
     return Id() != other.Id();
 }
 
+void v2Entity::Remove() {}
 void v2Entity::Bind() {}
-void v2Entity::Destroy() {}
+void v2Entity::debug_print() const {}
 
 void v2Entity::AttemptBind()
 {
@@ -143,18 +147,13 @@ int EntityResolver::Map(v2Entity* ptr)
     int id = ++nextId;
     entities[id] = ptr;
 
-    log_entity("Mapped %d -> %p", id, ptr);
-
     return id;
 }
 
 void EntityResolver::Update(int id, v2Entity* ptr)
 {
-    //assert( && "Entity resolver has not mapped id");
     if (entities.count(id) == 0)
         throw nullptr;
-
-    log_entity("Updated mapping %d -> %p, was %p", id, ptr, entities[id]);
 
     entities[id] = ptr;
 }
@@ -171,8 +170,6 @@ v2Entity* EntityResolver::Get(int id)
 
 void EntityResolver::Remove(int id)
 {
-    log_entity("Removed mapping %d -> %p", id, entities[id]);
-
     auto itr = entities.find(id);
 
     if (itr == entities.end())

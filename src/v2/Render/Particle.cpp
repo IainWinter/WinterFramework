@@ -90,13 +90,20 @@ void ParticleMesh::Destroy()
 	gl(glDeleteVertexArrays(1, &m_particlesVAO));
 }
 
-void ParticleMesh::Emit(const ParticleData& particle)
+ParticleData& ParticleMesh::Get(int i)
+{
+	return m_particles[i];
+}
+
+int ParticleMesh::Emit(const ParticleData& particle)
 {
 	if (count >= m_fixedCount)
-		return;
+		return -1;
 
 	m_particles[count] = particle;
 	count += 1;
+
+	return count - 1;
 }
 
 void ParticleMesh::Update(float dt)
@@ -153,6 +160,12 @@ ParticleSystem::ParticleSystem()
 {
 }
 
+ParticleSystem::~ParticleSystem()
+{
+	m_additiveBlend.Destroy();
+	m_noBlend.Destroy();
+}
+
 void ParticleSystem::Init()
 {
 	m_additiveBlend = ParticleMesh(500000);
@@ -183,7 +196,12 @@ void ParticleSystem::SetScreen(vec2 min, vec2 max)
 	m_max = max;
 }
 
-void ParticleSystem::Emit(const ParticleData& particle)
+ParticleData& ParticleSystem::Get(int index, bool additive)
+{
+	return additive ? m_additiveBlend.Get(index) : m_noBlend.Get(index);
+}
+
+int ParticleSystem::Emit(const ParticleData& particle)
 {
 	bool outside = particle.position.x < m_min.x
 				|| particle.position.y < m_min.y
@@ -191,21 +209,20 @@ void ParticleSystem::Emit(const ParticleData& particle)
 				|| particle.position.y > m_max.y;
 
 	if (outside)
-		return;
+		return -1;
 
-	EmitAllowOutsideBounds(particle);
+	return EmitAllowOutsideBounds(particle);
 }
 
-void ParticleSystem::EmitAllowOutsideBounds(const ParticleData& particle)
+int ParticleSystem::EmitAllowOutsideBounds(const ParticleData& particle)
 {
 	ParticleData mapUvs = particle; // this sucks...
 	mapUvs.uvOffset = m_textureCacheImgs[particle.texture].offset;
 	mapUvs.uvScale = m_textureCacheImgs[particle.texture].scale;
 
-	if (mapUvs.additiveBlend)
-		m_additiveBlend.Emit(mapUvs);
-	else
-		m_noBlend.Emit(mapUvs);
+	return mapUvs.additiveBlend 
+		? m_additiveBlend.Emit(mapUvs)
+		: m_noBlend.Emit(mapUvs);
 }
 
 void ParticleSystem::Update(float dt)

@@ -56,10 +56,10 @@ protected:
 
 // creating entities
 
-	Entity CreateEntity();
-	Entity CreateEntity(const EntityPrefab& prefab);
-	Entity CreateEntity(const a<EntityPrefab>& prefab); // short hand for *asset.ptr()
-	Entity WrapEntity(u32 entityId);
+	//Entity CreateEntity();
+	//Entity CreateEntity(const EntityPrefab& prefab);
+	//Entity CreateEntity(const a<EntityPrefab>& prefab); // short hand for *asset.ptr()
+	//Entity WrapEntity(u32 entityId);
 
 // entity queries
 
@@ -98,7 +98,7 @@ protected:
 // there is no way to attach events to a scene, so this needs to be exposed
 // but for now, there is no way to pass the entity world to a function
 
-	EntityWorld&  _world();
+	//EntityWorld&  _world();
 	PhysicsWorld& _physics();
 	EventQueue& _events();
 

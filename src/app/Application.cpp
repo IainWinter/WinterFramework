@@ -50,8 +50,8 @@ void Application::Tick()
 	// events up to the app bus which change the state in a critical way for next
 	// frame
 
-	for (SceneNode* node : m_scenes)
-		node->entities.ExecuteDeferredDeletions();
+	//for (SceneNode* node : m_scenes)
+	//	node->entities.ExecuteDeferredDeletions();
 
 	window.PumpEvents();
 
