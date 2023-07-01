@@ -81,7 +81,7 @@ public:
 							void  SetCurrentContext(type* context);  \
 					  const type* GetContext();                      \
 							int   GetContextLocation();              \
-							void  ContextRealloc();                  \
+							void  ContextRealloc();
 
 #define wContextImpl(type) 	wContextStore<type> ctx;                                           \
 							void  CreateContext() { ctx.Create(); }                             \
@@ -89,4 +89,4 @@ public:
 							void  SetCurrentContext(type* context) { ctx.SetCurrent(context); } \
 					  const type* GetContext() { return ctx.GetCurrent(); }                    \
 							int   GetContextLocation() { return ctx.GetLocation(); }             \
-							void  ContextRealloc() { ctx.Realloc(); }                           \
+							void  ContextRealloc() { ctx.Realloc(); }

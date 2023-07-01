@@ -27,6 +27,7 @@ vec2 rand_2fm(float maxX, float maxY);
 vec2 rand_2fma(float minX, float minY, float additionX, float additionY);
 vec2 rand_2fmm(float minX, float maxX, float minY, float maxY);
 vec2 rand_2fc(float extentX, float extentY);
+vec2 rand_2fcn(float maxRadius);
 vec2 rand_2fn(float radius);
 
 vec2 rand_outside_box(float extentX, float extentY, float paddingX, float paddingY);

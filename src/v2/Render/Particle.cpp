@@ -118,17 +118,32 @@ void ParticleMesh::Update(float dt)
 		data.velocity *= clamp(1.f - dt * data.damping, 0.f, 1.f);
 		data.aVelocity *= clamp(1.f - dt * data.aDamping, 0.f, 1.f);
 
+		float lifeRatio = data.life / data.initialLife;
+
 		// scale
-		if (data.enableScalingByLife)
-			data.scale = lerp(data.initialScale , data.finalScale, 1.f - data.life / data.initialLife);
+		if (data.enableScalingByLife) {
+			float ratio = 1.f - pow(lifeRatio, data.factorScale);
+			data.scale = lerp(data.initialScale , data.finalScale, ratio);
+		}
+
+		// tint
+		if (data.enableTintByLife) {
+			float ratio = 1.f - pow(lifeRatio, data.factorTint);
+			data.tint = lerp(data.initialTint, data.finalTint, ratio);
+		}
 
 		// life
 		data.life -= dt;
 		if (data.life < 0.f)
 		{
+			int newIndex = i;
+
 			data = std::move(m_particles[count - 1]);
 			count -= 1;
 			i--;
+
+			if (data.ifNotNullptrWriteMovedIndexHere)
+				*data.ifNotNullptrWriteMovedIndexHere = newIndex;
 		}
 	}
 }
@@ -176,13 +191,13 @@ void ParticleSystem::Init()
 
 	m_textureCache = TextureCache(2048, 2048, 4);
 
-	TextureCacheImg imgA = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/star.png")));
-	TextureCacheImg img1 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke1.png")));
-	TextureCacheImg img2 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke2.png")));
-	TextureCacheImg img3 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke3.png")));
-	TextureCacheImg img4 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke4.png")));
-	TextureCacheImg img5 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke5.png")));
-	TextureCacheImg img6 = RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke6.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/star.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke1.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke2.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke3.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke4.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke5.png")));
+	RegTexture(Asset::LoadFromFile<Texture>(_a("sprites/smoke6.png")));
 }
 
 int ParticleSystem::GetCount() const

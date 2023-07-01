@@ -11,12 +11,11 @@ struct comparable_func
 	comparable_func() : function() {}
 	comparable_func(const std::function<_t>& function) : function(function) {}
 
-	bool operator==(const comparable_func& other) { return function.template target<_t>() == other.function.template target<_t>(); }
-	bool operator!=(const comparable_func& other) { return !operator==(other); };
+	bool operator==(const comparable_func& other) const { return function.template target<_t>() == other.function.template target<_t>(); }
+	bool operator!=(const comparable_func& other) const { return !operator==(other); };
 
 	template<typename... _args>
-	void operator()(const _args&... args) const
-	{
+	void operator()(const _args&... args) const {
 		function(args...);
 	}
 };
@@ -45,12 +44,9 @@ struct func
 	}
 
 	template<typename... _args>
-	void operator()(const _args&... args)
+	void operator()(const _args&... args) const
 	{
 		for (const auto& function : functions)
-		{
 			function(args...);
-		}
 	}
-
 };

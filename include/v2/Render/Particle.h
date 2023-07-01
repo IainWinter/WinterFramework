@@ -11,6 +11,8 @@
 #include "v2/Render/CameraLens.h"
 #include "v2/Render/TextureCache.h"
 
+
+
 struct ParticleData
 {
 	vec3 position = vec3(0.f);
@@ -22,13 +24,16 @@ struct ParticleData
 	vec2 uvScale = vec2(1.f);
 	vec2 uvOffset = vec2(0.f);
 	
-	// this is an index of cached textures in the particle system
+	// this is an index of cached textures if in the particle system
 	int texture = 1;
 
-	// not passed to GPU
+	// 
+	// below has to be copied to GPU, but is only used for updating on CPU
+	//
 
 	// use this to index into other data arrays to effect the particle
 	int userIndex = 0;
+	int* ifNotNullptrWriteMovedIndexHere = nullptr;
 
 	// would allow all this to be removed
 
@@ -39,11 +44,17 @@ struct ParticleData
 	float aDamping = 0.f;
 
 	float life = 1.f;
+	float initialLife = 0.f;
 
 	bool enableScalingByLife = false;
-	float initialLife = 0.f;
 	vec2 initialScale = vec2(1.f);
 	vec2 finalScale = vec2(0.f);
+	float factorScale = 1.f;
+
+	bool enableTintByLife = false;
+	vec4 initialTint = vec4(1, 1, 1, 1);
+	vec4 finalTint = vec4(1, 1, 1, 0);
+	float factorTint = 1.f;
 
 	bool additiveBlend = false;
 	bool autoOrderZAroundOrigin = true;
@@ -90,6 +101,9 @@ public:
 
 	int GetCount() const;
 	void SetScreen(vec2 min, vec2 max);
+
+	// should remove index function because when particles are
+	// deleted the index is ruined. Only if the index is the last particle
 
 	ParticleData& Get(int index, bool additive);
 

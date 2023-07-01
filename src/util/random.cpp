@@ -1,5 +1,6 @@
 #include "util/random.h"
 #include <random>
+#include <limits.h>
 
 static std::mt19937 g_random;
 static std::uniform_int_distribution<int> dist(0, INT_MAX);
@@ -82,6 +83,10 @@ vec2 rand_2fma(float minX, float additionX, float minY, float additionY) {
 
 vec2 rand_2fc(float extentX, float extentY) {
 	return vec2(rand_fc(extentX), rand_fc(extentY));
+}
+
+vec2 rand_2fcn(float maxRadius) {
+	return rand_2fn(rand_fm(maxRadius));
 }
 
 vec2 rand_2fn(float radius) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <typeinfo> // only for debug with system name
+
 struct SceneUpdateGroupNode;
 struct SceneNode;
 class Scene;
