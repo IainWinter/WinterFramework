@@ -95,16 +95,9 @@ private:
 class EntityResolver
 {
 public:
-    // Generate a new Id and map it to the pointer
     int Map(v2Entity* ptr);
-
-    // Update an id to a new pointer
     void Update(int id, v2Entity* ptr);
-
-    // Get a pointer or nullptr from an id
     v2Entity* Get(int id);
-
-    // Remove a mapping
     void Remove(int id);
 
 private:
