@@ -11,8 +11,6 @@
 #include "v2/Render/CameraLens.h"
 #include "v2/Render/TextureCache.h"
 
-
-
 struct ParticleData
 {
 	vec3 position = vec3(0.f);

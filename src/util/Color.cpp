@@ -23,6 +23,9 @@ vec4 Color::as_v4() const
 	return { rf(), gf(), bf(), af() };
 }
 
+Color::operator vec4() const { return as_v4(); }
+Color::operator u32() const { return as_u32; }
+
 Color Color::rand()
 {
 	return Color::rand(get_rand(255));

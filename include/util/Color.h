@@ -30,7 +30,10 @@ struct Color
 	Color& operator+=(const Color& other);
 
 	vec4 as_v4() const;
-
+    
+    operator vec4() const;
+    operator u32() const;
+    
 	static Color rand();
 	static Color rand(u8 alpha);
 	static Color grey(u8 grey, u8 alpha = 255);

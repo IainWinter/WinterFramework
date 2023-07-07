@@ -94,6 +94,11 @@ bool InputMap::Once(const InputName& button)
 	return true;
 }
 
+bool InputMap::IsUsingController() const
+{
+    return lastInputWasController;
+}
+
 void InputMap::SetActiveMask(const std::string& mask)
 {
     activeMask = mask;
@@ -260,6 +265,9 @@ void InputMap::SetState(int code, float state)
 		log_app("w~Tried to set state of invalid input code. %d -> %f", code, state);
 		return;
 	}
+    
+    lastInputWasController = GetInputCode(ControllerInput::cBUTTON_A) >= code
+                          && GetInputCode(ControllerInput::cAXIS_MAX) < code;
 
     State[code] = { state, activeFrame };
 }

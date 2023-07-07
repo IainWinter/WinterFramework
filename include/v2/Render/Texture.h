@@ -165,5 +165,5 @@ private:
 
 v2Texture wTextureCreate(const char* filepath, Access access);
 
-// this leaks memory
-TextureView wTextureLoadView(const char* filepath);
+TextureView v2LoadTextureFromFile(const char* filepath);
+void v2FreeTexture(TextureView* view);

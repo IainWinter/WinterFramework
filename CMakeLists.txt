@@ -6,16 +6,6 @@ cmake_minimum_required(VERSION 3.12)
 
 set(CMAKE_CXX_STANDARD 20)
 
-set(ASSIMP_NO_EXPORT ON)
-set(ASSIMP_BUILD_TESTS OFF)
-set(ASSIMP_INSTALL_PDB OFF)
-set(ASSIMP_INSTALL OFF)
-set(LIBRARY_SUFFIX "")
-set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
-set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
-set(ASSIMP_BUILD_GLTF_IMPORTER TRUE)
-add_subdirectory(vendor/fullsrc/assimp vendor/assimp)
-
 set(SDL2_DISABLE_INSTALL ON)
 set(SDL2_DISABLE_SDL2MAIN ON)
 set(SDL2_DISABLE_UNINSTALL ON)
@@ -81,7 +71,6 @@ add_library(WinterFramework STATIC ${sources})
 target_link_directories(WinterFramework PRIVATE ${VENDOR_PREBUILT_DIR})
 
 target_link_libraries(WinterFramework
-	PRIVATE assimp
 	PRIVATE box2d
 	PRIVATE SDL2
 	PRIVATE ImGui
@@ -105,7 +94,6 @@ target_include_directories(WinterFramework
 
 	PUBLIC vendor/public/include
 
-	PRIVATE vendor/fullsrc/assimp/include
 	PUBLIC vendor/fullsrc/box2d/include
 	PUBLIC vendor/fullsrc/SDL2/include
 	PUBLIC vendor/fullsrc/ImGui/include

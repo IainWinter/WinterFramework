@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 // Goal of this system is to allow the game state to just be a struct and have the
 // data/entities opt into the tracking system themselves.
@@ -107,6 +108,504 @@ private:
 
 // Get an entity pointer or nullptr from an id
 v2Entity* gResolveEntity(int id);
+
+// A super simple vector-like storage which forces the move constructor
+// to be used. Also indexed on the Id of each entity.
+// This kinda sucks, should use a sprase set
+template<typename _t>
+class v2MoveList {
+public:
+    v2MoveList() {
+        data = (_t*)malloc(capacity * sizeof(_t));
+    }
+
+    ~v2MoveList() {
+        clear();
+    }
+
+    _t* at(int id) {
+        int index = find_index(id);
+        return &data[index];
+    }
+
+    void add(_t& item) {
+        if (size >= capacity)
+            resize(capacity * 2 + 1);
+
+        new (data + size) _t(std::move(item));
+        size += 1;
+    }
+
+    bool contains(int id) const {
+        return find_index(id) < size;
+    }
+
+    void remove(int id) {
+        int index = find_index(id);
+
+        if (index >= size)
+        {
+            //log_entity("e~Tried to remove invalid entity %d", id);
+            return;
+        }
+
+        data[index].Remove();
+        data[index].~_t();
+
+        if (size > 1 && index != size - 1)
+            new (data + index) _t(std::move(data[size - 1]));
+
+        size -= 1;
+
+        if (size <= capacity / 4 && capacity > 4)
+            resize(capacity / 4);
+    }
+
+    void clear() {
+        for (int i = 0; i < size; i++)
+            data[i].~_t();
+
+        free(data);
+        data = nullptr;
+        capacity = 0;
+        size = 0;
+    }
+
+    int count() const {
+        return size;
+    }
+
+    _t* begin() { return data; }
+    _t* end() { return data + size; }
+
+    const _t* begin() const { return data; }
+    const _t* end() const { return data + size; }
+
+private:
+    void resize(int new_size) {
+        capacity = new_size;
+
+        // resize
+        _t* new_data = (_t*)malloc(capacity * sizeof(_t));
+        for (int i = 0; i < size; i++)
+            new (&new_data[i]) _t(std::move(data[i]));
+
+        free(data);
+        data = new_data;
+
+        //log_entity("d~Resized %s to %d", typeid(_t).name(), new_size);
+    }
+
+    int find_index(int id) const {
+        int index = 0;
+        for (; index < size; index++)
+            if (data[index].Id() == id)
+                break;
+
+        return index;
+    }
+
+private:
+    int capacity = 1;
+    int growth = 2;
+
+    int size = 0;
+    _t* data = nullptr;
+};
+
+class v2BasicEntityList
+{
+public:
+    struct v2BasicEntityListIterator
+    {
+        v2Entity* pointer;
+        int size;
+
+        v2BasicEntityListIterator& operator++() {
+            pointer = (v2Entity*) ((char*)pointer + size);
+            return *this;
+        }
+
+        v2Entity& operator*() {
+            return *pointer;
+        }
+
+        v2Entity* operator->() {
+            return pointer;
+        }
+
+        bool operator==(const v2BasicEntityListIterator& other) const {
+            return pointer == other.pointer;
+        }
+
+        bool operator!=(const v2BasicEntityListIterator& other) const {
+            return pointer != other.pointer;
+        }
+    };
+
+    virtual bool contains(int id) const = 0;
+    virtual int count() const = 0;
+
+    virtual void add_default() = 0;
+    virtual void remove(int id) = 0;
+    virtual void commit() = 0;
+    virtual void clear() = 0;
+
+    virtual v2BasicEntityListIterator basic_begin() = 0;
+    virtual v2BasicEntityListIterator basic_end() = 0;
+    
+    bool archetype_contains_subset(const std::unordered_set<size_t>& subset) const {
+        for (size_t c : subset)
+            if (archetype.count(c) == 0)
+                return false;
+        return true;
+    }
+
+protected:
+    std::unordered_set<size_t> archetype;
+
+public:
+    const char* typeName;
+};
+
+// Viewing entities involves copying all points to their data
+// into a list one time per frame
+class v2BasicEntityView
+{
+public:
+    template<typename... _c>
+    struct v2BasicEntityViewIterator
+    {
+        typename std::vector<std::tuple<_c*...>>::iterator iterator;
+
+        v2BasicEntityViewIterator& operator++() {
+            ++iterator;
+            return *this;
+        }
+
+        bool operator==(const v2BasicEntityViewIterator& other) const {
+            return iterator == other.iterator;
+        }
+
+        bool operator!=(const v2BasicEntityViewIterator& other) const {
+            return iterator != other.iterator;
+        }
+
+        std::tuple<_c&...> operator*() {
+            return ptrs_to_refs(*iterator, std::make_index_sequence<sizeof...(_c)>{});
+        }
+
+    private:
+        template<size_t... I>
+        std::tuple<_c&...> ptrs_to_refs(std::tuple<_c*...>& c, std::index_sequence<I...>) {
+            return std::tie(*std::get<I>(c)...);
+        }
+    };
+
+    virtual int count() const = 0;
+
+    virtual void reg(v2Entity& entity) = 0;
+    virtual void clear() = 0;
+
+    const std::unordered_set<size_t>& get_components() const {
+        return components;
+    }
+
+    void reg_list(v2BasicEntityList& list)
+    {
+        auto end = list.basic_end();
+        for (auto itr = list.basic_begin(); itr != end; ++itr)
+            reg(*itr);
+    }
+
+protected:
+    std::unordered_set<size_t> components;
+};
+
+// Allow a free stored entity to be viewed and allows the changing
+// of the archetype everytime reg/move is called
+template<typename _t>
+class v2EntitySingleton : public v2BasicEntityList
+{
+public:
+    v2EntitySingleton() {
+        entity = nullptr;
+        has_move = false;
+        has_remove = false;
+        typeName = typeid(_t).name();
+    }
+
+    void reg(_t* entity) {
+        this->entity = entity;
+        size = 1;
+
+        archetype = entity->GetArchetype();
+    }
+
+    void move(_t& entity) {
+        move_entity = std::move(entity);
+        has_move = true;
+    }
+
+    int count() const override {
+        return size;
+    }
+
+    bool contains(int id) const override {
+        return entity->Id() == id;
+    }
+
+    void add_default() override {
+        _t t{};
+        move(t);
+    }
+
+    void remove() {
+        remove(0);
+    }
+
+    // id is not considered
+    void remove(int id) override {
+        has_remove = true;
+    }
+
+    void commit() override {
+        if (!entity)
+            return;
+        
+        if (has_remove) {
+            on_remove_func(*entity);
+            entity->Remove();
+            *entity = {};
+            size = 0;
+            has_remove = false;
+        }
+
+        if (has_move) {
+            entity->Remove();
+            *entity = std::move(move_entity);
+            size = 1;
+            has_move = false;
+
+            archetype = entity->GetArchetype(); // change the archetype
+        }
+    }
+
+    void clear() override {
+        if (entity)
+            *entity = {};
+        
+        move_entity = {};
+        has_move = false;
+        has_remove = false;
+        size = 0;
+    }
+
+    template<typename _callable>
+    void on_remove(_callable&& func) {
+        on_remove_func = func;
+    }
+
+    _t* begin() { return entity; }
+    _t* end() { return entity + size; }
+
+    v2BasicEntityListIterator basic_begin() override { return v2BasicEntityListIterator{ begin(), sizeof(_t)}; }
+    v2BasicEntityListIterator basic_end() override { return v2BasicEntityListIterator{ end(), sizeof(_t)}; }
+
+private:
+    _t* entity;
+    _t move_entity;
+    bool has_move;
+    bool has_remove;
+    int size = 0;
+
+    std::function<void(_t&)> on_remove_func;
+};
+
+// Store entities of a given type in a tight array
+template<typename _t>
+class v2EntityList : public v2BasicEntityList
+{
+public:
+    v2EntityList() {
+        archetype = _t().GetArchetype(); // annoying but need to call Bind, which cannot be static
+        typeName = typeid(_t).name();
+    }
+
+    void move(_t& entity) {
+        add_list.emplace_back(std::move(entity));
+    }
+
+    int count() const override {
+        return data.count();
+    }
+
+    bool contains(int id) const override {
+        return data.contains(id);
+    }
+
+    void add_default() override {
+        _t t{};
+        move(t);
+    }
+
+    void remove(int id) override {
+        remove_list.push_back(id);
+    }
+    
+    void commit() override {
+        for (int id : remove_list)
+            data.remove(id);
+
+        for (_t& add : add_list)
+            data.add(add);
+
+        add_list.clear();
+        remove_list.clear();
+    }
+
+    void clear() override {
+        data.clear();
+        add_list.clear();
+        remove_list.clear();
+    }
+
+    // allow iteration
+    _t* begin() { return data.begin(); }
+    _t* end() { return data.end(); }
+
+    const _t* begin() const { return data.begin(); }
+    const _t* end() const { return data.end(); }
+
+    v2BasicEntityListIterator basic_begin() override { return v2BasicEntityListIterator{ begin(), sizeof(_t) }; }
+    v2BasicEntityListIterator basic_end() override { return v2BasicEntityListIterator{ end(), sizeof(_t) }; }
+
+private:
+    v2MoveList<_t> data;
+
+    std::vector<_t> add_list;
+    std::vector<int> remove_list;
+};
+
+// Returns a tuple of components for each entity
+template<typename... _c>
+class v2EntityView : public v2BasicEntityView
+{
+public:
+    using v2EntityViewIterator = v2BasicEntityViewIterator<_c...>;
+
+public:
+    v2EntityView() {
+        components = { typeid(_c).hash_code()... };
+    }
+
+    int count() const override {
+        return ptrs.size();
+    }
+
+    void reg(v2Entity& entity) override {
+        ptrs.push_back({ &entity.Get<_c>() ... });
+    }
+
+    void clear() override {
+        ptrs.clear();
+    }
+
+    v2EntityViewIterator begin() { return { ptrs.begin() }; }
+    v2EntityViewIterator end() { return { ptrs.end() }; }
+
+private:
+    std::vector<std::tuple<_c*...>> ptrs;
+};
+
+// Returns a v2Entity along with its components
+template<typename... _c>
+class v2EntityView<v2Entity, _c...> : public v2BasicEntityView
+{
+public:
+    using v2EntityViewIterator = v2BasicEntityViewIterator<v2Entity, _c...>;
+
+public:
+    v2EntityView() {
+        components = { typeid(_c).hash_code()... };
+    }
+
+    int count() const override {
+        return ptrs.size();
+    }
+
+    void reg(v2Entity& entity) override {
+        ptrs.push_back({ &entity, &entity.Get<_c>() ... });
+    }
+
+    void clear() override {
+        ptrs.clear();
+    }
+
+    // find if an entity is alive without knowing its type
+    // this can be less expensive than searching the entire scene
+    // if the view only iterates a small subset of entities
+    bool contains(int id) const {
+        for (const auto& tpl : ptrs)
+            if (std::get<0>(tpl)->Id() == id)
+                return true;
+        return false;
+    }
+
+    v2EntityViewIterator begin() { return { ptrs.begin() }; }
+    v2EntityViewIterator end() { return { ptrs.end() }; }
+
+private:
+    std::vector<std::tuple<v2Entity*, _c*...>> ptrs;
+};
+
+// Inherit from this to store scene data and register lists and views
+class v2EntitySceneData
+{
+public:
+    int count() const {
+        int size = 0;
+        for (v2BasicEntityList* list : lists)
+            size += list->count();
+
+        return size;
+    }
+
+    // if the entity type is unknown, try to remove from all lists
+    // Could store list in id if needed
+    void remove(int id) {
+        for (v2BasicEntityList* list : lists) {
+            if (list->contains(id)) {
+                list->remove(id);
+                break;
+            }
+        }
+    }
+
+    void commit() {
+        for (v2BasicEntityList* list : lists)
+            list->commit();
+
+        for (v2BasicEntityView* view : views)
+        {
+            view->clear();
+            for (v2BasicEntityList* list : lists)
+                if (list->archetype_contains_subset(view->get_components()))
+                    view->reg_list(*list);
+        }
+    }
+
+    void clear() {
+        for (v2BasicEntityList* list : lists)
+            list->clear();
+
+        commit();
+    }
+
+public:
+    std::vector<v2BasicEntityList*> lists;
+    std::vector<v2BasicEntityView*> views;
+};
 
 //
 //  Template implementation

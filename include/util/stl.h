@@ -5,11 +5,7 @@
 #include <tuple>
 #include <type_traits>
 
-template<typename _t>
-_t get_rand(const std::vector<_t>& x)
-{
-    return x.size() == 0 ? _t() : x[get_rand((int)x.size())];
-}
+#include "util/math.h"
 
 template<typename _t, typename _int_t>
 void pop_erase(std::vector<_t>& list, _int_t* index)

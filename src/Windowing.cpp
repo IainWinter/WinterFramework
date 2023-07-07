@@ -520,6 +520,9 @@ void Window::Init_Imgui(const char* glsl_version)
 	ImPlot::CreateContext();
 	ImGui::StyleColorsDark();
     
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    
 	ImGui_ImplSDL2_InitForOpenGL(m_window, m_opengl);
 	ImGui_ImplOpenGL3_Init(glsl_version);
 

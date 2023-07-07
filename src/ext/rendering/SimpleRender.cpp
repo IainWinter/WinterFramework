@@ -125,7 +125,7 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 		
 	for (auto [entity, transform, sprite] : world.QueryWithEntity<Transform2D, Sprite>())
 	{
-		render.SubmitSprite(transform, sprite.source, sprite.uvOffset, sprite.uvScale, TintToDebugMode(entity, sprite));
+		render.SubmitTexture(transform, sprite.source, sprite.uvOffset, sprite.uvScale, TintToDebugMode(entity, sprite));
 	}
     
 	render.Draw(camera, drawEntityIdMode == ONLY);
@@ -144,7 +144,7 @@ void RenderSprites(BatchSpriteRenderer& render, const Camera& camera, EntityWorl
 			a<Texture>& source = atlas->source;
 			r<Texture> s = source;
 
-			render.SubmitSprite(t, s, uv.uvOffset, uv.uvScale, p.GetTint());
+			render.SubmitTexture(t, s, uv.uvOffset, uv.uvScale, p.GetTint());
 		}
 
 		else

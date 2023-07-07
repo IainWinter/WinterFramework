@@ -69,6 +69,7 @@ vec2 limit(const vec2& x, float max);
 vec2 turn_towards(const vec2& current, const vec2& target, float strength);
 
 vec2 on_unit(float a);
+vec3 on_unit3(float phi, float theta);
 vec2 right(vec2 v);
 vec2 left(vec2 v);
 

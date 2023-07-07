@@ -47,12 +47,17 @@ TextureCacheImg TextureCache::Add(char* pixels, int width, int height, int chann
     return img;
 }
 
+TextureCacheImg TextureCache::AddView(const TextureView& view)
+{
+    return Add((char*)view.buffer, view.layout.width, view.layout.height, view.layout.NumberOfBytesPerPixel());
+}
+
 void TextureCache::SendToDevice() {
     cache->SendToDevice();
 }
 
-int TextureCache::GetTextureHandle() const {
-    return cache->DeviceHandle();
+r<Texture> TextureCache::GetTexture() const {
+    return cache;
 }
 
 TextureCache::Node* TextureCache::Node::AddRect(int width, int height)

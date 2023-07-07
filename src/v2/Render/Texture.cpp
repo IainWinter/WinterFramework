@@ -348,19 +348,25 @@ void v2Texture::_sync(Access access)
 
 v2Texture wTextureCreate(const char* filepath, Access access)
 {
-	TextureView view = wTextureLoadView(filepath);
+	TextureView view = v2LoadTextureFromFile(filepath);
 	return v2Texture(view, access);
 }
 
-TextureView wTextureLoadView(const char* filepath)
+
+TextureView v2LoadTextureFromFile(const char* filepath)
 {
-	RawImageData raw = io_LoadImageFromFile(filepath);
+    RawImageData raw = io_LoadImageFromFile(filepath);
 
-	TextureLayout layout;
-	layout.width = raw.width;
-	layout.height = raw.height;
-	layout.depth = 1;
-	layout.format = (TextureFormat)raw.channels;
+    TextureLayout layout;
+    layout.width = raw.width;
+    layout.height = raw.height;
+    layout.depth = 1;
+    layout.format = (TextureFormat)raw.channels;
 
-	return TextureView((u8*)raw.buffer, layout);
+    return TextureView((u8*)raw.buffer, layout);
+}
+
+void v2FreeTexture(TextureView* view)
+{
+    _texture_host_free(view);
 }

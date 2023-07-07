@@ -27,47 +27,70 @@ void BatchSpriteRenderer::SetZOffsetPerDraw(float zOffsetPerDraw)
 	this->zOffsetPerDraw = zOffsetPerDraw;
 }
 
-void BatchSpriteRenderer::SubmitColor(const Transform2D& transform, const Color& tint)
+void BatchSpriteRenderer::SubmitColor(const Transform2D& transform, Color tint)
 {
-	SubmitSprite(transform, nullptr, vec2(0.f), vec2(0.f), tint);
+	SubmitTexture(transform, nullptr, vec2(0.f), vec2(0.f), tint);
 }
 
-void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const Sprite& sprite)
+void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, Sprite& sprite)
 {
-	SubmitSprite(transform, sprite.source, sprite.uvOffset, sprite.uvScale, sprite.tint);
+	SubmitTexture(transform, sprite.source, sprite.uvOffset, sprite.uvScale, sprite.tint);
 }
 
-void BatchSpriteRenderer::SubmitParticle(const Transform2D& transform, const Particle& particle)
+void BatchSpriteRenderer::SubmitStaticSprite(const Transform2D& transform, SpriteStaticHandle& sprite)
+{
+    SubmitHandle(transform, sprite.sourceHandle, sprite.uvOffset, sprite.uvScale, sprite.tint);
+}
+
+void BatchSpriteRenderer::SubmitParticle(const Transform2D& transform, Particle& particle)
 {
 	if (particle.HasAtlas())
 	{
 		const TextureAtlas::Bounds& bounds = particle.GetCurrentFrameUV();
-		SubmitSprite(transform, particle.atlas->source, bounds.uvOffset, bounds.uvScale, particle.GetTint());
+		SubmitTexture(transform, particle.atlas->source, bounds.uvOffset, bounds.uvScale, particle.GetTint());
 	}
 
 	else
 	{
-		SubmitSprite(transform, nullptr, vec2(0.f), vec2(1.f), particle.GetTint());
+		SubmitTexture(transform, nullptr, vec2(0.f), vec2(1.f), particle.GetTint());
 	}
 }
 
-void BatchSpriteRenderer::SubmitSprite(const Transform2D& transform, const r<Texture>& texture, const vec2& uvOffset, const vec2& uvScale, const Color& tint)
+void BatchSpriteRenderer::SubmitTexture(const Transform2D& transform, r<Texture> texture, vec2 uvOffset, vec2 uvScale, Color tint)
 {
-	// could compress to: 
-	// uv (4 floats) 
-	// model (scale 2 float, pos 3 floats, rot 1 float) 6 floats
-	// tint (1 uint32) 
+    int handle = 0;
+    
+    if (texture) {
+        if (texture->OnHost())
+            texture->SendToDevice();
+        
+        handle = texture->DeviceHandle();
+    }
+    
+    else {
+        handle = m_default->DeviceHandle();
+    }
+    
+    SubmitHandle(transform, handle, uvOffset, uvScale, tint);
+}
 
-	mat4 world = transform.World();
-	world[3][2] += z;
+void BatchSpriteRenderer::SubmitHandle(const Transform2D& transform, int handle, vec2 uvOffset, vec2 uvScale, Color tint)
+{
+    // could compress to:
+    // uv (4 floats)
+    // model (scale 2 float, pos 3 floats, rot 1 float) 6 floats
+    // tint (1 uint32)
 
-	// add a little offset to stop z fighting
-	// gets a little wonky with many particles
-	z += zOffsetPerDraw;
+    mat4 world = transform.World();
+    world[3][2] += z;
 
-	vec4 uv = vec4(uvOffset, uvScale);
+    // add a little offset to stop z fighting
+    // gets a little wonky with many particles
+    z += zOffsetPerDraw;
 
-	m_batches[texture].add(world, uv, tint.as_v4());
+    vec4 uv = vec4(uvOffset, uvScale);
+    
+    m_batches[handle].add(world, uv, tint.as_v4());
 }
 
 void BatchSpriteRenderer::InitProgram()
@@ -126,9 +149,11 @@ void BatchSpriteRenderer::InitProgram()
 
 	m_program.Add(ShaderProgram::sVertex,   source_vert);
 	m_program.Add(ShaderProgram::sFragment, source_frag);
-
+    m_program.SendToDevice();
+    
 	m_default = mkr<Texture>(Texture(5, 5, Texture::uRGBA));
 	m_default->ClearHost(Color(255, 255, 255, 255));
+    m_default->SendToDevice();
 }
 
 void BatchSpriteRenderer::SetProgram(const mat4& proj, const mat4& view, bool mixTint)
@@ -139,9 +164,9 @@ void BatchSpriteRenderer::SetProgram(const mat4& proj, const mat4& view, bool mi
 	m_program.Set("mixTint", (float)mixTint);
 }
 
-void BatchSpriteRenderer::DrawBatch(r<Texture> texture, BatchData& batch)
+void BatchSpriteRenderer::DrawBatch(int texture, BatchData& batch)
 {
-	if (texture) m_program.Set("sprite", *texture);
+	if (texture) m_program.SetTexture("sprite", texture);
 	else         m_program.Set("sprite", *m_default);
 
 	batch.finalize();

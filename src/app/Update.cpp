@@ -150,6 +150,11 @@ float SystemBase::GetRawState(InputCode code)
 	return m_scene->app->input.GetRawState(code);
 }
 
+bool SystemBase::IsUsingController()
+{
+    return m_scene->app->input.IsUsingController();
+}
+
 //EntityWorld& SystemBase::_world()
 //{
 //	return m_scene->entities;

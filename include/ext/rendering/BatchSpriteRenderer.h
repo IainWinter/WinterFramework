@@ -25,25 +25,13 @@ public:
 
 	void SetZOffsetPerDraw(float zOffsetPerDraw);
 
-	void SubmitColor(
-		const Transform2D& transform,
-		const Color& tint);
-
-	void SubmitSprite(
-		const Transform2D& transform,
-		const Sprite& sprite);
-
-	void SubmitParticle(
-		const Transform2D& transform,
-		const Particle& particle);
-
-	void SubmitSprite(
-		const Transform2D& transform, 
-		const r<Texture>& texture,
-		const vec2& uvOffset = vec2(0.f),
-		const vec2& uvScale  = vec2(1.f),
-		const Color& tint    = Color());
-	
+	void SubmitColor(const Transform2D& transform, Color tint);
+	void SubmitSprite(const Transform2D& transform, Sprite& sprite);
+    void SubmitStaticSprite(const Transform2D& transform, SpriteStaticHandle& sprite);
+	void SubmitParticle(const Transform2D& transform, Particle& particle);
+	void SubmitTexture(const Transform2D& transform, r<Texture> texture, vec2 uvOffset = vec2(0.f), vec2 uvScale = vec2(1.f), Color tint = Color());
+    void SubmitHandle(const Transform2D& transform, int handle, vec2 uvOffset = vec2(0.f), vec2 uvScale = vec2(1.f), Color tint = Color());
+    
 private:
 	ShaderProgram m_program;
 
@@ -75,10 +63,10 @@ private:
 		void finalize();
 	};
 
-	std::unordered_map<r<Texture>, BatchData> m_batches;
+	std::unordered_map<int, BatchData> m_batches;
 
 	void SetProgram(const mat4& proj, const mat4& view, bool mixTint);
-	void DrawBatch(r<Texture> texture, BatchData& batch);
+	void DrawBatch(int handle, BatchData& batch);
     
 
 public:

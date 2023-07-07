@@ -256,6 +256,11 @@ public:
     bool Once(const InputName& button);
 
     /**
+    * Return true if the last input set was a controller
+    */
+    bool IsUsingController() const;
+    
+    /**
     * Set the global active mask. See InputAxisSettings::mask
     */
     void SetActiveMask(const std::string& mask);
@@ -277,9 +282,9 @@ public:
     * Update the states for falloff
     */
     void UpdateStates(float deltaTime);
-
+    
     /**
-    *     Internal
+    * Internal
     */
 
     void SetActiveFrame(int frame);
@@ -327,12 +332,11 @@ private:
 	vec2 ViewportMin;
 	vec2 ViewportSize;
 
-	// active mask
 	std::string activeMask;
-
-    // active frame
     int activeFrame;
-
+    
+    bool lastInputWasController;
+    
     // friend so these can access Mapping, seems fishy
     friend class InputAxisBuilder;
     friend class AxisGroupBuilder;

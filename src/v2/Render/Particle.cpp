@@ -34,7 +34,6 @@ ParticleMesh::ParticleMesh(int fixedCount)
 	gl(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexEBO));
 	gl(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(index), index, GL_STATIC_DRAW));
 
-	m_particleInstVBO;
 	gl(glGenBuffers(1, &m_particleInstVBO));
 	gl(glBindBuffer(GL_ARRAY_BUFFER, m_particleInstVBO));
 	gl(glBufferData(GL_ARRAY_BUFFER, sizeof(ParticleData) * fixedCount, m_particles, GL_DYNAMIC_DRAW));
@@ -256,8 +255,7 @@ void ParticleSystem::Draw(const CameraLens& lens)
 	m_shader.Use();
 	m_shader.Set("view", lens.GetViewMatrix());
 	m_shader.Set("proj", lens.GetProjectionMatrix());
-
-	m_shader.SetTexture("tex_sprite_sheet", m_textureCache.GetTextureHandle());
+	m_shader.Set("tex_sprite_sheet", m_textureCache.GetTexture());
 
 	gl(glEnable(GL_DEPTH_TEST));
 

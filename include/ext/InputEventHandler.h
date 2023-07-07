@@ -5,11 +5,6 @@
 
 class InputEventHandler
 {
-private:
-    EventQueue* m_queue;
-    InputMap* m_map;
-    int m_frame = 0;
-
 public:
     InputEventHandler();
 
@@ -25,4 +20,9 @@ public:
 
 private:
     void HandleInputMapping(int code, float state);
+    
+private:
+    EventQueue* m_queue;
+    InputMap* m_map;
+    int m_frame = 0;
 };

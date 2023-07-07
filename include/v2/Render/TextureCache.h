@@ -1,6 +1,7 @@
 #pragma once
 
-//#include "Texture.h"
+//#include "Texture.h"  // should use this 
+#include "TextureView.h"
 #include "Rendering.h"
 #include "util/math.h"
 #include <vector>
@@ -43,9 +44,10 @@ public:
 	TextureCache(int maxWidth, int maxHeight, int channels);
 
 	TextureCacheImg Add(char* pixels, int width, int height, int channels);
-
+    TextureCacheImg AddView(const TextureView& view);
+    
 	void SendToDevice();
-	int GetTextureHandle() const;
+	r<Texture> GetTexture() const;
 
 private:
 	r<Texture> cache;
