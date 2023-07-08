@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <functional>
 
 // Goal of this system is to allow the game state to just be a struct and have the
 // data/entities opt into the tracking system themselves.
