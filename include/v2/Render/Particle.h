@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/math.h"
+#include "util/random.h"
 #include "util/Color.h"
 
 // use old system for now
@@ -10,6 +11,7 @@
 
 #include "v2/Render/CameraLens.h"
 #include "v2/Render/TextureCache.h"
+
 
 struct ParticleData
 {
@@ -57,6 +59,47 @@ struct ParticleData
 	bool additiveBlend = false;
 	bool autoOrderZAroundOrigin = true;
 };
+
+struct ParticleSpawn
+{
+	constexpr static int nameLengthInBytes = 64;
+	char name[nameLengthInBytes] = { 'U', 'n', 't', 'i', 't', 'l', 'e', 'd', '\0' };
+
+	ParticleData particle;
+
+	RandomFloat3 position;
+	RandomFloat3 rotation;
+	RandomFloat2 scale;
+
+	RandomFloat4 tint;
+	RandomInt texture;
+
+	RandomFloat3 velocity;
+	RandomFloat damping;
+
+	RandomFloat3 aVelocity;
+	RandomFloat aDamping;
+
+	RandomFloat life;
+
+	RandomBool enableScalingByLife;
+	RandomFloat2 finalScale;
+	RandomFloat factorScale;
+
+	RandomBool enableTintByLife;
+	RandomFloat4 finalTint;
+	RandomFloat factorTint;
+
+	RandomBool additiveBlend;
+
+	RandomInt numberPerSpawn;
+	float numberPerSecond;
+	float timer;
+};
+
+void particle_RegisterMetaTypes();
+void particle_SaveSpawn(const ParticleSpawn& spawn, const std::string& filepath);
+ParticleSpawn particle_LoadSpawn(const std::string& filepath);
 
 class ParticleMesh
 {

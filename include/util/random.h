@@ -86,25 +86,25 @@ struct RandomFloat {
     float get() const { return rand_fmm(min, max); }
 };
 
-struct RandomVec2 {
+struct RandomFloat2 {
     vec2 min;
     vec2 max;
     operator vec2() const { return get(); }
     vec2 get() const { return rand_2fmm(min, max); }
 };
 
-struct RandomVec3 {
+struct RandomFloat3 {
     vec3 min;
     vec3 max;
     operator vec3() const { return get(); }
     vec3 get() const { return rand_3fmm(min, max); }
 };
 
-struct RandomVec4 {
+struct RandomFloat4 {
     vec4 min;
     vec4 max;
-    operator vec3() const { return get(); }
-    vec3 get() const { return vec4(rand_2fmm(min.x, min.y, max.x, max.y), rand_2fmm(min.z, min.w, max.z, max.w)); }
+    operator vec4() const { return get(); }
+    vec4 get() const { return vec4(rand_2fmm(min.x, min.y, max.x, max.y), rand_2fmm(min.z, min.w, max.z, max.w)); }
 };
 
 // maybe put in another file

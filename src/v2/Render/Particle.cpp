@@ -8,6 +8,87 @@
 
 #include "ext/AssetStore.h"
 
+#include "ext/serial/serial.h"
+#include "ext/serial/serial_json.h"
+#include <fstream>
+
+void particle_RegisterMetaTypes()
+{
+	meta::describe<RandomBool>().name("RandomBool").member<&RandomBool::odds>("odds");
+	meta::describe<RandomInt>().name("RandomInt").member<&RandomInt::min>("min").member<&RandomInt::max>("max");
+	meta::describe<RandomFloat>().name("RandomFloat").member<&RandomFloat::min>("min").member<&RandomFloat::max>("max");
+	meta::describe<RandomFloat2>().name("RandomFloat2").member<&RandomFloat2::min>("min").member<&RandomFloat2::max>("max");
+	meta::describe<RandomFloat3>().name("RandomFloat3").member<&RandomFloat3::min>("min").member<&RandomFloat3::max>("max");
+	meta::describe<RandomFloat4>().name("RandomFloat4").member<&RandomFloat4::min>("min").member<&RandomFloat4::max>("max");
+
+	meta::describe<ParticleData>()
+		.name("ParticleData")
+		.member<&ParticleData::position>("position")
+		.member<&ParticleData::rotation>("rotation")
+		.member<&ParticleData::scale>("scale")
+		.member<&ParticleData::tint>("tint")
+		.member<&ParticleData::uvScale>("uvScale")
+		.member<&ParticleData::uvOffset>("uvOffset")
+		.member<&ParticleData::texture>("texture")
+		.member<&ParticleData::userIndex>("userIndex")
+		.member<&ParticleData::velocity>("velocity")
+		.member<&ParticleData::damping>("damping")
+		.member<&ParticleData::aVelocity>("aVelocity")
+		.member<&ParticleData::aDamping>("aDamping")
+		.member<&ParticleData::life>("life")
+		.member<&ParticleData::enableScalingByLife>("enableScalingByLife")
+		.member<&ParticleData::finalScale>("finalScale")
+		.member<&ParticleData::factorScale>("factorScale")
+		.member<&ParticleData::enableTintByLife>("enableTintByLife")
+		.member<&ParticleData::finalTint>("finalTint")
+		.member<&ParticleData::factorTint>("factorTint")
+		.member<&ParticleData::additiveBlend>("additiveBlend")
+		.member<&ParticleData::autoOrderZAroundOrigin>("autoOrderZAroundOrigin");
+
+	meta::describe<ParticleSpawn>()
+		.name("ParticleSpawn")
+		.member<&ParticleSpawn::particle>("particle")
+		.member<&ParticleSpawn::position>("position")
+		.member<&ParticleSpawn::rotation>("rotation")
+		.member<&ParticleSpawn::scale>("scale")
+		.member<&ParticleSpawn::tint>("tint")
+		.member<&ParticleSpawn::texture>("texture")
+		.member<&ParticleSpawn::velocity>("velocity")
+		.member<&ParticleSpawn::damping>("damping")
+		.member<&ParticleSpawn::aVelocity>("aVelocity")
+		.member<&ParticleSpawn::aDamping>("aDamping")
+		.member<&ParticleSpawn::life>("life")
+		.member<&ParticleSpawn::enableScalingByLife>("enableScalingByLife")
+		.member<&ParticleSpawn::finalScale>("finalScale")
+		.member<&ParticleSpawn::factorScale>("factorScale")
+		.member<&ParticleSpawn::enableTintByLife>("enableTintByLife")
+		.member<&ParticleSpawn::finalTint>("finalTint")
+		.member<&ParticleSpawn::factorTint>("factorTint")
+		.member<&ParticleSpawn::additiveBlend>("additiveBlend")
+		.member<&ParticleSpawn::numberPerSpawn>("numberPerSpawn")
+		.member<&ParticleSpawn::numberPerSecond>("numberPerSecond");
+}
+
+void particle_SaveSpawn(const ParticleSpawn& spawn, const std::string& filepath)
+{
+	std::filesystem::create_directories(std::filesystem::path(filepath).parent_path());
+
+	std::ofstream out(filepath);
+	if (out.is_open())
+		json_writer(out).write(spawn);
+}
+
+ParticleSpawn particle_LoadSpawn(const std::string& filepath)
+{
+	ParticleSpawn spawn;
+
+	std::ifstream in(filepath);
+	if (in.is_open())
+		json_reader(in).read(spawn);
+
+	return spawn;
+}
+
 ParticleMesh::ParticleMesh(int fixedCount)
 {
 	m_particles = new ParticleData[fixedCount];
