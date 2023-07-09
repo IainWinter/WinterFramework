@@ -42,7 +42,7 @@ struct ParticleData
 	float aDamping = 0.f;
 
 	float life = 1.f;
-	float initialLife = 0.f;
+	float initialLife = 1.f;
 
 	bool enableScalingByLife = false;
 	vec2 initialScale = vec2(1.f);

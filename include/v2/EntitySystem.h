@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <functional>
 
 // Goal of this system is to allow the game state to just be a struct and have the
 // data/entities opt into the tracking system themselves.
@@ -338,9 +337,7 @@ public:
 
     void reg(_t* entity) {
         this->entity = entity;
-        size = 1;
-
-        archetype = entity->GetArchetype();
+        // don't set archetype or size, only register the memory pointer
     }
 
     void move(_t& entity) {

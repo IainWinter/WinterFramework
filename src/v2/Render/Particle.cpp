@@ -230,13 +230,16 @@ int ParticleSystem::Emit(const ParticleData& particle)
 
 int ParticleSystem::EmitAllowOutsideBounds(const ParticleData& particle)
 {
-	ParticleData mapUvs = particle; // this sucks...
-	mapUvs.uvOffset = m_textureCacheImgs[particle.texture].offset;
-	mapUvs.uvScale = m_textureCacheImgs[particle.texture].scale;
-
-	return mapUvs.additiveBlend 
-		? m_additiveBlend.Emit(mapUvs)
-		: m_noBlend.Emit(mapUvs);
+	ParticleData p = particle; // this sucks...
+	p.uvOffset = m_textureCacheImgs[particle.texture].offset;
+	p.uvScale = m_textureCacheImgs[particle.texture].scale;
+    p.initialLife = p.life;
+    p.initialTint = p.tint;
+    p.initialScale = p.scale;
+    
+	return p.additiveBlend
+		? m_additiveBlend.Emit(p)
+		: m_noBlend.Emit(p);
 }
 
 void ParticleSystem::Update(float dt)

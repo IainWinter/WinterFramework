@@ -64,6 +64,49 @@ _enum rand_e(_enum count) {
 	return static_cast<_enum>(rand_im(count));
 }
 
+// might just want to template it...
+
+struct RandomBool {
+    float odds;
+    operator bool() const { return get(); }
+    bool get() const { return rand_bf(odds); }
+};
+
+struct RandomInt {
+    int min;
+    int max;
+    operator int() const { return get(); }
+    int get() const { return rand_imm(min, max); }
+};
+
+struct RandomFloat {
+    float min;
+    float max;
+    operator float() const { return get(); }
+    float get() const { return rand_fmm(min, max); }
+};
+
+struct RandomVec2 {
+    vec2 min;
+    vec2 max;
+    operator vec2() const { return get(); }
+    vec2 get() const { return rand_2fmm(min, max); }
+};
+
+struct RandomVec3 {
+    vec3 min;
+    vec3 max;
+    operator vec3() const { return get(); }
+    vec3 get() const { return rand_3fmm(min, max); }
+};
+
+struct RandomVec4 {
+    vec4 min;
+    vec4 max;
+    operator vec3() const { return get(); }
+    vec3 get() const { return vec4(rand_2fmm(min.x, min.y, max.x, max.y), rand_2fmm(min.z, min.w, max.z, max.w)); }
+};
+
 // maybe put in another file
 #include <vector>
 
