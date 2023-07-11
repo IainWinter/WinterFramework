@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <memory>
 
-#define EVENTS_REPORT_FILE
+//#define EVENTS_REPORT_FILE
 
 #ifdef EVENTS_REPORT_FILE
 #   include "Log.h"

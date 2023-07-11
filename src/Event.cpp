@@ -3,7 +3,10 @@
 
 void EventSink::AttachPipe(std::shared_ptr<IEventPipe> pipe)
 {
-    DetachPipe(pipe);
+    // todo: should put in double attach protection
+    // detaching doesnt do anything because the pipe is always created in Attach in the Bus
+
+    //DetachPipe(pipe);
     m_pipes.push_back(pipe);
 }
 

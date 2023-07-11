@@ -19,3 +19,9 @@ r<_t> ref(_t&& move)
 {
 	return std::make_shared<_t>(std::forward<_t>(move));
 }
+
+template<typename _t>
+r<_t> ref(const _t& copy)
+{
+	return std::make_shared<_t>(copy);
+}

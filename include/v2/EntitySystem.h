@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <deque>
 #include <functional>
 
 // Goal of this system is to allow the game state to just be a struct and have the
@@ -482,7 +483,7 @@ public:
 private:
     v2MoveList<_t> data;
 
-    std::vector<_t> add_list;
+    std::deque<_t> add_list; // use deque for no copies
     std::vector<int> remove_list;
 };
 

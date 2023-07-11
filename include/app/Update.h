@@ -6,7 +6,6 @@
 #include "app/SceneNode.h"
 #include "app/Application.h"
 
-#include "ext/EntityPrefab.h"
 #include "ext/AssetItem.h"
 
 enum SystemBreak

@@ -12,7 +12,6 @@
 #include "v2/Render/CameraLens.h"
 #include "v2/Render/TextureCache.h"
 
-
 struct ParticleData
 {
 	vec3 position = vec3(0.f);
@@ -63,7 +62,7 @@ struct ParticleData
 struct ParticleSpawn
 {
 	constexpr static int nameLengthInBytes = 64;
-	char name[nameLengthInBytes] = { 'U', 'n', 't', 'i', 't', 'l', 'e', 'd', '\0' };
+	char name[nameLengthInBytes] = "Untitled";
 
 	ParticleData particle;
 
