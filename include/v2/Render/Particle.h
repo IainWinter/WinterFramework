@@ -150,6 +150,9 @@ public:
 	int Emit(const ParticleData& particle);
 	int EmitAllowOutsideBounds(const ParticleData& particle);
 
+	void EmitSpawn(const ParticleSpawn& spawn);
+	void EmitSpawnPerSecond(ParticleSpawn& spawn, float dt);
+
 	void Update(float dt);
 	void Draw(const CameraLens& lens);
 

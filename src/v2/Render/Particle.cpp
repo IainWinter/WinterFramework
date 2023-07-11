@@ -323,6 +323,58 @@ int ParticleSystem::EmitAllowOutsideBounds(const ParticleData& particle)
 		: m_noBlend.Emit(p);
 }
 
+void ParticleSystem::EmitSpawn(const ParticleSpawn& spawn)
+{
+	int spawnCount = spawn.numberPerSpawn.get();
+
+	for (int i = 0; i < spawnCount; i++)
+	{
+		ParticleData particle = spawn.particle;
+
+		particle.position += spawn.position.get_circle();
+		particle.rotation += spawn.rotation.get();
+		particle.scale    += spawn.scale.get();
+
+		particle.velocity  += spawn.velocity.get_circle();
+		particle.damping   += spawn.damping.get();
+		particle.aVelocity += spawn.aVelocity.get();
+		particle.aDamping  += spawn.aDamping.get();
+
+		//particle.tint *= spawn.tint.get();
+		//particle.texture = spawn.texture.get();
+		//particle.additiveBlend = spawn.additiveBlend.get();
+		//particle.life *= spawn.life.get();
+		//
+		//particle.enableScalingByLife = spawn.enableScalingByLife.get();
+		//particle.finalScale *= spawn.finalScale.get();
+		//particle.factorScale *= spawn.factorScale.get();
+		//
+		//particle.enableTintByLife = spawn.enableTintByLife.get();
+		//particle.finalTint *= spawn.finalTint.get();
+		//particle.factorTint *= spawn.factorTint.get();
+
+		Emit(particle);
+	}
+}
+
+void ParticleSystem::EmitSpawnPerSecond(ParticleSpawn& spawn, float dt)
+{
+	if (spawn.numberPerSecond <= 0.0001f) // limit how many can spawn per second
+		return;
+
+	float delta = 1.f / spawn.numberPerSecond;
+	
+	spawn.timer += dt;
+	if (spawn.timer > delta)
+	{
+		while (spawn.timer > delta)
+		{
+			spawn.timer -= delta;
+			EmitSpawn(spawn);
+		}
+	}
+}
+
 void ParticleSystem::Update(float dt)
 {
 	m_additiveBlend.Update(dt);

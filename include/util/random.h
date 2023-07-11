@@ -91,6 +91,7 @@ struct RandomFloat2 {
     vec2 max;
     operator vec2() const { return get(); }
     vec2 get() const { return rand_2fmm(min, max); }
+    vec2 get_circle() const { return rand_2fcmn(1) * (max - min); }
 };
 
 struct RandomFloat3 {
@@ -98,6 +99,7 @@ struct RandomFloat3 {
     vec3 max;
     operator vec3() const { return get(); }
     vec3 get() const { return rand_3fmm(min, max); }
+    vec3 get_circle() const { return rand_3fcmn(1) * (max - min); }
 };
 
 struct RandomFloat4 {
