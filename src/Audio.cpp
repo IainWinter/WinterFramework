@@ -1,12 +1,14 @@
 #include "Audio.h"
+#include "Log.h"
+
+#include "util/filesystem.h"
+
 #include "fmod/fmod.hpp"
 #include "fmod/fmod_studio.hpp"
 #include "fmod/fmod_errors.h"
 
-#include "util/filesystem.h"
-
 #include <array>
-#include <time.h> // for seed
+#include <time.h> // for seed, should remove and use rand_get_seed from util/random.h
 
 using namespace FMOD::Studio;
 

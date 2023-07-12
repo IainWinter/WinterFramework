@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Common.h"
 #include "glm/gtx/quaternion.hpp"
+#include "util/math.h"
 
 struct Camera
 {

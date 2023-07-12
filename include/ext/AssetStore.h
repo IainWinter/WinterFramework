@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Common.h"
 #include "Log.h"
 #include "ext/serial/serial.h"
 #include "ext/AssetItem.h"

@@ -1,29 +1,29 @@
 # Winter Framework
 
-
-
-Main goal of this project is to simplify what I have been doing in IwEngine. Before I had a folder with 10+ files for each of the major systems. I didn't use many libraries in IwEngine because my goal was to learn how to create them, and now I see how much work it takes to harden and maintain libraries like EnTT and Box2d. Therefore, in this project I make full use of as many libraries as possible and mainly focus on tying them together and making simple & clean APIs.
+Main goal of this project is to simplify what I have been doing in IwEngine. Before I had a folder with 10+ files for each of the major systems. I didn't use 
+many libraries in IwEngine because my goal was to learn how to create them, and now I see how much work it takes to harden and maintain libraries 
+like EnTT and Box2d. Therefore, in this project I make full use of as many libraries as possible and mainly focus on tying them together and making simple & clean APIs.
 
 Focusing on making it as small and understandable as possible. I have a feeling that each of the libraries from before could just be a single file.
-Most of the functionality gets included no matter what, so a single file makes it simpler to use. Also, a single file lets you know the level of abstraction as you get deeper into the file as things need to be defined before they can be used. Looking at a folder of many files does not give you this info at a glance.
+Most of the functionality gets included no matter what, so a single file makes it simpler to use. Also, a single file lets you know the level of abstraction 
+as you get deeper into the file as things need to be defined before they can be used. Looking at a folder of many files does not give you this info at a glance.
 
 | File | Description |
 | --- | --- |
 | Audio | A wrapper around FMOD exposing the API through components. |
-| Common | Some helper functions and components that get used frequently by more than a single piece of the framework. |
-| Defines | Some preprocessor macros |
-| Entity | A wrapper around EnTT exposing the API through an entity class |
+| Clock | Tracks frame time and fixed time in global variables. |
+| Entity | A wrapper around EnTT exposing the API through an entity class. |
 | Event | An events system based on composing std::functions to member functions. |
-| Log | A simple logging library that lets you filter on severity and type. You can also set stylings based on flags. |
-| Physics | A wrapper around box2d that ties into the entity system to automatically maintain the physics world |
+| Input | Maps from the window message pump to user defined axes. |
+| Log | A simple logging library that can filter on severity and type. Styles can be customized through the use of tags at the start of the log. |
+| Physics | A wrapper around box2d that ties into the entity system. |
 | Rendering | Taking ideas from CUDA about host and device memory, this follows the same naming scheme through a unified interface for each OpenGL object. Currently supports Texture/Target, Buffer/Mesh and ShaderProgram |
 | Windowing | Uses SDL to create a window and pump messages. Translates them into framework events and sends them to the main event bus |
 | Folder | |
-| app | An Engine loop and world system that I am going to change at some point soon when I explore multithreading |
-| engine | functions for passing the state of the framework over dll fences |
-| ext | extensions that make use of the framework |
-| util | simple data structures and other classes used by the framework  |
-| io | (future) all functions that need disk/network access  |
+| app | The main loop and scene system |
+| ext | Extensions that make use of the framework |
+| util | Simple data structures and other classes used by the framework |
+| v2 | The next versions of each of the above. |
 
 # Build
 

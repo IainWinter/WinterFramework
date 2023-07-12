@@ -1,29 +1,26 @@
 #pragma once
 
-#include "Log.h"
-#include "Common.h"
 #include "Event.h"
-
-#include "util/error_check.h"
+#include <string>
 
 // imgui is going to be the UI library for everything in the game
 // so hard commit to tying it up with the window
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_sdl.h"
-#include "imgui/implot.h"
+// forward declare
+struct SDL_Window;
+typedef void* SDL_GLContext;
+struct ImGuiContext;
+struct _SDL_GameController;
 
-#include "SDL.h"
-#include "glad/glad.h"
+struct event_Shutdown 
+{
+};
 
-#include <string>
+struct event_WindowResize 
+{
+	int width, height;
+};
 
-/*
-
-	Window and UI
-
-*/
 
 struct WindowConfig
 {
@@ -48,7 +45,7 @@ private:
 	// only supports first controller plugged in currently
 	// would be super simple to make this a map on controller id
 	// and send that id with the input events, but for now this is simpler
-	SDL_GameController* m_controller;
+	_SDL_GameController* m_controller;
 
 	inline static bool s_first = true;
 	const char* m_first_glsl_version = nullptr;

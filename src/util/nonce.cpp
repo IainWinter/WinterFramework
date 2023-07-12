@@ -1,6 +1,5 @@
 #include "util/nonce.h"
-
-#include "Common.h" // for get_rand
+#include "util/random.h"
 
 #include <unordered_map>
 #include <sstream>
@@ -14,7 +13,7 @@ std::string nonce(int length, const char* prefix)
 
 	for (int i = 0; i < length - 2; i++)
 	{
-		ss << char(97 + get_rand(26));
+		ss << char(97 + rand_im(27));
 	}
 
 	return ss.str();

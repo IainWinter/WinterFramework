@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Common.h"
 #include "ext/rendering/BatchLineRenderer.h"
 #include "ext/rendering/BatchSpriteRenderer.h"
 

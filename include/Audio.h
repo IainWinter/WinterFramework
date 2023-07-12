@@ -1,15 +1,15 @@
 #pragma once
 
-#include "Log.h"
-#include "Common.h"
+#include "util/ref.h"
+#include "util/math.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 
 // simple wrapper around fmod. missing many features, but I am exposing only as I need
-// forward declare
 
+// forward declare
 namespace FMOD {
 namespace Studio 
 {
@@ -55,7 +55,6 @@ private:
 	FMOD::Studio::VCA* m_vca;
 };
 
-// the most basic amp
 class AudioBus
 {
 public:

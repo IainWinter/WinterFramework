@@ -1,6 +1,6 @@
 #include "ext/rendering/GizmoRender.h"
 #include "ext/rendering/DebugRender.h"
-#include "Common.h"
+
 #include "Physics.h"
 
 void DrawCircleCollider(const CircleCollider& circle, float a, float z);

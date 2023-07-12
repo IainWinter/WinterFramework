@@ -1,4 +1,5 @@
 #include "ext/SteamAudio.h"
+#include "Log.h"
 
 #include "phonon/phonon.h"
 #include "phonon_fmod/steamaudio_fmod.h"

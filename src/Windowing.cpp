@@ -1,4 +1,14 @@
 #include "Windowing.h"
+#include "Input.h"
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_sdl.h"
+#include "imgui/implot.h"
+
+#include "SDL.h"
+#include "glad/glad.h"
+#include "util/error_check.h"
 
 Window::Window()
 	: m_window     (nullptr)
