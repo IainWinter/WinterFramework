@@ -32,9 +32,7 @@ void EventSink::DetachPipe(const void* instanceOrFunctionPointer)
 void EventSink::Send(void* event) const
 {
     for (const std::shared_ptr<IEventPipe>& pipe : m_pipes)
-    {
         pipe->Send(event);
-    }
 }
 
 int EventSink::GetNumberOfPipes() const
@@ -101,9 +99,7 @@ void EventBus::Send(EventType type, void* event)
     // the event handler
     
 	for (int i = 0; i < m_children.size(); i++)
-	{
         m_children.at(i)->Send(type, event);
-	}
 }
 
 void EventBus::ChildAttach(EventBus* child)
