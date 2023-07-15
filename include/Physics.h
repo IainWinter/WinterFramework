@@ -323,6 +323,8 @@ public:
 	Rigidbody2D& SetType           (Type type);
 	Rigidbody2D& SetEntity         (int id);
 
+	Rigidbody2D& SetIsBullet       (bool isBullet);
+
 	// colliders
 
 	Rigidbody2D& AddCollider(const Collider& collider);

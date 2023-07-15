@@ -204,7 +204,7 @@ int  Texture::DeviceHandle() const { return m_device; }
 
 void Texture::_FreeHost()
 {
-	log_render("i~[Texture] (%p) Host Free - bytes: %d", this, BufferSize());
+	//log_render("i~[Texture] (%p) Host Free - bytes: %d", this, BufferSize());
 
 	free(m_host);
 	m_host = nullptr;
@@ -212,7 +212,7 @@ void Texture::_FreeHost()
 
 void Texture::_FreeDevice()
 {
-	log_render("i~[Texture] (%p) Device Free - bytes: %d, handle: %d", this, BufferSize(), m_device);
+	//log_render("i~[Texture] (%p) Device Free - bytes: %d, handle: %d", this, BufferSize(), m_device);
 
 	gl(glDeleteTextures(1, &m_device));
 	m_device = 0;
@@ -228,7 +228,7 @@ void Texture::_InitOnDevice()
 
 	_SetDeviceFilter();
 
-	log_render("i~[Texture] (%p) Device Alloc - bytes: %d, handle: %d", this, BufferSize(), m_device);
+	//log_render("i~[Texture] (%p) Device Alloc - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_UpdateOnDevice()
@@ -249,7 +249,7 @@ void Texture::_UpdateOnDevice()
 		//gl(glTextureSubImage2D(m_device, 0, 0, 0, Width(), Height(), gl_format(m_usage), gl_type(m_usage), Pixels()));
 	//}
 
-	log_render("i~[Texture] (%p) Device Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
+	//log_render("i~[Texture] (%p) Device Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_UpdateFromDevice()
@@ -261,7 +261,7 @@ void Texture::_UpdateFromDevice()
     gl(glBindTexture(GL_TEXTURE_2D, m_device));
     gl(glGetTexImage(GL_TEXTURE_2D, 0, gl_format(m_usage), gl_type(m_usage), Pixels()));
 
-	log_render("i~[Texture] (%p) Host Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
+	//log_render("i~[Texture] (%p) Host Update - bytes: %d, handle: %d", this, BufferSize(), m_device);
 }
 
 void Texture::_SetDeviceFilter()
@@ -356,13 +356,13 @@ Texture& Texture::copy_into(const Texture& copy)
 		{
 			memcpy(m_host, copy.m_host, BufferSize());
 		
-			log_render("i~[Texture] (%p) Host Init (copy) - bytes: %d", this, BufferSize());
+			//log_render("i~[Texture] (%p) Host Init (copy) - bytes: %d", this, BufferSize());
 		}
 
 		else
 		{
 			assert(false);
-			log_render("Failed to allocate texture memory");
+			//log_render("Failed to allocate texture memory");
 		}
 	}
 
@@ -380,7 +380,7 @@ void Texture::init_texture_host_memory(void* pixels, int w, int h, Usage usage)
 	m_channels = gl_num_channels(usage);
 	m_bytesPerChannel = gl_bytes_per_channel(usage);
 
-	log_render("i~[Texture] (%p) Host Init - bytes: %d", this, BufferSize());
+	//log_render("i~[Texture] (%p) Host Init - bytes: %d", this, BufferSize());
 }
 
 bool Texture::IsIndexValid(int index32) const
@@ -485,7 +485,7 @@ void Target::_InitOnDevice()
 	GLint err = gl(glCheckFramebufferStatus(GL_FRAMEBUFFER));
 	if (err != GL_FRAMEBUFFER_COMPLETE)
 	{
-		log_render("failed to create framebuffer");
+		//log_render("failed to create framebuffer");
 	}
 }
 
@@ -1053,7 +1053,7 @@ void ShaderProgram::_InitOnDevice()
 	{
 		const char* source = buffer.c_str();
 
-		log_render("Compiling shader source: %s", source);
+		//log_render("Compiling shader source: %s", source);
 
 		GLuint shader = gl(glCreateShader(gl_shader_type(name)));
 		glShaderSource(shader, 1, &source, nullptr);
@@ -1069,7 +1069,7 @@ void ShaderProgram::_InitOnDevice()
 			std::vector<GLchar> infoLog(maxLength);
 			glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
 			glDeleteShader(shader); // if soft error this can be removed
-			log_render("Failed to compile shader: %s", (char*)infoLog.data());
+			//log_render("Failed to compile shader: %s", (char*)infoLog.data());
 			//assert(false && "Failed to compile shader"); // maybe soft error
 		}
 

@@ -53,3 +53,13 @@ namespace Time
 	float DeltaTimeNow();
 	float TotalTimeNow();
 }
+
+struct wTimer {
+    float begin;
+
+    wTimer() { begin = Time::TotalTimeNow(); }
+
+    float Seconds() const {
+        return Time::TotalTimeNow() - begin;
+    }
+};

@@ -445,6 +445,8 @@ Rigidbody2D::Rigidbody2D()
 
 void Rigidbody2D::RemoveFromWorld()
 {
+	ClearColliders();
+
 	if (m_world && m_instance)
 		m_world->DestroyBody(m_instance);
 
@@ -531,14 +533,18 @@ Rigidbody2D& Rigidbody2D::SetEntity(int id)
 	return *this;
 }
 
+Rigidbody2D& Rigidbody2D::SetIsBullet(bool isBullet)
+{
+	m_instance->SetBullet(isBullet);
+	return *this;
+}
+
 Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 {
 	r<Collider> c = collider.MakeCopy();
 
 	if (m_instance)
-	{
 		c->AddToBody(*this);
-	}
 
 	m_colliders.push_back(c);
 
@@ -548,9 +554,7 @@ Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 Rigidbody2D& Rigidbody2D::RemoveCollider(r<Collider> collider)
 {
 	if (m_instance)
-	{
 		collider->RemoveFromBody(*this);
-	}
 
 	m_colliders.erase(std::find(m_colliders.begin(), m_colliders.end(), collider));
 
@@ -560,12 +564,8 @@ Rigidbody2D& Rigidbody2D::RemoveCollider(r<Collider> collider)
 void Rigidbody2D::ClearColliders()
 {
 	if (m_instance)
-	{
 		for (r<Collider>& c : m_colliders)
-		{
 			c->RemoveFromBody(*this);
-		}
-	}
 
 	m_colliders.clear();
 }
@@ -710,9 +710,7 @@ void PhysicsWorld::Add(EntityWith<Rigidbody2D> e)
 	// add colliders
 
 	for (r<Collider>& collider : body.m_colliders)
-	{
 		collider->AddToBody(body);
-	}
 
 	// set user data for the collision callbacks to be able to create entities
 
@@ -723,10 +721,7 @@ void PhysicsWorld::Add(EntityWith<Rigidbody2D> e)
 	// Set position to where transform is if entity has one
 
     if (e.Has<Transform2D>())
-    {
-        e.Get<Rigidbody2D>()
-            .SetTransform(e.Get<Transform2D>());
-    }
+        e.Get<Rigidbody2D>().SetTransform(e.Get<Transform2D>());
 }
 	
 void PhysicsWorld::Remove(Entity& e)

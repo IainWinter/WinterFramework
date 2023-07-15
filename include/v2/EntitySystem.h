@@ -342,9 +342,11 @@ public:
         // don't set archetype or size, only register the memory pointer
     }
 
-    void move(_t& entity) {
+    int move(_t& entity) {
+        int id = entity.Id();
         move_entity = std::move(entity);
         has_move = true;
+        return id;
     }
 
     int count() const override {
@@ -432,8 +434,10 @@ public:
         typeName = typeid(_t).name();
     }
 
-    void move(_t& entity) {
+    int move(_t& entity) {
+        int id = entity.Id();
         add_list.emplace_back(std::move(entity));
+        return id;
     }
 
     int count() const override {
