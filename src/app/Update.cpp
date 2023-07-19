@@ -155,10 +155,10 @@ bool SystemBase::IsUsingController()
     return m_scene->app->input.IsUsingController();
 }
 
-//EntityWorld& SystemBase::_world()
-//{
-//	return m_scene->entities;
-//}
+v2EntitySceneData& SystemBase::_scene()
+{
+	return *m_scene->data;
+}
 
 PhysicsWorld& SystemBase::_physics()
 {
@@ -168,6 +168,11 @@ PhysicsWorld& SystemBase::_physics()
 EventQueue& SystemBase::_events()
 {
 	return m_scene->event;
+}
+
+InputMap& SystemBase::_input() 
+{
+	return m_scene->app->input;
 }
 
 WindowRef SystemBase::_window()

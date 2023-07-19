@@ -13,9 +13,9 @@ Application::~Application()
 	DeleteScenes();
 }
 
-Scene Application::CreateScene()
+Scene Application::CreateScene(v2EntitySceneData* data)
 {
-	SceneNode* node = new SceneNode(this);
+	SceneNode* node = new SceneNode(this, data);
 	m_scenes.push_back(node);
 
 	// link the event buses together so Scenes get Application level events
@@ -49,6 +49,8 @@ void Application::Tick()
 	// Need to execute deferred deletes here because those may send
 	// events up to the app bus which change the state in a critical way for next
 	// frame
+
+	// for v2, may need to commit here? right now that happens in Tick
 
 	//for (SceneNode* node : m_scenes)
 	//	node->entities.ExecuteDeferredDeletions();

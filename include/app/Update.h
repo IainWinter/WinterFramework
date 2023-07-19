@@ -99,9 +99,12 @@ protected:
 // there is no way to attach events to a scene, so this needs to be exposed
 // but for now, there is no way to pass the entity world to a function
 
-	//EntityWorld&  _world();
+	v2EntitySceneData& _scene();
+	template<typename _t> _t& _scene();
+
 	PhysicsWorld& _physics();
 	EventQueue& _events();
+	InputMap& _input();
 
 	WindowRef _window();
 
@@ -198,6 +201,12 @@ template<typename _e>
 inline void SystemBase::SendUp(_e&& event, const char* _fromFile, int _fromLine)
 {
 	m_scene->app->event.Send(std::forward<_e>(event), _fromFile, _fromLine);
+}
+
+template<typename _t> 
+inline _t& SystemBase::_scene()
+{
+	return *(_t*)m_scene->data;
 }
 
 template<typename _t>

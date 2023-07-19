@@ -197,40 +197,78 @@ const char* GetInputCodeName(int code)
 	auto itr = names.find(code);
 
 	if (itr == names.end())
-	{
         return ".";
-	}
 
     return itr->second;
 }
 
+// Don't log name because that forces a type
+// todo: should add null protection to builder if this is going to check here
+
 InputAxisBuilder InputMap::CreateAxis(const InputName& name)
 {
-    InputAxis* axis = nullptr;
-        
-    if (_AxisExists(name))
-        log_app("w~Axis already exists. %s", name.c_str());
-    else
-        axis = &Axes.emplace(name, InputAxis{}).first->second;
-        
+    if (_AxisExists(name)) {
+        log_app("w~Tried to create an axis that already exists");
+        throw nullptr;
+    }
+
+    InputAxis* axis = &Axes.emplace(name, InputAxis{}).first->second;
     return InputAxisBuilder(this, axis, name);
 }
 
 AxisGroupBuilder InputMap::CreateGroupAxis(const InputName& name)
 {
-    AxisGroup* group = nullptr;
-        
-    if (_GroupAxisExists(name))
-        log_app("w~Group axis already exists. %s", name.c_str());
-    else
-        group = &GroupAxes.emplace(name, AxisGroup{}).first->second;
-        
+    if (_AxisGroupExists(name)) {
+        log_app("w~Tried to create an group axis that already exists");
+        throw nullptr;
+    }
+
+    AxisGroup* group = &GroupAxes.emplace(name, AxisGroup{}).first->second;
     return AxisGroupBuilder(this, group, name);
+}
+
+void InputMap::RemoveAxis(const InputName& name)
+{
+    auto axis = Axes.find(name);
+
+    if (axis == Axes.end()) {
+        log_app("w~Tried to remove axis that does not exist");
+        return;
+    }
+
+    _RemoveAxisMapping(name, axis->second);
+    Axes.erase(axis);
+}
+
+void InputMap::RemoveGroupAxis(const InputName& name)
+{
+    auto group = GroupAxes.find(name);
+
+    if (group == GroupAxes.end()) {
+        log_app("w~Tried to remove group axis that does not exist");
+        return;
+    }
+
+    for (const InputName& axisName : group->second.axes)
+    {
+        auto axis = Axes.find(axisName);
+
+        if (axis == Axes.end()) {
+            log_app("w~Tried to remove a group axis which has had some of its axes removed."
+                    " Remove all axes before removing the group.");
+            return;
+        }
+
+        // group axes use the group name for the mapping, so pass 'name' not 'axisName'
+        _RemoveAxisMapping(name, axis->second);
+    }
+
+    GroupAxes.erase(name);
 }
 
 vec2 InputMap::GetAxis(const InputName& axis)
 {
-	if (!_GroupAxisExists(axis))
+	if (!_AxisGroupExists(axis))
 		return _GetAxisNoRecurse(axis, false);
 
 	const AxisGroup& group = GroupAxes.at(axis);
@@ -340,7 +378,7 @@ bool InputMap::_AxisExists(const InputName& axis)
     return Axes.find(axis) != Axes.end();
 }
 
-bool InputMap::_GroupAxisExists(const InputName& axis)
+bool InputMap::_AxisGroupExists(const InputName& axis)
 {
     return GroupAxes.find(axis) != GroupAxes.end();
 }
@@ -414,6 +452,19 @@ vec2 InputMap::_ApplySettings(vec2 in, const InputAxisSettings& settings)
         in = process(in);
 
     return in;
+}
+
+void InputMap::_RemoveAxisMapping(const InputName& axisName, const InputAxis& axis)
+{
+    for (const auto& [code, _] : axis.components)
+    {
+        auto& list = Mapping.at(code);
+        list.erase(axisName);
+
+        // clean up list if empty
+        if (list.size() == 0)
+            Mapping.erase(code);
+    }
 }
 
 InputAxisBuilder::InputAxisBuilder(InputMap* map, InputAxis* axis, const InputName& name)

@@ -539,7 +539,7 @@ Rigidbody2D& Rigidbody2D::SetIsBullet(bool isBullet)
 	return *this;
 }
 
-Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
+r<Collider> Rigidbody2D::AddCollider(const Collider& collider)
 {
 	r<Collider> c = collider.MakeCopy();
 
@@ -548,17 +548,15 @@ Rigidbody2D& Rigidbody2D::AddCollider(const Collider& collider)
 
 	m_colliders.push_back(c);
 
-	return *this;
+	return c;
 }
 
-Rigidbody2D& Rigidbody2D::RemoveCollider(r<Collider> collider)
+void Rigidbody2D::RemoveCollider(const r<Collider>& collider)
 {
 	if (m_instance)
 		collider->RemoveFromBody(*this);
 
 	m_colliders.erase(std::find(m_colliders.begin(), m_colliders.end(), collider));
-
-	return *this;
 }
 
 void Rigidbody2D::ClearColliders()

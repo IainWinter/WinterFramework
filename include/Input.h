@@ -168,11 +168,10 @@ enum MouseInput
 	MOUSE_VEL_WHEEL,
 };
 
-// easier to combine the controller axis/buttons into a single enum
 enum ControllerInput
 {
-	cAXIS_INVALID   = -10,
-	cBUTTON_INVALID = -1,
+	cAXIS_INVALID   = -1024,      // input codes are linear, so make these very negative
+	cBUTTON_INVALID = -1024 - 1,
 
     cBUTTON_A,
     cBUTTON_B,
@@ -205,7 +204,7 @@ enum ControllerInput
 	cAXIS_TRIGGERLEFT,
 	cAXIS_TRIGGERRIGHT,
 
-	cAXIS_MAX
+	cAXIS_MAX,
 };
 
 ControllerInput MapSDLGameControllerButton(SDL_GameControllerButton button);
@@ -216,7 +215,8 @@ int GetInputCode(KeyboardInput scancode);
 int GetInputCode(MouseInput input);
 int GetInputCode(ControllerInput input);
 
-// Return a string with the name of the input code, if name starts with '.' it should not be used. On input code, returns "."
+// Return a string with the name of the input code
+// "." is returned for invalid codes
 const char* GetInputCodeName(int code);
 
 struct event_Key
@@ -260,9 +260,6 @@ struct event_Controller
 	float value;
 };
 
-/**
-* An event for inputs
-*/
 struct event_Input
 {
 	InputName name;
@@ -363,7 +360,7 @@ struct InputAxis
 
 /**
 * A summation of input axes. Useful to bind many inputs to the same axis.
-* The main use for Group Axes is binding keyboard and analogue controller inputs as
+* The main use for Group Axes is combining keyboard and analogue controller inputs as
 * they need to have separate dead zones before summation. After summation
 * the final value is processed again using the group axis' settings.
 */
@@ -371,6 +368,9 @@ struct AxisGroup
 {
 	std::vector<InputName> axes;
 	InputAxisSettings settings;
+
+	// only used for removing mappings, could just search Mapping
+	std::vector<int> components;
         
 	bool operator==(const AxisGroup& other) const;
 	bool operator!=(const AxisGroup& other) const;
@@ -386,27 +386,23 @@ public:
     InputAxisSettingsBuilder(InputAxisSettings* settings)
         : m_settings (settings)
     {}
-        
-    // these should really only be set once, so can only
-    // be used to set the flags to the opposite of their
-    // defaults.
 
-    _a& LimitToUnit(/*bool limitToUnit*/) {
+    _a& LimitToUnit() {
         m_settings->limitToUnit = true;
         return *(_a*)this;
     }
         
-    _a& Normalized(/*bool normalized*/) {
+    _a& Normalized() {
         m_settings->normalized = true;
         return *(_a*)this;
     }
         
-    _a& UseOnlyInputSetThisFrame(/*bool useOnlyInputSetThisFrame*/) {
+    _a& UseOnlyInputSetThisFrame() {
         m_settings->useOnlyInputSetThisFrame = true;
         return *(_a*)this;
     }
 
-    _a& UseOnlyLatestInput(/*bool useOnlyInputSetThisFrame*/) {
+    _a& UseOnlyLatestInput() {
         m_settings->useOnlyLatestInput = true;
         return *(_a*)this;
     }
@@ -482,6 +478,9 @@ public:
     */
     AxisGroupBuilder CreateGroupAxis(const InputName& name);
 
+	void RemoveAxis(const InputName& name);
+	void RemoveGroupAxis(const InputName& name);
+
     /**
     * Return the state of an axis. If an input axis and axis group share names, the group will take precedence and be returned.
     */
@@ -541,9 +540,11 @@ public:
 private:
     bool _FailsMask(const std::string& mask);
     bool _AxisExists(const InputName& axis);
-    bool _GroupAxisExists(const InputName& axis);
+    bool _AxisGroupExists(const InputName& axis);
     vec2 _GetAxisNoRecurse(const InputName& axisName, bool useOnlyInputSetThisFrameOverride);
     vec2 _ApplySettings(vec2 in, const InputAxisSettings& settings);
+
+	void _RemoveAxisMapping(const InputName& axisName, const InputAxis& axis);
 
 private:
     // mapping of name to Group axis

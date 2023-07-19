@@ -376,7 +376,8 @@ public:
             return;
         
         if (has_remove) {
-            on_remove_func(*entity);
+            if (on_remove_func)
+                on_remove_func(*entity);
             entity->Remove();
             *entity = {};
             size = 0;

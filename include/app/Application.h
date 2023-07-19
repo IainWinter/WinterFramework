@@ -3,6 +3,8 @@
 #include "app/Scene.h"
 #include "app/Console.h"
 
+#include "v2/EntitySystem.h"
+
 #include "Windowing.h"
 #include "Audio.h"
 #include "Input.h"
@@ -13,7 +15,7 @@ public:
 	Application();
 	~Application();
 
-	Scene CreateScene();
+	Scene CreateScene(v2EntitySceneData* data); // could pass data through a function in Scene
 	void DestroyScene(Scene* scene);
 	void DeleteScenes();
 

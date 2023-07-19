@@ -327,8 +327,8 @@ public:
 
 	// colliders
 
-	Rigidbody2D& AddCollider(const Collider& collider);
-	Rigidbody2D& RemoveCollider(r<Collider> collider);
+	r<Collider> AddCollider(const Collider& collider);
+	void RemoveCollider(const r<Collider>& collider);
 
 	void ClearColliders();
 

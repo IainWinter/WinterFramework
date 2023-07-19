@@ -13,7 +13,7 @@ struct Color
 	Color();
 
 	Color(u8 r, u8 g, u8 b, u8 a = 255);
-	Color(u32 rgba);
+	Color(u32 rgba); // should make explicit
 
 	float rf() const;
 	float gf() const;

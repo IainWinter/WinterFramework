@@ -1,5 +1,6 @@
 #pragma once
 
+#include "v2/EntitySystem.h"
 #include "Physics.h"
 #include "Event.h"
 
@@ -12,6 +13,7 @@ struct SceneNode
 
 	//EntityWorld entities;
 	//entity_scene_data* entities;
+	v2EntitySceneData* data;
 	PhysicsWorld physics;
 	EventBus bus;
 	EventQueue event;
@@ -20,10 +22,11 @@ struct SceneNode
 	std::unordered_set<SceneUpdateGroupNode*> groupsDetached;
 	float timeAcc;
 	bool inDebugMode;
-
 	bool physicsRunning;
 
-	SceneNode(Application* app);
+	// takes reference to app 
+	// takes ownership of data
+	SceneNode(Application* app, v2EntitySceneData* data);
 	~SceneNode();
 
 	void Tick(float deltaTime, float fixedTime);

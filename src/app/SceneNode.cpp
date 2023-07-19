@@ -2,22 +2,14 @@
 #include "app/SceneUpdateGroupNode.h"
 #include "app/Update.h"
 
-SceneNode::SceneNode(Application* app)
+SceneNode::SceneNode(Application* app, v2EntitySceneData* data)
 	: event          (&bus)
 	, app            (app)
+	, data           (data)
 	, timeAcc        (0.f)
 	, inDebugMode    (false)
 	, physicsRunning (true)
 {
-	//entities.OnAdd   <Rigidbody2D>([this](Entity e) { physics.Add(e); });
-	//entities.OnRemove<Rigidbody2D>([this](Entity e) { physics.Remove(e); });
- //   
-	//entities.OnAdd<Transform2D>([this](Entity e)
- //   {
-	//	if (Rigidbody2D* body = e.TryGet<Rigidbody2D>())
-	//		body->SetTransform(e.Get<Transform2D>());
- //   });
-
 	log_game("d~Scene node created");
 }
 
@@ -44,10 +36,18 @@ SceneNode::~SceneNode()
 
 	for (SceneUpdateGroupNode* group : groupsDetached)
 		delete group;
+
+	delete data;
+	data = nullptr;
 }
 
 void SceneNode::Tick(float deltaTime, float fixedTime)
 {
+	// commit last frames changes to scene data
+	// and populate views
+	if (data)
+		data->commit();
+
 	// init or attach nodes
 
 	for (SceneUpdateGroupNode* group : groups)
