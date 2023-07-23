@@ -128,9 +128,7 @@ bool v2Entity::operator!=(const v2Entity& other) const
     return Id() != other.Id();
 }
 
-void v2Entity::Remove() {}
 void v2Entity::Bind() {}
-void v2Entity::debug_print() const {}
 
 void v2Entity::AttemptBind()
 {

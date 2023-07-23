@@ -443,6 +443,54 @@ Rigidbody2D::Rigidbody2D()
 	, m_world            (nullptr)
 {}
 
+Rigidbody2D::~Rigidbody2D() {
+	RemoveFromWorld();
+}
+
+Rigidbody2D::Rigidbody2D(const Rigidbody2D& other)
+{
+	copy_into(other);
+}
+
+Rigidbody2D& Rigidbody2D::operator=(const Rigidbody2D& other)
+{
+	copy_into(other);
+	return *this;
+}
+
+Rigidbody2D::Rigidbody2D(Rigidbody2D&& move) noexcept 
+{
+	move_into(std::forward<Rigidbody2D>(move));
+}
+
+Rigidbody2D& Rigidbody2D::operator=(Rigidbody2D&& move) noexcept 
+{
+	move_into(std::forward<Rigidbody2D>(move));
+	return *this;
+}
+
+void Rigidbody2D::copy_into(const Rigidbody2D& other)
+{
+	m_preinit = other.m_preinit;
+	m_density = other.m_density;
+	m_collisionEnabled = other.m_collisionEnabled;
+}
+
+void Rigidbody2D::move_into(Rigidbody2D&& other)
+{
+	m_instance = std::move(other.m_instance);
+	m_world = std::move(other.m_world);
+	m_preinit = std::move(other.m_preinit);
+	m_density = std::move(other.m_density);
+	m_collisionEnabled = std::move(other.m_collisionEnabled);
+	m_last = std::move(other.m_last);
+	m_colliders = std::move(other.m_colliders);
+	m_aabb = std::move(other.m_aabb);
+
+	other.m_instance = nullptr;
+	other.m_world = nullptr;
+}
+
 void Rigidbody2D::RemoveFromWorld()
 {
 	ClearColliders();

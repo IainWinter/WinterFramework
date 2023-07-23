@@ -48,3 +48,8 @@ public:
     vec2 Forward() const;
     vec2 Right()   const;
 };
+
+// extend math functions
+
+vec2 translate(vec2 v, const Transform2D& transform);
+vec2 reverse_translate(vec2 v, const Transform2D& transform);

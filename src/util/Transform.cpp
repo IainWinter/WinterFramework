@@ -89,3 +89,13 @@ vec2 Transform2D::Right() const
 {
     return right(on_unit(rotation));
 }
+
+vec2 translate(vec2 v, const Transform2D& transform)
+{
+    return rotate(v, transform.rotation) + transform.position;
+}
+
+vec2 reverse_translate(vec2 v, const Transform2D& transform)
+{
+    return rotate(v - transform.position, -transform.rotation);
+}

@@ -1,13 +1,14 @@
 #pragma once
 
+#include "Windowing.h"
+#include "Audio.h"
+#include "Event.h"
+#include "Input.h"
+
 #include "app/Scene.h"
 #include "app/Console.h"
 
 #include "v2/EntitySystem.h"
-
-#include "Windowing.h"
-#include "Audio.h"
-#include "Input.h"
 
 class Application
 {

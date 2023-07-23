@@ -1,5 +1,7 @@
 #pragma once
 
+// This is required to pass global C++ state between DLL boundaries
+
 template<typename _t>
 class wContextStore;
 

@@ -1,28 +1,12 @@
 #pragma once
 
-// This file replaces Entry with a much more defined updating pattern using the Leveling structures
-
-// The default interface includes a Window, Physics and Audio
-// In the future this should really be an abstract class, and there would
-// be another file with a DefaultEngineLoop that has the Window Physics Audio added
-// the interface version should be empty, but this works for now
-
-#include "Windowing.h"
-#include "Physics.h"
-#include "Input.h"
-#include "Clock.h"
-
 #include "app/Application.h"
-#include "app/FontMap.h"
-
 #include "ext/InputEventHandler.h"
-#include "ext/AssetStore.h"
 
-// holds the application and has some
-// functions for updating its state
-// this is where global events attach...
+// Holds the Application and has some functions for updating its state.
+// This is where global events attach
 
-struct EngineLoopBase
+class EngineLoopBase
 {  
 public:
 	void on(event_Shutdown& e);
@@ -31,8 +15,6 @@ public:
 	void Init();
 	void Dnit();
 	bool Tick();
-
-// Interface
 
 protected:
 	virtual void _Init() {};
@@ -49,8 +31,9 @@ private:
 };
 
 template<typename _me>
-struct EngineLoop : EngineLoopBase
+class EngineLoop : public EngineLoopBase
 {
+protected:
 	template<typename _e>
 	void Attach() { app.bus.template Attach<_e, _me>((_me*)this); }
 

@@ -257,13 +257,10 @@ public:
 
 private:
 	b2Body* m_instance;
-
-	// If null, not in physics world. This pointer is not owned
 	b2World* m_world;
 
 	// this is for serialization loading
 	b2BodyDef m_preinit;
-    std::vector<b2Shape*> colliders;
     
 	// default value on each new collider, if the new collider had 0 density
 	float m_density;
@@ -275,18 +272,29 @@ private:
 	// attached colliders
 	std::vector<r<Collider>> m_colliders;
 
+	aabb2D m_aabb;
+
 	friend struct PhysicsWorld;
 	friend struct ColliderAttachment;
-    
-	aabb2D m_aabb;
 
 public:
 	Rigidbody2D();
-	
-	void RemoveFromWorld();
+	~Rigidbody2D();
 
+	// only copied preinit values, mainly because any needs copy constructor
+	// this should have been fixed, just do this for now tho
+	Rigidbody2D(const Rigidbody2D& other);
+	Rigidbody2D& operator=(const Rigidbody2D& other);
+
+	Rigidbody2D(Rigidbody2D&& other) noexcept;
+	Rigidbody2D& operator=(Rigidbody2D&& other) noexcept;
+
+private:
 	void move_into(Rigidbody2D&& other);
 	void copy_into(const Rigidbody2D& other);
+
+public:
+	void RemoveFromWorld();
 
 	Rigidbody2D& SetTransform(Transform2D& transform);
 
@@ -322,7 +330,6 @@ public:
 	Rigidbody2D& SetDensity        (float density);
 	Rigidbody2D& SetType           (Type type);
 	Rigidbody2D& SetEntity         (int id);
-
 	Rigidbody2D& SetIsBullet       (bool isBullet);
 
 	// colliders

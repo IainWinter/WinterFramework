@@ -3,6 +3,11 @@
 
 #include "Rendering.h"
 
+#include "Clock.h"
+#include "ext/AssetStore.h"
+#include "ext/serial/serial.h"
+#include "util/filesystem.h"
+
 void EngineLoopBase::on(event_Shutdown& e)
 {
 	m_running = false;

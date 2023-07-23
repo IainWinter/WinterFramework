@@ -51,12 +51,6 @@ public:
     v2Entity& operator=(const v2Entity& other);
     v2Entity& operator=(v2Entity&& other) noexcept;
 
-    // Cleanup components outside of deconstructor 
-    virtual void Remove();
-
-    // temp, should just use serializer
-    virtual void debug_print() const;
-
 private:
     void copy_from(const v2Entity& other);
     void move_from(v2Entity&& other) noexcept;
@@ -146,12 +140,8 @@ public:
         int index = find_index(id);
 
         if (index >= size)
-        {
-            //log_entity("e~Tried to remove invalid entity %d", id);
             return;
-        }
 
-        data[index].Remove();
         data[index].~_t();
 
         if (size > 1 && index != size - 1)
@@ -194,8 +184,6 @@ private:
 
         free(data);
         data = new_data;
-
-        //log_entity("d~Resized %s to %d", typeid(_t).name(), new_size);
     }
 
     int find_index(int id) const {
@@ -376,21 +364,23 @@ public:
             return;
         
         if (has_remove) {
+            has_remove = false;
+
             if (on_remove_func)
                 on_remove_func(*entity);
-            entity->Remove();
-            *entity = {};
+
+            *entity = {}; // reset to default
             size = 0;
-            has_remove = false;
         }
 
         if (has_move) {
-            entity->Remove();
-            *entity = std::move(move_entity);
-            size = 1;
             has_move = false;
 
-            archetype = entity->GetArchetype(); // change the archetype
+            // change the archetype
+            archetype = move_entity.GetArchetype();
+
+            *entity = std::move(move_entity);
+            size = 1;
         }
     }
 
