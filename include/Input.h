@@ -5,6 +5,7 @@
 
 #include "util/math.h"
 
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
 #include <functional>
