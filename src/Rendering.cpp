@@ -1336,21 +1336,6 @@ namespace Render
 {
 	wContextImpl(RenderContext);
 
-	float RenderContext::WindowAspect() const
-	{
-		return window_width / (float)window_height;
-	}
-
-	float RenderContext::TargetAspect() const
-	{
-		if (default_target)
-		{
-			return default_target->Width() / (float)default_target->Height();
-		}
-
-		return WindowAspect();
-	}
-
 	void SetWindowSize(int width, int height)
 	{
 		ctx->window_width = width;
@@ -1387,6 +1372,12 @@ namespace Render
 		gl(glViewport(0, 0, target->Width(), target->Height()));
 	}
 
+	void SetAlphaBlend(bool blend)
+	{
+		gl(glEnable(GL_BLEND));
+		gl(glBlendFunc(GL_SRC_ALPHA, blend ? GL_ONE_MINUS_SRC_ALPHA : GL_ONE));
+	}
+
 	void ClearRenderTarget()
 	{
 		ClearRenderTarget(ctx->clear_color);
@@ -1399,14 +1390,21 @@ namespace Render
 		//gl_SetClearColor(Color(0));
 	}
 
-	void SetAlphaBlend(bool blend)
-	{
-		gl(glEnable(GL_BLEND));
-		gl(glBlendFunc(GL_SRC_ALPHA, blend ? GL_ONE_MINUS_SRC_ALPHA : GL_ONE));
-	}
-
 	ivec2 GetWindowSizeInPixels()
 	{
 		return ivec2(ctx->window_width, ctx->window_height);
+	}
+
+	float GetWindowAspect()
+	{
+		return ctx->window_width / (float)ctx->window_height;
+	}
+
+	float GetTargetAspect()
+	{
+		if (ctx->default_target)
+			return ctx->default_target->Width() / (float)ctx->default_target->Height();
+
+		return GetWindowAspect();
 	}
 }

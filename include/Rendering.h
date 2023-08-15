@@ -853,20 +853,17 @@ namespace Render
 	// can be nullptr for the screen
 	void SetDefaultRenderTarget(r<Target> target);
 
-	// Set the clear color in the context
-	void SetClearColor(Color color);
-
 	// Set the render target, if nullptr will use the default_target from the context
 	void SetRenderTarget(r<Target> target);
 
-	// clear the currently bounds render target with the color from the RenderContext
-	void ClearRenderTarget();
+	void SetClearColor(Color color);
 
-	// clear the currently bound render target with the color
+	void ClearRenderTarget();
 	void ClearRenderTarget(Color color);
 
-	// set the current alpha blend
 	void SetAlphaBlend(bool blend);
 
 	ivec2 GetWindowSizeInPixels();
+	float GetWindowAspect();
+	float GetTargetAspect();
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 // This file should hold some helper classes
 // and functions for memory management
 
@@ -50,6 +52,14 @@ public:
 
 	int size() const {
 		return m_size;
+	}
+
+	_t* data() {
+		return m_data;
+	}
+
+	const _t* data() const {
+		return m_data;
 	}
 
 private:

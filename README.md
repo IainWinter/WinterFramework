@@ -49,54 +49,40 @@ int main()
 }
 ```
 
-Here is an example of an app that draws a red square on the screen. It can be moved around with WASD and a connected controller's left joystick.
+Here is an example of an app that draws a red square on the screen. It can be moved around with WASD and a connected controller's left joystick. It's currently in a bad state because I am moving between v1 and v2 of some of the API.
 
 ```c++
 #include "app/EngineLoop.h"
+#include "app/Update.h"
 #include "ext/rendering/BatchSpriteRenderer.h"
+#include "Clock.h"
 
-struct ExampleSystem : SystemBase
-{
+#include "v2/EntitySystem.h"
+#include "v2/Render/Camera.h"
+#include "v2/Render/CameraAdapter.h"
+
+class ExampleSystem : public SystemBase {
+public:
 	BatchSpriteRenderer render;
-	Entity sprite;
+	vec2 redSquarePos = vec2(0.f);
 
-	void Init() override
-	{
-		// Creating an entity in the world & adding components
-		
-		sprite = CreateEntity();
-		
-		sprite.Add<Transform2D>()
-			.SetScale(vec2(2.f));
-			
-		sprite.Add<Sprite>()
-			.SetTint(Color(255, 0, 0));
-	}
-	
-	void Update() override
-	{
-		// getting components of a specific entity
+	void Update() override {
+		redSquarePos += GetAxis("Move") * 5.f * Time::DeltaTime();
 
-		sprite.Get<Transform2D>().position += 5.f * GetAxis("Move") * Time::DeltaTime();
-
-		// use of an extension that provides a simple batch quad renderer
+		Transform2D redSquareTransform = Transform2D(redSquarePos);
+		Camera camera = FromCameraLens(lens_Orthographic(5, Render::GetWindowAspect(), -1, 1));
 
 		render.Begin();
-
-		for (auto [transform, sprite] : Query<Transform2D, Sprite>()) // querying of components from ECS
-			render.SubmitSprite(transform, sprite);
-
-		render.Draw(Camera(10, 10, 10));
+		render.SubmitColor(redSquareTransform, Color(255, 10, 10));
+		render.Draw(camera);
 	}
 };
 
-struct Example : EngineLoop<Example>
-{
-	void Init() override
-	{
+class ExampleLoop : public EngineLoop<ExampleLoop> {
+public:
+	void _Init() override {
 		// Scenes hold all entity data & systems for updating state
-
-		Scene scene = app.CreateScene();
+		Scene scene = app.CreateScene(new v2EntitySceneData());
 		
 		scene.CreateGroup()
 			.Then<ExampleSystem>();
@@ -104,14 +90,12 @@ struct Example : EngineLoop<Example>
 		// Binding keyboard and controller inputs to axes
 
 		// Create an axis for the left joystick 
-
 		app.input.CreateAxis("Left Stick")
 			.Map(cAXIS_LEFTX, vec2(1.f, 0.f))
 			.Map(cAXIS_LEFTY, vec2(0.f, 1.f))
 			.Deadzone(0.1f);
 		
 		// Create an axis for the WASD keys
-		
 		app.input.CreateAxis("WASD")
 			.Map(KEY_W, vec2( 0.f,  1.f))
 			.Map(KEY_A, vec2(-1.f,  0.f))
@@ -119,26 +103,23 @@ struct Example : EngineLoop<Example>
 			.Map(KEY_D, vec2( 1.f,  0.f));
 
 		// Combine these axes into a single group axis
-
 		app.input.CreateGroupAxis("Move")
 			.Map("Left Stick")
 			.Map("WASD");
 
 		// Attaching events to the main bus
-
 		Attach<event_Input>();
 	}
 
-	void on(event_Input& e) // events aren't virtual and get attached by instance
-	{
-		log_game("%s: (%2.2f, %2.2f)", e.name, e.axis.x, e.axis.y);
+	// events aren't virtual and get attached by instance 
+	void on(event_Input& e) {
+		log_game("%s: (%2.2f, %2.2f)", e.name.c_str(), e.axis.x, e.axis.y);
 	}
 };
 
-// no boostrapped main function
+// no bootstrapped main function
 
-int main()
-{
-	RunEngineLoop<Example>();
+int main() {
+	RunEngineLoop<ExampleLoop>();
 }
 ```

@@ -38,7 +38,6 @@ SceneNode::~SceneNode()
 		delete group;
 
 	delete data;
-	data = nullptr;
 }
 
 void SceneNode::Tick(float deltaTime, float fixedTime)
@@ -56,11 +55,11 @@ void SceneNode::Tick(float deltaTime, float fixedTime)
 	for (SceneUpdateGroupNode* group : groups)
 		group->Attach();
 
-	// So far this seems to be the best way to also pause the physics
+	// So far this seems to be the best way to pause the physics
 	// without putting the physics tick in a system
 	if (physicsRunning)
 	{
-		int maxitr = 2;
+		const int maxitr = 2;
 		int itr = 0;
 
 		timeAcc += deltaTime;
@@ -70,8 +69,9 @@ void SceneNode::Tick(float deltaTime, float fixedTime)
 
 		while (timeAcc >= fixedTime)
 		{
-			// limit iterations
-			if (itr > maxitr) break;
+			if (itr > maxitr)
+				break;
+
 			itr += 1;
 
 			// this is required to keep physics engine running at the same speed with vsync enabled

@@ -1,0 +1,76 @@
+cmake_minimum_required(VERSION 3.21)
+
+#
+# Include libs that need to be built
+#
+
+add_subdirectory(WINTER_FRAMEWORK_INSTALL_DIR ./WinterFramework)
+
+#
+# Set C++ version and output dirs
+#
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE})
+set(ASSET_ROOT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+
+#
+# Set build file settings
+#
+
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+  add_compile_options(/bigobj /MP)
+else ()
+  #add_compile_options(-Wa,-mbig-obj)
+endif ()
+
+#
+# Project
+#
+
+project(PROJECT_NAME)
+
+#
+# Source files
+#
+
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS "include/*" "src/*")
+
+#
+# Output exe
+#
+
+add_executable(PROJECT_NAME ${sources})
+
+target_link_libraries(PROJECT_NAME PRIVATE WinterFramework)
+target_link_directories(PROJECT_NAME PRIVATE ./WinterFramework/${VENDOR_PREBUILT_DIR})
+
+#
+# Include everything in src, and from vendors
+#
+
+target_include_directories(PROJECT_NAME 
+	PRIVATE src
+)
+
+target_compile_definitions(PROJECT_NAME
+	PRIVATE ASSET_ROOT_PATH="${ASSET_ROOT_PATH}"
+)
+
+#
+# Copy dynamic libs to exe folder
+#
+
+if (WIN32)
+	add_custom_command(TARGET PROJECT_NAME POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:PROJECT_NAME> $<TARGET_FILE_DIR:PROJECT_NAME>
+		COMMAND_EXPAND_LISTS
+	)
+endif()
+
+add_custom_command(TARGET PROJECT_NAME POST_BUILD
+  	COMMAND ${CMAKE_COMMAND} -E copy_if_different ${VENDOR_PREBUILT_LIBS} $<TARGET_FILE_DIR:PROJECT_NAME>
+  	COMMAND_EXPAND_LISTS
+)

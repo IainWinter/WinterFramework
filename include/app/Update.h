@@ -32,6 +32,10 @@ enum SystemState
 
 struct SceneUpdateGroupNode;
 
+// BasicSceneUpdate   // updated with ticks
+// EventSceneUpdate   // updated with events
+// JobSceneUpdate     // updated with ticks and is integrated with job system
+
 class SystemBase
 {
 public:
@@ -135,7 +139,7 @@ private:
 	// for Attach and Detach to be able to see m_data->bus
 	// without giving direct access to children
 	template<typename _t> 
-	friend struct System;
+	friend class System;
 	
 	// for _XXXMethod
 	friend struct SceneUpdateGroupNode;

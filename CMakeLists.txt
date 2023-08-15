@@ -17,6 +17,7 @@ add_subdirectory(vendor/fullsrc/ImGui vendor/ImGui)
 add_subdirectory(vendor/fullsrc/phonon_fmod vendor/phonon_fmod)
 
 set(TBB_TEST OFF)
+set(BUILD_SHARED_LIBS ON)
 add_subdirectory(vendor/fullsrc/tbb vendor/tbb)
 
 #
