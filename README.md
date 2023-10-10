@@ -28,7 +28,7 @@ as you get deeper into the file as things need to be defined before they can be 
 # Build
 
 ```
-git pull https://github.com/IainWinter/WinterFramework
+git clone https://github.com/IainWinter/WinterFramework
 cd WinterFramework
 mkdir build
 cd build
